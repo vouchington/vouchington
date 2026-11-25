@@ -153,7 +153,10 @@ export async function markDataRequestFailed(
   return (rowCount ?? 0) > 0
 }
 
-/** Claims one bounded page; clearing its keys makes the next scheduled run resume. */
+/**
+ * Claims a bounded page and clears its keys so the next scheduled run can advance.
+ * lock-reason: prevents: claiming an obsolete S3 key or expiring an export whose download was extended; writer: export download and account-deletion cleanup.
+ */
 export async function expireDataRequests(
   batchSize = getDataRequestLimits().batchSize,
   requestIds?: readonly string[],
