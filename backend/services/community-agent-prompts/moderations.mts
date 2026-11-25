@@ -20,7 +20,8 @@ export async function searchCommunityAgentModerations(
   const afterId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid moderation cursor').id
     : undefined
-  // A result beyond a prompt's first page cannot be in the merged first page.
+  // A result beyond a prompt's page cannot be in the merged page.
+  // The scalar limit keeps the per-prompt index walk ordered in custom plans.
   const fetchLimit = options.limit + 1
   const statement = sql`/* searchCommunityAgentModerations */
     SELECT
@@ -39,7 +40,7 @@ export async function searchCommunityAgentModerations(
   `
   if (afterId) statement.append(sql` AND am.id > ${afterId}::uuid`)
   statement.append(sql`
-      ORDER BY am.id ASC LIMIT ${fetchLimit}
+      ORDER BY am.id ASC LIMIT (SELECT ${fetchLimit}::bigint)
     ) am
     WHERE cap.community_id = ${communityId}
       AND cap.deleted_at IS NULL

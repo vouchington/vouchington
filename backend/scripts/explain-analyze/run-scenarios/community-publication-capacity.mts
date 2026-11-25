@@ -119,7 +119,7 @@ async function runAgentModerations({
   const finalPageCursor = encodeScopedUuidCursor(moderationIds[limit * 2 - 1]!, scope)
   registerScenarioContract(scenario, {
     seededRows,
-    expectations: [{ kind: 'maxProcessedRows', relation: 'agent_moderations', max: 110 }],
+    expectations: [{ kind: 'maxProcessedRows', relation: 'agent_moderations', max: limit + 1 }],
   })
   await runAndCapture(
     scenario,
