@@ -601,6 +601,10 @@
     "notifications-mark-all-read-at-cap",
     "related-posts-by-url-at-cap",
     "rss-ingest-content-at-cap",
-    "rss-hard-delete-sources-at-cap"
+    "rss-hard-delete-sources-at-cap",
+    "account-email-addresses-at-cap",
+    "account-api-keys-at-cap",
+    "account-oauth-apps-at-cap",
+    "account-oauth-grants-at-cap"
   ]
 }
