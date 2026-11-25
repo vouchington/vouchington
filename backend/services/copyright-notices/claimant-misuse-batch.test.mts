@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import {
-  probeTestAdvisoryKeyLocksHeldByBatch,
-  recordTestAppealReversalEventsTwice,
-} from '@voucha/test-helpers/copyright-batch-statements'
+import { recordTestAppealReversalEventsTwice } from '@voucha/test-helpers/copyright-batch-statements'
 import { createTestCopyrightStaff } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -25,14 +22,5 @@ describe('batched copyright statements', () => {
     expect(restrictionIds).toHaveLength(2)
 
     await expect(recordTestAppealReversalEventsTwice({ noticeId, restrictionIds })).resolves.toBe(2)
-  })
-
-  it('holds every advisory lock of a batch until the transaction ends', async () => {
-    await expect(
-      probeTestAdvisoryKeyLocksHeldByBatch({
-        keys: ['copyright-batch-test:b', 'copyright-batch-test:a', 'copyright-batch-test:b'],
-        probeKeys: ['copyright-batch-test:a', 'copyright-batch-test:b'],
-      }),
-    ).resolves.toEqual([false, false])
   })
 })

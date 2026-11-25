@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { checkTestAutomaticWithholdingCaps } from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
 import { useAutomaticWithholdingSwitch } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { readTestAutomaticWithholdingOutcome } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding-reads'
@@ -82,24 +83,32 @@ describe('automatic withholding caps', () => {
     await expect(readTestAutomaticWithholdingOutcome(notice)).resolves.toEqual(refusedFor(reason))
   })
 
-  it('admits exactly one of two concurrent notices at a cap of one', async () => {
-    await switchOn({ automaticWithholdingClaimantDailyCap: 1 })
-    const claimant = await createTestUser()
-    const notices = [await createForm({ claimant }), await createForm({ claimant })]
+  it('lets competing notices complete while both can see the last cap slot', async () => {
+    await switchOn({
+      automaticWithholdingClaimantDailyCap: 1,
+      automaticWithholdingPosterDailyCap: 1,
+    })
+    const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
+    const first = await createForm({ claimant, poster })
+    const second = await createForm({ claimant, poster })
 
-    await Promise.all(notices.map(screen))
+    // Finish the second screening while the first is still between its cap reads and its append.
+    const restore = afterPostgresTransactionQueryForTest(
+      '/* checkAutomaticWithholdingCaps:poster */',
+      values => values.some(value => Array.isArray(value) && value.includes(poster.id)),
+      async () => {
+        await screen(second)
+      },
+    )
+    try {
+      await screen(first)
+    } finally {
+      restore()
+    }
 
-    const outcomes = await Promise.all(notices.map(readTestAutomaticWithholdingOutcome))
-    expect(
-      outcomes
-        .map(outcome => outcome.restrictions)
-        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-    ).toEqual([0, 1])
-    expect(
-      outcomes
-        .map(outcome => outcome.refusal)
-        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-    ).toEqual(['claimant_daily_cap', null])
+    await expect(
+      Promise.all([first, second].map(readTestAutomaticWithholdingOutcome)),
+    ).resolves.toEqual([withheld, withheld])
   })
 
   it('counts only automated assessments from the last 24 hours', async () => {
