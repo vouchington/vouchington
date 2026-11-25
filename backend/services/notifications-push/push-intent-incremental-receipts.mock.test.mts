@@ -3,9 +3,11 @@ import type { Agent } from 'node:https'
 import * as webpush from 'web-push'
 import {
   answerPostgresWritesForTest,
+  rejectNextPostgresTransactionForTest,
   rejectPostgresWriteForTest,
   runAfterPostgresWriteForTest,
 } from '@voucha/test-helpers/injected-failures'
+import { afterNextPostgresCommitForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { deliverClaimedNotificationPushIntent } from './push-intent-delivery.mts'
 import { claimNotificationPushIntent, releaseNotificationPushIntent } from './push-intents.mts'
 import type { NotificationPushDeliveryPolicy } from './push-intent-delivery-policy.mts'
@@ -41,7 +43,7 @@ describe('incremental notification push receipts', () => {
     vi.mocked(webpush.sendNotification).mockReset()
   })
   it('persists a prompt endpoint before a slow peer settles', async () => {
-    const { intent, prompt, promptSubscriptionId, slow } = await createDelivery()
+    const { intent, prompt, slow } = await createDelivery()
     const promptPersisted = Promise.withResolvers<void>()
     const releaseSlow = Promise.withResolvers<void>()
     let slowSettled = false
@@ -51,19 +53,7 @@ describe('incremental notification push receipts', () => {
       slowSettled = true
       return successfulSendResult()
     })
-    onTestFinished(
-      runAfterPostgresWriteForTest((statement, values, result) => {
-        if (
-          !statement.includes('persistClaimedNotificationPushOutcome') ||
-          !values.includes(promptSubscriptionId)
-        )
-          return
-        const outcome = result.rows[0]?.outcome
-        if (outcome === 'persisted') promptPersisted.resolve()
-        else
-          promptPersisted.reject(new Error(`notification push persist returned ${String(outcome)}`))
-      }),
-    )
+    onTestFinished(afterNextPostgresCommitForTest(promptPersisted.resolve))
     const delivery = deliverClaimedNotificationPushIntent(intent)
     try {
       await promptPersisted.promise
@@ -77,7 +67,7 @@ describe('incremental notification push receipts', () => {
   })
   it('renews a short lease and retries only the unresolved endpoint', async () => {
     const expectedError = 'Transient web push delivery failure'
-    const { intent, prompt, promptSubscriptionId, slow } = await createDelivery(1)
+    const { intent, prompt, slow } = await createDelivery(1)
     const originalLeaseExpiry = await getLeaseExpiry(intent)
     const slowSend = Promise.withResolvers<void>()
     const periodicRenewal = Promise.withResolvers<void>()
@@ -89,13 +79,9 @@ describe('incremental notification push receipts', () => {
         if (statement.includes('renewNotificationPushIntentLease') && result.rowCount === 1) {
           if (++acceptedRenewals === 2) periodicRenewal.resolve()
         }
-        if (
-          statement.includes('persistClaimedNotificationPushOutcome') &&
-          values.includes(promptSubscriptionId)
-        )
-          promptPersisted.resolve()
       }),
     )
+    onTestFinished(afterNextPostgresCommitForTest(promptPersisted.resolve))
     vi.mocked(webpush.sendNotification).mockImplementation(async subscription => {
       if (subscription.endpoint === prompt) return successfulSendResult()
       await slowSend.promise
@@ -179,12 +165,7 @@ describe('incremental notification push receipts', () => {
         return successfulSendResult()
       },
     )
-    onTestFinished(
-      rejectPostgresWriteForTest(
-        'persistClaimedNotificationPushOutcome',
-        new Error('persist failed'),
-      ),
-    )
+    onTestFinished(rejectNextPostgresTransactionForTest(new Error('persist failed')))
     await expect(deliverClaimedNotificationPushIntent(intent, shortLeasePolicy)).rejects.toThrow(
       'persist failed',
     )
