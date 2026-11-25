@@ -124,9 +124,10 @@ export async function createExplainWalCaptureFixture(scenarioId: string) {
   // with a full-page image. Read the rows before each checkpoint so a concurrent test's scan of
   // users cannot take those images between the checkpoint and the measured UPDATE.
   const settleHints = async () => {
-    await write('/* walConditionTestSettleHints */ SELECT id FROM users WHERE id = ANY($1::uuid[])', [
-      userIds,
-    ])
+    await write(
+      '/* walConditionTestSettleHints */ SELECT id FROM users WHERE id = ANY($1::uuid[])',
+      [userIds],
+    )
   }
   const input = {
     name: 'wal-condition-test',
