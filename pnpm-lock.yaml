@@ -1306,7 +1306,7 @@ importers:
         version: 0.4.0(@jongleberry/api-server@3.1.0)(valkyries@0.15.0)
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
         specifier: ^0.1.0
         version: 0.1.0
@@ -1461,7 +1461,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -2200,7 +2200,7 @@ importers:
         version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -2482,14 +2482,14 @@ importers:
         specifier: workspace:^
         version: link:../request-client-info
       '@sentry/node':
-        specifier: ^11.13.0
-        version: 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+        specifier: ^11.14.0
+        version: 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
 
   backend/modules/openai-utils:
     dependencies:
@@ -2564,7 +2564,7 @@ importers:
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2733,7 +2733,7 @@ importers:
         version: 0.1.1
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
         specifier: ^0.1.0
         version: 0.1.0
@@ -4513,7 +4513,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -4612,7 +4612,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -4901,7 +4901,7 @@ importers:
         version: 2.6.0
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -5116,7 +5116,7 @@ importers:
         version: 2.6.0
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -5366,7 +5366,7 @@ importers:
         version: 0.0.5
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -5461,7 +5461,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -5548,7 +5548,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -5670,7 +5670,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -5816,7 +5816,7 @@ importers:
         version: 0.1.1
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -5924,7 +5924,7 @@ importers:
         version: 0.1.1
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -6075,7 +6075,7 @@ importers:
         version: 0.1.1
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -6779,7 +6779,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -7228,7 +7228,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
         specifier: ^0.1.0
         version: 0.1.0
@@ -7626,7 +7626,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -7775,7 +7775,7 @@ importers:
         version: 0.0.5
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -7851,7 +7851,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/session-jwt':
         specifier: ^0.0.3
         version: 0.0.3
@@ -8169,7 +8169,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/uuid-v7':
         specifier: ^0.0.0
         version: 0.0.0
@@ -8260,7 +8260,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -8397,7 +8397,7 @@ importers:
         version: 2.6.0
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -8931,7 +8931,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -8995,7 +8995,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -9166,7 +9166,7 @@ importers:
         version: link:../../config
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -9246,7 +9246,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       confusables:
         specifier: ^1.1.1
         version: 1.1.1
@@ -10086,7 +10086,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/uuid-v7':
         specifier: ^0.0.0
         version: 0.0.0
@@ -11507,7 +11507,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11621,7 +11621,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -11746,7 +11746,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11865,7 +11865,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -12153,7 +12153,7 @@ importers:
         version: 0.0.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -12202,7 +12202,7 @@ importers:
         version: link:../../types
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12356,7 +12356,7 @@ importers:
         version: 0.2.1(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -12469,7 +12469,7 @@ importers:
         version: 0.0.5
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -12645,7 +12645,7 @@ importers:
         version: 0.6.2
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -13013,8 +13013,8 @@ importers:
         specifier: workspace:^
         version: link:../queues/psql
       '@sentry/node':
-        specifier: ^11.13.0
-        version: 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+        specifier: ^11.14.0
+        version: 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       '@services/reporting-daily-rollups':
         specifier: workspace:^
         version: link:../services/reporting-daily-rollups
@@ -14105,7 +14105,7 @@ importers:
         version: 0.0.1(playwright-core@1.65.1)
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -14234,7 +14234,7 @@ importers:
         version: link:../../services/urls
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -15395,8 +15395,8 @@ importers:
   cloudflare-worker:
     dependencies:
       '@sentry/cloudflare':
-        specifier: ^11.13.0
-        version: 11.13.0(@cloudflare/workers-types@5.20261117.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@26.6.6))
+        specifier: ^11.14.0
+        version: 11.14.0(@cloudflare/workers-types@5.20261117.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@26.6.6))
       '@ts-shared/cache':
         specifier: workspace:^
         version: link:../ts-shared/cache
@@ -15569,8 +15569,8 @@ importers:
         specifier: ^3.1170.0
         version: 3.1170.0
       '@sentry/aws-serverless':
-        specifier: ^11.13.0
-        version: 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+        specifier: ^11.14.0
+        version: 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
@@ -15775,7 +15775,7 @@ importers:
         version: 0.0.0
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -15852,8 +15852,8 @@ importers:
         specifier: ^1.4.1
         version: 1.4.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@sentry/nextjs':
-        specifier: ^11.13.0
-        version: 11.13.0(@cloudflare/workers-types@5.20261117.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@26.6.6))
+        specifier: ^11.14.0
+        version: 11.14.0(@cloudflare/workers-types@5.20261117.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@26.6.6))
       '@simplewebauthn/browser':
         specifier: ^14.0.0
         version: 14.0.0
@@ -15910,7 +15910,7 @@ importers:
         version: 0.1.0(react@19.3.1)
       '@vouchington/sentry':
         specifier: ^0.7.0
-        version: 0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
+        version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/server-utils':
         specifier: ^0.1.0
         version: 0.1.0
@@ -19839,20 +19839,20 @@ packages:
     peerDependencies:
       selderee: ~0.12.0
 
-  '@sentry/aws-serverless@11.13.0':
-    resolution: {integrity: sha512-snYa3g462um+GghdG5748N2L8eM3urofNZjFQrcmjQovN9dDD8F4YvMicSA5wxnbhRPm8oDU6TMUV7hKS5wl9Q==}
+  '@sentry/aws-serverless@11.14.0':
+    resolution: {integrity: sha512-A4ID4LSBFkrDkub1a9PE1hzqy1H/2MPirQeqGyRppMuIm4N/kXIsvKgWPRh9SClQEgi/gYOgvHzh36p3hUascA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/browser-utils@11.13.0':
-    resolution: {integrity: sha512-Ivdvp/jq3ykimisXxOKWWwrAL0mfZEFgTST8RUJKZ75RIOTT2uZuffqC1YwXYXobElIpgZOSLjdpXhCIepTCTA==}
+  '@sentry/browser-utils@11.14.0':
+    resolution: {integrity: sha512-QyMFyX9l7vXUCYJ7DoE0Au13oFoOmJLB1XPk0tnq3XI8DYoBUP8i1I32xtVJ9O0XR2r2Kc/e3RIKY3Bxl2/BAw==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/browser@11.13.0':
-    resolution: {integrity: sha512-PfoIXdu9zCr8X4DtneQuPzEPMGuw2Ue1hWj+d9x+OOzvqpQSzh8LylnxHpBoyuQYZdHS/Bm7knBzpBHJYQ5l7w==}
+  '@sentry/browser@11.14.0':
+    resolution: {integrity: sha512-LqcMvAv6FOoJW7hB1kXT1vQqbm1+FZjFm5ZyWE2CUR7hO6rEY+qyUMoCdBgPiJRYVJMWau6wp5BRowWqvoSAeA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/bundler-plugins@11.13.0':
-    resolution: {integrity: sha512-MYH2ygxSQDf6Iuh+EmQUX4+ygWKQOWDk4j3N8O2qA9hV/8FDlUa6NSSZh30prWsSas2KJh3+63mZHwltbYYF+g==}
+  '@sentry/bundler-plugins@11.14.0':
+    resolution: {integrity: sha512-Afi4P+OLJP/fRjbt3h4r8ujBC9KulU9RB1pBhe8PgGHddo5hpXdn2eoDQMHPTnADqNONqqCP1DzbGwFmxVQkXA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       rollup: '>=3.2.0'
@@ -19863,8 +19863,8 @@ packages:
       webpack:
         optional: true
 
-  '@sentry/cloudflare@11.13.0':
-    resolution: {integrity: sha512-F7LMS3uI7WbjEFTE6hyOtESJ+m9rSBBolM66cvx71CahCeuo51sDUVN1UwBJ5AD36P+Mja+//TyOSVTVW5Fg2Q==}
+  '@sentry/cloudflare@11.14.0':
+    resolution: {integrity: sha512-0VbCSvFhhOjqlyDNgB2r4Suk/mg+CH69rB6zal5KzC4F6VmKHCWv+dqivGB9jJtCDWC7dekX9ltzuXBzkfHUPA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       '@cloudflare/workers-types': ^4.x || ^5.x
@@ -19882,20 +19882,20 @@ packages:
     resolution: {integrity: sha512-5aa3g/VOnMoL8yHbfkYIWBYC3BLgMudgRNBTKNMrcMEj1mE9aKIt/CYCG7sasijhiSU4nTcSEzyM2voIVzLCng==}
     engines: {node: '>=14'}
 
-  '@sentry/core@11.13.0':
-    resolution: {integrity: sha512-dRJI8RwAZvtEtW62awlZdSt8EN6fuyb3cTED78A/IgIkhNcAhhR41x+B2GuMOOJ5lrb/dOCuWLBhZwwyHW2/pg==}
+  '@sentry/core@11.14.0':
+    resolution: {integrity: sha512-toRRdaZnm0anz/4gEkzyZC0yTCvR4R7U+024WQfjCwgklIFaYo9mjIBoElU8MJ1Sske0/RyvA0zltHfra6PvsQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/feedback@11.13.0':
-    resolution: {integrity: sha512-2K5S7DP1iPs7TxHIhaldzXrdxGlKUn20+isyBh1Z38IuwM15QOXCREnqtP4knmn4LOXhssL51cOrl2p74TdzZw==}
+  '@sentry/feedback@11.14.0':
+    resolution: {integrity: sha512-g6/UMRie3Cb4GE+0/fmxWmV0dtPDqrsk7298X4DiG1TPSj4EMB7JtTGjLaRCQyRhCHEoL2XfqQDFS2pWdNXOow==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/nextjs@11.13.0':
-    resolution: {integrity: sha512-8nU2poR7WaoD33ZdlLucpt2rh2D9qubRm1YGJ1vERaZ0ZooyLdZsgtYmVqdAe9AdPCTIvUGzl59SjsV64TUvcg==}
+  '@sentry/nextjs@11.14.0':
+    resolution: {integrity: sha512-uKOd6KJRbUxDety+616oJbopNQYohgtwpiWamwnzhgNofUl/UqJahSA3CPymtiZAnLQUMFgwl/tZWH3IIld8XA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
-      '@sentry/bun': 11.13.0
-      '@sentry/deno': 11.13.0
+      '@sentry/bun': 11.14.0
+      '@sentry/deno': 11.14.0
       next: ^14.0 || ^15.0.0-rc.0 || ^16.0.0-0
     peerDependenciesMeta:
       '@sentry/bun':
@@ -19903,18 +19903,18 @@ packages:
       '@sentry/deno':
         optional: true
 
-  '@sentry/node@11.13.0':
-    resolution: {integrity: sha512-Yj9fsfiTKmitluyH7jbGHJox58tSpoRY0318v8EvICDpp4VcCc8Kn36PZFO9chj6ezKQHNGIxxL53O4OF7u1Kg==}
+  '@sentry/node@11.14.0':
+    resolution: {integrity: sha512-dAxkiRg7vwI1j+/bv4EbshmtrGHmS6CeX1+4SFSYbvTqUSAd6GYGFnIeLdW2NcX2Y6qG7zKz9svv/wreCm7m8g==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/opentelemetry@11.13.0':
-    resolution: {integrity: sha512-dhynqfjuL1mSM1SdzsbJvdf2JMjrSw7TdPSYHYH8m1KgAOeUdXBAAxP5M/9663vZ+IYhp0JlVxLxWgVtAh2aIQ==}
+  '@sentry/opentelemetry@11.14.0':
+    resolution: {integrity: sha512-K+Vg7nNnGg90w1QSvNDWJSABeuDnvqGxHEcBtjkrzApqz3CDQ0bq6q9dG8B5af1QT3YPGsQh7RG9qqDkxClcBQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       '@opentelemetry/api': ^1.9.0
 
-  '@sentry/react@11.13.0':
-    resolution: {integrity: sha512-/HSK0IefnBw9JFK/3UDiYIRbqL9yMhg+0A2w0LBl0t30XyHIiynn6tOsLUuPapUfWd6ULPBp+STFFfsfbQMtCg==}
+  '@sentry/react@11.14.0':
+    resolution: {integrity: sha512-iGy5UMrwSCwWypAkNLtnY6Shc2WpPsXC4yXv6geJ6+/sJBUs3nCv7A3gNne8+ePxgFKnT3fXrv4kDBpWn8O5Mw==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       react: 17.x || 18.x || 19.x
@@ -19923,24 +19923,24 @@ packages:
       react-router:
         optional: true
 
-  '@sentry/replay-canvas@11.13.0':
-    resolution: {integrity: sha512-xIDk6GKBU0IPCo7cSzSWHF8QlN24GdL7WLiTTre/XWFmFznwBBG60Y7lN+pnN2SNxmtmhHHp9WhjqcMAhZ096g==}
+  '@sentry/replay-canvas@11.14.0':
+    resolution: {integrity: sha512-eKkWsIMv/EP2aCGkzuYDSdhCrRD6bc5WhfhFUPTTWcM4s9E+FFUBFZc8CBlIUBNomnPjUg4W0N9gvdg16ungvw==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/replay@11.13.0':
-    resolution: {integrity: sha512-nLaAAbC2XZb6p0HQNM7u+pqB3xUbhojX+NXCVtYB/gFUvy8cwroJJVDov1coQnHrASIZ8X1yhOJG5d2k9/K/yQ==}
+  '@sentry/replay@11.14.0':
+    resolution: {integrity: sha512-qGgTWOmGkSWokXLDung64T2EzQONIQJL1ahtHAd5XF9QvGQG6208sLM6ctXoh1wcyONnoRmVdabjQeY27QSPHA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/server-runtime-injection@11.13.0':
-    resolution: {integrity: sha512-fX+wXIbIAmu8TNhF5NMtZ21BKw8rPgXKQi7ka2eqx/JOTcdtPr22YaCiKZrljgdP9qzcD8y0oxDPrTz+PzgOmQ==}
+  '@sentry/server-runtime-injection@11.14.0':
+    resolution: {integrity: sha512-oYNxjgEqHWsyuVk6lCcKlOH8NFbQ0kJfdfUqxVQpg9T0iaBcMEDPeDaZ9RRRhv7ybKV6KQbMMUhGhdIN9lyieQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/server-utils@11.13.0':
-    resolution: {integrity: sha512-572farncJRHPqX3NIczJRwbo00WM8mQiwl7A+1hla3OWtI5KTIFXPC9UjTNqU2Km4angophhmDdK+ZxHCe+SyA==}
+  '@sentry/server-utils@11.14.0':
+    resolution: {integrity: sha512-ipL76Amg5yX9Lkoo++6xdy0Gnmci08AoY8ygM9ECYflWLYlBMxDf/6jMnsqKjV4M6O2bUg+KR3IoSrviy0jlwA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/vercel-edge@11.13.0':
-    resolution: {integrity: sha512-2qi0W1TiGW8ANRU317+7KI6iJnreqiu2H938Iszh7RXXiVa3C1IyqVQDx+lVoKf9aD8acP8/5QntrVGE7gA9Gw==}
+  '@sentry/vercel-edge@11.14.0':
+    resolution: {integrity: sha512-wqPCz1QX1QO1fd7mEMpcPNrxeu6dFzsUYlcOQJFPDVrrelrZM1QkpHm35IGTAs0XIo1X5qznrZQ1VUej3QoGHg==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
   '@shaderfrog/glsl-parser@7.0.1':
@@ -28754,36 +28754,36 @@ snapshots:
       domhandler: 5.0.3
       selderee: 0.12.0
 
-  '@sentry/aws-serverless@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
+  '@sentry/aws-serverless@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
     dependencies:
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
-      '@sentry/node': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
-      '@sentry/server-runtime-injection': 11.13.0
-      '@sentry/server-utils': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/node': 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/server-runtime-injection': 11.14.0
+      '@sentry/server-utils': 11.14.0
       '@types/aws-lambda': 8.10.164
     transitivePeerDependencies:
       - rollup
       - webpack
 
-  '@sentry/browser-utils@11.13.0':
+  '@sentry/browser-utils@11.14.0':
     dependencies:
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
       web-vitals: 6.2.3
 
-  '@sentry/browser@11.13.0':
+  '@sentry/browser@11.14.0':
     dependencies:
-      '@sentry/browser-utils': 11.13.0
+      '@sentry/browser-utils': 11.14.0
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
-      '@sentry/feedback': 11.13.0
-      '@sentry/replay': 11.13.0
-      '@sentry/replay-canvas': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/feedback': 11.14.0
+      '@sentry/replay': 11.14.0
+      '@sentry/replay-canvas': 11.14.0
 
-  '@sentry/bundler-plugins@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
+  '@sentry/bundler-plugins@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
     dependencies:
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
       dotenv: 17.4.2
       glob: 14.0.4
       magic-string: 1.4.3
@@ -28793,13 +28793,13 @@ snapshots:
       rollup: 4.63.4
       webpack: 5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)
 
-  '@sentry/cloudflare@11.13.0(@cloudflare/workers-types@5.20261117.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@26.6.6))':
+  '@sentry/cloudflare@11.14.0(@cloudflare/workers-types@5.20261117.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@26.6.6))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
-      '@sentry/opentelemetry': 11.13.0(@opentelemetry/api@1.9.1)
-      '@sentry/server-utils': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/opentelemetry': 11.14.0(@opentelemetry/api@1.9.1)
+      '@sentry/server-utils': 11.14.0
       magic-string: 0.30.21
     optionalDependencies:
       '@cloudflare/workers-types': 5.20261117.1
@@ -28808,29 +28808,29 @@ snapshots:
 
   '@sentry/conventions@0.33.0': {}
 
-  '@sentry/core@11.13.0':
+  '@sentry/core@11.14.0':
     dependencies:
       '@sentry/conventions': 0.33.0
 
-  '@sentry/feedback@11.13.0':
+  '@sentry/feedback@11.14.0':
     dependencies:
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
 
-  '@sentry/nextjs@11.13.0(@cloudflare/workers-types@5.20261117.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@26.6.6))':
+  '@sentry/nextjs@11.14.0(@cloudflare/workers-types@5.20261117.1)(next@16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))(wrangler@4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@26.6.6))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@rollup/plugin-commonjs': 28.0.1(rollup@4.63.4)
-      '@sentry/browser-utils': 11.13.0
-      '@sentry/bundler-plugins': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
-      '@sentry/cloudflare': 11.13.0(@cloudflare/workers-types@5.20261117.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@26.6.6))
+      '@sentry/browser-utils': 11.14.0
+      '@sentry/bundler-plugins': 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/cloudflare': 11.14.0(@cloudflare/workers-types@5.20261117.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(wrangler@4.164.0(@cloudflare/workers-types@5.20261117.1)(@types/node@26.6.6))
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
-      '@sentry/node': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
-      '@sentry/opentelemetry': 11.13.0(@opentelemetry/api@1.9.1)
-      '@sentry/react': 11.13.0(react@19.3.1)
-      '@sentry/server-runtime-injection': 11.13.0
-      '@sentry/server-utils': 11.13.0
-      '@sentry/vercel-edge': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/node': 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/opentelemetry': 11.14.0(@opentelemetry/api@1.9.1)
+      '@sentry/react': 11.14.0(react@19.3.1)
+      '@sentry/server-runtime-injection': 11.14.0
+      '@sentry/server-utils': 11.14.0
+      '@sentry/vercel-edge': 11.14.0
       next: 16.4.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.65.1)(@types/node@26.6.6)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       rollup: 4.63.4
       stacktrace-parser: 0.1.11
@@ -28842,58 +28842,58 @@ snapshots:
       - webpack
       - wrangler
 
-  '@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
+  '@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@sentry/bundler-plugins': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/bundler-plugins': 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
-      '@sentry/opentelemetry': 11.13.0(@opentelemetry/api@1.9.1)
-      '@sentry/server-runtime-injection': 11.13.0
-      '@sentry/server-utils': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/opentelemetry': 11.14.0(@opentelemetry/api@1.9.1)
+      '@sentry/server-runtime-injection': 11.14.0
+      '@sentry/server-utils': 11.14.0
     transitivePeerDependencies:
       - rollup
       - webpack
 
-  '@sentry/opentelemetry@11.13.0(@opentelemetry/api@1.9.1)':
+  '@sentry/opentelemetry@11.14.0(@opentelemetry/api@1.9.1)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
 
-  '@sentry/react@11.13.0(react@19.3.1)':
+  '@sentry/react@11.14.0(react@19.3.1)':
     dependencies:
-      '@sentry/browser': 11.13.0
+      '@sentry/browser': 11.14.0
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
       react: 19.3.1
 
-  '@sentry/replay-canvas@11.13.0':
+  '@sentry/replay-canvas@11.14.0':
     dependencies:
-      '@sentry/core': 11.13.0
-      '@sentry/replay': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/replay': 11.14.0
 
-  '@sentry/replay@11.13.0':
+  '@sentry/replay@11.14.0':
     dependencies:
-      '@sentry/browser-utils': 11.13.0
-      '@sentry/core': 11.13.0
+      '@sentry/browser-utils': 11.14.0
+      '@sentry/core': 11.14.0
 
-  '@sentry/server-runtime-injection@11.13.0':
+  '@sentry/server-runtime-injection@11.14.0':
     dependencies:
-      '@sentry/core': 11.13.0
-      '@sentry/server-utils': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/server-utils': 11.14.0
 
-  '@sentry/server-utils@11.13.0':
+  '@sentry/server-utils@11.14.0':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.33.0
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
 
-  '@sentry/vercel-edge@11.13.0':
+  '@sentry/vercel-edge@11.14.0':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@sentry/core': 11.13.0
-      '@sentry/server-utils': 11.13.0
+      '@sentry/core': 11.14.0
+      '@sentry/server-utils': 11.14.0
 
   '@shaderfrog/glsl-parser@7.0.1': {}
 
@@ -29971,14 +29971,14 @@ snapshots:
     dependencies:
       react: 19.3.1
 
-  '@vouchington/sentry@0.7.0(@sentry/browser@11.13.0)(@sentry/core@11.13.0)(@sentry/node@11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))':
+  '@vouchington/sentry@0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))':
     dependencies:
-      '@sentry/core': 11.13.0
+      '@sentry/core': 11.14.0
       '@vouchington/utils': 0.13.0
       http-errors: 2.0.1
     optionalDependencies:
-      '@sentry/browser': 11.13.0
-      '@sentry/node': 11.13.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+      '@sentry/browser': 11.14.0
+      '@sentry/node': 11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
 
   '@vouchington/server-utils@0.1.0': {}
 
