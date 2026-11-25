@@ -71,7 +71,7 @@ async function refreshStoryPostForStoryInTransaction(
 
   const postId = postStory.post_id
   const topicIdsToLock = await readStoryTopicIds(options.query, storyId)
-
+  // lock-reason: prevents: writing a stale topic projection after a concurrent story source change; writer: story assignment, clustering and category relation writes.
   await options.query(sql`/* refreshStoryPostForStory:lockTopics */
     SELECT id FROM relation__post__category__topic
     WHERE subject_id = ${postId}

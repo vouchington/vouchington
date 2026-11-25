@@ -87,7 +87,7 @@ describe('processPsql daily vote retention admission', () => {
     })
   })
 
-  it('enqueues a continuation when integrity details have another page', async () => {
+  it('enqueues a continuation after a full integrity details page', async () => {
     const addBulk = await spyOnTestVoteRetentionAdmission(
       'vote-retention__e270cae7342a94610857b47372d5c9cd',
     )
@@ -134,7 +134,7 @@ describe('processPsql daily vote retention admission', () => {
       {
         retention: {
           families: ['supersededVoteBallots', 'orphanedUserAgentStrings', 'voteIntegrityDetails'],
-          voteRetention: { batchSize: 1, now: new Date('2100-01-01T00:00:00Z') },
+          voteRetention: { batchSize: 2, now: new Date('2100-01-01T00:00:00Z') },
           voteBallotIdsByTable: { post_votes: [ballot.postSupersederId] },
           userAgentStringIds: [owned.userAgentStringId],
           voteIntegrityFlagIds: [owned.flagId],

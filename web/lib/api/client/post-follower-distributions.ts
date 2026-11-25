@@ -1,7 +1,7 @@
 'use client'
 
 import { clientApi } from './instance'
-import { assertPathIdentifier } from './path-identifiers'
+import { assertPathIdentifier } from '@vouchington/api-client'
 import {
   assertFollowerDistributionSendBody,
   type FollowerDistributionSendBody,

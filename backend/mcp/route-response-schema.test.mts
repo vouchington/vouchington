@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
+import { assertLocalSchemaRefs } from '@vouchington/mcp-server/schema'
 import { componentSchema, routeResponseSchema } from './route-response-schema.mts'
 
 describe('checked-in route contracts', () => {
@@ -11,7 +11,7 @@ describe('checked-in route contracts', () => {
 
     expect(schema.type).toBe('object')
     expect(Object.keys(schema['properties'] as object).toSorted()).toEqual(['page_info', 'results'])
-    assertMcpLocalSchemaRefs(schema)
+    assertLocalSchemaRefs(schema)
   })
 
   it('fails loudly for a route that documents its response inline', () => {
@@ -28,6 +28,6 @@ describe('checked-in route contracts', () => {
 
     expect(schema['type']).toBe('object')
     expect(schema['properties']).toHaveProperty('credit_score_range')
-    assertMcpLocalSchemaRefs(schema)
+    assertLocalSchemaRefs(schema)
   })
 })

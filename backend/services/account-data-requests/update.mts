@@ -153,15 +153,20 @@ export async function markDataRequestFailed(
   return (rowCount ?? 0) > 0
 }
 
-/** Claims one bounded page; clearing its keys makes the next scheduled run resume. */
+/**
+ * Claims a bounded page and clears its keys so the next scheduled run can advance.
+ * lock-reason: prevents: returning an S3 key already claimed by account erasure.
+ * Writer: processUserDeletionAccountDataBatch records the key in user_deletion_external_works
+ * and clears user_data_requests.s3_key in the same transaction.
+ */
 export async function expireDataRequests(
   batchSize = getDataRequestLimits().batchSize,
   requestIds?: readonly string[],
 ): Promise<string[]> {
   const { rows } = await write(sql`/* expireDataRequests */
     WITH reclaimable AS (
-      -- cross-partition: download expiry can be extended, so old request ranges can still hold live S3 keys
-      -- no-mistakes-disable-next-line postgres-required-predicates: extended export expiry can leave live keys in old ranges
+      -- cross-partition: completed exports can still hold S3 keys in older request partitions
+      -- no-mistakes-disable-next-line postgres-required-predicates: expiry is independent of the request ID partition
       SELECT id, s3_key FROM user_data_requests
       WHERE (${requestIds ?? null}::uuid[] IS NULL OR id = ANY(${requestIds ?? null}::uuid[]))
         AND completed_at IS NOT NULL

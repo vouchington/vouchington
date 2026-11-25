@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { getRetryAfterSeconds } from '@/lib/api/rate-limit-error'
+import { getRetryAfterSeconds } from '@vouchington/api-client'
 
 /** Seconds the server asks clients to wait before another email code, or 0 when absent. */
 export function readResendAfterSeconds(response: unknown): number {

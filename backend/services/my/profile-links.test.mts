@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { createTestUser } from '@voucha/test-helpers'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import {
   createProfileLink,
+  deleteProfileLink,
   listProfileLinks,
   reorderProfileLinks,
   updateProfileLink,
@@ -46,6 +48,23 @@ describe('createProfileLink', () => {
       status: 400,
       message: 'url must use http or https',
     })
+  })
+})
+
+describe('updateProfileLink', () => {
+  it('returns 404 when a concurrent deletion commits before the metadata write', async () => {
+    const user = await createTestUser()
+    const link = await createProfileLink(user.id, { link_type: 'github', handle: 'before' })
+    onTestFinished(
+      runBeforePostgresStatementForTest('/* updateProfileLink', () =>
+        deleteProfileLink(user.id, link.id),
+      ),
+    )
+
+    await expect(updateProfileLink(user.id, link.id, { handle: 'after' })).rejects.toMatchObject({
+      status: 404,
+    })
+    expect(await listProfileLinks(user.id)).toEqual([])
   })
 })
 

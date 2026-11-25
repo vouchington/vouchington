@@ -1,9 +1,9 @@
 import { getManageableList, type ListItemType, type ListVisibility } from '@services/lists'
 import type { BasicUser } from '@services/users/types'
 import { postReferenceSchema } from './entity-reference-schema.mts'
-import { successSchema } from '@vouchington/mcp-server/schema'
+import { objectSchema, successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
-import { closedObject, omitProperties } from './read-tool-output-schema.mts'
+import { omitProperties } from './read-tool-output-schema.mts'
 
 export type ListToolFields = {
   name?: string
@@ -67,6 +67,6 @@ export const LIST_ITEM_PARAMETERS = {
 // generated components. A test pins them to those routes. The staff provenance is REST-only: MCP
 // carries the public `provenance` label, which is absent for a list not created via API or MCP.
 export const LIST_RESULT_SCHEMA = successSchema({
-  list: closedObject(omitProperties('List', ['staff_provenance']), ['provenance']),
+  list: objectSchema(omitProperties('List', ['staff_provenance']), ['provenance']),
 })
 export const SUCCESS_RESULT_SCHEMA = successSchema({})

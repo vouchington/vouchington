@@ -25,6 +25,7 @@ export async function resetPostClearance(
           OR in_review_at IS NOT NULL
           OR clearance_changed_at IS NOT NULL
         )
+      -- lock-reason: prevents: recording duplicate clearance resets against the same prior state; writer: content edits and moderation clearance reset.
       FOR UPDATE
     ),
     inserted_change AS (

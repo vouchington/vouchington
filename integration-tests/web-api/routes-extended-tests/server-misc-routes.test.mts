@@ -110,8 +110,7 @@ describe('server-misc-routes', () => {
     })
 
     it('landing-page analytics endpoint returns null for missing page (returnNullForMissingEntity null path)', async () => {
-      const { returnNullForMissingEntity } =
-        await import('@/lib/api/return-null-for-missing-entity')
+      const { returnNullForMissingEntity } = await import('@vouchington/api-client')
       const result = await returnNullForMissingEntity(
         serverRoutes.serverApi.get(
           `/api/v1/my/landing-pages/${encodeURIComponent(randomUUID())}/analytics`,

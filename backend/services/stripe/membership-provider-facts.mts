@@ -9,12 +9,12 @@ import {
   StripeProviderFactVerdictError,
 } from './membership-provider-facts/snapshot.mts'
 import { insertStripeMembershipObservation } from './membership-provider-facts/observation.mts'
+import { getStripeObjectId } from '@vouchington/stripe'
 import {
   getMembershipFactForStripeEvent,
   MissingStripeMembershipFactContextError,
   type MembershipFact,
 } from './membership-provider-facts/context.mts'
-import { getStripeSubscriptionCustomerId } from './membership-sync/transaction.mts'
 
 type StripeProviderFacts = { evidenceId: string; observationId: string | null }
 
@@ -80,7 +80,7 @@ export async function recordStripeMembershipProviderFactsInTransaction(
     )
   await options.onLockedSource?.(query)
   const observedAt = options.observedAt ?? new Date()
-  const subscriptionCustomerId = getStripeSubscriptionCustomerId(subscription)
+  const subscriptionCustomerId = getStripeObjectId(subscription.customer)
   if (
     subscriptionCustomerId &&
     (subscriptionCustomerId !== fact.customer_id ||

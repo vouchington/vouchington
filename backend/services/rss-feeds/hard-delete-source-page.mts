@@ -54,7 +54,7 @@ export async function hardDeleteRssFeedSourcePage(
     return { removed: 0, hasMore: false, keys: [] }
   }
   const candidateIds = sourcePage.rows.map(row => row.rss_feed_item_id)
-  // Source locks serialize overlapping pages.
+  // lock-reason: prevents: overlapping deletion pages reconciling and publishing the same source associations; writer: hardDeleteRssFeedSourcePage
   const sourceRows = await query<{ rss_feed_item_id: string }>(
     `/* hardDeleteRssFeedSourcePage:lockSources */
     SELECT rss_feed_item_id FROM rss_feed_item_sources

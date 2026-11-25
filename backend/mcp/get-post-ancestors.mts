@@ -10,7 +10,8 @@ import {
   toMcpPostSummaries as toMcpPosts,
   type McpPostSummary as McpPost,
 } from './mcp-post-output.mts'
-import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
@@ -56,9 +57,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['posts:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/posts/:idOrSlug/ancestors' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       ancestors: { type: 'array', items: mcpPostSchema() },
-      page_info: closedObject(
+      page_info: objectSchema(
         pickProperties('PageInfo', ['has_next_page', 'start_cursor', 'end_cursor']),
       ),
     }),

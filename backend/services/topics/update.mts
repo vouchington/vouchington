@@ -68,6 +68,7 @@ export const updateTopic = async (
       if (references.length) {
         const imageQuery = options.query ?? write
         assertImageDeliveryTransaction(imageQuery)
+        // lock-reason: prevents: concurrent image edits making conflicting placement decisions on the same topic; writer: updateTopic
         const { rows: activeTopics } = await imageQuery<{ id: string }>(sql`
           /* updateTopic:lockActiveImageOwner */
           SELECT id FROM topics

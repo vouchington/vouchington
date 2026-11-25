@@ -5,7 +5,7 @@ import type { BasicUser } from '@services/users/types'
 import { hasOwnedPrivateGrant } from './list-read-access.mts'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { postReferenceSchema } from './entity-reference-schema.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 
 const ITEM_TYPES = ['post', 'rss_feed_item'] as const
 
@@ -38,7 +38,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['lists:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/lists/contains' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       list_ids: { type: 'array', items: { type: 'string' } },
     }),
   },

@@ -89,6 +89,8 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
       ON account_state.account_user_id = identity.account_user_id
       AND account_state.current_open_review_identity_id = identity.id
     WHERE identity.id = ${input.reviewId}
+    -- lock-reason: prevents: a waiting outcome using an incident count from before it acquired account state;
+    -- writer: competing review outcomes, reinstatement, and incident sync opening an account review.
     FOR UPDATE OF account_state
   `)
   const review = rows[0]

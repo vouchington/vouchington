@@ -1,13 +1,11 @@
-import { getStripeObjectNumber } from '@vouchington/stripe'
-
-export function getStripeTimestamp(subscription: unknown, field: string): Date | undefined {
-  const timestamp = getStripeObjectNumber((subscription as Record<string, unknown>)[field])
-  return timestamp == null ? undefined : new Date(timestamp * 1000)
-}
+import { getStripeObjectTimestamp } from '@vouchington/stripe'
 
 export function getStripeTerminalTimestamp(subscription: unknown): Date | undefined {
+  const record = subscription as Record<string, unknown>
   return (
-    getStripeTimestamp(subscription, 'ended_at') ?? getStripeTimestamp(subscription, 'canceled_at')
+    getStripeObjectTimestamp(record.ended_at) ??
+    getStripeObjectTimestamp(record.canceled_at) ??
+    undefined
   )
 }
 

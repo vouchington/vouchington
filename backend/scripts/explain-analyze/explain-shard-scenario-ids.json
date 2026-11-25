@@ -382,6 +382,7 @@
     "hacker-news-readmission-mostly-fresh-later",
     "hacker-news-readmission-mostly-fresh-exhausted",
     "hacker-news-retention-page",
+    "hacker-news-retention-deletes-at-cap",
     "retention-expired-oauth-authorizations",
     "retention-retained-user-identity-roots",
     "retention-retained-user-relation-identities"
@@ -602,6 +603,7 @@
     "modmail-notifications-at-cap",
     "notification-push-intent-claim-at-cap",
     "related-posts-by-url-at-cap",
-    "rss-ingest-content-at-cap"
+    "rss-ingest-content-at-cap",
+    "rss-hard-delete-sources-at-cap"
   ]
 }

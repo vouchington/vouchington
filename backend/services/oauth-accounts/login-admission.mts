@@ -12,6 +12,7 @@ export async function lockLoginCredentialAdmission(
   proof: VerifiedLoginFirstFactor,
   query: TransactionQuery,
 ): Promise<void> {
+  // lock-reason: prevents: admitting a new session or challenge after credential deletion starts; writer: account deletion.
   await query(
     '/* lockLoginCredentialAdmission:userFence */ SELECT fn_lock_active_user_for_mutation($1)',
     [currentUserId],

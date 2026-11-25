@@ -36,7 +36,7 @@ vi.mock(import('@/lib/on-error'), () => ({
   },
 }))
 
-vi.mock(import('@vouchington/api-client'), () => {
+vi.mock(import('@vouchington/api-client'), async importOriginal => {
   class ApiError extends Error {
     status: number
     constructor(message: string, status: number) {
@@ -45,7 +45,7 @@ vi.mock(import('@vouchington/api-client'), () => {
       this.status = status
     }
   }
-  return { ApiError }
+  return { ...(await importOriginal()), ApiError }
 })
 
 const mockedGetStatus = vi.mocked(getArticleSyncStatus)

@@ -30,6 +30,7 @@ export async function backfillRssFeedItemSourcePublications(
       WHERE source.published_at IS NULL
   `
   query.append(scopeCondition)
+  // lock-reason: prevents: overlapping backfills claiming the same unpublished source; writer: backfillRssFeedItemSourcePublications
   query.append(sql`
       ORDER BY source.rss_feed_id, source.rss_feed_item_id
       LIMIT ${batchSize}

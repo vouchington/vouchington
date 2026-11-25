@@ -18,6 +18,7 @@ export async function clearRssItemCategories(
       left.rss_feed_item_id.localeCompare(right.rss_feed_item_id) ||
       left.category_identity_id.localeCompare(right.category_identity_id),
   )
+  // lock-reason: prevents: category reconciliation changing a staged tuple before alias unlink clears it; writer: updateMatchedCategoriesChunk
   const { rows: locked } = await query<{ row_id: string }>(
     `/* clearRssItemCategories lockStaged */
     SELECT category.row_id

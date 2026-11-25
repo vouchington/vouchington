@@ -1,169 +1,22 @@
 import { test, expect, type Page } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
-import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
+import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
+import {
+  BANK_ACCOUNT,
+  CARD,
+  REFERRAL_PROGRAM,
+  REWARDS_PROGRAM,
+  REWARDS_PROGRAM_STATUS,
+  SOURCE,
+  TOPIC,
+  assertAboutStep,
+  assertDomainsStep,
+  assertMergeStep,
+  seed,
+  type Seeded,
+} from '../../helpers/topic-settings-route-steps.mts'
 
-test.describe('Typed topic settings route families', () => {
-  test.use({ storageState: AUTH_STATE })
-
-  test('bank-account settings preserve the owned topic and form readiness', async ({ page }) => {
-    const suffix = randomSuffix()
-    const name = `Settings bank_account ${suffix}`
-    const { id } = await insertTestTopic(name, `settings-bank-account-${suffix}`, 'bank_account')
-    await navigateTo(page, `/bank-account/${id}/settings`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await expect(page).toHaveURL(/\/settings\/about$/)
-    await navigateTo(page, `/bank-account/${id}/settings/about`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await navigateTo(page, `/bank-account/${id}/settings/behavior`)
-    await expectTopicType(page, 'bank_account')
-    await navigateTo(page, `/bank-account/${id}/settings/aliases`)
-    await addOwnedAlias(page, `route-alias-${suffix}`)
-    await navigateTo(page, `/bank-account/${id}/settings/domains`)
-    await expect(page.getByTestId('topic-settings-domains')).toBeVisible()
-    await persistOwnedDomain(page, id, suffix)
-    await navigateTo(page, `/bank-account/${id}/settings/merge`)
-    await expect(page.getByTestId('topic-settings-merge')).toContainText(name)
-    await expect(page.getByTestId('merge-topic-submit')).toBeDisabled()
-    await selectOwnedMergeDestination(page, suffix, name)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
-  })
-
-  test('card settings preserve the owned topic and form readiness', async ({ page }) => {
-    const suffix = randomSuffix()
-    const name = `Settings card ${suffix}`
-    const { id } = await insertTestTopic(name, `settings-card-${suffix}`, 'card')
-    await navigateTo(page, `/card/${id}/settings`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await expect(page).toHaveURL(/\/settings\/about$/)
-    await navigateTo(page, `/card/${id}/settings/about`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await navigateTo(page, `/card/${id}/settings/behavior`)
-    await expectTopicType(page, 'card')
-    await navigateTo(page, `/card/${id}/settings/domains`)
-    await expect(page.getByTestId('topic-settings-domains')).toBeVisible()
-    await persistOwnedDomain(page, id, suffix)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
-  })
-
-  test('rewards-program settings preserve the owned topic and form readiness', async ({ page }) => {
-    const suffix = randomSuffix()
-    const name = `Settings rewards_program ${suffix}`
-    const { id } = await insertTestTopic(
-      name,
-      `settings-rewards-program-${suffix}`,
-      'rewards_program',
-    )
-    await navigateTo(page, `/rewards-program/${id}/settings`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await expect(page).toHaveURL(/\/settings\/about$/)
-    await navigateTo(page, `/rewards-program/${id}/settings/about`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await navigateTo(page, `/rewards-program/${id}/settings/behavior`)
-    await expectTopicType(page, 'rewards_program')
-    await navigateTo(page, `/rewards-program/${id}/settings/aliases`)
-    await addOwnedAlias(page, `route-alias-${suffix}`)
-    await navigateTo(page, `/rewards-program/${id}/settings/domains`)
-    await expect(page.getByTestId('topic-settings-domains')).toBeVisible()
-    await persistOwnedDomain(page, id, suffix)
-    await navigateTo(page, `/rewards-program/${id}/settings/merge`)
-    await expect(page.getByTestId('topic-settings-merge')).toContainText(name)
-    await expect(page.getByTestId('merge-topic-submit')).toBeDisabled()
-    await selectOwnedMergeDestination(page, suffix, name)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
-  })
-
-  test('rewards-program-status settings preserve the owned topic and form readiness', async ({
-    page,
-  }) => {
-    const suffix = randomSuffix()
-    const name = `Settings rewards_program_status ${suffix}`
-    const { id } = await insertTestTopic(
-      name,
-      `settings-rewards-program-status-${suffix}`,
-      'rewards_program_status',
-    )
-    await navigateTo(page, `/rewards-program-status/${id}/settings`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await expect(page).toHaveURL(/\/settings\/about$/)
-    await navigateTo(page, `/rewards-program-status/${id}/settings/about`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await navigateTo(page, `/rewards-program-status/${id}/settings/behavior`)
-    await expectTopicType(page, 'rewards_program_status')
-    await navigateTo(page, `/rewards-program-status/${id}/settings/aliases`)
-    await addOwnedAlias(page, `route-alias-${suffix}`)
-    await navigateTo(page, `/rewards-program-status/${id}/settings/domains`)
-    await expect(page.getByTestId('topic-settings-domains')).toBeVisible()
-    await persistOwnedDomain(page, id, suffix)
-    await navigateTo(page, `/rewards-program-status/${id}/settings/merge`)
-    await expect(page.getByTestId('topic-settings-merge')).toContainText(name)
-    await expect(page.getByTestId('merge-topic-submit')).toBeDisabled()
-    await selectOwnedMergeDestination(page, suffix, name)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
-  })
-
-  test('referral-program settings preserve the owned topic and form readiness', async ({
-    page,
-  }) => {
-    const suffix = randomSuffix()
-    const name = `Settings referral_program ${suffix}`
-    const { id } = await insertTestTopic(
-      name,
-      `settings-referral-program-${suffix}`,
-      'referral_program',
-    )
-    await navigateTo(page, `/referral-program/${id}/settings`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await expect(page).toHaveURL(/\/settings\/about$/)
-    await navigateTo(page, `/referral-program/${id}/settings/about`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await navigateTo(page, `/referral-program/${id}/settings/behavior`)
-    await expectTopicType(page, 'referral_program')
-    await navigateTo(page, `/referral-program/${id}/settings/aliases`)
-    await addOwnedAlias(page, `route-alias-${suffix}`)
-    await navigateTo(page, `/referral-program/${id}/settings/domains`)
-    await expect(page.getByTestId('topic-settings-domains')).toBeVisible()
-    await persistOwnedDomain(page, id, suffix)
-    await navigateTo(page, `/referral-program/${id}/settings/merge`)
-    await expect(page.getByTestId('topic-settings-merge')).toContainText(name)
-    await expect(page.getByTestId('merge-topic-submit')).toBeDisabled()
-    await selectOwnedMergeDestination(page, suffix, name)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
-  })
-
-  test('topic settings preserve the owned topic and form readiness', async ({ page }) => {
-    const suffix = randomSuffix()
-    const name = `Settings topic ${suffix}`
-    const { id } = await insertTestTopic(name, `settings-topic-${suffix}`, 'topic')
-    await navigateTo(page, `/topic/${id}/settings/domains`)
-    await expect(page.getByTestId('topic-settings-domains')).toBeVisible()
-    await persistOwnedDomain(page, id, suffix)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
-  })
-
-  test('source settings preserve the owned topic and form readiness', async ({ page }) => {
-    const suffix = randomSuffix()
-    const name = `Settings rss_feed ${suffix}`
-    const { id } = await insertTestTopic(name, `settings-rss-feed-${suffix}`, 'rss_feed')
-    await navigateTo(page, `/source/${id}/settings`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await expect(page).toHaveURL(/\/settings\/about$/)
-    await navigateTo(page, `/source/${id}/settings/about`)
-    await expect(page.getByTestId('topic-edit-name-input')).toHaveValue(name)
-    await navigateTo(page, `/source/${id}/settings/aliases`)
-    await addOwnedAlias(page, `route-alias-${suffix}`)
-    await navigateTo(page, `/source/${id}/settings/domains`)
-    await expect(page.getByTestId('topic-settings-domains')).toBeVisible()
-    await persistOwnedDomain(page, id, suffix)
-    await navigateTo(page, `/source/${id}/settings/merge`)
-    await expect(page.getByTestId('topic-settings-merge')).toContainText(name)
-    await expect(page.getByTestId('merge-topic-submit')).toBeDisabled()
-    await selectOwnedMergeDestination(page, suffix, name)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
-  })
-})
-
-async function expectTopicType(page: Page, topicType: string): Promise<void> {
+async function assertTopicType(page: Page, topicType: string): Promise<void> {
   await expect(page.getByTestId('topic-type-section-save-topic-type')).toBeVisible()
   if (topicType === 'card') {
     await expect(page.getByTestId('type-attributes-section-submit')).toBeVisible()
@@ -181,49 +34,220 @@ async function expectTopicType(page: Page, topicType: string): Promise<void> {
   await expect(page.getByTestId('topic-allow-reviews')).toHaveAttribute('aria-checked', 'true')
 }
 
-async function addOwnedAlias(page: Page, alias: string): Promise<void> {
+async function assertOwnedAlias(page: Page, seeded: Seeded): Promise<void> {
   const input = page.getByTestId('aliases-input')
   await input.scrollIntoViewIfNeeded()
   await waitForBelowFoldHydration(page)
+  const alias = `route-alias-${seeded.suffix}`
   await input.pressSequentially(alias)
   await page.getByTestId('add-aliases-submit').click()
   await expect(page.getByTestId(`alias-row-${alias}`)).toBeVisible()
 }
 
-async function persistOwnedDomain(page: Page, id: string, suffix: string): Promise<void> {
-  const hostname = `owned-domain-${suffix}.voucha.ai`
-  const input = page.getByTestId('primary-domain-input')
-  await input.scrollIntoViewIfNeeded()
-  await waitForBelowFoldHydration(page)
-  await expect(input).toHaveValue('')
-  await input.pressSequentially(hostname)
-  const saved = page.waitForResponse(
-    response =>
-      response.url().includes(`/api/v1/topics/${id}`) &&
-      response.request().method() === 'PATCH' &&
-      response.ok(),
-  )
-  await page.getByTestId('primary-domain-save').click()
-  await saved
-  await page.reload()
-  await expect(input).toHaveValue(hostname)
-}
+test.describe('Typed topic settings route families', () => {
+  test.use({ storageState: AUTH_STATE })
 
-async function selectOwnedMergeDestination(
-  page: Page,
-  suffix: string,
-  sourceName: string,
-): Promise<void> {
-  const name = `Merge destination ${suffix}`
-  await insertTestTopic(name, `merge-destination-${suffix}`, 'topic')
-  const search = page.getByTestId('topic-autocomplete-input')
-  await search.pressSequentially(name)
-  await page.getByTestId('topic-autocomplete-item').filter({ hasText: name }).click()
-  const confirmation = page.getByTestId('merge-topic-confirmation-input')
-  await confirmation.pressSequentially(sourceName)
-  await expect(confirmation).toHaveValue(sourceName)
-  await expect(page.getByTestId('merge-topic-submit')).toBeEnabled()
-  await confirmation.press('ControlOrMeta+A')
-  await confirmation.pressSequentially('wrong confirmation')
-  await expect(page.getByTestId('merge-topic-submit')).toBeDisabled()
-}
+  test('bank-account settings redirect keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(BANK_ACCOUNT, 'redirect')
+    await navigateTo(page, `/bank-account/${seeded.id}/settings`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('bank-account settings about keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(BANK_ACCOUNT, 'about')
+    await navigateTo(page, `/bank-account/${seeded.id}/settings/about`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('bank-account settings behavior keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(BANK_ACCOUNT, 'behavior')
+    await navigateTo(page, `/bank-account/${seeded.id}/settings/behavior`)
+    await assertTopicType(page, BANK_ACCOUNT.topicType)
+  })
+
+  test('bank-account settings aliases keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(BANK_ACCOUNT, 'aliases')
+    await navigateTo(page, `/bank-account/${seeded.id}/settings/aliases`)
+    await assertOwnedAlias(page, seeded)
+  })
+
+  test('bank-account settings domains keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(BANK_ACCOUNT, 'domains')
+    await navigateTo(page, `/bank-account/${seeded.id}/settings/domains`)
+    await assertDomainsStep(page, seeded)
+  })
+
+  test('bank-account settings merge keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(BANK_ACCOUNT, 'merge')
+    await navigateTo(page, `/bank-account/${seeded.id}/settings/merge`)
+    await assertMergeStep(page, seeded)
+  })
+
+  test('card settings redirect keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(CARD, 'redirect')
+    await navigateTo(page, `/card/${seeded.id}/settings`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('card settings about keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(CARD, 'about')
+    await navigateTo(page, `/card/${seeded.id}/settings/about`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('card settings behavior keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(CARD, 'behavior')
+    await navigateTo(page, `/card/${seeded.id}/settings/behavior`)
+    await assertTopicType(page, CARD.topicType)
+  })
+
+  test('card settings domains keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(CARD, 'domains')
+    await navigateTo(page, `/card/${seeded.id}/settings/domains`)
+    await assertDomainsStep(page, seeded)
+  })
+
+  test('rewards-program settings redirect keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM, 'redirect')
+    await navigateTo(page, `/rewards-program/${seeded.id}/settings`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('rewards-program settings about keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM, 'about')
+    await navigateTo(page, `/rewards-program/${seeded.id}/settings/about`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('rewards-program settings behavior keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM, 'behavior')
+    await navigateTo(page, `/rewards-program/${seeded.id}/settings/behavior`)
+    await assertTopicType(page, REWARDS_PROGRAM.topicType)
+  })
+
+  test('rewards-program settings aliases keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM, 'aliases')
+    await navigateTo(page, `/rewards-program/${seeded.id}/settings/aliases`)
+    await assertOwnedAlias(page, seeded)
+  })
+
+  test('rewards-program settings domains keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM, 'domains')
+    await navigateTo(page, `/rewards-program/${seeded.id}/settings/domains`)
+    await assertDomainsStep(page, seeded)
+  })
+
+  test('rewards-program settings merge keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM, 'merge')
+    await navigateTo(page, `/rewards-program/${seeded.id}/settings/merge`)
+    await assertMergeStep(page, seeded)
+  })
+
+  test('rewards-program-status settings redirect keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM_STATUS, 'redirect')
+    await navigateTo(page, `/rewards-program-status/${seeded.id}/settings`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('rewards-program-status settings about keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM_STATUS, 'about')
+    await navigateTo(page, `/rewards-program-status/${seeded.id}/settings/about`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('rewards-program-status settings behavior keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM_STATUS, 'behavior')
+    await navigateTo(page, `/rewards-program-status/${seeded.id}/settings/behavior`)
+    await assertTopicType(page, REWARDS_PROGRAM_STATUS.topicType)
+  })
+
+  test('rewards-program-status settings aliases keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM_STATUS, 'aliases')
+    await navigateTo(page, `/rewards-program-status/${seeded.id}/settings/aliases`)
+    await assertOwnedAlias(page, seeded)
+  })
+
+  test('rewards-program-status settings domains keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM_STATUS, 'domains')
+    await navigateTo(page, `/rewards-program-status/${seeded.id}/settings/domains`)
+    await assertDomainsStep(page, seeded)
+  })
+
+  test('rewards-program-status settings merge keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REWARDS_PROGRAM_STATUS, 'merge')
+    await navigateTo(page, `/rewards-program-status/${seeded.id}/settings/merge`)
+    await assertMergeStep(page, seeded)
+  })
+
+  test('referral-program settings redirect keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REFERRAL_PROGRAM, 'redirect')
+    await navigateTo(page, `/referral-program/${seeded.id}/settings`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('referral-program settings about keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REFERRAL_PROGRAM, 'about')
+    await navigateTo(page, `/referral-program/${seeded.id}/settings/about`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('referral-program settings behavior keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REFERRAL_PROGRAM, 'behavior')
+    await navigateTo(page, `/referral-program/${seeded.id}/settings/behavior`)
+    await assertTopicType(page, REFERRAL_PROGRAM.topicType)
+  })
+
+  test('referral-program settings aliases keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REFERRAL_PROGRAM, 'aliases')
+    await navigateTo(page, `/referral-program/${seeded.id}/settings/aliases`)
+    await assertOwnedAlias(page, seeded)
+  })
+
+  test('referral-program settings domains keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REFERRAL_PROGRAM, 'domains')
+    await navigateTo(page, `/referral-program/${seeded.id}/settings/domains`)
+    await assertDomainsStep(page, seeded)
+  })
+
+  test('referral-program settings merge keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(REFERRAL_PROGRAM, 'merge')
+    await navigateTo(page, `/referral-program/${seeded.id}/settings/merge`)
+    await assertMergeStep(page, seeded)
+  })
+
+  test('topic settings domains keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(TOPIC, 'domains')
+    await navigateTo(page, `/topic/${seeded.id}/settings/domains`)
+    await assertDomainsStep(page, seeded)
+  })
+
+  test('source settings redirect keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(SOURCE, 'redirect')
+    await navigateTo(page, `/source/${seeded.id}/settings`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('source settings about keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(SOURCE, 'about')
+    await navigateTo(page, `/source/${seeded.id}/settings/about`)
+    await assertAboutStep(page, seeded)
+  })
+
+  test('source settings aliases keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(SOURCE, 'aliases')
+    await navigateTo(page, `/source/${seeded.id}/settings/aliases`)
+    await assertOwnedAlias(page, seeded)
+  })
+
+  test('source settings domains keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(SOURCE, 'domains')
+    await navigateTo(page, `/source/${seeded.id}/settings/domains`)
+    await assertDomainsStep(page, seeded)
+  })
+
+  test('source settings merge keeps the owned topic ready', async ({ page }) => {
+    const seeded = await seed(SOURCE, 'merge')
+    await navigateTo(page, `/source/${seeded.id}/settings/merge`)
+    await assertMergeStep(page, seeded)
+  })
+})

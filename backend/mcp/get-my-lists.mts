@@ -6,7 +6,7 @@ import { hasOwnedPrivateGrant } from './list-read-access.mts'
 import { LIST_PAGE_LIMIT, mcpListSchema, toMcpLists, type McpList } from './mcp-list-output.mts'
 import { pageInputProperties, pageProperties, type McpPage } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
@@ -34,7 +34,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['lists:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/lists' }],
-    outputSchema: foundOrNotFoundSchema(pageProperties(mcpListSchema())),
+    outputSchema: outcomeSchema('success', pageProperties(mcpListSchema())),
   },
   function:
     (currentUser: BasicUser) =>

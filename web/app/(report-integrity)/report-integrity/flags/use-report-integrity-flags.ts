@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { getPaginatedQueryKey, getApiErrorMessage } from '@vouchington/api-client'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
-import { useQueryScopedRemovals } from '@/hooks/use-query-scoped-removals'
+import { useQueryScopedRemovals } from '@vouchington/api-client/paginated-list'
 import {
   applyReportAbusePenalty,
   getReportIntegrityFlagClient,

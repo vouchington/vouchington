@@ -37,8 +37,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
  * The gates that do not depend on other notices: the operator-approved thresholds exist, the
  * submission arrived during the current on-period, and the claimant is a live, unsuspended account
  * that clears the account-age and trust minimums. A reason means a moderator must decide; the
- * notice is never dropped. Caps are checked separately, under locks, because they depend on
- * concurrent notices.
+ * notice is never dropped. The rolling caps are checked separately against committed assessments.
  */
 export async function checkAutomaticWithholdingEligibility(
   submissionId: string,

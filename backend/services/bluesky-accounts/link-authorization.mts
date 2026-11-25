@@ -28,6 +28,7 @@ export async function createBlueskyLinkAuthorization(input: {
   const authorizationId = v7()
   const expiresAt = new Date(Date.now() + BLUESKY_OAUTH_STATE_TTL_MS)
   return runWithTransaction(input.query, async query => {
+    // lock-reason: prevents: adding a link authorization after credential erasure starts; writer: account deletion.
     await query(sql`/* createBlueskyLinkAuthorization:lockActiveUser */
       SELECT fn_lock_active_user_for_mutation(${input.userId})`)
     await query(sql`/* createBlueskyLinkAuthorization */
