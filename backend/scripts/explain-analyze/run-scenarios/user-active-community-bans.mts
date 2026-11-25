@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { encodeScopedUuidCursor } from '@modules/pagination'
 import { listUserActiveCommunityBans } from '@services/communities/bans/search'
 import sql from 'sql-template-strings'
@@ -54,7 +54,7 @@ export async function runUserActiveCommunityBanCapacityScenarios(): Promise<void
         CASE WHEN ban.kind = 'other-user' THEN ${otherUserId}::uuid ELSE ${userId}::uuid END
     `)
     await write('/* analyzeUserActiveCommunityBanCapacity */ ANALYZE community_bans')
-    const { rows } = await read<{ count: number }>(
+    const { rows } = await write<{ count: number }>(
       '/* countUserActiveCommunityBanCapacity */ SELECT COUNT(*)::int AS count FROM community_bans',
     )
     const ownBanCount = fixture.filter(ban => ban.kind !== 'other-user').length
