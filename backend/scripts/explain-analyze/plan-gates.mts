@@ -45,6 +45,11 @@ function evaluateExpectation(
 ): void {
   switch (expectation.kind) {
     case 'maxProcessedRows': {
+      if (
+        expectation.captureIndex !== undefined &&
+        result.capture_index !== expectation.captureIndex
+      )
+        return
       const total = nodes
         .filter(node => baseRelationName(node) === expectation.relation)
         .reduce((sum, node) => sum + processedRows(node), 0)

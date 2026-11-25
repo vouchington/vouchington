@@ -7,6 +7,7 @@ import {
 } from '@modules/pagination'
 import { getEntityRelationTableNameOrThrow } from '@services/entity-relations/metadata'
 import type { PageInfo } from '@voucha/types/pagination'
+import sql from 'sql-template-strings'
 import { getTopicsByAnyBatch } from './get-batch.mts'
 import type { Topic } from './types.mts'
 
@@ -15,17 +16,6 @@ const TOPIC_PARENT_RELATION_TABLE = getEntityRelationTableNameOrThrow({
   predicate: 'parent',
   objectType: 'topic',
 })
-
-// Keyset order on the child id, which the (object_id, subject_id) reverse index serves directly.
-const TOPIC_CHILD_ID_PAGE_QUERY = `/* getTopicChildIdPage */
-    SELECT subject_id
-    FROM ${TOPIC_PARENT_RELATION_TABLE}
-    WHERE object_id = $1
-      AND deleted_at IS NULL
-      AND ($2::uuid IS NULL OR subject_id > $2::uuid)
-    ORDER BY subject_id ASC
-    LIMIT $3
-    `
 
 /** The `after` cursor and `limit` of a page of child topics. The limit is clamped to 1-100. */
 export const topicChildrenPaginationParser = createPaginationParser({
@@ -49,13 +39,16 @@ export async function getTopicChildrenPage(
   const afterId = pagination.after
     ? decodeScopedUuidCursor(pagination.after, scope, 'Invalid cursor format').id
     : null
-  const { rows } = await read(
-    TOPIC_CHILD_ID_PAGE_QUERY,
-    [topicId, afterId, pagination.limit + 1],
-    options,
-  )
+  const query = sql`/* getTopicChildIdPage */
+    SELECT subject_id FROM `.append(TOPIC_PARENT_RELATION_TABLE).append(sql`
+    WHERE object_id = ${topicId} AND deleted_at IS NULL
+  `)
+  // Keep the seek predicate independent so a generic plan can use it as an index condition.
+  if (afterId) query.append(sql` AND subject_id > ${afterId}`)
+  query.append(sql` ORDER BY subject_id ASC LIMIT ${pagination.limit + 1}`)
+  const { rows } = await read<{ subject_id: string }>(query, undefined, options)
   const hasNextPage = rows.length > pagination.limit
-  const childIds = rows.slice(0, pagination.limit).map(row => row.subject_id as string)
+  const childIds = rows.slice(0, pagination.limit).map(row => row.subject_id)
   const topics = childIds.length > 0 ? await getTopicsByAnyBatch(childIds, options) : []
 
   return {
