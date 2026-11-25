@@ -2394,8 +2394,8 @@ importers:
   backend/modules/bluesky-oauth:
     dependencies:
       '@atproto/oauth-client-node':
-        specifier: ^0.5.16
-        version: 0.5.16
+        specifier: ^0.5.17
+        version: 0.5.17
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../api-egress-proxy
@@ -2404,7 +2404,7 @@ importers:
         version: link:../utils
       '@vouchington/oauth-client':
         specifier: ^0.1.0
-        version: 0.1.0(@atproto/oauth-client-node@0.5.16)
+        version: 0.1.0(@atproto/oauth-client-node@0.5.17)
 
   backend/modules/csv:
     dependencies:
@@ -16189,12 +16189,12 @@ packages:
     resolution: {integrity: sha512-O9Igzy9RAWQRoH+N6xC8O6qMtQ5UR55bQqbL9a7k7Ou8Z1WV/6ePR6NOFqTIQNFd4XEHxJhGXzcGDR8eM7QdIw==}
     engines: {node: '>=22'}
 
-  '@atproto/oauth-client-node@0.5.16':
-    resolution: {integrity: sha512-fNM5LByMPR/VbSW5pLv3mIHdEelg/8UpNqyO6xh4vRUg9+y2cj9AAF+po/G7EfL7y97InLkH/yKNFt0AvGzABQ==}
+  '@atproto/oauth-client-node@0.5.17':
+    resolution: {integrity: sha512-3TDCTX//Er0yAijUdy437mr8TB/9oeVQpAQ/IfG8/3e7HQApQFAaVKY/BmOSshu0PiR8k1hgj6N2kiJVckBhYw==}
     engines: {node: '>=22'}
 
-  '@atproto/oauth-client@0.9.3':
-    resolution: {integrity: sha512-aw702CHLp9OnefcQ+UyeqCSm/C4KoSNezEo8H/FbOODGb+nff9OVyatWuteI52CdNbN54FkYKhFLL+2YFPPbYw==}
+  '@atproto/oauth-client@0.9.4':
+    resolution: {integrity: sha512-79Vls848FA9WmfWB5lrmIFM2t0XAtSG9+aRy8FrzzdwiHiqtFg/n0ag7xDnjtHSTg89kxIW4qaK2XN2dditGsg==}
     engines: {node: '>=22'}
 
   '@atproto/oauth-resolver@0.0.3':
@@ -25269,7 +25269,7 @@ snapshots:
       multiformats: 13.4.2
       zod: 3.25.76
 
-  '@atproto/oauth-client-node@0.5.16':
+  '@atproto/oauth-client-node@0.5.17':
     dependencies:
       '@atproto-labs/did-resolver': 0.3.13
       '@atproto-labs/handle-resolver-node': 0.2.17
@@ -25278,10 +25278,10 @@ snapshots:
       '@atproto/jwk': 0.7.4
       '@atproto/jwk-jose': 0.2.4
       '@atproto/jwk-webcrypto': 0.3.4
-      '@atproto/oauth-client': 0.9.3
+      '@atproto/oauth-client': 0.9.4
       '@atproto/oauth-types': 0.7.7
 
-  '@atproto/oauth-client@0.9.3':
+  '@atproto/oauth-client@0.9.4':
     dependencies:
       '@atproto-labs/did-resolver': 0.3.13
       '@atproto-labs/fetch': 0.4.2
@@ -29911,13 +29911,13 @@ snapshots:
 
   '@vouchington/memberships@0.2.0': {}
 
-  '@vouchington/oauth-client@0.1.0(@atproto/oauth-client-node@0.5.16)':
+  '@vouchington/oauth-client@0.1.0(@atproto/oauth-client-node@0.5.17)':
     dependencies:
       '@atproto-labs/fetch-node': 0.4.5
       '@atproto-labs/handle-resolver-node': 0.2.17
       '@atproto/jwk': 0.7.4
       '@atproto/jwk-jose': 0.2.4
-      '@atproto/oauth-client-node': 0.5.16
+      '@atproto/oauth-client-node': 0.5.17
 
   '@vouchington/oauth-server@0.9.0':
     dependencies:
