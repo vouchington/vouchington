@@ -3,16 +3,11 @@ import { processAuthorDeletionPublicationBatch } from '../services/post-publicat
 import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
 
 export async function reassignPostAuthorWhileClearanceResets(
-  author: { id: string; username: string | null },
+  { id, username = null }: { id: string; username?: string | null },
   reset: () => Promise<boolean>,
 ): Promise<boolean> {
   await using reassignment = await beginTransaction()
-  const { processed } = await processAuthorDeletionPublicationBatch(
-    reassignment,
-    author.id,
-    author.username,
-    1,
-  )
+  const { processed } = await processAuthorDeletionPublicationBatch(reassignment, id, username, 1)
   if (processed !== 1) throw new Error('Expected one authored post to be reassigned')
 
   const { rows } = await reassignment<{ process_id: number }>(
