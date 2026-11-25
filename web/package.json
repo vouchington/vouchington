@@ -78,7 +78,7 @@
     "geist": "^1.9.2",
     "input-otp": "^1.5.0",
     "isbot": "^5.2.3",
-    "lucide-react": "^1.74.0",
+    "lucide-react": "^1.75.0",
     "next": "^16.4.6",
     "parse5": "^8.1.1",
     "qrcode.react": "^4.2.0",
