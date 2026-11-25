@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   readTestRepeatInfringerAccountState,
+  readTestRepeatInfringerDisposition,
   readTestRepeatInfringerIncidents,
   readTestRepeatInfringerOpenReviewIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
-import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import {
+  beforePostgresTransactionQueryForTest,
+  rewritePostgresTransactionRowsForTest,
+} from '@voucha/test-helpers/injected-postgres-transactions'
 import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-incidents.mts'
@@ -87,6 +91,42 @@ describe('repeat-infringer conditional decision writes', () => {
     await expect(readTestRepeatInfringerIncidents(poster.id)).resolves.toEqual([
       expect.objectContaining({ id: incident.id, is_operative: false }),
     ])
+  })
+
+  it('rejects an already-set disposition at the write when the pre-read is stale', async () => {
+    const [poster, moderator] = await Promise.all([
+      createTestUser(),
+      createTestUser({ extraRoles: ['moderator'] }),
+    ])
+    await confirmTestRepeatInfringerNotice(poster.id, moderator)
+    const [incident] = await readTestRepeatInfringerIncidents(poster.id)
+    if (!incident) throw new Error('Expected the confirmed incident')
+    const input = {
+      currentUser: moderator,
+      incidentId: incident.id,
+      rationale: 'Staff confirmed the incident should stop counting.',
+      recordedAt: new Date(),
+    }
+    await recordCopyrightRepeatInfringerDisposition({ ...input, disposition: 'withdrawn' })
+
+    // Only the pre-read is stale. The UPDATE still sees the committed withdrawal in PostgreSQL.
+    const restore = rewritePostgresTransactionRowsForTest(
+      '/* recordCopyrightRepeatInfringerDisposition */',
+      values => values.includes(incident.id),
+      rows => rows.map(row => ({ ...row, current_disposition: null })),
+    )
+    try {
+      await expect(
+        recordCopyrightRepeatInfringerDisposition({ ...input, disposition: 'duplicate' }),
+      ).rejects.toMatchObject({ status: 409 })
+    } finally {
+      restore()
+    }
+    await expect(readTestRepeatInfringerDisposition(incident.id)).resolves.toEqual({
+      current_disposition: 'withdrawn',
+      is_operative: false,
+      history: ['withdrawn'],
+    })
   })
 
   it('rejects the second reinstatement after it has seen an effective termination', async () => {
