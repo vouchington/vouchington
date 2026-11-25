@@ -18,6 +18,7 @@ export async function linkTopicAlias(
 ): Promise<TopicAlias> {
   let previousTopicId: string | null = null
   const run = async (query: TransactionQuery) => {
+    // lock-reason: prevents: a topic/alias lock-order deadlock between fn_project_topic_aliases and a slug or hostname change; writer: updateTopic
     const { rows: topicRows } = await query<{ id: string; merged_into_topic_id: string | null }>(
       `/* linkTopicAlias lockTopic */
       SELECT id, merged_into_topic_id

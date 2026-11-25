@@ -56,6 +56,7 @@ export async function processTopicMergeBookmarkReferencePage(
     topicColumns.includes(column)
       ? `CASE WHEN s.${column} = $1::uuid THEN $2::uuid ELSE s.${column} END`
       : `s.${column}`
+  // lock-reason: prevents: choosing the surviving bookmark from a superseded source deletion state; writer: bookmarkEntity
   const { rows } = await query<{
     subject_id: string
     object_id: string

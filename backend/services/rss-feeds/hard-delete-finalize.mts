@@ -10,6 +10,7 @@ export async function finalizeHardDeleteRssFeed(
   rssFeedId: string,
 ): Promise<{ deleted: boolean; remaining: RemainingPhase | null }> {
   await using query = await beginTransaction()
+  // lock-reason: prevents: missing a concurrent feed reference during the final child checks; writer: updateRowCompleted
   const { rows: feeds } = await query<{ topic_id: string }>(
     `/* finalizeHardDeleteRssFeed:feed */
      SELECT topic_id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL FOR UPDATE`,
