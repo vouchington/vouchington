@@ -84,7 +84,11 @@ export async function searchCommunityModerationQueue(
   const wants = (candidate: CommunityModerationQueueSource) =>
     source === undefined || source === candidate
   const parts: SQLStatement[] = []
-  if (wants('report')) parts.push(buildCommunityReportQueueQuery(communityId, status))
+  if (wants('report')) {
+    parts.push(
+      buildCommunityReportQueueQuery(communityId, status, { limit: limit + 1, after: decoded }),
+    )
+  }
   // Reviews expose unpublished post titles/paths and flags are moderation signals; moderator only.
   if (includeModeratorSources && wants('community_review')) {
     parts.push(buildCommunityReviewQueueQuery(communityId))
