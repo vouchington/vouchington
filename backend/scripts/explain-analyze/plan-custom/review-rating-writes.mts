@@ -12,8 +12,8 @@ export function assertReviewRatingWriteBufferBound(result: ExplainResult): void 
   )
     throw new Error(`${result.name} must report shared buffers for the ratings insert`)
 
-  // Include BEFORE trigger work. Replanning the guard for every rating used more than
-  // 2,900 shared buffer accesses at the cap on both passes (#6401).
+  // Include BEFORE trigger work. Replanning the guard for every rating exceeded this budget
+  // on both forced-custom passes at the cap (#6401).
   if (hits + reads > 2_000)
     throw new Error(`${result.name} accessed ${hits + reads} shared buffers; expected at most 2000`)
 }
