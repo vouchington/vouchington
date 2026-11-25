@@ -6,6 +6,10 @@ import { USERS_AND_VOTES_SCENARIOS } from './scenario-manifest-users-and-votes.m
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...CORE_SCENARIOS,
   ...POSTS_AND_FEEDS_SCENARIOS,
+  'post-review-ratings-write-at-cap',
+  'post-data-point-topics-insert-at-cap',
+  'post-data-point-topics-replace-at-cap',
+  'community-application-questions-write-at-cap',
   ...SEARCH_AND_TOPICS_SCENARIOS,
   ...USERS_AND_VOTES_SCENARIOS,
   'conversation-messages-at-cap',
@@ -45,8 +49,4 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'top-hashtags-at-cap',
   'topic-children-at-cap',
   'url-embeds-at-post-page-cap',
-  'post-review-ratings-write-at-cap',
-  'post-data-point-topics-insert-at-cap',
-  'post-data-point-topics-replace-at-cap',
-  'community-application-questions-write-at-cap',
 ] as const
