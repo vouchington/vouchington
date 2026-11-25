@@ -111,7 +111,6 @@ export async function captureAliasUnlinkPrecaptureScenarios(): Promise<void> {
     for (const { phase, relation, index, deleteName, key } of phases) {
       const page = { topicAliasId: seed.alias, phase, pageCursor: '' } as TopicAliasUnlinkPage
       pinPageSize()
-      // no-mistakes-disable-next-line query-reached-per-item: four fixed phase fixtures each need their actual staged key page.
       const staged = await stageTopicAliasUnlinkPage(page)
       assert(staged.phase !== 'finalize', `${phase} fixture stages a child page`)
       assert.equal(staged.rows.length, PAGE_SIZE, `hot ${phase} fixture needs a full page`)
@@ -127,7 +126,6 @@ export async function captureAliasUnlinkPrecaptureScenarios(): Promise<void> {
           { kind: 'maxProcessedRows', relation, max: PAGE_SIZE },
         ],
       })
-      // no-mistakes-disable-next-line query-reached-per-item: one fixed real selector per phase.
       await runAndCapture(stageId, async () => {
         pinPageSize()
         const selected = await stageTopicAliasUnlinkPage(page)
@@ -143,7 +141,6 @@ export async function captureAliasUnlinkPrecaptureScenarios(): Promise<void> {
           { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 1 },
         ],
       })
-      // no-mistakes-disable-next-line query-reached-per-item: each fixed phase captures its real conditional mutation and rolls it back.
       await runAndCapture(
         writeId,
         async () => {

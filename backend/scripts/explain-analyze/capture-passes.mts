@@ -149,7 +149,7 @@ export async function captureScenarioTwice(
   const firstResults: ExplainResult[] = []
   const secondResults: ExplainResult[] = []
   for (const input of inputs) {
-    const result = await capturePlan(input, 1) // no-mistakes-disable-line query-reached-per-item: each captured fixture statement needs its own serial transaction-local EXPLAIN plan
+    const result = await capturePlan(input, 1)
     collectFirst(result)
     firstResults.push(result)
     console.log(
@@ -170,7 +170,7 @@ export async function captureScenarioTwice(
   }
 
   for (const input of inputs) {
-    const result = await capturePlan(input, 2) // no-mistakes-disable-line query-reached-per-item: repeat the same bounded scenario/mode plan on its transaction client for stability comparison
+    const result = await capturePlan(input, 2)
     repeatedResults.push(result)
     secondResults.push(result)
     assertRequiredPlanShape(result)

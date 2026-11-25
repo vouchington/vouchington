@@ -1,7 +1,14 @@
 - name: Per-item PostgreSQL and Valkey effects
   rule: query-reached-per-item
   scope: repository
-  exclude: ['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/test-helpers/**']
+  exclude:
+    [
+      '**/*.test.*',
+      '**/*.spec.*',
+      '**/__tests__/**',
+      '**/test-helpers/**',
+      'backend/scripts/explain-analyze/**',
+    ]
   options:
     exemptCappedCursorPageReads: true
     effects: [postgres, valkey]
@@ -106,141 +113,6 @@
       - {
           file: backend/scripts/native-mv-contracts/trending-http.mts,
           callee: 'insertEntityRelation',
-        }
-      # Sequential EXPLAIN captures over the literal scenarios() list and two plan modes against the disposable explain-analyze database; order attributes each captured production query to its scenario.
-      - { file: backend/scripts/explain-analyze/pruning/capture.mts, callee: 'explainAnalyze' }
-      - { file: backend/scripts/explain-analyze/pruning/capture.mts, callee: 'getPartitionLeaves' }
-      # Loops the PRUNING_PARENTS x PROOF_YEARS constants of this file in a one-off proof script against the disposable explain-analyze database.
-      - { file: backend/scripts/explain-analyze/pruning/partitions.mts, callee: 'query' }
-      # Seeds the three-row pruning fixture (years 2024-2026, pruning/fixture-ids.mts:12-14) per PRUNING_PARENTS; a fixed proof set in the disposable explain-analyze database.
-      - { file: backend/scripts/explain-analyze/pruning/seed.mts, callee: 'write' }
-      # Sequential EXPLAIN capture over the literal follower-distribution actions list; run one at a time so captured queries stay attributable.
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/follower-distributions.mts,
-          callee: 'runAndCapture',
-        }
-      # Sequential EXPLAIN capture over the literal scenario/view pairs in this file; refreshes must run one at a time to be measured.
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/materialized-view-refreshes.mts,
-          callee: 'read',
-        }
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/materialized-view-refreshes.mts,
-          callee: 'runAndCapture',
-        }
-      # Sequential EXPLAIN capture and ownership assertions over the `cases` scenario list of this file; run one at a time so captured queries stay attributable.
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
-          callee: 'analyzeMediaDeliveryReplayRelations',
-        }
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
-          callee: 'assertOwnedCandidatePage',
-        }
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
-          callee: 'countOwnedReplayAuditEvents',
-        }
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
-          callee: 'runAndCapture',
-        }
-      # Sequential EXPLAIN capture over literal feed-type, user, and sort lists in this file; run one at a time so captured queries stay attributable.
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
-          callee: 'runAndCapture',
-        }
-      # Sequential EXPLAIN capture over the literal variants, sort, and rss lists in this file; run one at a time so captured queries stay attributable.
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
-          callee: 'inspectSemanticPostSeed',
-        }
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
-          callee: 'read',
-        }
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
-          callee: 'recordSemanticPostFailure',
-        }
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
-          callee: 'runAndCapture',
-        }
-      # Sequential EXPLAIN capture over the literal limit ([1, 3]) and HYDRATION_QUERY_NAMES lists in this file; run one at a time so captured queries stay attributable.
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
-          callee: 'captureHydration',
-        }
-      - {
-          file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
-          callee: 'capturePage',
-        }
-      # Disposable explain-analyze seed database, script-only: each loop advances fixed 500- or 1000-row chunks to its seed-size count, one multi-row INSERT per chunk, and literal lists run once (maintenance.mts loops the SEEDED_ROW_COUNT_TARGETS and ANALYZE_TARGETS constants; comments-and-recently-viewed upserts one row per generated view of the seed-size count). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
-      - {
-          file: backend/scripts/explain-analyze/seed-data/comments-and-recently-viewed.mts,
-          callee: 'upsertRecentlyViewed',
-        }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/communities-and-ratings.mts,
-          callee: 'transaction',
-        }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/conversation-pagination.mts,
-          callee: 'transaction',
-        }
-      - { file: backend/scripts/explain-analyze/seed-data/crawls.mts, callee: 'transaction' }
-      - { file: backend/scripts/explain-analyze/seed-data/entities.mts, callee: 'transaction' }
-      - { file: backend/scripts/explain-analyze/seed-data/feeds.mts, callee: 'itemsTransaction' }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/follower-distributions.mts,
-          callee: 'transaction',
-        }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/individual-cards.mts,
-          callee: 'transaction',
-        }
-      - { file: backend/scripts/explain-analyze/seed-data/maintenance.mts, callee: 'write' }
-      # Seed transaction runs two fixed statements (seed-data/media-delivery-replay.mts:20,26); no per-item loop at the flagged calls. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
-      - {
-          file: backend/scripts/explain-analyze/seed-data/media-delivery-replay.mts,
-          callee: 'transaction',
-        }
-      # Disposable explain-analyze seed database, script-only: each loop advances fixed 500- or 1000-row chunks to its seed-size count, one multi-row INSERT per chunk, and literal lists run once. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed. MEMBERSHIP_PRODUCTS is a closed list; later seed files follow the same shape.
-      - { file: backend/scripts/explain-analyze/seed-data/memberships.mts, callee: 'transaction' }
-      - { file: backend/scripts/explain-analyze/seed-data/notifications.mts, callee: 'transaction' }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/point-valuations.mts,
-          callee: 'transaction',
-        }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/post-feed-shares.mts,
-          callee: 'transaction',
-        }
-      - { file: backend/scripts/explain-analyze/seed-data/relations.mts, callee: 'transaction' }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/remote-followers.mts,
-          callee: 'transaction',
-        }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/rewards-program-statuses.mts,
-          callee: 'transaction',
-        }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/spending-categories.mts,
-          callee: 'transaction',
-        }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/trending-communities.mts,
-          callee: 'transaction',
-        }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/user-removed-platform-posts.mts,
-          callee: 'transaction',
-        }
-      - {
-          file: backend/scripts/explain-analyze/seed-data/votes-and-aliases.mts,
-          callee: 'transaction',
         }
       # Dev-only login helper: loops the requested extraRoles, a short fixed persona role list, for one locally minted user (login-as/run.mts:96). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
       - { file: backend/scripts/login-as/run.mts, callee: 'addUserRole' }

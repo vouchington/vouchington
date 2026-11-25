@@ -152,7 +152,6 @@ export async function disableHackerNewsScaleReferenceAutovacuum(): Promise<void>
     })
   }
   for (const statement of statements) {
-    // no-mistakes-disable-next-line query-reached-per-item: at most 200 local reference relations need autovacuum off so a worker cannot pin buffers during cold eviction.
     await write(`/* disableHackerNewsScaleAutovacuum */ ${statement}`)
   }
 }

@@ -33,7 +33,6 @@ export async function seedReferralBenchmarkUrls(): Promise<void> {
       const urlParam = values.length
       rows.push(`($${urlParam - 1}::uuid, $${urlParam})`)
     }
-    // no-mistakes-disable-next-line query-reached-per-item: a fixed 6,900-row benchmark fixture is inserted in bounded 500-row statements.
     await transaction(
       `/* seedReferralBenchmarkUrls */ INSERT INTO urls (id, url, hostname_id, search_params)
        SELECT input.id, input.url, $1::uuid, '{}'::jsonb

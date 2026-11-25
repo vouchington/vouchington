@@ -17,7 +17,6 @@ export async function createHackerNewsScalePartitions(
     // Autovacuum is off so a worker does not pin these leaf buffers during capture. A buffer
     // another backend still has pinned is counted in eviction.skipped and does not fail the shard.
     // Statistics come from the explicit ANALYZE calls before each capture.
-    // no-mistakes-disable-next-line query-reached-per-item: exactly 24 owned monthly partitions are created once in the disposable EXPLAIN database.
     await query(
       `/* createHackerNewsScalePartition */ CREATE TABLE ${partition.name} PARTITION OF posts
        FOR VALUES FROM ('${lower}'::uuid) TO ('${upper}'::uuid)

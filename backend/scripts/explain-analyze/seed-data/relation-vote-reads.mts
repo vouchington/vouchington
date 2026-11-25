@@ -11,20 +11,17 @@ export async function seedRelationVoteReads() {
   for (const metadata of entityRelationMetadatum.filter(row => row.election)) {
     const subjectTable = entityRelationEntityTables[metadata.subject_type].foreign_key_table
     const objectTable = entityRelationEntityTables[metadata.object_type].foreign_key_table
-    // no-mistakes-disable-next-line query-reached-per-item: fixed elected-family seed loop creates distinct FK-valid parent and vote fixtures with bounded noise rows
     const { rows: subjects } = await transaction<{ id: string }>(
       `/* seedRelationVoteReads */ SELECT id FROM ${subjectTable} ORDER BY id OFFSET 2 LIMIT 1`,
     )
     const subjectId = subjects[0]?.id
     if (!subjectId) throw new Error(`Missing ${subjectTable} relation-vote seed subject`)
-    // no-mistakes-disable-next-line query-reached-per-item: fixed elected-family seed loop creates distinct FK-valid parent and vote fixtures with bounded noise rows
     const { rows: objects } = await transaction<{ id: string }>(
       `/* seedRelationVoteReads */ SELECT id FROM ${objectTable} WHERE id <> $1 ORDER BY id OFFSET 3 LIMIT 1`,
       [subjectId],
     )
     const objectId = objects[0]?.id
     if (!objectId) throw new Error(`Missing ${objectTable} relation-vote seed object`)
-    // no-mistakes-disable-next-line query-reached-per-item: fixed elected-family seed loop creates distinct FK-valid parent and vote fixtures with bounded noise rows
     const { rows: relations } = await transaction<{ id: string }>(
       `/* seedRelationVoteReads */ WITH inserted AS (
         INSERT INTO ${metadata.table_name} (subject_id, object_id, created_by_id)
@@ -39,7 +36,6 @@ export async function seedRelationVoteReads() {
       seedUuid(3, '01'),
       ...Array.from({ length: 1000 }, (_, index) => seedUuid(index + 1000, '01')),
     ]
-    // no-mistakes-disable-next-line query-reached-per-item: fixed elected-family seed loop creates distinct FK-valid parent and vote fixtures with bounded noise rows
     await transaction(
       `/* seedRelationVoteReads */ INSERT INTO ${metadata.table_name}__votes
         (subject_id, entity_relation_id, user_id, score)

@@ -114,7 +114,6 @@ export async function runLateCommunityHotScenarios(): Promise<void> {
       ...scenario.contract,
       seededRows: POST_DISCOVERY_FIXTURE_SEEDED_ROWS,
     })
-    // no-mistakes-disable-next-line query-reached-per-item: capture both pages separately.
     await runAndCapture(scenario.id, scenario.run, undefined, 'buildPostSearchQuery')
   }
 }

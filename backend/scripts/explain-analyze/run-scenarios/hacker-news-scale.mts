@@ -66,32 +66,25 @@ export async function measureHackerNewsScaleFixture(
   }
   try {
     for (const shape of HACKER_NEWS_SCALE_SHAPES) {
-      // no-mistakes-disable-next-line query-reached-per-item: three fixed owned data distributions each need their own committed fact state and serial EXPLAIN captures.
       await setHackerNewsScaleShape(fixture, shape)
-      // no-mistakes-disable-next-line query-reached-per-item: each fixed shape needs fresh participating-relation statistics after its facts change.
       const statistics = await analyzeHackerNewsScaleFixture(fixture)
-      // no-mistakes-disable-next-line query-reached-per-item: independently verify each fixed shape's exact million-row density and negative witness.
       const truth = await verifyHackerNewsScaleShape(fixture, shape)
       observations.push({ shape, statistics, truth })
       for (const sort of HACKER_NEWS_SCALE_SORTS) {
         for (const window of HACKER_NEWS_SCALE_WINDOWS) {
           const prefix = `hacker-news-scale-${shape}-${sort}-${window}`
-          // no-mistakes-disable-next-line query-reached-per-item: a fixed sort/window matrix needs independent cursor boundaries from its small known matching-ID set.
           const pages = await hackerNewsScalePages(fixture, shape, sort, window)
           for (const page of pages) {
             observations.push({ scenario: `${prefix}-${page.name}`, expectedIds: page.expectedIds })
             for (const cache of HACKER_NEWS_SCALE_CACHE_STATES) {
-              // no-mistakes-disable-next-line query-reached-per-item: bounded cold/warm page scenarios run serially because capture and Date instrumentation are process-global.
               await captureHackerNewsScalePage(context, prefix, page, cache)
             }
-            // no-mistakes-disable-next-line query-reached-per-item: compare each fixed page with the diagnostic former join predicate, never weakening live gates.
             await captureHackerNewsScaleReference(context, prefix, page)
           }
         }
       }
       if (shape === 'related') {
         for (const cache of HACKER_NEWS_SCALE_CACHE_STATES) {
-          // no-mistakes-disable-next-line query-reached-per-item: capture the single owned heavy post's cold/warm real sidecar query independently.
           await captureHackerNewsUnvotedSidecar(context, cache)
         }
       }

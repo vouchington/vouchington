@@ -38,7 +38,6 @@ export async function seedIngestionRawPages(): Promise<void> {
         friends_synced_at: eligible ? null : new Date(postSeedTimestampMs(0)).toISOString(),
       }
     })
-    // no-mistakes-disable-next-line query-reached-per-item: three fixed provider tables each receive one set-based JSON cohort insert.
     await write(
       `/* seedIngestionRawPages */ INSERT INTO ${provider.name}_accounts
         (id, ${provider.idColumn}, ${provider.dataColumn}, user_id, access_token_ciphertext, friends_synced_at)

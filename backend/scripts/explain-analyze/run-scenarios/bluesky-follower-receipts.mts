@@ -84,7 +84,6 @@ export async function runBlueskyFollowerReceiptScenarios(): Promise<void> {
       ['bluesky-follower-receipts-continuation', seedUuid(100 + pageSize - 1, '01')],
       ['bluesky-follower-receipts-empty', seedUuid(100 + RECEIPT_COUNT, '01')],
     ] as const) {
-      // no-mistakes-disable-next-line query-reached-per-item: three fixed plan scenarios require serialized process-global capture
       await runAndCapture(
         id,
         async () => {
