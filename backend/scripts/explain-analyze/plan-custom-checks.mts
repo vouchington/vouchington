@@ -14,6 +14,7 @@ import { assertPostTopicMembershipIsReused } from './plan-custom/post-topic-memb
 import { assertTopicViewerInputsAreBounded } from './plan-custom/topic-viewer-bounded-inputs.mts'
 import { assertPostCreationBypassPointRead } from './plan-custom/post-creation-bypass.mts'
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-custom/remote-followers.mts'
+import { assertReviewRatingWriteBufferBound } from './plan-custom/review-rating-writes.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-custom/review-succession.mts'
 import { assertRssFeedPageWorkloadIsBounded } from './plan-custom/rss-feed-page-workload.mts'
 import { assertRssRecencyLateCursorPlan } from './plan-custom/rss-recency-cursor.mts'
@@ -46,6 +47,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   postTopicMembership: assertPostTopicMembershipIsReused,
   topicViewerBoundedInputs: assertTopicViewerInputsAreBounded,
   remoteFollowers: assertRemoteFollowerPagePlanShapeIfApplicable,
+  reviewRatingWriteBufferBound: assertReviewRatingWriteBufferBound,
   reviewSuccession: assertReviewSuccessionCandidatePlanIfApplicable,
   rssFeedPageWorkload: assertRssFeedPageWorkloadIsBounded,
   rssHardDeleteRecoverySeek: assertRssHardDeleteRecoverySeek,

@@ -2,36 +2,55 @@
 CREATE OR REPLACE FUNCTION fn_ensure_active_topic_references()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+-- The merge reservation and active-topic checks are keyed by topic id. Reuse their plans per row.
+SET plan_cache_mode = force_generic_plan
 AS $$
 DECLARE
   reference_column TEXT;
   referenced_topic_id UUID;
   previous_topic_id UUID;
   reserved_topic_id UUID;
+  candidate_ids UUID[];
 BEGIN
   FOREACH reference_column IN ARRAY TG_ARGV LOOP
     -- Inspect both sides: a deletion or non-key edit can change a merge preflight or capture.
     referenced_topic_id := NULL;
     previous_topic_id := NULL;
     IF TG_OP <> 'DELETE' THEN
-      EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;
+      IF reference_column = 'topic_id' THEN
+        referenced_topic_id := NEW.topic_id;
+      ELSE
+        EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;
+      END IF;
     END IF;
     IF TG_OP <> 'INSERT' THEN
-      EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;
+      IF reference_column = 'topic_id' THEN
+        previous_topic_id := OLD.topic_id;
+      ELSE
+        EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;
+      END IF;
     END IF;
-    FOR reserved_topic_id IN
-      SELECT DISTINCT id FROM unnest(ARRAY[previous_topic_id, referenced_topic_id]) AS ids(id)
-      WHERE id IS NOT NULL ORDER BY id
-    LOOP
-      IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' AND EXISTS (
-        SELECT 1 FROM topic_merge_parent_ancestors ancestor
-        JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id
-        WHERE ancestor.topic_id = reserved_topic_id
-          AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL
-          AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')
-      ) THEN
-        RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',
-          DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;
+    IF previous_topic_id IS NULL OR referenced_topic_id IS NULL OR previous_topic_id = referenced_topic_id THEN
+      candidate_ids := ARRAY[COALESCE(referenced_topic_id, previous_topic_id)];
+    ELSE
+      candidate_ids := ARRAY[
+        LEAST(previous_topic_id, referenced_topic_id),
+        GREATEST(previous_topic_id, referenced_topic_id)
+      ];
+    END IF;
+    FOREACH reserved_topic_id IN ARRAY candidate_ids LOOP
+      IF reserved_topic_id IS NULL THEN CONTINUE; END IF;
+      IF TG_TABLE_NAME = 'relation__topic__parent__topic' AND reference_column = 'subject_id' THEN
+        IF EXISTS (
+          SELECT 1 FROM topic_merge_parent_ancestors ancestor
+          JOIN topic_merge_operations merge_operation ON merge_operation.id = ancestor.operation_id
+          WHERE ancestor.topic_id = reserved_topic_id
+            AND merge_operation.completed_at IS NULL AND merge_operation.failed_at IS NULL
+            AND merge_operation.id::TEXT IS DISTINCT FROM COALESCE(current_setting('voucha.topic_merge_operation_id', TRUE), '')
+        ) THEN
+          RAISE EXCEPTION USING ERRCODE = 'V0409', MESSAGE = 'Topic parent ancestry is reserved by a merge',
+            DETAIL = json_build_object('code', 'topic_merge_in_progress', 'topic_id', reserved_topic_id)::TEXT;
+        END IF;
       END IF;
       IF EXISTS (
         SELECT 1 FROM topic_merge_operations merge_operation
