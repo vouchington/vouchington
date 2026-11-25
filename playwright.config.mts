@@ -1,10 +1,10 @@
 import { defineConfig } from '@playwright/test'
-import { CHROMIUM_USE, createPlaywrightConfig } from './playwright/config/shared-config.mts'
+import { CHROMIUM_USE, createVouchaPlaywrightConfig } from './playwright/config/shared-config.mts'
 import { validatePlaywrightConfigTimeouts } from './playwright/config/test-timeout.mts'
 
 export default validatePlaywrightConfigTimeouts(
   defineConfig(
-    createPlaywrightConfig({
+    createVouchaPlaywrightConfig({
       testDir: './playwright/tests',
       timeout: 30_000,
       junitOutputFile: 'test-report.junit.xml',

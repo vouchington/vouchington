@@ -2,31 +2,37 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
+import {
+  extractPartialBatchSourceRef,
+  hasRelatedIssuesNoSourcePair,
+} from 'vouchington-tooling/pr-description'
 
 import { renderNoSourceIssue, validatePullRequest } from './agent-policy.mts'
-import { isDirectUserRequestNoSourceBody } from './pr-description/direct-user-request.mts'
-import { extractPartialBatchSourceRef } from './pr-description/partial-batch.mts'
-import { isScheduledPromptNoSourceBody } from './pr-description/scheduled-no-source.mts'
+import {
+  DIRECT_USER_REQUEST_NO_SOURCE_TEMPLATE,
+  PARTIAL_BATCH_TEMPLATE,
+  SCHEDULED_PROMPT_NO_SOURCE_TEMPLATE,
+} from './pr-description/policy.mts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
 describe('renderNoSourceIssue', () => {
   it.each([
-    ['direct user request', isDirectUserRequestNoSourceBody, ''],
+    ['direct user request', DIRECT_USER_REQUEST_NO_SOURCE_TEMPLATE, ''],
     [
       'scheduled prompt run',
-      isScheduledPromptNoSourceBody,
+      SCHEDULED_PROMPT_NO_SOURCE_TEMPLATE,
       'Workspace setup: Triage loop scheduled prompt\n',
     ],
-  ])('renders the %s pair the body policy accepts', (reason, accepts, setup) => {
+  ])('renders the %s pair the body policy accepts', (reason, template, setup) => {
     const body = `## Related issues\n\n${renderNoSourceIssue({ reason })}\n\n${setup}`
-    expect(accepts(body)).toBe(true)
+    expect(hasRelatedIssuesNoSourcePair(body, template)).toBe(true)
   })
 
   it('renders the partial batch after its refs entry as the source the body policy reads', () => {
     const statement = renderNoSourceIssue({ reason: 'partial batch' })
     const body = `## Related issues\n\n- Refs #123 — Batch plan; later batches finish it.\n${statement}\n\n## Details\n`
-    expect(extractPartialBatchSourceRef(body)?.key).toBe('#123')
+    expect(extractPartialBatchSourceRef(body, PARTIAL_BATCH_TEMPLATE)?.key).toBe('#123')
   })
 
   it('rejects any other reason before calling GitHub', async () => {

@@ -1,26 +1,19 @@
-import { auditProjectCompletion } from 'vouchington-tooling/github-projects'
+import type { RunTextCommand } from 'vouchington-tooling/gh-cli'
+import { auditProjectCompletion, type ClosingIssueRef } from 'vouchington-tooling/github-projects'
+import type { ClosingIssueForAudit } from 'vouchington-tooling/pr-description'
 
-import type { RunGh } from './issue-closure.mts'
-import type { ClosingIssueForAudit } from './validate.mts'
+function toClosingIssueRef({ issue, repo }: ClosingIssueForAudit): ClosingIssueRef {
+  return { number: issue.number, repo }
+}
 
 /**
- * Composition point for the pull-request policy (`dev/agent-policy/pull-request.mts`): adapts `vouchington-tooling/github-projects`'s
- * `auditProjectCompletion` to the `(closingIssues) => Promise<string[]>` shape `validate.mts`
- * expects — no project-querying logic lives here, only the `ClosingIssueForAudit` -> `{ number,
- * repo }` shape adaptation. Purely advisory: unlike `createMilestoneAuditor`, its output never
- * joins `result.errors`, see `validate.mts`'s `advisories` field.
+ * Composition point for the pull-request policy (`dev/agent-policy/pull-request.mts`): adapts
+ * `vouchington-tooling/github-projects`'s `auditProjectCompletion` to the
+ * `(closingIssues) => Promise<string[]>` shape `validatePrBodyWithIssueReferences` expects.
  */
 export function createProjectAuditor(
-  runGh: RunGh,
+  runGh: RunTextCommand,
   repo: string,
 ): (closingIssues: ClosingIssueForAudit[]) => Promise<string[]> {
-  return closingIssues =>
-    auditProjectCompletion(
-      runGh,
-      repo,
-      closingIssues.map(({ issue, repo: issueRepo }) => ({
-        number: issue.number,
-        repo: issueRepo,
-      })),
-    )
+  return closingIssues => auditProjectCompletion(runGh, repo, closingIssues.map(toClosingIssueRef))
 }

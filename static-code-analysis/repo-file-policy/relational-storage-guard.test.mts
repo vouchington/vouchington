@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { SchemaSnapshot, SchemaTableSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
+import { checkRelationalStorage } from 'vouchington-tooling/relational-storage'
 
-import { checkRelationalStorage } from './relational-storage-guard.mts'
+import { RELATIONAL_STORAGE_CATALOG } from './relational-storage-catalog.mts'
+import { SCHEMA_SNAPSHOT_PATH } from './schema-snapshot-loader.mts'
 import { emptySchemaSnapshot, plainSnapshotTable } from './schema-snapshot-test-fixtures.mts'
 import { setupRepoFilePolicyTest } from '../test-helpers/repo-file-policy-fixtures.mts'
 
@@ -19,12 +21,16 @@ function column(type: string, generatedExpression: string | null = null) {
   } as const
 }
 
-function foreignKey(columnName: string): SchemaTableSnapshot['foreignKeys'][string] {
+function foreignKey(
+  columnName: string,
+  referencedTable = 'owners',
+  referencedColumn = 'id',
+): SchemaTableSnapshot['foreignKeys'][string] {
   return {
     columns: [columnName],
-    definition: `FOREIGN KEY (${columnName}) REFERENCES owners (id)`,
-    referencedTable: 'owners',
-    referencedColumns: ['id'],
+    definition: `FOREIGN KEY (${columnName}) REFERENCES ${referencedTable} (${referencedColumn})`,
+    referencedTable,
+    referencedColumns: [referencedColumn],
     onUpdate: 'no action',
     onDelete: 'restrict',
     validated: true,
@@ -41,81 +47,19 @@ function snapshot(
   }) as SchemaSnapshot
 }
 
-describe('relational storage guard', () => {
-  it.each(['json', 'jsonb', 'json[]', 'jsonb[]', 'json[][]', 'jsonb[][]'])(
-    'accepts %s documents without typing each field',
-    type => {
-      expect(
-        checkRelationalStorage(snapshot('new_records', { facts: column(type) }), {
-          enforceCatalogFreshness: false,
-        }),
-      ).toEqual([])
-    },
-  )
+const noFreshness = {
+  snapshotPath: SCHEMA_SNAPSHOT_PATH,
+  catalog: RELATIONAL_STORAGE_CATALOG,
+  enforceCatalogFreshness: false,
+}
 
-  it('does not classify unrelated scalar and array types as JSON', () => {
-    expect(
-      checkRelationalStorage(
-        snapshot('new_records', { label: column('text'), labels: column('text[]') }),
-        { enforceCatalogFreshness: false },
-      ),
-    ).toEqual([])
-  })
+const withFreshness = {
+  snapshotPath: SCHEMA_SNAPSHOT_PATH,
+  catalog: RELATIONAL_STORAGE_CATALOG,
+}
 
-  it('accepts a JSON document and rejects a UUID array, a missing FK, and an encoded reference', () => {
-    const result = checkRelationalStorage(
-      snapshot('new_records', {
-        facts: column('jsonb'),
-        topic_ids: column('uuid[]'),
-        topic_id: column('uuid'),
-        target_uuid: column('uuid'),
-        work_key: column('text'),
-      }),
-      { enforceCatalogFreshness: false },
-    )
-    expect(result).toEqual([
-      expect.stringContaining('new_records.topic_ids: UUID array relationship'),
-      expect.stringContaining('new_records.topic_id: UUID reference without a target foreign key'),
-      expect.stringContaining(
-        'new_records.target_uuid: UUID reference without a target foreign key',
-      ),
-      expect.stringContaining('new_records.work_key: encoded entity reference'),
-    ])
-  })
-
-  it('rejects primary and unique UUID references without a target FK', () => {
-    const value = snapshot('child_records', { owner_id: column('uuid') })
-    value.tables.child_records.primaryKey = {
-      columns: ['owner_id'],
-      definition: 'PRIMARY KEY (owner_id)',
-    }
-    value.tables.child_records.uniqueConstraints.owner_unique = {
-      columns: ['owner_id'],
-      definition: 'UNIQUE (owner_id)',
-    }
-    expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).toEqual(
-      expect.arrayContaining([expect.stringContaining('child_records.owner_id')]),
-    )
-  })
-
-  it('accepts a concrete composite FK', () => {
-    const value = snapshot('child_records', {
-      owner_id: column('uuid'),
-      owner_month: column('date'),
-    })
-    value.tables.child_records.foreignKeys.owner_fk = {
-      columns: ['owner_id', 'owner_month'],
-      definition: 'FOREIGN KEY (owner_id, owner_month) REFERENCES owners (id, month)',
-      referencedTable: 'owners',
-      referencedColumns: ['id', 'month'],
-      onUpdate: 'no action',
-      onDelete: 'restrict',
-      validated: true,
-    }
-    expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).toEqual([])
-  })
-
-  it('accepts the exact reviewed generated alias and rejects unrelated expressions', () => {
+describe('relational storage catalog wiring', () => {
+  it('accepts the reviewed generated FK alias on curated_aside_items.entity_id', () => {
     const value = snapshot('curated_aside_items', {
       topic_id: column('uuid'),
       rss_feed_id: column('uuid'),
@@ -127,57 +71,49 @@ describe('relational storage guard', () => {
     }
     value.tables.curated_aside_items.checkConstraints.chk_curated_aside_items__one_target =
       'CHECK ((num_nonnulls(topic_id, rss_feed_id, community_id) = 1))'
-    expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).toEqual([])
-    value.tables.curated_aside_items.columns.entity_id.generatedExpression =
-      'COALESCE(gen_random_uuid(), topic_id)'
-    expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).toEqual(
-      expect.arrayContaining([expect.stringContaining('curated_aside_items.entity_id')]),
-    )
+    expect(checkRelationalStorage(value, noFreshness)).toEqual([])
   })
 
-  it('rejects a type discriminator paired with a UUID or encoded target key', () => {
-    const value = snapshot('new_records', {
-      target_kind: column('text'),
-      target_id: column('uuid'),
-      work_key: column('text'),
+  it('accepts the reviewed generated self-root alias on urls.canonical_root_id', () => {
+    const value = snapshot('urls', {
+      id: column('uuid'),
+      canonical_url_id: column('uuid'),
+      canonical_root_id: column(
+        'uuid',
+        'CASE WHEN (canonical_url_id IS NULL) THEN id ELSE NULL::uuid END',
+      ),
     })
-    expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('new_records.target_id'),
-        expect.stringContaining('new_records.work_key'),
-      ]),
+    value.tables.urls.primaryKey = { columns: ['id'], definition: 'PRIMARY KEY (id)' }
+    value.tables.urls.columns.id.defaultExpression = 'uuidv7()'
+    value.tables.urls.foreignKeys.urls_canonical_url_id_fkey = foreignKey(
+      'canonical_url_id',
+      'urls',
+      'canonical_root_id',
     )
+    expect(checkRelationalStorage(value, noFreshness)).toEqual([])
   })
 
   it('rejects the retired copyright placement key without flagging unrelated display keys', () => {
     expect(
       checkRelationalStorage(
         snapshot('copyright_notice_targets', { placement_key: column('text') }),
-        { enforceCatalogFreshness: false },
+        noFreshness,
       ),
     ).toEqual([expect.stringContaining('copyright_notice_targets.placement_key')])
     expect(
-      checkRelationalStorage(snapshot('display_cards', { placement_key: column('text') }), {
-        enforceCatalogFreshness: false,
-      }),
-    ).toEqual([])
-  })
-
-  it('accepts copyright lifecycle JSON', () => {
-    expect(
       checkRelationalStorage(
-        snapshot('copyright_notice_lifecycle_changes', { metadata: column('jsonb') }),
-        { enforceCatalogFreshness: false },
+        snapshot('display_cards', { placement_key: column('text') }),
+        noFreshness,
       ),
     ).toEqual([])
   })
 
   it('flags stale catalog entries and accepts exact reviewed opaque JSON', () => {
     const value = snapshot('stripe_events', { payload: column('jsonb') })
-    const currentErrors = checkRelationalStorage(value, { enforceCatalogFreshness: false })
-    expect(currentErrors).toEqual([])
-    const staleErrors = checkRelationalStorage(value)
-    expect(staleErrors).toEqual(expect.arrayContaining([expect.stringContaining('stale')]))
+    expect(checkRelationalStorage(value, noFreshness)).toEqual([])
+    expect(checkRelationalStorage(value, withFreshness)).toEqual(
+      expect.arrayContaining([expect.stringContaining('stale')]),
+    )
   })
 })
 

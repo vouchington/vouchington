@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test, type Page } from '../../helpers/test.mts'
-import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
-import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
+import { PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS } from '../../helpers/browser-state.mts'
+import {
+  navigateTo,
+  randomSuffix,
+  resetAnonymousBrowserStateBeforeNavigation,
+} from 'vouchington-tooling/playwright'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
 import {
   insertTestImage,
@@ -20,7 +24,7 @@ test.describe('Signed-out copyright notice filing', () => {
   test('a missing post gets the same not-found copy and points to the form, not to email', async ({
     page,
   }) => {
-    await resetAnonymousBrowserStateBeforeNavigation(page)
+    await resetAnonymousBrowserStateBeforeNavigation(page, PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS)
     await navigateTo(page, '/copyright/notices/new')
     await expect(page.getByTestId('copyright-notice-form-submit')).toBeAttached()
     await expect(page.getByTestId('copyright-notice-target-picker-resolve')).toBeAttached()
@@ -59,7 +63,7 @@ test.describe('Signed-out copyright notice filing', () => {
       }),
     )
 
-    await resetAnonymousBrowserStateBeforeNavigation(page)
+    await resetAnonymousBrowserStateBeforeNavigation(page, PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS)
     await navigateTo(page, '/copyright/notices/new')
     await page.getByLabel('Full legal name').pressSequentially(`Rights Holder ${suffix}`)
     await page.getByLabel('Mailing address').pressSequentially('1 Example Street, Springfield')

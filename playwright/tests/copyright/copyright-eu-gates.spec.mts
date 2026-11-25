@@ -5,8 +5,11 @@ import {
   type Locator,
   type Page,
 } from '../../helpers/test.mts'
-import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
-import { navigateTo } from 'vouchington-tooling/playwright'
+import { PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS } from '../../helpers/browser-state.mts'
+import {
+  navigateTo,
+  resetAnonymousBrowserStateBeforeNavigation,
+} from 'vouchington-tooling/playwright'
 import { loginAsMfaUser, loginAsUser } from '../../helpers/auth.mts'
 import { revealOwnedQueueItem } from '../../helpers/copyright-queue.mts'
 import {
@@ -29,7 +32,7 @@ test.describe('EU copyright navigation with unapproved intake', () => {
   test('blocked EU filing leaves browser history usable and keeps the US form available', async ({
     page,
   }) => {
-    await resetAnonymousBrowserStateBeforeNavigation(page)
+    await resetAnonymousBrowserStateBeforeNavigation(page, PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS)
     await navigateTo(page, '/copyright')
     await expect(
       page.getByRole('link', { name: 'Submit an EU copyright notice', exact: true }),
@@ -48,7 +51,7 @@ test.describe('EU copyright navigation with unapproved intake', () => {
   test('a complaint navigation cannot expose case controls before sign-in and the login input hydrates', async ({
     page,
   }) => {
-    await resetAnonymousBrowserStateBeforeNavigation(page)
+    await resetAnonymousBrowserStateBeforeNavigation(page, PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS)
     const noticeId = crypto.randomUUID()
     await navigateTo(page, `/copyright/notices/${noticeId}/complaint`)
     await expect(page).toHaveURL(/\/login(?:\?|$)/)
@@ -98,7 +101,7 @@ test.describe('EU copyright controls with an approved policy', () => {
   }
 
   test('the EU notice form is offered', async ({ page }) => {
-    await resetAnonymousBrowserStateBeforeNavigation(page)
+    await resetAnonymousBrowserStateBeforeNavigation(page, PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS)
     await navigateTo(page, '/copyright/eu-notices/new')
     await expect(page.getByTestId('copyright-eu-notice-form-submit')).toBeAttached()
   })

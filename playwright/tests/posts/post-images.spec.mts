@@ -1,7 +1,11 @@
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { TEST_PNG, navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { removeLocalStorageKeys } from '../../helpers/browser-state.mts'
+import {
+  TEST_PNG,
+  navigateTo,
+  randomSuffix,
+  removeLocalStorageKeys,
+} from 'vouchington-tooling/playwright'
 import {
   insertTestImage,
   insertTestPostImage,

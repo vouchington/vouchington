@@ -1,19 +1,21 @@
 import { processDiffCommand, runGh, runGit } from 'vouchington-tooling/gh-cli'
 import {
+  createAppRouterPathParser,
+  createDiffSummary,
+  createLocalPackageJsonReader,
+  currentRepo,
+  reduceDiffBlock,
+  runAdvisorySupersessionSearch,
+  sanitizedLines,
+  type DiffSummary,
+} from 'vouchington-tooling/pr-description'
+import {
   exceedsLargeDiffThreshold,
   type DiffLineChanges,
   type LargeDiffThresholds,
 } from 'vouchington-tooling/pull-request-diff'
 
-import {
-  createDiffSummary,
-  reduceDiffBlock,
-  type DiffSummary,
-} from '../pr-description/diff-summary.mts'
-import { createLocalPackageJsonReader } from '../pr-description/package-json-source.mts'
-import { currentRepo } from '../pr-description/related-issues.mts'
-import { sanitizedLines } from '../pr-description/sanitized-lines.mts'
-import { runAdvisorySupersessionSearch } from '../pr-description/supersession.mts'
+const parseRouteFromPath = createAppRouterPathParser('web/app')
 
 /**
  * Large additions are the trigger to split a PR rather than ship it whole. Dependency, not size, decides whether that
@@ -86,7 +88,7 @@ function hasLargeDiffAcknowledgement(body: string): boolean {
 async function branchDiffSummary(base: string): Promise<DiffSummary> {
   const summary = createDiffSummary()
   await processDiffCommand({ executable: 'git', args: ['diff', `origin/${base}...HEAD`] }, block =>
-    reduceDiffBlock(summary, block),
+    reduceDiffBlock(summary, block, { parseRouteFromPath }),
   )
   return summary
 }
