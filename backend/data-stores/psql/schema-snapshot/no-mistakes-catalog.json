@@ -92712,6 +92712,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_oauth_grants__user_active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_grants__user_active ON public.oauth_grants USING btree (user_id, id DESC NULLS LAST) WHERE (revoked_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(revoked_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "oauth_grants_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,

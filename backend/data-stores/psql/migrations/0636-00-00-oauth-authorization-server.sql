@@ -239,6 +239,9 @@ ON oauth_grants (client_id, id);
 CREATE INDEX IF NOT EXISTS idx_oauth_grants__user
 ON oauth_grants (user_id, id);
 
+CREATE INDEX IF NOT EXISTS idx_oauth_grants__user_active
+ON oauth_grants (user_id, id DESC NULLS LAST) WHERE revoked_at IS NULL;
+
 -- Proposed default: revoked grants are eligible after 90 days.
 CREATE INDEX IF NOT EXISTS idx_oauth_grants__retention
 ON oauth_grants (revoked_at, id) WHERE revoked_at IS NOT NULL;
