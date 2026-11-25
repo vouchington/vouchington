@@ -96,8 +96,7 @@ export async function runAccountHistoryScenarios(): Promise<void> {
     registerScenarioContract('account-referral-clicks-at-cap', {
       expectations: [
         { kind: 'noSeqScan', relation: 'session_referral_attributions' },
-        // Generic walks other referrers' clicks in the live leaf. https://github.com/vouchington/vouchington/issues/6406
-        { kind: 'maxProcessedRows', relation: 'session_referral_attributions', max: 4_901 },
+        { kind: 'maxProcessedRows', relation: 'session_referral_attributions', max: LIMIT + 1 },
       ],
       crossPartition: {
         session_referral_attributions:

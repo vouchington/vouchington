@@ -1009,8 +1009,9 @@ COMMENT ON INDEX idx_session_referral_attributions__session_referrer_id IS 'Find
 COMMENT ON INDEX idx_session_referral_attributions__unconverted_pair IS 'Finds the latest unconverted click for the single-row signup update.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__referrer_id
-  ON session_referral_attributions (referrer_user_id)
+  ON session_referral_attributions (referrer_user_id, id DESC)
   WHERE referrer_user_id IS NOT NULL;
+COMMENT ON INDEX idx_session_referral_attributions__referrer_id IS 'Pages through one referrer''s clicks in descending ID order and supports referrer foreign key checks.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__user_id
   ON session_referral_attributions (user_id)
