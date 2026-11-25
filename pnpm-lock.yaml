@@ -3865,6 +3865,9 @@ importers:
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../services/moderation-reports
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../services/moderator-actions
       '@services/modmail':
         specifier: workspace:^
         version: link:../services/modmail
