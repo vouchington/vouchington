@@ -19,15 +19,16 @@ export const CHILD_STAGES: readonly ChildStage[] = [
     deletion: (query, conversationId, batchSize) =>
       query(
         `/* deleteConversationMessagePage */
-      WITH page AS (
-        SELECT message.conversation_id, message.id
-        FROM conversation_messages message
-        WHERE message.conversation_id = $1::uuid
-        ORDER BY message.conversation_id, message.id
-        LIMIT $2 FOR UPDATE OF message SKIP LOCKED
-      )
-      DELETE FROM conversation_messages message
-      USING page WHERE (message.conversation_id, message.id) = (page.conversation_id, page.id)`,
+      DELETE FROM conversation_messages target
+      WHERE target.conversation_id = $1::uuid
+        AND target.id = ANY(ARRAY(
+          SELECT message.id
+          FROM conversation_messages message
+          WHERE message.conversation_id = $1::uuid
+          ORDER BY message.conversation_id, message.id
+          -- Cost the ordered walk before the runtime page size is known.
+          LIMIT (SELECT $2::bigint) FOR UPDATE OF message SKIP LOCKED
+        ))`,
         [conversationId, batchSize],
       ),
     remaining: (query, conversationId) =>
