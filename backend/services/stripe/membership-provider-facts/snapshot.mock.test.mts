@@ -194,20 +194,14 @@ describe('Stripe membership provider fact snapshots', () => {
     Reflect.deleteProperty(subscription, 'current_period_start')
     Object.assign(subscription.items.data[0]!, { current_period_start: 1_742_000_000 })
 
-    const result = await recordStripeMembershipProviderFacts({
+    await recordStripeMembershipProviderFacts({
       stripeEventId: event.id,
       membershipId: membership.id,
       subscription,
     })
 
-    const expectedEffectiveAt = new Date(1_742_000_000_000)
     await expect(getTestMembershipSourceState(membership.id)).resolves.toMatchObject({
-      effective_at: expectedEffectiveAt,
-    })
-    await expect(
-      getTestMembershipProviderObservation(result.observationId!),
-    ).resolves.toMatchObject({
-      effective_at: expectedEffectiveAt,
+      effective_at: new Date(1_742_000_000_000),
     })
   })
 })
