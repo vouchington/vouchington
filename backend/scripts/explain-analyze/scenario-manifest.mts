@@ -45,4 +45,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'top-hashtags-at-cap',
   'topic-children-at-cap',
   'url-embeds-at-post-page-cap',
+  'post-review-ratings-write-at-cap',
+  'post-data-point-topics-insert-at-cap',
+  'post-data-point-topics-replace-at-cap',
+  'community-application-questions-write-at-cap',
 ] as const

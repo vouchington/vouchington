@@ -36,6 +36,12 @@ import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-
 import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
 import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard-delete-source-capacity.mts'
 import { runRssWriteCapacityScenarios } from './run-scenarios/rss-write-capacity.mts'
+import {
+  runReviewRatingWriteCapacity,
+  runDataPointTopicInsertCapacity,
+  runDataPointTopicReplaceCapacity,
+} from './run-scenarios/post-topic-write-capacity.mts'
+import { runApplicationQuestions } from './run-scenarios/community-application-question-write.mts'
 
 import { runUserListCapacityScenario } from './run-scenarios/user-list-capacity.mts'
 import {
@@ -137,6 +143,11 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runTopHashtagCapacityScenario,
   runTopicChildCapacityScenario,
   runUrlEmbedCapacityScenario,
+  runReviewRatingWriteCapacity,
+  runDataPointTopicInsertCapacity,
+  runDataPointTopicReplaceCapacity,
+  // The retained form corpus changes question statistics. Analyze it after ordinary plans.
+  runApplicationQuestions,
 ]
 
 /**
