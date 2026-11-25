@@ -29,6 +29,7 @@
     "@modules/on-error": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/aws": "^0.1.3"
+    "@vouchington/aws": "^0.1.3",
+    "@vouchington/server-utils": "^0.1.0"
   }
 }
