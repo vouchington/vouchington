@@ -9,7 +9,7 @@ import {
   useCopyrightCasePurgePageSize,
 } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-fixture'
 import type { CopyrightCasePurgeJobData } from '../../queues/psql/types.mts'
-import { runCopyrightCasePurgePage } from '../copyright-notices/retention-case-purge-page.mts'
+import { runIsolatedCopyrightCasePurgePage } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
@@ -69,7 +69,10 @@ describe('MCP copyright audit after evidence erasure', () => {
       destroy: async () => {
         let completed = false
         for (let step = 0; step < 1000; step += 1) {
-          const page = await runCopyrightCasePurgePage(data, new Date('2100-01-01T12:00:00.000Z'))
+          const page = await runIsolatedCopyrightCasePurgePage(
+            data,
+            new Date('2100-01-01T12:00:00.000Z'),
+          )
           data = page.data
           if (step === 0)
             rationaleIdsAtAdmission = (await readTestCopyrightDecisionRationales(user.id)).map(
@@ -122,7 +125,10 @@ describe('MCP copyright audit after evidence erasure', () => {
       values => values.includes(context.correlationId),
       async () => {
         for (let step = 0; step < 1000 && data.phase !== 'pointers'; step += 1) {
-          const page = await runCopyrightCasePurgePage(data, new Date('2100-01-01T12:00:00.000Z'))
+          const page = await runIsolatedCopyrightCasePurgePage(
+            data,
+            new Date('2100-01-01T12:00:00.000Z'),
+          )
           data = page.data
           if (!page.hasMore) break
         }
