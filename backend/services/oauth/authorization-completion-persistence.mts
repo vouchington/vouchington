@@ -4,7 +4,8 @@ import createHttpError from 'http-errors'
 import type { OAuthAccount } from '@services/oauth-accounts'
 import { getPrivateUserByAny } from '@services/users'
 import { getAuthorizationAccount } from './authorization-account-lookup.mts'
-import { assertCompletionProof, safeEqual } from './authorization-completion-proof.mts'
+import { safeEqual } from '@vouchington/oauth-server'
+import { assertCompletionProof } from './authorization-completion-proof.mts'
 import type {
   CompletionRow,
   OAuthAuthorizationCompletionOptions,

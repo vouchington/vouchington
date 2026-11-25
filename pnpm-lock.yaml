@@ -9112,6 +9112,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@vouchington/oauth-server':
+        specifier: ^0.9.0
+        version: 0.9.0
       '@vouchington/postgres':
         specifier: ^0.6.2
         version: 0.6.2
