@@ -1,13 +1,14 @@
 import { createPlaywrightTimeoutGuard } from 'vouchington-tooling/playwright-config'
 
-const guard = createPlaywrightTimeoutGuard({
+export const vouchaTimeoutGuard = createPlaywrightTimeoutGuard({
   maxTimeoutMs: 30_000,
   fixtureName: 'vouchaTestTimeout',
+  banOverrides: true,
 })
 
-export const playwrightTestTimeout = guard.testTimeout
-export const validatePlaywrightConfigTimeouts = guard.validateConfigTimeouts
-export const assertResolvedPlaywrightTimeouts = guard.assertResolvedTimeouts
-export const protectPlaywrightHookTimeouts = guard.protectHookTimeouts
-export const playwrightTimeoutFixture = guard.timeoutFixture
-export const guardPlaywrightTestTimeouts = guard.guardTestTimeouts
+export const playwrightTestTimeout = vouchaTimeoutGuard.testTimeout
+export const validatePlaywrightConfigTimeouts = vouchaTimeoutGuard.validateConfigTimeouts
+export const assertResolvedPlaywrightTimeouts = vouchaTimeoutGuard.assertResolvedTimeouts
+export const protectPlaywrightHookTimeouts = vouchaTimeoutGuard.protectHookTimeouts
+export const playwrightTimeoutFixture = vouchaTimeoutGuard.timeoutFixture
+export const guardPlaywrightTestTimeouts = vouchaTimeoutGuard.guardTestTimeouts

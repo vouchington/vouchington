@@ -1,7 +1,10 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
-import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { removeLocalStorageKeysBeforeNavigation } from '../../helpers/browser-state.mts'
+import {
+  navigateTo,
+  randomSuffix,
+  removeLocalStorageKeysBeforeNavigation,
+} from 'vouchington-tooling/playwright'
 import {
   createTestUser,
   insertTestCommunity,

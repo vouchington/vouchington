@@ -243,7 +243,7 @@ describe('detect-changes path filters', () => {
   it('selects initialize-smoke inputs and ignores a ci-tools contract test', () => {
     const shellScripts = loadDetectChangesFilters()['shell-scripts']
     const hits = ['dev/initialize', 'dev/lib/db-target.sh', 'ci/download-with-diagnostics.sh']
-    const misses = ['ci/agent-workflow-docs.test.mts', 'dev/pr-description/validate.mts']
+    const misses = ['ci/agent-workflow-docs.test.mts', 'dev/pr-description/policy.mts']
     assertNoWorkflowViolations(
       hits.filter(path => !filterMatches(shellScripts, path)),
       'shell-scripts misses:',

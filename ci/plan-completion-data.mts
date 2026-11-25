@@ -1,6 +1,6 @@
 import { trustedIssueAuthor } from './trusted-issue-author.mts'
 
-import type { assessPlanCompletion } from '../dev/pr-description/plan-completion.mts'
+import type { assessPlanCompletion } from 'vouchington-tooling/pr-description'
 
 const MARKER = '<!-- plan-completion-advisory -->'
 const WORKFLOW_BOT = 'github-actions[bot]'

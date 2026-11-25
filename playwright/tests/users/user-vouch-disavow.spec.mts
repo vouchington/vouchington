@@ -2,8 +2,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
-import { navigateTo } from 'vouchington-tooling/playwright'
-import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
+import {
+  navigateTo,
+  resetAnonymousBrowserStateBeforeNavigation,
+} from 'vouchington-tooling/playwright'
+import { PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS } from '../../helpers/browser-state.mts'
 import { userSignalChoice, voteBinaryChoice, voteClear } from '../../helpers/semantic-vote.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,
@@ -127,7 +130,7 @@ test.describe('User vouch/disavow asides', () => {
   })
 
   test('signed-out viewer does not see user moderation asides', async ({ page }) => {
-    await resetAnonymousBrowserStateBeforeNavigation(page)
+    await resetAnonymousBrowserStateBeforeNavigation(page, PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS)
     await navigateTo(page, `/user/${targetUsername}`)
 
     const aside = page.getByRole('complementary')

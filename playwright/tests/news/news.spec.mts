@@ -4,11 +4,10 @@ import {
   navigateTo,
   randomSuffix,
   requireTestValue,
+  resetAnonymousBrowserStateBeforeNavigation,
   waitForBelowFoldHydration,
 } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-
-import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
 
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
 

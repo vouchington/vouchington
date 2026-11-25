@@ -29,13 +29,14 @@ import { checkLivingDocsPinGuard } from './living-docs-pin-guard.mts'
 import { checkMonetaryContracts, checkMonetarySnapshot } from './monetary-contract-guard.mts'
 import { checkCanonicalChildLinks } from 'vouchington-tooling/markdown-canonical-children'
 import { SPLIT_PARENT_PATHS } from './split-markdown-parents.mts'
-import { loadSchemaSnapshot } from './schema-snapshot-loader.mts'
+import { loadSchemaSnapshot, SCHEMA_SNAPSHOT_PATH } from './schema-snapshot-loader.mts'
 import { checkLifecycleScenarioContract } from './lifecycle-scenario-contract.mts'
 import { checkLocalLlmEndpointPolicyContract } from './local-llm-endpoint-policy-contract.mts'
 import { checkPostPublicationReaderInventory } from './post-publication-reader-inventory.mts'
 import { checkPostPublicationWriterInventory } from './post-publication-writer-inventory.mts'
 import { checkPublicSourceLiterals } from './public-source-literals.mts'
-import { checkRelationalStorage } from './relational-storage-guard.mts'
+import { checkRelationalStorage } from 'vouchington-tooling/relational-storage'
+import { RELATIONAL_STORAGE_CATALOG } from './relational-storage-catalog.mts'
 import {
   checkWebIdRouteSegments,
   webIdRouteSegmentAllowlistFile,
@@ -92,7 +93,13 @@ export async function checkRepoFilePolicy(
   await checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   checkMonetarySnapshot(schema, errors)
   const injectedSnapshot = options.schemaSnapshot !== undefined
-  errors.push(...checkRelationalStorage(schema, { enforceCatalogFreshness: !injectedSnapshot }))
+  errors.push(
+    ...checkRelationalStorage(schema, {
+      snapshotPath: SCHEMA_SNAPSHOT_PATH,
+      catalog: RELATIONAL_STORAGE_CATALOG,
+      enforceCatalogFreshness: !injectedSnapshot,
+    }),
+  )
   errors.push(...checkCanonicalChildLinks(ctx, { parents: SPLIT_PARENT_PATHS }).errors)
   await checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
   await checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)

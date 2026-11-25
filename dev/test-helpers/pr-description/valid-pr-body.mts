@@ -20,22 +20,3 @@ Closes #123
 Workspace setup: ./dev/initialize monorepo
 ${VALID_PROVENANCE_BLOCK}
 `
-
-/** Canonical partial-batch PR body as pr_create renders it (see partial-batch.mts). */
-export const VALID_PARTIAL_BATCH_BODY = `## Summary
-
-First batch of a larger source issue.
-
-## Impact
-
-Developers receive the first batch while the rest of the source issue stays tracked.
-
-## Related issues
-
-- Refs #456 — Source plan; later batches finish it.
-Partial batch; source issue remains open for remaining work.
-<!-- related-issues-validation: partial-batch -->
-
-Workspace setup: ./dev/initialize monorepo
-${VALID_PROVENANCE_BLOCK}
-`
