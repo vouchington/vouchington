@@ -86,11 +86,17 @@ describe('Storybook browser optimizeDeps audit', () => {
       'ts-shared/feature-flags/README.md': '',
     })
     const imports = fakeImports({
-      'ts-shared/feature-flags': ['@vouchington/utils/feature-flags', 'jose', 'react'],
+      'ts-shared/feature-flags': [
+        '@vouchington/utils/feature-flags',
+        '@vouchington/localization-compiler',
+        'jose',
+        'react',
+      ],
     })
     const errors = await storybookBrowserOptimizeDepsErrors({
       root,
       include: ['@ts-shared/feature-flags > @vouchington/utils/feature-flags', 'jose'],
+      exclude: ['@vouchington/localization-compiler'],
       firstPartyNames: new Set(['jose']),
       readImports: imports.read,
     })

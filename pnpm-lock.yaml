@@ -15761,6 +15761,9 @@ importers:
       '@vouchington/localization':
         specifier: ^0.3.1
         version: 0.3.1(react@19.3.1)
+      '@vouchington/localization-compiler':
+        specifier: ^0.3.1
+        version: 0.3.1(react@19.3.1)
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
