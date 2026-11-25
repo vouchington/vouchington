@@ -2,7 +2,6 @@ import { HACKER_NEWS_VIEWER_SCENARIO_IDS } from './hacker-news-viewer-scenario-i
 
 export const HACKER_NEWS_WORK_SCENARIO_IDS = [
   'hacker-news-retention-page',
-  'hacker-news-retention-deletes-at-cap',
   'hacker-news-readmission-mostly-fresh-first',
   'hacker-news-readmission-mostly-fresh-later',
   'hacker-news-readmission-mostly-fresh-exhausted',

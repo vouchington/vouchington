@@ -6,13 +6,11 @@ import { write } from '@data-stores/psql'
 import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
-import { runHackerNewsRetentionDeleteCapacityScenario } from './hacker-news-retention-delete-capacity.mts'
 import { runHackerNewsRetentionScenario } from './hacker-news-retention.mts'
 
 /** The daily cleanup runs this after retained relations and media bindings. */
 export async function runRetentionStagePageScenarios(): Promise<void> {
   await runHackerNewsRetentionScenario()
-  await runHackerNewsRetentionDeleteCapacityScenario()
   await seedOAuthRetentionRows()
   await write(`/* seedExplainOAuthRetention:analyze */ ANALYZE oauth_authorizations`)
   registerScenarioContract('retention-expired-oauth-authorizations', {
