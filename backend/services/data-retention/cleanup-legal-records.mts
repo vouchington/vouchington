@@ -42,7 +42,7 @@ export async function cleanupLegalRecords(
       let hasMore = false
       // oxlint-disable no-await-in-loop -- each finite page commits before the next oldest expired page is selected.
       for (let batch = 0; batch < maxBatches; batch++) {
-        // no-mistakes-disable-next-line query-reached-per-item: each call reads at most batchSize plus one indexed expired ids and deletes at most batchSize; maxBatches caps the run.
+        // no-mistakes-disable-next-line query-reached-per-item: each call selects at most batchSize indexed expired IDs; maxBatches caps the run.
         const page = await cleanupLegalRecordPage(family, batchSize, now, recordIds)
         scanned += page.scanned
         deleted += page.deleted
@@ -98,18 +98,33 @@ async function cleanupLegalRecordPage(
         : 'source.released_at, source.id'
   const pageParameter = `$${values.length + 1}`
   await using query = await beginTransaction()
-  if (family === 'user_legal_preservation_hold')
+  if (family === 'user_legal_preservation_hold') {
     await query(
       `/* enableLegalRecordRetentionDelete */ SELECT set_config('app.legal_record_retention_delete', 'on', true),
         set_config('app.released_hold_retention_months', $1, true)`,
       [String(months)],
     )
+    const { rows } = await query<{ id: string }>(
+      `/* deleteExpiredReleasedLegalHoldPage */
+       DELETE FROM user_legal_preservation_holds source
+       WHERE source.id = ANY(ARRAY(
+         SELECT source.id FROM user_legal_preservation_holds source
+         WHERE ${eligible}${scope} ORDER BY ${order} LIMIT ${pageParameter}
+       ))
+       AND ${eligible}${scope}
+       RETURNING source.id`,
+      [...values, pageSize],
+    )
+    await query.commit()
+    return { family, scanned: rows.length, deleted: rows.length, hasMore: rows.length === pageSize }
+  }
+  // lock-reason: prevents: a concurrent deletion-proof child write or identity grant reference during retirement; writer: deletion-request and identity verification writes.
   const { rows } = await query<{ id: string }>(
     `/* listExpiredLegalRecordPage */ SELECT source.id FROM ${table} source
      WHERE ${eligible}${scope} ORDER BY ${order} LIMIT ${pageParameter} FOR UPDATE OF source SKIP LOCKED`,
-    [...values, pageSize + 1],
+    [...values, pageSize],
   )
-  const pageIds = rows.slice(0, pageSize).map(row => row.id)
+  const pageIds = rows.map(row => row.id)
   let deleted = 0
   if (pageIds.length) {
     const result = await query(
@@ -120,5 +135,5 @@ async function cleanupLegalRecordPage(
     deleted = result.rowCount ?? 0
   }
   await query.commit()
-  return { family, scanned: pageIds.length, deleted, hasMore: rows.length > pageSize }
+  return { family, scanned: pageIds.length, deleted, hasMore: rows.length === pageSize }
 }

@@ -54,6 +54,7 @@ export async function syncPostImagePlacements(
           AND placement.retirement_reason IS DISTINCT FROM 'owner_removed')
       )
     ORDER BY placement.id
+    -- lock-reason: prevents: retiring and reviving overlapping placements in different row orders; writer: image placement synchronization and retirement.
     FOR UPDATE OF placement
   `)
   await query(sql`/* syncPostImagePlacements:retireAbsent */

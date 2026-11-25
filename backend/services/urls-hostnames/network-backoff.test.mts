@@ -5,6 +5,7 @@ import path from 'node:path'
 import { flush } from '@data-stores/analytics/backend-local'
 import { query } from '@data-stores/analytics/query'
 import {
+  advanceTestBackoffDuringReset,
   expireTestHostnameNetworkBackoff,
   getTestHostnameNetworkBackoff,
 } from '@voucha/test-helpers/entities/url-hostname-network-backoff'
@@ -165,6 +166,22 @@ describe('network-backoff', () => {
       ['network_backoff_closed', 'true'],
     ])
     expect(Number(events[1]!.retry_after_ms)).toBe(EXPECTED_BACKOFF_DURATIONS_MS[0])
+  })
+
+  it('reports the backoff step actually closed after a concurrent advance', async () => {
+    const { id, hostname } = await makeHostname()
+    await failTimes(id, NETWORK_BACKOFF_FAILURE_THRESHOLD)
+
+    await advanceTestBackoffDuringReset(id, () =>
+      resetHostnameFailures(id, { crawlerType: 'html', includeDns: false }),
+    )
+
+    expect((await getTestHostnameNetworkBackoff(id))?.network_backoff_step).toBe(0)
+    const events = await backoffEvents(hostname)
+    expect(events.map(event => [event.event_type, Number(event.retry_after_ms)])).toEqual([
+      ['network_backoff_opened', EXPECTED_BACKOFF_DURATIONS_MS[0]],
+      ['network_backoff_closed', EXPECTED_BACKOFF_DURATIONS_MS[1]],
+    ])
   })
 
   it('resets the DNS counter only for a successful crawl or fetch', async () => {

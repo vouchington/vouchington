@@ -1,19 +1,18 @@
 import sql from 'sql-template-strings'
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 
-export function lockTerritorialAcknowledgmentQuery(
+export function selectTerritorialAcknowledgmentQuery(
   jurisdiction: TerritorialCopyrightJurisdiction,
   noticeId: string,
 ) {
-  return sql`/* recordTerritorialAcknowledgment:lock */
+  return sql`/* recordTerritorialAcknowledgment:current */
     SELECT acknowledgment.id, acknowledgment.attempt_count, acknowledgment.last_attempt_at,
       acknowledgment.acknowledged_at, acknowledgment.exhausted_at, receipt.requester_user_id,
       false AS escalated
     FROM copyright_territorial_notice_acknowledgments acknowledgment
     JOIN copyright_territorial_notice_receipts receipt
       ON receipt.id = acknowledgment.copyright_territorial_notice_receipt_id
-    WHERE receipt.copyright_notice_id = ${noticeId} AND receipt.jurisdiction = ${jurisdiction}
-    FOR UPDATE OF acknowledgment`
+    WHERE receipt.copyright_notice_id = ${noticeId} AND receipt.jurisdiction = ${jurisdiction}`
 }
 
 export function updateTerritorialAcknowledgmentQuery(
@@ -29,7 +28,7 @@ export function updateTerritorialAcknowledgmentQuery(
         WHEN ${outcome} = 'failed' AND attempt_count + 1 = 5 THEN CURRENT_TIMESTAMP
         ELSE exhausted_at
       END
-    WHERE id = ${acknowledgmentId}
+    WHERE id = ${acknowledgmentId} AND acknowledged_at IS NULL AND exhausted_at IS NULL
     RETURNING id, attempt_count, last_attempt_at, acknowledged_at, exhausted_at,
       false AS escalated`
 }

@@ -94,7 +94,7 @@ export async function runContentAuthoritySnapshotScenarios(): Promise<void> {
       'image-source-written-rows',
       () => markImageUploadSourceDeleted(imageId),
       undefined,
-      ['markImageUploadSourcesDeleted:lock', 'markImageUploadSourcesDeleted:update'],
+      ['markImageUploadSourcesDeleted:update'],
       {
         afterCapture: async () => {
           await write(

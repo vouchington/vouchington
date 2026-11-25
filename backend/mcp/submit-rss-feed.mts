@@ -10,11 +10,8 @@ import {
 import { submitRssFeedSource } from '@services/user-import-export/submit-rss-feed-source'
 import { USER_IMPORT_EXPORT_MAX_VALUES } from '@services/user-import-export/config'
 import { parseCreateSourceBody } from '@services/rss-feeds/request-body'
-import type {
-  ToolApiEndpoint,
-  ToolMeta,
-  ToolOutputSchema,
-} from '@services/openai-agents/tool-types'
+import type { ToolMeta } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@vouchington/mcp-server/types'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'

@@ -8,7 +8,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import {
   insertTerritorialAcknowledgmentEscalationQuery,
-  lockTerritorialAcknowledgmentQuery,
+  selectTerritorialAcknowledgmentQuery,
   updateTerritorialAcknowledgmentQuery,
 } from './territorial-acknowledgment-sql.mts'
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
@@ -37,7 +37,7 @@ export async function recordTerritorialCopyrightAcknowledgment(
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
   assert(lockedNotice, 404, territorialLabels(jurisdiction).noticeNotFound)
   const { rows } = await transaction<TerritorialAcknowledgmentRow>(
-    lockTerritorialAcknowledgmentQuery(jurisdiction, noticeId),
+    selectTerritorialAcknowledgmentQuery(jurisdiction, noticeId),
   )
   const current = rows[0]
   assert(current, 404, territorialLabels(jurisdiction).noticeNotFound)

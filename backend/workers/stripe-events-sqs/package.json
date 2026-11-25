@@ -21,6 +21,7 @@
     "@modules/on-error": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@services/stripe": "workspace:^",
+    "@vouchington/stripe": "^0.2.1",
     "@vouchington/worker-runtime": "^0.3.2"
   },
   "devDependencies": {

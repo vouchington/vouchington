@@ -68,7 +68,7 @@ export function selectTerritorialRedressRequest(
     FROM copyright_territorial_redress_requests request
     JOIN copyright_notices notice ON notice.id = request.copyright_notice_id
     WHERE request.id = ${redressId} AND request.copyright_notice_id = ${noticeId}
-      AND request.jurisdiction = ${jurisdiction} FOR UPDATE OF request`
+      AND request.jurisdiction = ${jurisdiction}`
 }
 
 export function selectExistingTerritorialRedressDecision(redressId: string) {

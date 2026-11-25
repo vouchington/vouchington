@@ -86,6 +86,7 @@ export async function rearmNextPostBanEvasionEmbedding(
           AND p.deleted_at IS NULL
         ORDER BY p.id
         LIMIT 1
+        -- lock-reason: prevents: rearming a post that is being deleted instead of the surviving successor; writer: post deletion and agent moderation.
         FOR NO KEY UPDATE
       ) next_post ON true
     )

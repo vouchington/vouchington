@@ -161,6 +161,7 @@ async function readCurrentPlacementDeliveryRecord(
   mediaDeliveryRegistryRecordId: string,
 ): Promise<ImageDeliveryRecord | null> {
   await query(sql`/* readCurrentPlacementDeliveryRecord:lock */
+    -- lock-reason: prevents: publishing stale edge authority while the registry generation changes; writer: registry restaging and edge publication.
     SELECT id FROM media_delivery_registry_records WHERE id = ${mediaDeliveryRegistryRecordId} FOR NO KEY UPDATE
   `)
   const { rows } = await query<ImageDeliveryRecord>(sql`

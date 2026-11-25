@@ -4,7 +4,7 @@ import { use } from 'react'
 import { PostRelatedPostsAsideContent } from './post-related-posts-aside-content'
 import type { Post } from '@/types/posts'
 import type { EntityRelationsResponse } from '@/lib/api/entity-relations'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 
 interface PostRelatedPostsAsideStreamingProps {
   post: Post

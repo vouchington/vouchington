@@ -25,6 +25,7 @@ export async function createList(
   data: { name: string; description?: string | null; visibility?: ListVisibility },
 ): Promise<List> {
   await using query = await beginTransaction()
+  // lock-reason: prevents: creating a list after the account sweep has drained it; writer: account deletion.
   await query(`/* createList.lockActiveUser */ SELECT fn_lock_active_user_for_mutation($1)`, [
     currentUserId,
   ])
@@ -75,6 +76,7 @@ export async function updateList(
   data: { name?: string; description?: string | null; visibility?: ListVisibility },
 ): Promise<List> {
   await using query = await beginTransaction()
+  // lock-reason: prevents: changing list visibility or owned data during erasure; writer: account deletion.
   await query(`/* updateList.lockActiveUser */ SELECT fn_lock_active_user_for_mutation($1)`, [
     currentUserId,
   ])

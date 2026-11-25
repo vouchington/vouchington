@@ -1,6 +1,4 @@
-import { mkdirSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { dirname, resolve } from 'node:path'
+import { resolve } from 'node:path'
 import type { LocalizationCatalog } from '@vouchington/localization'
 import { compileLocalizationSqlite, loadCatalogDirectory } from '@vouchington/localization-compiler'
 import { ROUTE_SELECTORS, WEB_CHROME_SELECTOR } from '../lib/i18n/route-selectors.generated.mts'
@@ -46,12 +44,5 @@ const smokeCatalog: LocalizationCatalog = {
 }
 
 const resolvedOutput = resolve(output)
-const previousTmpdir = process.env.TMPDIR
-mkdirSync(dirname(resolvedOutput), { recursive: true })
-process.env.TMPDIR = dirname(resolvedOutput)
-try {
-  process.stdout.write(`Compiling ${copies.length} homepage messages...\n`)
-  process.stdout.write(`${compileLocalizationSqlite(smokeCatalog, resolvedOutput)}\n`)
-} finally {
-  process.env.TMPDIR = previousTmpdir ?? tmpdir()
-}
+process.stdout.write(`Compiling ${copies.length} homepage messages...\n`)
+process.stdout.write(`${compileLocalizationSqlite(smokeCatalog, resolvedOutput)}\n`)

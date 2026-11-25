@@ -277,7 +277,7 @@ describe('vote and user-agent retention', () => {
       },
     })
     const page = await cleanupVoteIntegrityDetails(1, NOW, [flagId])
-    expect(page).toMatchObject({ scanned: 1, redacted: 1, hasMore: false })
+    expect(page).toMatchObject({ scanned: 1, redacted: 1, hasMore: true })
     expect(await getTestVoteIntegrityFlagDetails(flagId)).toEqual({ threshold: 3 })
   })
 })

@@ -8,13 +8,7 @@ export {
 export { authenticateMcpBearer } from './authenticate.mts'
 export { getMcpAdmissionUser } from './admission-user.mts'
 export { buildMcpBearerChallenge } from './challenge.mts'
-export {
-  exceedsMcpAuditBatchLimit,
-  mcpNotificationShapedToolCall,
-  mcpToolCallIsDispatched,
-  planMcpCalls,
-  type McpCallPlan,
-} from './classify-calls.mts'
+export { exceedsMcpAuditBatchLimit, planMcpCalls, type McpCallPlan } from './classify-calls.mts'
 export { handleMcpHttpRequest } from './handle-request.mts'
 export { resolveCopyrightUserTargetsForAudit } from './copyright-audit-target.mts'
 export { buildMcpContextUser } from './list-tools.mts'

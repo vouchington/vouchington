@@ -20,6 +20,7 @@ export async function deletePasskey(
     // enqueue deferred to caller so it runs after the outer transaction commits
   } else {
     await using query = await beginTransaction()
+    // lock-reason: prevents: changing the sign-in method during account erasure; writer: account deletion.
     await query(
       sql`/* deletePasskey */ SELECT fn_lock_active_user_for_mutation(${currentUserId}, TRUE)`,
     )

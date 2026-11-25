@@ -185,8 +185,7 @@ export async function revokeOwnedOAuthApp(currentUserId: string, appId: string):
 }
 
 /**
- * Runs an owner's app mutation behind the account-deletion fence, so a request that authenticated
- * just before the owner's deletion committed cannot change the app or mint a secret afterwards.
+ * lock-reason: prevents: changing an owned app or minting an app secret during erasure; writer: account deletion.
  */
 async function mutateAsActiveOwner<T>(
   ownerId: string,

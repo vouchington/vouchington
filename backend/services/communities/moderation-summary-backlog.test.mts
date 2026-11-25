@@ -1,5 +1,8 @@
 import { getMinUuidv7ForDate } from '@modules/utils'
-import { runModerationSummaryMemberships } from './moderation-summary-collection.mts'
+import {
+  completeModerationSummaryRank,
+  runModerationSummaryMemberships,
+} from './moderation-summary-collection.mts'
 import { collectModerationSummaryMemberPage } from './moderation-summary-activity-pages.mts'
 import { describe, expect, it } from 'vitest'
 import {
@@ -7,6 +10,9 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { setTestBanEvasionFlag } from '@voucha/test-helpers/entities/community-bans'
+import { moderationSummaryWorkConfig } from './moderation-summary-work.mts'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestCommunityApplication } from '@voucha/test-helpers/entities/community-applications'
@@ -17,6 +23,7 @@ import {
 } from '@queues/background/enqueues/moderation-summary-state'
 import {
   collectRankReviewPage,
+  collectRankEvaders,
   collectRankApplicationPage,
 } from './moderation-summary-rank-direct.mts'
 import {
@@ -91,6 +98,35 @@ describe('moderation digest backlog boundaries', () => {
       metrics: { pending_reports: 1 },
     })
   })
+  it('caps the ranking contribution while preserving the suspected evader count', async () => {
+    const [owner, first, second] = await Promise.all([
+      createTestUser(),
+      createTestUser(),
+      createTestUser(),
+    ])
+    const community = await insertTestCommunity({ createdById: owner.id })
+    await Promise.all(
+      [first, second].map(async member => {
+        const identity = { communityId: community.id, userId: member.id }
+        await insertTestCommunityMember({ ...identity, role: 'member' })
+        await setTestBanEvasionFlag({ ...identity, sourceUserId: owner.id })
+      }),
+    )
+
+    const restore = overrideDynamicConfigFieldsForTest(moderationSummaryWorkConfig, {
+      suspected_ban_evaders_rank_cap: 1,
+    })
+    try {
+      const scan = await collectRankEvaders(createModerationSummaryScan(community.id))
+      const result = completeModerationSummaryRank({ ...createModerationSummaryCollection(), scan })
+      expect(result.top).toMatchObject([
+        { communityId: community.id, pendingScore: 1, metrics: { suspected_ban_evaders: 2 } },
+      ])
+    } finally {
+      restore()
+    }
+  })
+
   it('uses distinct persisted user and community membership maxima beyond the activity clock', async () => {
     const recipient = await createTestUser()
     const other = await createTestUser()

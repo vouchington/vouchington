@@ -95,6 +95,7 @@ async function readPhase(
   let abandoned: AbandonedUpload[] = []
   if (phase === 'abandonment' && page.length) {
     const ids = page.slice(0, batchSize).map(image => image.id)
+    // lock-reason: prevents: acquiring overlapping abandonment rows in opposite order before releasing storage keys; writer: abandoned upload cleanup and source acknowledgement.
     const statement = sql`/* cleanupAbandonedUploads:abandonment */
       WITH candidates AS (
         SELECT id FROM images

@@ -133,13 +133,20 @@ export async function completeCopyrightFormScreening(
     return execution?.state === 'completed' ? execution.copyright_notice_form_screening_id : null
   }
   const purpose = `copyright-form-screening:${input.intakeId}`
+  const storedGuidance = {
+    ...guidance,
+    risk_notes: guidance.risk_notes.slice(
+      0,
+      getCopyrightNoticesWorkLimit('form_screening_risk_notes_max'),
+    ),
+  }
   const { rows } = await transaction<{ id: string }>(sql`/* completeCopyrightFormScreening:result */
     INSERT INTO copyright_notice_form_screenings (
       copyright_notice_form_intake_id, input_sha256, prompt_version, model, recommendation,
       rationale_ciphertext, guidance_ciphertext
     ) SELECT intake.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
       ${input.recommendation}, ${encryptSecret(input.rationale, purpose)},
-      ${encryptSecret(JSON.stringify(guidance), purpose)}
+      ${encryptSecret(JSON.stringify(storedGuidance), purpose)}
     FROM copyright_notice_form_intakes intake
     JOIN copyright_notice_submissions submission
       ON submission.id = intake.copyright_notice_submission_id

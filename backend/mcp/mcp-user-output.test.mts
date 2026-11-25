@@ -1,10 +1,9 @@
 import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { readFileSync } from 'node:fs'
-import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getUserTool from './get-user.mts'
 import { mcpUserSchema, USER_PAGE_LIMIT } from './mcp-user-output.mts'
-import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
+import { assertLocalSchemaRefs, inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import searchUsersTool from './search-users.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
@@ -70,7 +69,7 @@ describe('user read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    assertMcpLocalSchemaRefs(tool.meta?.outputSchema)
+    assertLocalSchemaRefs(tool.meta?.outputSchema)
   })
 
   it('returns the user as one entry and the matches as a page', () => {

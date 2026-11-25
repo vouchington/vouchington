@@ -1,6 +1,5 @@
 import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { readFileSync } from 'node:fs'
-import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getListItemsTool from './get-list-items.mts'
 import getListTool from './get-list.mts'
@@ -11,7 +10,7 @@ import {
   mcpListSchema,
   toMcpListItem,
 } from './mcp-list-output.mts'
-import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
+import { assertLocalSchemaRefs, inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { ListItem } from '@services/lists'
 
@@ -95,7 +94,7 @@ describe('list read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    assertMcpLocalSchemaRefs(tool.meta?.outputSchema)
+    assertLocalSchemaRefs(tool.meta?.outputSchema)
   })
 
   it('returns one list as an entry and the others as pages with their page info', () => {

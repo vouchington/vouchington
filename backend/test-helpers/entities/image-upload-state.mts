@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function markTestImageUploadStaged(imageId: string): Promise<void> {
@@ -24,4 +24,16 @@ export async function setTestImageHashWhileProcessing(
     WHERE id = ${imageId}
   `,
   )
+}
+
+export async function recordTestImageUploadSourceAcknowledgement(
+  query: TransactionQuery,
+  imageId: string,
+  deletedAt: Date,
+): Promise<void> {
+  await query(sql`/* recordTestImageUploadSourceAcknowledgement */
+    UPDATE images
+    SET upload_source_deleted_at = ${deletedAt}
+    WHERE id = ${imageId} AND upload_source_deleted_at IS NULL
+  `)
 }

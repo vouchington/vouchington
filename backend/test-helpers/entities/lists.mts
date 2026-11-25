@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type TransactionQuery } from '@data-stores/psql'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { List, ListItem } from '@voucha/types/entities/list'
 
@@ -68,6 +68,33 @@ export async function insertTestListRssFeedItem(
     media_type: null,
     entity_label: 'Saved article',
   }
+}
+
+export async function insertTestListPost(
+  query: TransactionQuery,
+  listId: string,
+  postId: string,
+): Promise<void> {
+  await query(
+    `/* insertTestListPost */
+     INSERT INTO user_list_posts (user_list_id, post_id) VALUES ($1, $2)`,
+    [listId, postId],
+  )
+}
+
+export async function readTestListPostState(listId: string, postId: string) {
+  const { rows } = await write<{
+    list_exists: boolean
+    entry_exists: boolean
+    post_exists: boolean
+  }>(
+    `/* readTestListPostState */
+     SELECT EXISTS (SELECT 1 FROM user_lists WHERE id = $1) AS list_exists,
+       EXISTS (SELECT 1 FROM user_list_posts WHERE user_list_id = $1 AND post_id = $2) AS entry_exists,
+       EXISTS (SELECT 1 FROM posts WHERE id = $2) AS post_exists`,
+    [listId, postId],
+  )
+  return rows[0]
 }
 
 export async function listPostItemExists(listId: string, postId: string): Promise<boolean> {

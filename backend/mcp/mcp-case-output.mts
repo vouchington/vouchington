@@ -7,8 +7,9 @@ import {
 } from '@ts-shared/utils/moderation-catalogs'
 import type { ReviewDisputeSummary } from '@services/review-disputes'
 import type { ModerationAppealSummary } from '@services/moderation-appeals/types'
-import { externalText, iso } from './mcp-read-output.mts'
+import { iso } from './mcp-read-output.mts'
 import { nullable, objectSchema, type JsonSchema } from '@vouchington/mcp-server/schema'
+import { wrapExternalText } from '@vouchington/mcp-server/untrusted'
 
 /**
  * What an MCP client sees of a dispute or an appeal it filed: the member view of the REST routes,
@@ -136,7 +137,7 @@ function sentResponse(
   source: string,
   contentType: string,
 ): Promise<string | null> {
-  return sentAt ? externalText(text, source, contentType) : Promise.resolve(null)
+  return sentAt ? wrapExternalText(text, source, contentType) : Promise.resolve(null)
 }
 
 export async function toMcpDispute(dispute: DisputeSource): Promise<McpDispute> {
