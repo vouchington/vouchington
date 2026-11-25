@@ -1,6 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
+import { lockRetentionPreservationAccounts } from '@data-stores/psql/retention-preservation-lock'
 
 /**
  * Deletes one page of old, superseded, unreferenced delivery transitions, except those of a
@@ -14,6 +15,15 @@ export async function deleteMediaDeliveryChangePage(
   upperBound: string,
   cutoff: Date,
 ): Promise<number> {
+  await lockRetentionPreservationAccounts(
+    query,
+    sql`
+      SELECT party.user_id FROM media_delivery_registry_changes history
+      JOIN media_delivery_registry_records owner ON owner.id = history.media_delivery_registry_record_id
+    `.append(mediaDeliveryRetentionPartiesSql()).append(sql`
+      WHERE history.id = ANY(${ids}::uuid[])
+    `),
+  )
   const statement = sql`/* deleteMediaDeliveryChangePage */
     DELETE FROM media_delivery_registry_changes history
     WHERE history.id = ANY(${ids}::uuid[])
@@ -26,6 +36,19 @@ export async function deleteMediaDeliveryChangePage(
         WHERE work.failed_change_id = history.id)
       AND NOT EXISTS (
         SELECT 1 FROM media_delivery_registry_records owner
+  `
+  statement.append(mediaDeliveryRetentionPartiesSql())
+  statement.append(sql`
+        JOIN user_legal_preservation_holds hold ON hold.account_user_id = party.user_id
+        WHERE owner.id = history.media_delivery_registry_record_id
+          AND (hold.released_at IS NULL OR hold.released_at >= ${cutoff}::timestamptz)
+      )`)
+  const { rowCount } = await query(statement)
+  return rowCount ?? 0
+}
+
+function mediaDeliveryRetentionPartiesSql() {
+  return sql`
         CROSS JOIN LATERAL (
           SELECT owner.placement_id AS placement_id,
             owner.placement_revision AS surface_activation_revision,
@@ -35,12 +58,6 @@ export async function deleteMediaDeliveryChangePage(
               WHERE surface.placement_id = owner.placement_id) AS surface_owner_user_id
         ) target
         CROSS JOIN LATERAL `
-  statement.append(copyrightPlacementPartiesSql('retain'))
-  statement.append(sql` party
-        JOIN user_legal_preservation_holds hold ON hold.account_user_id = party.user_id
-        WHERE owner.id = history.media_delivery_registry_record_id
-          AND (hold.released_at IS NULL OR hold.released_at >= ${cutoff}::timestamptz)
-      )`)
-  const { rowCount } = await query(statement)
-  return rowCount ?? 0
+    .append(copyrightPlacementPartiesSql('retain'))
+    .append(sql` party`)
 }

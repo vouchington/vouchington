@@ -4,6 +4,7 @@ import {
   acquireModerationOperationRetentionTestLock,
   beginTransaction,
   createTestExpiryWindow,
+  createTestUser,
   createTestUserDirect,
   insertTestPost,
 } from '@voucha/test-helpers'
@@ -14,10 +15,75 @@ import {
   placeJudgementAccountHoldForRetentionTest,
   releaseJudgementAccountHoldForRetentionTest,
 } from '@voucha/test-helpers/entities/moderation-judgement-retention'
+import { readPreservationHoldsForTest } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
+import { runRetentionWithPendingHoldForTest } from '@voucha/test-helpers/preservation-hold-retention-race'
 import { deleteExpiredModerationHistory } from '../cleanup-moderation-delete-history.mts'
 import { cleanupModerationRecords } from '../cleanup-moderation-records.mts'
 
 describe('moderation judgement retention', () => {
+  it('keeps a judgement when its account hold commits before retention', async () => {
+    const lock = await acquireModerationOperationRetentionTestLock()
+    onTestFinished(() => lock.release())
+    const window = createTestExpiryWindow()
+    const [admin, held, unheld] = await Promise.all([
+      createTestUser({ administrator: true }),
+      createTestUserDirect(),
+      createTestUserDirect(),
+    ])
+    const fixtures = [held, unheld].map(user => ({
+      userId: user.id,
+      oldId: v7({ msecs: window.firstEligibleDate.getTime() }),
+      successorId: v7({ msecs: window.secondEligibleDate.getTime() }),
+    }))
+    const [preserved, control] = fixtures
+    onTestFinished(() =>
+      deleteModerationJudgementRetentionFixturesForTest(
+        fixtures.flatMap(({ oldId, successorId }) => [oldId, successorId]),
+        [held.id],
+      ),
+    )
+    await using setup = await beginTransaction()
+    await Promise.all(
+      fixtures.flatMap(({ oldId, successorId, userId }) =>
+        [oldId, successorId].map(id =>
+          insertModerationJudgementForRetentionTest(setup, {
+            id,
+            reportedUserId: userId,
+            dispatchedAt: window.firstEligibleDate,
+          }),
+        ),
+      ),
+    )
+    await setup.commit()
+    const now = new Date(window.upperBoundDate)
+    now.setUTCFullYear(now.getUTCFullYear() + 7)
+
+    const hold = await runRetentionWithPendingHoldForTest(
+      admin,
+      held.id,
+      'deleteExpiredModerationHistory:judgements',
+      preserved!.oldId,
+      () =>
+        cleanupModerationRecords({
+          kinds: ['judgements'],
+          batchSize: 4,
+          maxBatches: 1,
+          lowerBoundDate: window.lowerBoundDate,
+          upperBoundDate: window.upperBoundDate,
+          now,
+        }),
+    )
+
+    expect(await readPreservationHoldsForTest(held.id)).toEqual([
+      expect.objectContaining({ id: hold.id, released_at: null }),
+    ])
+    expect(await readJudgement(control!.oldId)).toBeUndefined()
+    expect(await readJudgement(preserved!.oldId)).toEqual({
+      recommended_action: 'warn',
+      internal_response: 'Preserved private rationale',
+    })
+  })
+
   it('keeps rationale for six years and through a target account hold', async () => {
     const [unheldUser, heldUser] = await Promise.all([
       createTestUserDirect(),

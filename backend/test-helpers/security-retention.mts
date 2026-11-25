@@ -2,6 +2,41 @@ import { v7 as uuidv7 } from 'uuid'
 import type { TransactionQuery } from '../data-stores/psql/index.mts'
 import { encryptSecret } from '../modules/token-secrets/index.mts'
 
+/** Scope a committed rationale sweep to an owned window while restoring its shared cursor. */
+export async function withTestRationaleRetentionPosition<Result>(
+  query: TransactionQuery,
+  beforeId: string,
+  sweep: () => Promise<Result>,
+): Promise<Result> {
+  const { rows: prior } = await query<{
+    existed: boolean
+    cursor_at: string | null
+    cursor_id: string | null
+  }>(
+    `/* scopeTestRationaleRetentionPosition */
+     INSERT INTO security_retention_cleanup_cursors (source, cursor_at, cursor_id)
+     VALUES ('copyright_rationales_attempts', uuid_extract_timestamp($1::uuid), $1::uuid)
+     ON CONFLICT (source) DO UPDATE SET cursor_at = EXCLUDED.cursor_at, cursor_id = EXCLUDED.cursor_id
+     RETURNING OLD.source IS NOT NULL AS existed, OLD.cursor_at::text AS cursor_at, OLD.cursor_id`,
+    [beforeId],
+  )
+  const result = await sweep()
+  const original = prior[0]
+  if (original?.existed)
+    await query(
+      `/* restoreTestRationaleRetentionPosition */
+       UPDATE security_retention_cleanup_cursors SET cursor_at = $1::timestamptz, cursor_id = $2::uuid
+       WHERE source = 'copyright_rationales_attempts'`,
+      [original.cursor_at, original.cursor_id],
+    )
+  else
+    await query(
+      `/* removeTestRationaleRetentionPosition */
+       DELETE FROM security_retention_cleanup_cursors WHERE source = 'copyright_rationales_attempts'`,
+    )
+  return result
+}
+
 /** Creates aged denied consent against a real pending request and registered client. */
 export async function insertTestOldDeniedOAuthEvent(
   query: TransactionQuery,
