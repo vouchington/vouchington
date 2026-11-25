@@ -74,7 +74,32 @@ async function runPendingReports({
       },
       undefined,
       statements,
+      {
+        afterCapture:
+          sort === 'created_at_desc'
+            ? () => assertRemainingReportsByCreationTime(communityId, expected)
+            : undefined,
+      },
     )
+  }
+}
+
+async function assertRemainingReportsByCreationTime(communityId: string, expected: string[]) {
+  assert.ok(expected.length > limit * 2)
+  let afterId = expected[limit * 2 - 1]!
+  for (let offset = limit * 2; offset < expected.length; offset += limit) {
+    const page = await listCommunityPendingModerationReports({
+      communityId,
+      limit,
+      sort: 'created_at_desc',
+      afterCursor: { id: afterId },
+    })
+    assert.deepEqual(
+      page.reports.map(row => row.id),
+      expected.slice(offset, offset + limit),
+    )
+    assert.equal(page.hasNextPage, offset + limit < expected.length)
+    afterId = page.reports.at(-1)!.id
   }
 }
 
@@ -87,6 +112,7 @@ async function runAgentModerations({
   const scenario = 'community-agent-moderations-cap'
   const name = 'searchCommunityAgentModerations'
   const scope = `community:${communityId}:post:${agentPostId}:agent-moderations`
+  const finalPageCursor = encodeScopedUuidCursor(moderationIds[limit * 2 - 1]!, scope)
   registerScenarioContract(scenario, {
     seededRows,
     // Allow today's broad post-history scan until both plans can use the community scope (#6403).
@@ -114,14 +140,25 @@ async function runAgentModerations({
         moderationIds.slice(limit, limit * 2),
       )
       assert.equal(next.page_info.has_next_page, true)
-      assert.equal(
-        next.page_info.end_cursor,
-        encodeScopedUuidCursor(moderationIds[limit * 2 - 1]!, scope),
-      )
+      assert.equal(next.page_info.end_cursor, finalPageCursor)
     },
     undefined,
     name,
-    { exactCapturedNames: [name, name] },
+    {
+      exactCapturedNames: [name, name],
+      afterCapture: async () => {
+        const last = await searchCommunityAgentModerations(agentPostId, communityId, {
+          limit,
+          after: finalPageCursor,
+        })
+        assert.deepEqual(
+          last.results.map(row => row.id),
+          moderationIds.slice(limit * 2),
+        )
+        assert.equal(last.page_info.has_next_page, false)
+        assert.equal(last.page_info.end_cursor, null)
+      },
+    },
   )
 }
 
