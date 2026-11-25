@@ -204,9 +204,27 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_notifications_capture_push_intent
-AFTER INSERT OR UPDATE OF id ON notifications
+CREATE TRIGGER trigger_notifications_capture_updated_push_intent
+AFTER UPDATE OF id ON notifications
 FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_project_capture_inserted_notification_push_intents() RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO notification_push_intents (user_id, notification_id, conversation_id)
+  SELECT user_id, id, conversation_id
+  FROM inserted_notifications
+  ORDER BY user_id, id
+  ON CONFLICT (user_id, notification_id) DO NOTHING;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TRIGGER trigger_notifications_capture_inserted_push_intents
+AFTER INSERT ON notifications
+REFERENCING NEW TABLE AS inserted_notifications
+FOR EACH STATEMENT EXECUTE FUNCTION fn_project_capture_inserted_notification_push_intents();
 
 CREATE TRIGGER trigger_assert_notification_conversation_immutable
 BEFORE UPDATE OF conversation_id ON notifications
