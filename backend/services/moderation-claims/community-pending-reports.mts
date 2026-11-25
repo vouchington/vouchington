@@ -3,8 +3,6 @@ import sql from 'sql-template-strings'
 import { reportAutomaticJudgementEnabledSql } from '@services/moderation-reports/automatic-judgement-eligibility'
 import {
   appendReportTargetColumns,
-  moderationReportsWithEntitySql,
-  reportTargetAvailableSql,
   reportTargetIsRestrictedSql,
   reportTargetJoinsSql,
 } from '@services/moderation-reports/target-metadata'
@@ -110,7 +108,10 @@ async function fetchPostCommentReports(
   query.append(severityRankSql())
   query.append(sql` AS cursor_severity_rank,
       `)
-  query.append(reportTargetIsRestrictedSql())
+  // Check only the selected report's post or root review instead of hashing the review table.
+  query.append(reportTargetIsRestrictedSql({ useKeyedReviewProbe: true }))
+  // The per-post order keeps the pending scan keyed by the post in both plan modes.
+  // Severity and report-count sorts still rank every eligible report in the community.
   query.append(sql` AS target_is_restricted,
       COALESCE(target_post.is_anonymous, false) AS target_is_anonymous,
       CASE WHEN r.post_id IS NOT NULL AND (target_post.post_type IS NULL OR target_post.post_type != 'comment') THEN EXISTS (
@@ -122,35 +123,54 @@ async function fetchPostCommentReports(
           AND cpr_pending.rejected_at IS NULL
           AND cpr_pending.unpublished_at IS NULL
       ) ELSE false END AS target_pending_community_review
-    FROM `)
-  query.append(moderationReportsWithEntitySql())
-  query.append(sql` r
+    FROM (
+      SELECT
+        report.id, report.created_at, report.reviewed_at, report.reporter_user_id,
+        report.reason, report.note, report.resolved_by_id, report.escalated_at, report.escalated_by_id,
+        community_post.id AS post_id,
+        NULL::uuid AS reported_user_id, NULL::uuid AS hostname_id, NULL::uuid AS rss_feed_item_id,
+        'pending'::text AS status,
+        community_post.id AS entity_id,
+        (CASE WHEN community_post.post_type = 'comment' THEN 'comment'
+          ELSE 'post' END)::moderation_report_entity_types AS entity_type
+      FROM posts community_post
+      CROSS JOIN LATERAL (
+        SELECT mr.id, mr.created_at, mr.reviewed_at, mr.reporter_user_id, mr.reason, mr.note,
+          mr.resolved_by_id, mr.escalated_at, mr.escalated_by_id
+        FROM moderation_reports mr
+        WHERE mr.post_id = community_post.id
+          AND mr.reviewed_at IS NULL
+          AND mr.resolution_action IS NULL
+        ORDER BY mr.id DESC
+      ) report
+      WHERE community_post.community_id = ${communityId}
+        AND community_post.deleted_at IS NULL
+    ) r
   `)
   query.append(reportTargetJoinsSql())
+  // Keep matches across all target types when their UUIDs happen to be equal.
   query.append(sql`
     LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = r.reporter_user_id
     LEFT JOIN LATERAL (
       SELECT COUNT(*)::integer AS report_count
       FROM moderation_reports rc
-      WHERE COALESCE(rc.post_id, rc.reported_user_id, rc.hostname_id, rc.rss_feed_item_id)
-              = COALESCE(r.post_id, r.reported_user_id, r.hostname_id, r.rss_feed_item_id)
-        AND rc.reviewed_at IS NULL
+      WHERE rc.reviewed_at IS NULL
+        AND rc.resolution_action IS NULL
+        AND (
+          rc.post_id = r.post_id OR rc.reported_user_id = r.post_id
+          OR rc.hostname_id = r.post_id OR rc.rss_feed_item_id = r.post_id
+        )
     ) report_counts ON true
     LEFT JOIN LATERAL (
       SELECT mj.recommended_action
       FROM moderation_report_judgements mj
-      WHERE COALESCE(mj.post_id, mj.reported_user_id, mj.hostname_id, mj.rss_feed_item_id)
-              = COALESCE(r.post_id, r.reported_user_id, r.hostname_id, r.rss_feed_item_id)
+      WHERE mj.post_id = r.post_id OR mj.reported_user_id = r.post_id
+        OR mj.hostname_id = r.post_id OR mj.rss_feed_item_id = r.post_id
       ORDER BY mj.id DESC
       LIMIT 1
     ) latest_judgement ON true
   `)
-  query.append(sql`
-    WHERE r.reviewed_at IS NULL
-      AND r.post_id IS NOT NULL
-      AND target_post.community_id = ${communityId}
-      AND `)
-  query.append(reportTargetAvailableSql())
+  query.append(sql` WHERE true`)
   if (escalated === true) {
     query.append(sql` AND r.escalated_at IS NOT NULL`)
   }

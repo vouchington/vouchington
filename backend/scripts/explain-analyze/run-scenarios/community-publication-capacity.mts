@@ -39,8 +39,8 @@ async function runPendingReports({
   ] as const) {
     const scenario = `community-pending-reports-cap-${sort}`
     registerScenarioContract(scenario, {
-      // Keep the hosted main-4 ceiling. That shard retains the earlier report corpus (#6402).
-      expectations: [{ kind: 'maxProcessedRows', relation: 'moderation_reports', max: 9_075_132 }],
+      // One candidate and one matching pending report per target in this fixture.
+      expectations: [{ kind: 'maxProcessedRows', relation: 'moderation_reports', max: 394 }],
       seededRows,
       crossPartition: { posts: 'Reports can target community posts from any month.' },
     })

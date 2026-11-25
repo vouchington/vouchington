@@ -103,12 +103,20 @@ export function communityPostApprovalPredicateSql(postAlias: 'target_post' | 'ro
     AND cpr_vis.unpublished_at IS NULL`)
 }
 
-export function communityPostNotApprovedSql(postAlias: 'target_post' | 'root_post') {
-  return sql``
-    .append(`(${postAlias}.community_id IS NOT NULL AND NOT EXISTS (
-      SELECT 1 FROM community_post_reviews cpr_vis WHERE `)
+export function communityPostNotApprovedSql(
+  postAlias: 'target_post' | 'root_post',
+  useKeyedProbe = false,
+) {
+  const review = sql``
+    .append(`SELECT 1 FROM community_post_reviews cpr_vis WHERE `)
     .append(communityPostApprovalPredicateSql(postAlias))
-    .append(sql`))`)
+  const missing = useKeyedProbe
+    ? sql`(`.append(review).append(sql` LIMIT 1) IS NULL`)
+    : sql`NOT EXISTS (`.append(review).append(sql`)`)
+  return sql``
+    .append(`(${postAlias}.community_id IS NOT NULL AND `)
+    .append(missing)
+    .append(sql`)`)
 }
 
 /**
@@ -119,20 +127,20 @@ export function communityPostNotApprovedSql(postAlias: 'target_post' | 'root_pos
  * since members may see their own community's content.)
  * Requires the joins from `reportTargetJoinsSql()` (target_post, root_post).
  */
-export function reportTargetIsRestrictedSql() {
+export function reportTargetIsRestrictedSql({ useKeyedReviewProbe = false } = {}) {
   const stmt = sql`CASE
     WHEN r.post_id IS NOT NULL AND target_post.post_type = 'comment' THEN (
       root_post.broadcast <> 'everyone' OR root_post.privacy <> 'public'
       OR EXISTS(SELECT 1 FROM communities c WHERE c.id = root_post.community_id AND c.visibility = 'private')
       OR `
-  stmt.append(communityPostNotApprovedSql('root_post'))
+  stmt.append(communityPostNotApprovedSql('root_post', useKeyedReviewProbe))
   stmt.append(sql`
     )
     WHEN r.post_id IS NOT NULL THEN (
       target_post.broadcast <> 'everyone' OR target_post.privacy <> 'public'
       OR EXISTS(SELECT 1 FROM communities c WHERE c.id = target_post.community_id AND c.visibility = 'private')
       OR `)
-  stmt.append(communityPostNotApprovedSql('target_post'))
+  stmt.append(communityPostNotApprovedSql('target_post', useKeyedReviewProbe))
   stmt.append(sql`
     )
     ELSE false
