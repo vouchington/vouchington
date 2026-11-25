@@ -30,6 +30,7 @@ validateRuntimeImageOrigin()
 /* v8 ignore next -- production bootstrap side effect; this module runs only in the real API process (serve.test.mts reads it as source text rather than importing it). */
 enableApiEgressGuardrail()
 
+/* v8 ignore next -- production bootstrap side effect; this module runs only in the real API process and is never imported by unit tests. */
 apiEgressProxyTransport.setRoutingResolver(isApiEgressProxyEnabled)
 
 // On a deployed environment (staging or production), the Turnstile secret must be a real key —
