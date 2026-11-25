@@ -136,7 +136,7 @@ describe('creation lease consumer fault policy through real background CPU worke
           domains: ['bedrock-embeddings'],
           prefix: connection.prefix,
           concurrency: 1,
-          blockTimeout: 1_000,
+          blockTimeout: 100,
           promotionInterval: 50,
         }),
       )
