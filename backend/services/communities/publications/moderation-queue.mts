@@ -77,24 +77,21 @@ export async function searchCommunityModerationQueue(
   } = options
   const limit = Math.min(Math.max(Math.floor(rawLimit), 1), 100)
 
-  const decoded = after ? decodeCommunityModerationQueueCursor(after) : null
-  const afterCreatedAt = decoded?.afterCreatedAt ?? null
-  const afterId = decoded?.afterId ?? null
+  const page = {
+    after: after ? decodeCommunityModerationQueueCursor(after) : null,
+    limit: limit + 1,
+  }
 
   const wants = (candidate: CommunityModerationQueueSource) =>
     source === undefined || source === candidate
   const parts: SQLStatement[] = []
-  if (wants('report')) {
-    parts.push(
-      buildCommunityReportQueueQuery(communityId, status, { limit: limit + 1, after: decoded }),
-    )
-  }
+  if (wants('report')) parts.push(buildCommunityReportQueueQuery(communityId, status, page))
   // Reviews expose unpublished post titles/paths and flags are moderation signals; moderator only.
   if (includeModeratorSources && wants('community_review')) {
-    parts.push(buildCommunityReviewQueueQuery(communityId))
+    parts.push(buildCommunityReviewQueueQuery(communityId, page))
   }
   if (includeModeratorSources && wants('automod_flag')) {
-    parts.push(buildCommunityAutomodFlagQueueQuery(communityId))
+    parts.push(buildCommunityAutomodFlagQueueQuery(communityId, page))
   }
   if (parts.length === 0) return { entries: [], hasNextPage: false }
 
@@ -102,17 +99,16 @@ export async function searchCommunityModerationQueue(
     SELECT * FROM (`
   for (const [index, part] of parts.entries()) {
     if (index > 0) unionQuery.append(sql` UNION ALL `)
-    unionQuery.append(part)
+    // Each source applies the same cursor and order before its limit. A source row after
+    // its first full page cannot displace a row in the merged page.
+    unionQuery
+      .append(sql`(`)
+      .append(part)
+      .append(sql`)`)
   }
   unionQuery.append(sql`) combined`)
 
-  if (afterCreatedAt && afterId) {
-    unionQuery.append(
-      sql` WHERE (created_at, id) < (${afterCreatedAt}::timestamptz, ${afterId}::uuid)`,
-    )
-  }
-
-  unionQuery.append(sql` ORDER BY created_at DESC, id DESC LIMIT ${limit + 1}`)
+  unionQuery.append(sql` ORDER BY created_at DESC, id DESC LIMIT ${page.limit}`)
 
   const { rows } = await read(unionQuery)
   const hasNextPage = rows.length > limit

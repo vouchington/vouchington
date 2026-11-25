@@ -7,6 +7,11 @@ export function encodeCommunityModerationQueueCursor(entry: {
   ).toString('base64url')
 }
 
+export type CommunityModerationQueuePage = {
+  limit: number
+  after: ReturnType<typeof decodeCommunityModerationQueueCursor>
+}
+
 // Match the global reports cursor: created_at must be a microsecond UTC timestamp and
 // id a UUID. Without this, malformed cursor fields reach the `::timestamptz`/`::uuid`
 // casts in searchCommunityModerationQueue and PostgreSQL raises a 500.

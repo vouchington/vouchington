@@ -1,4 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import type { CommunityModerationQueuePage } from './moderation-queue-cursor.mts'
 
 type CommunityPostQueueSource = 'community_review' | 'automod_flag'
 
@@ -10,9 +11,13 @@ const POST_QUEUE_SOURCES: Record<CommunityPostQueueSource, { comment: string; cr
   }
 
 /** Pre-publication reviews: posts still waiting for a first moderator decision. */
-export function buildCommunityReviewQueueQuery(communityId: string) {
+export function buildCommunityReviewQueueQuery(
+  communityId: string,
+  page: CommunityModerationQueuePage,
+) {
   return buildCommunityPostQueueQuery(
     'community_review',
+    page,
     sql`
     WHERE cpr.community_id = ${communityId}
       AND cpr.approved_at IS NULL
@@ -26,9 +31,13 @@ export function buildCommunityReviewQueueQuery(communityId: string) {
  * Open automod flags. A flag is current only while the post is still published and the digest it
  * was computed for is the post's current one, so an edit retires it without any write.
  */
-export function buildCommunityAutomodFlagQueueQuery(communityId: string) {
+export function buildCommunityAutomodFlagQueueQuery(
+  communityId: string,
+  page: CommunityModerationQueuePage,
+) {
   return buildCommunityPostQueueQuery(
     'automod_flag',
+    page,
     sql`
     WHERE cpr.community_id = ${communityId}
       AND cpr.automod_action = 'review_queue'
@@ -42,7 +51,11 @@ export function buildCommunityAutomodFlagQueueQuery(communityId: string) {
   )
 }
 
-function buildCommunityPostQueueQuery(source: CommunityPostQueueSource, where: SQLStatement) {
+function buildCommunityPostQueueQuery(
+  source: CommunityPostQueueSource,
+  page: CommunityModerationQueuePage,
+  where: SQLStatement,
+) {
   const { comment, createdAt } = POST_QUEUE_SOURCES[source]
   const postPath = `'/' || CASE rp.post_type
         WHEN 'story' THEN 'story'
@@ -105,5 +118,14 @@ function buildCommunityPostQueueQuery(source: CommunityPostQueueSource, where: S
       LIMIT 1
     ) ps ON true
   `)
-  return query.append(where)
+  query.append(where)
+  if (page.after) {
+    const { afterCreatedAt, afterId } = page.after
+    query
+      .append(` AND (${createdAt}, cpr.post_id) < `)
+      .append(sql`(${afterCreatedAt}::timestamptz, ${afterId}::uuid)`)
+  }
+  return query
+    .append(` ORDER BY ${createdAt} DESC, cpr.post_id DESC`)
+    .append(sql` LIMIT ${page.limit}`)
 }
