@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { runSequentially } from '@modules/utils/run-sequentially'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueCreatePostEmbedding } from '@queues/bedrock-embeddings/enqueues'
 import { admitAutomatedPostModeration, resetPostClearance } from '@services/post-clearance'
@@ -74,17 +75,21 @@ export async function updateStoryPostAgentResult(
       ai_summary_markdown: aiSummaryMarkdown,
       images: post.images ?? [],
     }).content_sha256
-    await query(sql`/* updateStoryPostAgentResult:writeHashes */
-      UPDATE posts
-      SET bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha},
-          llm_moderation_content_sha256 = ${moderationContentSha}
-      WHERE id = ${postId}
-    `)
-    await resetPostClearance(postId, null, { query })
-    await recordPostPublicationChange(query, {
-      scope: { type: 'post', postId },
-      reason: 'post_content_reset',
-    })
+    await runSequentially([
+      () =>
+        query(sql`/* updateStoryPostAgentResult:writeHashes */
+        UPDATE posts
+        SET bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha},
+            llm_moderation_content_sha256 = ${moderationContentSha}
+        WHERE id = ${postId}
+      `),
+      () => resetPostClearance(postId, null, { query }),
+      () =>
+        recordPostPublicationChange(query, {
+          scope: { type: 'post', postId },
+          reason: 'post_content_reset',
+        }),
+    ])
     return true
   }
 }
