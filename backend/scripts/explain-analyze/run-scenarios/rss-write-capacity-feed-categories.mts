@@ -30,7 +30,13 @@ export async function runRssFeedCategoryWriteScenario(fixture: RssWriteCapacityF
   await seedFeedCategoryBackground(categories)
   await restoreFeedCategoryBaseline(fixture.feedId, existing)
 
-  registerScenarioContract(scenario, { allowEmptyResult: true, expectations: [] })
+  registerScenarioContract(scenario, {
+    allowEmptyResult: true,
+    expectations: [
+      { kind: 'maxInputRows', nodeType: 'Sort', max: categories.length },
+      { kind: 'maxInputRows', nodeType: 'Function Scan', max: categories.length },
+    ],
+  })
   await runAndCapture(
     scenario,
     async () => {

@@ -45,7 +45,13 @@ async function runIdentityWrite(fixture: RssWriteCapacityFixture) {
   }
   assert.equal(existing.length, half)
 
-  registerScenarioContract(scenario, { allowEmptyResult: true, expectations: [] })
+  registerScenarioContract(scenario, {
+    allowEmptyResult: true,
+    expectations: [
+      { kind: 'maxInputRows', nodeType: 'Sort', max: items.length },
+      { kind: 'maxInputRows', nodeType: 'Function Scan', max: items.length },
+    ],
+  })
   await runAndCapture(
     scenario,
     async () => {
@@ -79,7 +85,12 @@ async function runSourceWrite(fixture: RssWriteCapacityFixture) {
      SELECT $1::uuid, item_id, $3::timestamptz FROM unnest($2::uuid[]) AS input(item_id)`,
     [fixture.feedId, sourceIds, retainedPublishedAt],
   )
-  registerScenarioContract(scenario, { expectations: [] })
+  registerScenarioContract(scenario, {
+    expectations: [
+      { kind: 'maxInputRows', nodeType: 'Sort', max: fixture.itemIds.length },
+      { kind: 'maxInputRows', nodeType: 'Function Scan', max: fixture.itemIds.length },
+    ],
+  })
   await runAndCapture(
     scenario,
     async () => {
