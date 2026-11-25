@@ -14,4 +14,10 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'related-posts-by-url-at-cap',
   'rss-ingest-content-at-cap',
   'rss-hard-delete-sources-at-cap',
+  'rss-ingest-identities-at-cap',
+  'rss-ingest-source-associations-at-cap',
+  'rss-item-category-hashtag-aliases-at-cap',
+  'rss-item-category-insert-at-cap',
+  'rss-item-category-update-at-cap',
+  'rss-feed-category-upsert-at-cap',
 ] as const

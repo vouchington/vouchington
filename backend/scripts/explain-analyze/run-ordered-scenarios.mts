@@ -28,6 +28,7 @@ import {
 import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
 import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
 import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard-delete-source-capacity.mts'
+import { runRssWriteCapacityScenarios } from './run-scenarios/rss-write-capacity.mts'
 
 export type OrderedRunner = () => Promise<unknown>
 
@@ -106,6 +107,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runRelatedPostUrlCapacityScenario,
   runRssIngestCapacityScenario,
   runRssHardDeleteSourceCapacityScenario,
+  runRssWriteCapacityScenarios,
 ]
 
 /**
