@@ -12,6 +12,23 @@ export async function withCapacityModmailConversation(
   senderId: string,
   work: (conversationId: string, recipients: string[]) => Promise<void>,
 ) {
+  // #6400: Both push-intent insert paths must reuse the nested foreign-key check plan.
+  const { rows } = await write<{ proname: string }>(sql`/* verifyExplainModmailCapturePlanPolicy */
+    SELECT proname FROM pg_catalog.pg_proc
+    WHERE oid IN (
+      'fn_project_capture_inserted_notification_push_intents()'::regprocedure,
+      'fn_project_capture_notification_push_intent()'::regprocedure
+    )
+      AND proconfig @> ARRAY['plan_cache_mode=force_generic_plan']
+    ORDER BY proname
+  `)
+  assert.deepEqual(
+    rows.map(row => row.proname),
+    [
+      'fn_project_capture_inserted_notification_push_intents',
+      'fn_project_capture_notification_push_intent',
+    ],
+  )
   const moderatorIds = Array.from(
     { length: COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES.moderators_per_community },
     (_, index) => seedUuid(11_000 + index, '01'),

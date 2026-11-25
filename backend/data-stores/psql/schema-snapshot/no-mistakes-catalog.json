@@ -1659,11 +1659,11 @@
       "returnsSet": false
     },
     "fn_project_capture_inserted_notification_push_intents()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_capture_inserted_notification_push_intents()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO notification_push_intents (user_id, notification_id, conversation_id)\n  SELECT user_id, id, conversation_id\n  FROM inserted_notifications\n  ORDER BY user_id, id\n  ON CONFLICT (user_id, notification_id) DO NOTHING;\n  RETURN NULL;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_capture_inserted_notification_push_intents()\n RETURNS trigger\n LANGUAGE plpgsql\n SET plan_cache_mode TO 'force_generic_plan'\nAS $function$\nBEGIN\n  INSERT INTO notification_push_intents (user_id, notification_id, conversation_id)\n  SELECT user_id, id, conversation_id\n  FROM inserted_notifications\n  ORDER BY user_id, id\n  ON CONFLICT (user_id, notification_id) DO NOTHING;\n  RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_project_capture_notification_push_intent()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_capture_notification_push_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO notification_push_intents (user_id, notification_id, conversation_id)\n  VALUES (NEW.user_id, NEW.id, NEW.conversation_id)\n  ON CONFLICT (user_id, notification_id) DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_capture_notification_push_intent()\n RETURNS trigger\n LANGUAGE plpgsql\n SET plan_cache_mode TO 'force_generic_plan'\nAS $function$\nBEGIN\n  INSERT INTO notification_push_intents (user_id, notification_id, conversation_id)\n  VALUES (NEW.user_id, NEW.id, NEW.conversation_id)\n  ON CONFLICT (user_id, notification_id) DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnsSet": false
     },
     "fn_project_community_active_count()": {

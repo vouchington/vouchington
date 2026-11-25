@@ -394,6 +394,7 @@ CREATE OR REPLACE FUNCTION public.fn_project_activitypub_post_likes()
 CREATE OR REPLACE FUNCTION public.fn_project_capture_inserted_notification_push_intents()
  RETURNS trigger
  LANGUAGE plpgsql
+ SET plan_cache_mode TO 'force_generic_plan'
 ```
 
 ## `fn_project_capture_notification_push_intent`
@@ -402,6 +403,7 @@ CREATE OR REPLACE FUNCTION public.fn_project_capture_inserted_notification_push_
 CREATE OR REPLACE FUNCTION public.fn_project_capture_notification_push_intent()
  RETURNS trigger
  LANGUAGE plpgsql
+ SET plan_cache_mode TO 'force_generic_plan'
 ```
 
 ## `fn_project_community_active_count`
