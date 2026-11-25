@@ -32,7 +32,11 @@ type Fixture = Awaited<ReturnType<typeof seedCommunityHistoryReads>>
 async function runSavedReplies({ communityId, replies, seededRows }: Fixture) {
   const scenario = 'community-saved-replies-at-cap'
   const name = 'getCommunitySavedReplies'
-  registerScenarioContract(scenario, { seededRows, expectations: [] })
+  registerScenarioContract(scenario, {
+    seededRows,
+    // This is the current main plan's worst observed scan. Tighten in #6392.
+    expectations: [{ kind: 'maxProcessedRows', relation: 'community_saved_replies', max: 259 }],
+  })
   await runAndCapture(
     scenario,
     async () => {
@@ -62,7 +66,13 @@ async function runSavedReplies({ communityId, replies, seededRows }: Fixture) {
 async function runPromptHistory({ communityId, revisionIds, seededRows }: Fixture) {
   const scenario = 'community-agent-prompt-history-at-caller-bound'
   const name = 'listCommunityAgentPromptHistory'
-  registerScenarioContract(scenario, { seededRows, expectations: [] })
+  registerScenarioContract(scenario, {
+    seededRows,
+    // This is the current main plan's worst observed scan. Tighten in #6393.
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'community_agent_prompt_revisions', max: 597 },
+    ],
+  })
   await runAndCapture(
     scenario,
     async () => {
@@ -90,7 +100,11 @@ async function runPromptHistory({ communityId, revisionIds, seededRows }: Fixtur
 async function runModeratorActions({ communityId, actionIds, seededRows }: Fixture) {
   const scenario = 'search-moderator-actions-community-at-cap'
   const name = 'searchModeratorActions'
-  registerScenarioContract(scenario, { seededRows, expectations: [] })
+  registerScenarioContract(scenario, {
+    seededRows,
+    // This is the current main plan's worst observed scan. Tighten in #6394.
+    expectations: [{ kind: 'maxProcessedRows', relation: 'moderator_actions', max: 3_855 }],
+  })
   await runAndCapture(
     scenario,
     async () => {
@@ -119,7 +133,11 @@ async function runModeratorActions({ communityId, actionIds, seededRows }: Fixtu
 async function runUserModNotes({ noteTargetId, noteIds, seededRows }: Fixture) {
   const scenario = 'list-user-mod-notes-at-cap'
   const name = 'listUserModNotes'
-  registerScenarioContract(scenario, { seededRows, expectations: [] })
+  registerScenarioContract(scenario, {
+    seededRows,
+    // This is the current main plan's worst observed scan. Tighten in #6395.
+    expectations: [{ kind: 'maxProcessedRows', relation: 'user_moderator_notes', max: 3_391 }],
+  })
   await runAndCapture(
     scenario,
     async () => {
