@@ -67,7 +67,7 @@ rated_positively AS (
     )
     .append(`,
 `)
-    .append(rankingCtesSql(referralProgramId))
+    .append(rankingCtesSql(referralProgramId, 'in-network'))
     .append(
       `,
 ranked AS (
