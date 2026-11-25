@@ -43,17 +43,17 @@ use the legacy infrastructure-side build. The handoff is asynchronous: Vouchingt
 wait for the receiver.
 
 For Storybook, the successful trusted-main workflow uploads one protected
-`storybook-<run-id>-<run-attempt>` artifact with one-day retention. The receiver selects that exact
+`storybook-<run-id>-<run-attempt>` artifact with 7-day retention. The receiver selects that exact
 source-run artifact by immutable artifact ID and publishes the validated static tree without
 checking out or rebuilding product source. PR and dependency-bot Storybook runs stay test-only.
 
 For documentation, the successful trusted-main workflow uploads one protected
-`docs-<run-id>-<run-attempt>` artifact with one-day retention. It contains the rendered MCP catalog and PostgreSQL schema references under its sole `docs/` root; the
+`docs-<run-id>-<run-attempt>` artifact with 7-day retention. It contains the rendered MCP catalog and PostgreSQL schema references under its sole `docs/` root; the
 receiver selects that exact source-run artifact by immutable artifact ID. Vouchington does not create
 the documentation landing page or hold provider credentials.
 
 For articles, the successful trusted-main workflow uploads one protected
-`articles-<run-id>-<run-attempt>` artifact with one-day retention. It contains only regular article
+`articles-<run-id>-<run-attempt>` artifact with 7-day retention. It contains only regular article
 Markdown files under its sole `articles/` root and excludes the source-only `README.md`; the receiver
 selects that exact source-run artifact by immutable artifact ID and retains destination mapping and
 S3/R2 publication ownership.

@@ -9,10 +9,7 @@ import {
   runPoolObservationExclusively,
 } from 'vouchington-tooling/postgres-test-faults'
 import { recordModerationTrainingFeedback } from '../services/moderation-training/feedback.mts'
-import { PARTITION_DROP_POLICIES } from '../data-stores/psql/config-driven/utils/partition-drop-policies.mts'
 import { POST_CLEARANCE_CHANGES } from '../data-stores/psql/migration-runner/create-post-clearance-partitions.mts'
-import { retireMonthlyPartitionCandidate } from '../data-stores/psql/migration-runner/monthly-partitions.mts'
-import { getMonthlyPartitionUpperBound } from '../data-stores/psql/migration-runner/partition-drop-guard.mts'
 import { acquireTestModerationTransparencyDateReservation } from './entities/moderation-transparency-date-reservation.mts'
 import { insertTestPost } from './entities/posts.mts'
 import { createTestUserDirect } from './entities/users-direct.mts'
@@ -20,15 +17,37 @@ import { hardDeleteTestUser } from './entities/users-lifecycle.mts'
 import { deleteTestPostRow } from './publication-test-queries.mts'
 import { testLockNoticeOptions } from './postgres-lock-notice-options.mts'
 
-export async function createTestClearancePartitionFeedbackRace() {
-  const reservation = await acquireTestModerationTransparencyDateReservation()
-  const occurredAt = reservation.now
-  const partition = buildMonthlyPartitionName(
-    POST_CLEARANCE_CHANGES,
-    occurredAt.getUTCFullYear(),
-    occurredAt.getUTCMonth() + 1,
+const MAX_RESERVATION_ATTEMPTS = 20
+
+/**
+ * Reserves a test month whose clearance partition does not exist yet. The test leaves its own
+ * partition behind in the shared dirty database, so a slot with a leftover partition is skipped.
+ */
+async function reserveAbsentClearancePartitionMonth() {
+  for (let attempt = 0; attempt < MAX_RESERVATION_ATTEMPTS; attempt++) {
+    const reservation = await acquireTestModerationTransparencyDateReservation()
+    const occurredAt = reservation.now
+    const partition = buildMonthlyPartitionName(
+      POST_CLEARANCE_CHANGES,
+      occurredAt.getUTCFullYear(),
+      occurredAt.getUTCMonth() + 1,
+    )
+    try {
+      if ((await getTestClearancePartitionState(partition)) === 'absent')
+        return { reservation, occurredAt, partition }
+    } catch (err) {
+      await reservation.release()
+      throw err
+    }
+    await reservation.release()
+  }
+  throw new Error(
+    `No test month without a clearance partition found in ${MAX_RESERVATION_ATTEMPTS} reservations`,
   )
-  let owned = false
+}
+
+export async function createTestClearancePartitionFeedbackRace() {
+  const { reservation, occurredAt, partition } = await reserveAbsentClearancePartitionMonth()
   let actorUserId: string | undefined
   let postId: string | undefined
   onTestFinished(async () => {
@@ -39,16 +58,12 @@ export async function createTestClearancePartitionFeedbackRace() {
         await transaction.commit()
       }
       if (actorUserId) await hardDeleteTestUser(actorUserId)
-      if (owned && (await getTestClearancePartitionState(partition)) === 'attached') {
-        await retireTestRacePartition(partition)
-      }
     } finally {
       await reservation.release()
     }
   })
   if ((await getTestClearancePartitionState(partition)) !== 'absent')
     throw new Error(`Test month already has a relation called ${partition}`)
-  owned = true
   const actor = await createTestUserDirect()
   actorUserId = actor.id
   postId = await insertTestPost({
@@ -59,26 +74,6 @@ export async function createTestClearancePartitionFeedbackRace() {
     clearanceStatus: 'pending',
   })
   return { partition, occurredAt, postId, actorUserId }
-}
-
-async function retireTestRacePartition(partition: string): Promise<void> {
-  const table = POST_CLEARANCE_CHANGES
-  const upperBound = getMonthlyPartitionUpperBound(table, partition)
-  const minimumMonths = PARTITION_DROP_POLICIES[table]?.minimumRetentionMonths
-  if (!upperBound || minimumMonths == null)
-    throw new Error('Clearance history partition has no calendar retention bound')
-  const referenceDate = new Date(
-    Date.UTC(upperBound.getUTCFullYear(), upperBound.getUTCMonth() + minimumMonths, 15),
-  )
-  const result = await retireMonthlyPartitionCandidate(
-    { table, partition, upperBound },
-    referenceDate,
-    1,
-  )
-  if (result.outcome !== 'dropped')
-    throw new Error(`Cleanup could not retire owned clearance partition ${partition}`, {
-      cause: result,
-    })
 }
 
 export async function recordFeedbackDuringClearancePartitionCreation(

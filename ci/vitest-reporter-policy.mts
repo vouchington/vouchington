@@ -56,7 +56,7 @@ export function vitestReporterPolicyViolations(
       !/^actions\/upload-artifact@[0-9a-f]{40}$/.test(upload.uses ?? '') ||
       upload.with?.name !== artifactName ||
       upload.with?.path !== output ||
-      upload.with?.['retention-days'] !== 1 ||
+      upload.with?.['retention-days'] !== 7 ||
       upload.with?.['if-no-files-found'] !== 'warn' ||
       typeof upload['timeout-minutes'] !== 'number' ||
       upload['timeout-minutes'] <= 0

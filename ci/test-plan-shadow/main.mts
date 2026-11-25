@@ -99,7 +99,7 @@ export function main(config: Settings): void {
     join(config.outDir, 'test-plan-shadow.json'),
     `${JSON.stringify(report, null, 2)}\n`,
   )
-  // Artifacts last one day, so keep one greppable line in the job log for later aggregation.
+  // Artifacts last seven days, so keep one greppable line in the job log for later aggregation.
   process.stdout.write(`test-plan-shadow ${JSON.stringify(report)}\n`)
   const summary = renderSummary(report)
   if (config.summaryFile) appendFileSync(config.summaryFile, summary)

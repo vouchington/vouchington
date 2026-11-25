@@ -121,7 +121,7 @@ runs from the default branch, so a change to it takes effect only after it merge
   `backend-contract-artifacts`, and `backend/data-stores/psql/**` also selects the generated-columns
   freshness test; `backend/api/**` selects every Playwright spec.
 - **Measurement.** It compares the plan with the run's own JUnit reports and writes a step summary,
-  one `test-plan-shadow` log line and a one-day `test-plan-shadow-<run id>` artifact. They hold the
+  one `test-plan-shadow` log line and a 7-day `test-plan-shadow-<run id>` artifact. They hold the
   planned and total test files, the estimated job-minutes saved (the summed JUnit durations of
   unplanned files), and the misses: files that failed in the full run but were not planned.
 - **Bar.** Zero misses over about 200 pull requests, then a separate decision to apply planning on

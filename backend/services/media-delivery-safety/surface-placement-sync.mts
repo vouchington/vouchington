@@ -1,7 +1,10 @@
 import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 import type { ImagePlacementTuple } from '@voucha/types/entities/user'
 import sql from 'sql-template-strings'
-import { imageSurfaceWhere as surfaceWhere, type ImageSurfaceReference } from './surface-lock.mts'
+import {
+  imageSurfaceWhere as surfaceWhere,
+  type ImageSurfaceReference,
+} from './surface-reference.mts'
 import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 import { assertImagesReadyForSurface } from './asset-admission-lock.mts'
 import { ensureImagePlacementBinding } from './retained-image-identities.mts'

@@ -78,7 +78,7 @@ vi.mock(import('../command-link-item'), () => ({
         onOpenChange(false)
       }}
     >
-      {label.kind === 'ui-text'
+      {label.kind === 'ui-text' || label.kind === 'third-party-text'
         ? label.text
         : label.kind === 'rss-item-title'
           ? label.title?.trim()

@@ -245,7 +245,7 @@
     "@vouchington/pagination": "^0.0.5",
     "@vouchington/rate-limit": "^0.4.0",
     "@vouchington/sentry": "^0.7.0",
-    "@vouchington/server-utils": "^0.0.1",
+    "@vouchington/server-utils": "^0.1.0",
     "@vouchington/session-jwt": "^0.0.3",
     "@vouchington/utils": "^0.13.0",
     "@vouchington/worker-runtime": "^0.3.2",

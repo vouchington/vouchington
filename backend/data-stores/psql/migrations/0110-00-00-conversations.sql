@@ -106,6 +106,11 @@ CREATE INDEX IF NOT EXISTS idx_conversations__created_by_id__id_desc
 ON conversations (created_by_id, id DESC)
 WHERE created_by_id IS NOT NULL;
 
+-- Serves the owner's active chat page without walking their other conversation channels.
+CREATE INDEX IF NOT EXISTS idx_conversations__active_chat_created_by_id__id_desc
+ON conversations (created_by_id, id DESC)
+WHERE created_by_id IS NOT NULL AND channel_type = 'chat' AND deleted_at IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_conversations__post_id ON conversations (post_id) WHERE post_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

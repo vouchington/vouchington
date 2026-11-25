@@ -9,14 +9,14 @@ const KEEP_NAMES = [
   'storybook-123456789-2',
   'next-static-abc123',
   // Best-effort diagnostic evidence for an intermittent CI failure (issue #10937).
-  // retention-days: 1 already bounds storage cost, so there is no need to also delete it on the
+  // retention-days: 7 already bounds storage cost, so there is no need to also delete it on the
   // very run whose evidence it is meant to preserve.
   'web-build-timings-build-web-targets-123-1',
   // Same reasoning as web-build-timings-* above, for issue #51: a flaky test that fails then
   // passes on retry is exactly the case these diagnostics exist to capture.
   'playwright-test-results-shard-2',
   // Per-shard backend JUnit reports are per-file duration evidence for shard-size audits; keep
-  // them for their one-day retention instead of sweeping them after a successful run.
+  // them for their seven-day retention instead of sweeping them after a successful run.
   'backend-junit-shard-2',
   'backend-modules-junit',
   'lambdas-junit',

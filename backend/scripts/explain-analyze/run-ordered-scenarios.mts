@@ -1,4 +1,7 @@
 import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
+import { runConversationListCapacityScenario } from './run-scenarios/conversation-list-capacity.mts'
+import { runCommunitySearchCapacityScenario } from './run-scenarios/community-search-capacity.mts'
+import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/community-membership-read-capacity.mts'
 import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
 import { runMembershipOrphanedQueuedGrantScenarios } from './run-scenarios/membership-orphaned-queued-grants.mts'
@@ -17,6 +20,13 @@ import {
 } from './seed-data/dispatch-work-plans.mts'
 import { runAnalyze } from './seed-data/maintenance.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
+import { runConversationMessageCapacityScenario } from './run-scenarios/conversation-message-capacity.mts'
+import {
+  runMarkNotificationInboxCapacityScenario,
+  runNotificationInboxCapacityScenario,
+} from './run-scenarios/notification-inbox-capacity.mts'
+import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
+import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
 
 export type OrderedRunner = () => Promise<unknown>
 
@@ -82,10 +92,18 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // Expiry fixtures come after the shared membership writer's corpus and all ordinary plans.
   runMembershipExpiryPageScenarios,
   runMembershipOrphanedQueuedGrantScenarios,
+  runConversationListCapacityScenario,
+  runCommunitySearchCapacityScenario,
+  runCommunityMembershipReadCapacityScenarios,
   // These fixtures change crawler-table statistics; keep them after every existing plan.
   runAggregateExistenceScenarios,
   // Keep the extra communities out of ordinary search and ranking plan captures.
   runAiUsageTotalsScenarios,
+  runConversationMessageCapacityScenario,
+  runNotificationInboxCapacityScenario,
+  runMarkNotificationInboxCapacityScenario,
+  runRelatedPostUrlCapacityScenario,
+  runRssIngestCapacityScenario,
 ]
 
 /**

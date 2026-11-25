@@ -36,7 +36,7 @@
     "test:smoke": "./scripts/tests/smoke-test-cloudflare-worker.sh"
   },
   "dependencies": {
-    "@sentry/cloudflare": "^11.13.0",
+    "@sentry/cloudflare": "^11.14.0",
     "@ts-shared/cache": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/languages": "workspace:^",
@@ -53,12 +53,12 @@
     "isbot": "^5.2.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261116.1",
+    "@cloudflare/workers-types": "^5.20261118.1",
     "@types/node": "^26.6.6",
     "@typescript/native": "npm:typescript@^7.0.2",
     "esbuild": "^0.28.2",
     "vitest": "^5.1.0",
-    "wrangler": "^4.163.0"
+    "wrangler": "^4.164.0"
   },
   "engines": {
     "node": ">=24.16.0"
