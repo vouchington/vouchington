@@ -616,6 +616,9 @@
     "search-copyright-association-at-hard-cap",
     "list-copyright-guest-capabilities-at-cap",
     "related-posts-by-url-at-cap",
+    "account-modmail-threads-at-cap",
+    "account-modmail-messages-at-cap",
+    "account-conversation-participants-at-cap",
     "rss-ingest-content-at-cap",
     "rss-hard-delete-sources-at-cap",
     "account-email-addresses-at-cap",
@@ -627,6 +630,9 @@
     "rss-item-category-hashtag-aliases-at-cap",
     "rss-item-category-insert-at-cap",
     "rss-item-category-update-at-cap",
-    "rss-feed-category-upsert-at-cap"
+    "rss-feed-category-upsert-at-cap",
+    "account-membership-history-at-cap",
+    "account-referral-links-at-cap",
+    "account-referral-clicks-at-cap"
   ]
 }

@@ -3730,6 +3730,9 @@ importers:
       '@services/articles':
         specifier: workspace:^
         version: link:../services/articles
+      '@services/attribution':
+        specifier: workspace:^
+        version: link:../services/attribution
       '@services/autotagger':
         specifier: workspace:^
         version: link:../services/autotagger
