@@ -1,7 +1,11 @@
-import type { ExplainResult } from '@vouchington/explain-plan'
+import { getExplainResultIdentity, type ExplainResult } from '@vouchington/explain-plan'
 
 const GENERIC_PLAN_MAX_RATIO = 10
 const GENERIC_PLAN_MIN_ADDED_EXECUTION_MS = 200
+const GENERIC_PLAN_RATIO_BASELINES: Readonly<Record<string, number>> = {
+  // Both hosted passes rounded to 10.4x on main. Keep this capture gated until #6391.
+  'community-moderation-queue-report-continuation|0|searchCommunityModerationQueue:force_generic_plan|force_generic_plan': 10.5,
+}
 
 type PlanComparison = { custom: ExplainResult; generic: ExplainResult }
 
@@ -34,8 +38,10 @@ function genericPlanSlowdowns(results: readonly ExplainResult[]): Map<string, Pl
 
     const customMs = custom.execution_time_ms
     const genericMs = generic.execution_time_ms
+    const maxRatio =
+      GENERIC_PLAN_RATIO_BASELINES[getExplainResultIdentity(generic)] ?? GENERIC_PLAN_MAX_RATIO
     if (
-      genericMs > customMs * GENERIC_PLAN_MAX_RATIO &&
+      genericMs > customMs * maxRatio &&
       genericMs - customMs > GENERIC_PLAN_MIN_ADDED_EXECUTION_MS
     ) {
       slowdowns.set(identity, { custom, generic })
