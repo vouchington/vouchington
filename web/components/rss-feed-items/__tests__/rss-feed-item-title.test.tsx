@@ -38,7 +38,7 @@ describe('RssFeedItemTitle', () => {
     )
 
     const title = screen.getByText('Article')
-    expect(title).not.toHaveAttribute('lang')
+    expect(title).toHaveAttribute('lang', '')
     expect(title).toHaveAttribute('dir', 'auto')
   })
 

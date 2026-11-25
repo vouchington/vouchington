@@ -89,7 +89,7 @@ describe('NewsItemCard content language', () => {
     expect(title.closest('a')).toHaveAttribute('data-pw', 'news-item-title-link')
   })
 
-  it('normalizes a regional detected language tag and omits an unsupported one', () => {
+  it('normalizes a regional detected language tag and marks an unsupported one with an empty lang', () => {
     const { rerender } = render(
       <NewsItemCard item={{ ...mockItem, lingua_rs_detected_language: 'fr-CA' }} />,
     )
@@ -97,7 +97,7 @@ describe('NewsItemCard content language', () => {
 
     rerender(<NewsItemCard item={{ ...mockItem, lingua_rs_detected_language: 'unknown' }} />)
     const excerpt = screen.getByText('This is a test article excerpt.')
-    expect(excerpt).not.toHaveAttribute('lang')
+    expect(excerpt).toHaveAttribute('lang', '')
     expect(excerpt).toHaveAttribute('dir', 'auto')
   })
 

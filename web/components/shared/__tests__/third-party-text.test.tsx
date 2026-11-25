@@ -3,19 +3,21 @@ import { describe, expect, it } from 'vitest'
 import { ThirdPartyText } from '../third-party-text'
 
 describe('ThirdPartyText', () => {
-  it('sets dir auto and omits lang on the requested element', () => {
+  it('sets an empty lang and dir auto on the requested element under an English page', () => {
     render(
-      <ThirdPartyText
-        as='p'
-        className='summary'
-        text='نص من خدمة أخرى'
-      />,
+      <div lang='en'>
+        <ThirdPartyText
+          as='p'
+          className='summary'
+          text='نص من خدمة أخرى'
+        />
+      </div>,
     )
 
     const text = screen.getByText('نص من خدمة أخرى')
     expect(text.tagName).toBe('P')
     expect(text).toHaveClass('summary')
     expect(text).toHaveAttribute('dir', 'auto')
-    expect(text).not.toHaveAttribute('lang')
+    expect(text).toHaveAttribute('lang', '')
   })
 })

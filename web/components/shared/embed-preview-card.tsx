@@ -25,7 +25,7 @@ interface EmbedPreviewCardProps {
 function authoredLanguageAttributes(lang: string | null) {
   const language = getEffectiveContentLanguage({ declaredLanguage: lang })
   return {
-    lang: language,
+    lang: language ?? '',
     dir: getContentLanguageDir(language),
   }
 }

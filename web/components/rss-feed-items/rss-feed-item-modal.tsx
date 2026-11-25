@@ -159,7 +159,7 @@ export async function RssFeedItemModal({
               ) : textFallback ? (
                 <p
                   className='whitespace-pre-line break-words text-sm text-muted-foreground'
-                  lang={contentLanguage}
+                  lang={contentLanguage ?? ''}
                   dir={getContentLanguageDir(contentLanguage)}
                 >
                   {textFallback}

@@ -15,7 +15,7 @@ interface MarkdownContentProps {
   /**
    * ISO 639-1 language of this content. Required so a call site chooses a
    * language explicitly. Null or undefined means the language is not known yet:
-   * the element omits `lang` and sets `dir="auto"`.
+   * the element sets `lang=""` (unknown, not inherited) and `dir="auto"`.
    */
   lang: string | null | undefined
   /**
@@ -34,7 +34,7 @@ export function MarkdownContent({
   lang,
   preview = false,
 }: MarkdownContentProps) {
-  const htmlLang = lang ?? undefined
+  const htmlLang = lang ?? ''
   const contentHtml = preview
     ? sanitizeHtmlFragmentDemotingHeadings(html)
     : html

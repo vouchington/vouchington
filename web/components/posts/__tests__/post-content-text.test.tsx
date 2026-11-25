@@ -37,7 +37,7 @@ describe('PostContentText', () => {
       />,
     )
 
-    expect(screen.getByText('Text')).not.toHaveAttribute('lang')
+    expect(screen.getByText('Text')).toHaveAttribute('lang', '')
     expect(screen.getByText('Text')).toHaveAttribute('dir', 'auto')
   })
 
