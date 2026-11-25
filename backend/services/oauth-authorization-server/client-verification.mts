@@ -120,7 +120,9 @@ export async function verifyOAuthClient(
 ): Promise<OAuthClientVerificationResult> {
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
     // lock-reason: prevents: stale before-state in the verification audit; writer: concurrent OAuth client verification or owner edits.
-    // PostgreSQL 18.4 can return stale OLD values after an UPDATE wait on this triggered table.
+    // Both client-verification prelocks can go once CI and production run PostgreSQL 18.6 or later.
+    // 18.6 fixes stale UPDATE RETURNING OLD values after a concurrent update on a table with a
+    // BEFORE UPDATE trigger. See https://www.postgresql.org/docs/18/release-18-6.html.
     const { rows: previous } = await query<{ verified_at: Date | null }>(
       '/* verifyOAuthClient:previous */ SELECT verified_at FROM oauth_clients WHERE id = $1 FOR UPDATE',
       [id],
@@ -170,7 +172,7 @@ export async function verifyOAuthClient(
 export async function unverifyOAuthClient(currentUserId: string, id: string): Promise<boolean> {
   return runWithTransaction(undefined, async (query: TransactionQuery) => {
     // lock-reason: prevents: stale before-state in the unverification audit; writer: concurrent OAuth client verification or owner edits.
-    // The same PostgreSQL 18.4 RETURNING OLD limitation applies here.
+    // Remove this prelock under the same PostgreSQL 18.6 rollout condition as verifyOAuthClient.
     const { rows } = await query<OAuthClientVerificationReview & { verified_at: Date | null }>(
       '/* unverifyOAuthClient:previous */ SELECT client_name, redirect_uris, verified_at FROM oauth_clients WHERE id = $1 FOR UPDATE',
       [id],
