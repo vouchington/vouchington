@@ -24,29 +24,51 @@ const maxBatchesField = (stage: ModerationSummaryPagedStage) =>
 const entries = <T,>(make: (stage: ModerationSummaryPagedStage) => [string, T][]) =>
   Object.fromEntries(moderationSummaryPagedStages.flatMap(make))
 
-export const moderationSummaryWorkMaxValues: Record<string, number> = entries(stage => [
-  [pageSizeField(stage), 100],
-  [maxBatchesField(stage), 20],
-])
-export const moderationSummaryWorkDescriptions: Record<string, string> = entries(stage => [
-  [pageSizeField(stage), `Rows read by one ${stage} page of a moderator digest collection job.`],
-  [
-    maxBatchesField(stage),
-    `Pages one ${stage} moderator digest collection job reads before it continues.`,
-  ],
-])
-const defaultFields: Record<string, number> = entries(stage => [
-  [pageSizeField(stage), defaultPageSize(stage)],
-  [maxBatchesField(stage), 1],
-])
+export const MODERATION_SUMMARY_EVASION_RANK_MAX = 100
+const evasionRankField = 'suspected_ban_evaders_rank_cap'
+
+export const moderationSummaryWorkMaxValues: Record<string, number> = {
+  ...entries(stage => [
+    [pageSizeField(stage), 100],
+    [maxBatchesField(stage), 20],
+  ]),
+  [evasionRankField]: MODERATION_SUMMARY_EVASION_RANK_MAX,
+}
+export const moderationSummaryWorkDescriptions: Record<string, string> = {
+  ...entries(stage => [
+    [pageSizeField(stage), `Rows read by one ${stage} page of a moderator digest collection job.`],
+    [
+      maxBatchesField(stage),
+      `Pages one ${stage} moderator digest collection job reads before it continues.`,
+    ],
+  ]),
+  [evasionRankField]:
+    'Maximum suspected ban evaders counted toward a community’s ranking in the moderator digest. The displayed count keeps its existing bound.',
+}
 export const moderationSummaryWorkConfig = new DynamicConfig({
   key: 'moderation-summary-work-config',
-  fieldTypes: entries<'number'>(stage => [
-    [pageSizeField(stage), 'number'],
-    [maxBatchesField(stage), 'number'],
-  ]),
-  defaultFields,
+  fieldTypes: {
+    ...entries<'number'>(stage => [
+      [pageSizeField(stage), 'number'],
+      [maxBatchesField(stage), 'number'],
+    ]),
+    [evasionRankField]: 'number',
+  },
+  defaultFields: {
+    ...entries(stage => [
+      [pageSizeField(stage), defaultPageSize(stage)],
+      [maxBatchesField(stage), 1],
+    ]),
+    [evasionRankField]: MODERATION_SUMMARY_EVASION_RANK_MAX,
+  },
 })
+
+export function getModerationSummaryEvasionRankCap(): number {
+  return getBoundedPositiveIntegerField(moderationSummaryWorkConfig, evasionRankField, {
+    defaultValue: MODERATION_SUMMARY_EVASION_RANK_MAX,
+    maxValue: MODERATION_SUMMARY_EVASION_RANK_MAX,
+  })
+}
 
 /** Test-only page size overrides: one for memberships and one for every source stage. */
 export type ModerationSummaryPageSizeOverride = {

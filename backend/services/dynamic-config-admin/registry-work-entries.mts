@@ -158,6 +158,12 @@ export const workDynamicConfigRegistryEntries = [
           { description: field.replaceAll('_', ' '), minValue: 1, maxValue, integer: true },
         ]),
       ),
+      form_screening_risk_notes_max: {
+        description: 'Maximum advisory risk notes stored with a new copyright form screening.',
+        minValue: 1,
+        maxValue: copyrightNoticesAdditionalMaxValues.form_screening_risk_notes_max,
+        integer: true,
+      },
       ...copyrightStageLimitFields,
       batch_size: {
         description: 'Maximum rows per page.',
