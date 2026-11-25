@@ -16,8 +16,11 @@ export async function searchApiKeys(
       WHERE user_id = ${currentUserId}
         AND revoked_at IS NULL
     `
-    if (options.afterId) query.append(sql` AND id < ${options.afterId}`)
-    query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
+    // Compare both index columns so the continuation can seek within active keys for the owner.
+    if (options.afterId)
+      query.append(sql` AND (user_id, id) < (${currentUserId}, ${options.afterId})`)
+    // Use the same unknown LIMIT estimate in both plan modes to favor the ordered index.
+    query.append(sql` ORDER BY id DESC LIMIT (SELECT ${limit + 1}::integer)`)
     const { rows } = await read<ApiKey>(query)
     const hasNextPage = rows.length > limit
     const results = rows.slice(0, limit)
