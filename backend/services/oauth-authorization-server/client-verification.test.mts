@@ -3,6 +3,8 @@ import {
   readStaffActionTarget,
 } from '@voucha/test-helpers/staff-action-history'
 import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
+import { beginTransaction } from '@voucha/test-helpers'
+import { commitTestPostgresHolderAfterActionOrWait } from '@voucha/test-helpers/postgres-lock-skip'
 import { randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
@@ -10,6 +12,7 @@ import {
   getTestOAuthClientRowId,
   revokeTestOAuthClient,
   setTestOAuthClientMetadataUrl,
+  setTestOAuthClientVerified,
 } from '@voucha/test-helpers/entities/oauth-client-management'
 import {
   randomTestOAuthRedirectUri,
@@ -91,6 +94,51 @@ describe('staff OAuth client verification', () => {
     },
   )
 
+  it.each(['verify', 'unverify'] as const)(
+    'audits the committed row replaced by a concurrent OAuth %s',
+    async action => {
+      const actor = await createTestUserDirect()
+      const client = await registerTestClient()
+      const previousVerifiedAt = new Date('2026-01-02T03:04:05.006Z')
+      await using holder = await beginTransaction()
+      await setTestOAuthClientVerified(client.id, admin.id, {
+        query: holder,
+        verifiedAt: previousVerifiedAt,
+      })
+      const mutate = async () =>
+        action === 'verify'
+          ? verifyOAuthClient(actor.id, client.id, client.reviewed)
+          : unverifyOAuthClient(actor.id, client.id)
+      const result = await commitTestPostgresHolderAfterActionOrWait(
+        holder,
+        `/* ${action}OAuthClient`,
+        mutate,
+      )
+      const verified = {
+        outcome: 'verified',
+        client: expect.objectContaining({ verified_by_id: actor.id }),
+      }
+      expect(result).toEqual(action === 'verify' ? verified : true)
+      expect(await readStaffActionTarget('oauth_client', client.id)).toMatchObject(
+        action === 'verify'
+          ? { verified_by_id: actor.id }
+          : { verified_by_id: null, verified_at: null },
+      )
+      const history = await readStaffActionHistory(actor.id)
+      expect(history).toHaveLength(1)
+      expect(history[0]).toMatchObject({
+        action_type: `oauth_client_${action}`,
+        oauth_client_id: client.id,
+        metadata: {
+          before: {
+            ...(action === 'unverify' ? client.reviewed : {}),
+            verified_at: previousVerifiedAt.toISOString(),
+          },
+        },
+      })
+    },
+  )
+
   it('allows only administrators to verify clients', () => {
     expect(currentUserCanVerifyOAuthClients({ roles: ['administrator'] })).toBe(true)
     expect(currentUserCanVerifyOAuthClients({ roles: ['moderator'] })).toBe(false)
@@ -105,6 +153,7 @@ describe('staff OAuth client verification', () => {
       outcome: 'verified',
       client: { id: client.id, owner_user_id: owner.id, verified_by_id: admin.id },
     })
+    expect(result).not.toHaveProperty('client.previous_verified_at')
     await expect(listedIds('verified')).resolves.toContain(client.id)
     await expect(listedIds('unverified')).resolves.not.toContain(client.id)
     await expect(listedIds('all')).resolves.toContain(client.id)

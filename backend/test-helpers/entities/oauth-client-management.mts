@@ -1,4 +1,4 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
 import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 import {
   duringTestOAuthClientUpdate,
@@ -28,12 +28,17 @@ export async function getTestOAuthClientPublicId(id: string): Promise<string> {
 }
 
 /** Records staff verification directly, for tests that only need a verified client. */
-export async function setTestOAuthClientVerified(id: string, verifiedById: string): Promise<void> {
-  await write(
+export async function setTestOAuthClientVerified(
+  id: string,
+  verifiedById: string,
+  options: { query?: TransactionQuery; verifiedAt?: Date } = {},
+): Promise<void> {
+  const query = options.query ?? write
+  await query(
     `/* setTestOAuthClientVerified */ UPDATE oauth_clients
-     SET verified_at = CURRENT_TIMESTAMP, verified_by_id = $2
+     SET verified_at = COALESCE($3::timestamptz, CURRENT_TIMESTAMP), verified_by_id = $2
      WHERE id = $1`,
-    [id, verifiedById],
+    [id, verifiedById, options.verifiedAt ?? null],
   )
 }
 
