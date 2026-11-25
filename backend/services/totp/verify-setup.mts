@@ -13,6 +13,7 @@ export async function verifyTotpSetup(
   options: { now?: number; query?: TransactionQuery } = {},
 ): Promise<PublicTotpAuthenticator> {
   return runWithTransaction(options.query, async query => {
+    // lock-reason: prevents: enabling a factor after credential erasure starts; writer: account deletion.
     await query(sql`/* verifyTotpSetup */ SELECT fn_lock_active_user_for_mutation(${userId})`)
     const { rows } = await query<{
       id: string

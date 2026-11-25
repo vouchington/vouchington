@@ -20,6 +20,7 @@ export async function deleteTotpAuthenticator(
     rowCount = await run(lockedUserTransaction)
   } else {
     await using query = await beginTransaction()
+    // lock-reason: prevents: changing MFA state during account erasure; writer: account deletion.
     await query(
       sql`/* deleteTotpAuthenticator */ SELECT fn_lock_active_user_for_mutation(${userId})`,
     )
