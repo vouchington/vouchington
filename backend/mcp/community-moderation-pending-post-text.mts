@@ -1,5 +1,5 @@
 import type { Post } from '@services/posts'
-import { externalText, sanitizedTitle } from './mcp-read-output.mts'
+import { sanitizeTitle, wrapExternalText } from '@vouchington/mcp-server/untrusted'
 
 const SOURCE = 'post'
 type Rating = NonNullable<Post['review_topic_ratings']>[number]
@@ -10,10 +10,10 @@ const sanitizedAll = <T,>(items: T[] | undefined, sanitize: (item: T) => Promise
 async function sanitizedRating(rating: Rating): Promise<Rating> {
   const { topic } = rating
   if (!topic) return rating
-  const markdown = await externalText(topic.markdown, 'topic', 'topic_markdown')
+  const markdown = await wrapExternalText(topic.markdown, 'topic', 'topic_markdown')
   return {
     ...rating,
-    topic: { ...topic, name: await sanitizedTitle(topic.name), markdown: markdown ?? '' },
+    topic: { ...topic, name: await sanitizeTitle(topic.name), markdown: markdown ?? '' },
   }
 }
 
@@ -21,26 +21,26 @@ async function sanitizedRating(rating: Rating): Promise<Rating> {
 async function sanitizedPostText(post: Post): Promise<Partial<Post>> {
   const [summary, clearanceReason, html, images, hashtags, categories, relatedTopics, ratings] =
     await Promise.all([
-      externalText(post.ai_summary_markdown, SOURCE, 'ai_summary_markdown'),
-      externalText(post.clearance_reason, SOURCE, 'clearance_reason'),
-      post.html === undefined ? undefined : externalText(post.html, SOURCE, 'html'),
+      wrapExternalText(post.ai_summary_markdown, SOURCE, 'ai_summary_markdown'),
+      wrapExternalText(post.clearance_reason, SOURCE, 'clearance_reason'),
+      post.html === undefined ? undefined : wrapExternalText(post.html, SOURCE, 'html'),
       sanitizedAll(post.images, async image => ({
         ...image,
-        caption: await sanitizedTitle(image.caption),
+        caption: await sanitizeTitle(image.caption),
       })),
       sanitizedAll(post.post_hashtags, async tag => ({
         ...tag,
-        key: await sanitizedTitle(tag.key),
-        display_token: await sanitizedTitle(tag.display_token),
+        key: await sanitizeTitle(tag.key),
+        display_token: await sanitizeTitle(tag.display_token),
       })),
       sanitizedAll(post.post_explicit_categories, async category =>
         category.type === 'topic'
-          ? { ...category, topic_name: await sanitizedTitle(category.topic_name) }
-          : { ...category, hashtag: await sanitizedTitle(category.hashtag) },
+          ? { ...category, topic_name: await sanitizeTitle(category.topic_name) }
+          : { ...category, hashtag: await sanitizeTitle(category.hashtag) },
       ),
       sanitizedAll(post.post_related_topics, async topic => ({
         ...topic,
-        name: await sanitizedTitle(topic.name),
+        name: await sanitizeTitle(topic.name),
       })),
       post.review_topic_ratings && Promise.all(post.review_topic_ratings.map(sanitizedRating)),
     ])
@@ -64,7 +64,7 @@ async function sanitizedStructuredData(value: unknown): Promise<unknown> {
     return value
   return {
     ...data,
-    bonus_requirements: await externalText(
+    bonus_requirements: await wrapExternalText(
       data['bonus_requirements'],
       'post',
       'bonus_requirements',
@@ -86,19 +86,19 @@ export async function sanitizePendingPost(
     ? {
         topic_recommendation: {
           ...recommendation,
-          topic_title: await sanitizedTitle(recommendation.topic_title),
-          topic_markdown: await externalText(
+          topic_title: await sanitizeTitle(recommendation.topic_title),
+          topic_markdown: await wrapExternalText(
             recommendation.topic_markdown,
             'post',
             'topic_markdown',
           ),
-          aliases: await Promise.all(recommendation.aliases.map(sanitizedTitle)),
-          rejection_reason: await externalText(
+          aliases: await Promise.all(recommendation.aliases.map(sanitizeTitle)),
+          rejection_reason: await wrapExternalText(
             recommendation.rejection_reason,
             'post',
             'rejection_reason',
           ),
-          approval_error_message: await externalText(
+          approval_error_message: await wrapExternalText(
             recommendation.approval_error_message,
             'post',
             'approval_error_message',

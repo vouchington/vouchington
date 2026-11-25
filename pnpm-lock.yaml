@@ -1295,6 +1295,9 @@ importers:
       '@vouchington/localization':
         specifier: ^0.3.1
         version: 0.3.1(react@19.3.1)
+      '@vouchington/mcp-server':
+        specifier: ^0.2.1
+        version: 0.2.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
       '@vouchington/oauth-server':
         specifier: ^0.9.0
         version: 0.9.0
@@ -9528,6 +9531,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@vouchington/mcp-server':
+        specifier: ^0.2.1
+        version: 0.2.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76))
 
   backend/services/openai-background-responses:
     dependencies:

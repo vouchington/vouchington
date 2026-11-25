@@ -19,7 +19,7 @@ import {
   INVALID_CURSOR_RESULT,
   type InvalidCursorResult,
 } from './paged-search.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
@@ -77,7 +77,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['hostnames:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/hostnames' }],
-    outputSchema: foundOrNotFoundSchema(hostnamesPageProperties()),
+    outputSchema: outcomeSchema('success', hostnamesPageProperties()),
   },
   function:
     (_currentUser: BasicUser) =>

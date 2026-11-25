@@ -1,4 +1,4 @@
-import type { ToolOutputSchema } from '@services/openai-agents/tool-types'
+import type { ToolOutputSchema } from '@vouchington/mcp-server/types'
 import type { PrivateUser } from '@services/users/types'
 import {
   createHouseholdInvitationCommand,
