@@ -36,11 +36,6 @@ export async function updateModerationAppealDraft(
     WITH lifecycle_change_id AS (
       SELECT uuidv7() AS id
     ),
-    previous AS MATERIALIZED (
-      SELECT id, public_response, internal_notes FROM moderation_appeals
-      WHERE id = ${appealId} AND sent_at IS NULL AND resolved_at IS NULL
-      FOR UPDATE
-    ),
     updated AS (
       UPDATE moderation_appeals
       SET public_response = COALESCE(${input.publicResponse ?? null}, public_response),
@@ -50,11 +45,14 @@ export async function updateModerationAppealDraft(
           approved_at = NULL,
           approved_by_id = NULL,
           latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id)
-      WHERE id = (SELECT id FROM previous)
-        AND sent_at IS NULL
+      WHERE id = ${appealId} AND sent_at IS NULL
         AND resolved_at IS NULL
-      RETURNING
-        id, drafted_at, edited_at, approved_at, sent_at, resolved_at, resolution_action
+      RETURNING WITH (OLD AS prior, NEW AS next_row)
+        next_row.id, next_row.drafted_at, next_row.edited_at, next_row.approved_at,
+        next_row.sent_at, next_row.resolved_at, next_row.resolution_action,
+        prior.public_response AS previous_public_response,
+        prior.internal_notes AS previous_internal_notes,
+        next_row.public_response, next_row.internal_notes
     ),
     inserted_change AS (
       INSERT INTO moderation_appeal_lifecycle_changes (
@@ -70,14 +68,14 @@ export async function updateModerationAppealDraft(
         'edit',
         ${staffUserId},
         jsonb_build_object(
-          'before', jsonb_build_object('public_response', previous.public_response, 'internal_notes', previous.internal_notes),
-          'after', jsonb_build_object('public_response', COALESCE(${input.publicResponse ?? null}, previous.public_response), 'internal_notes', COALESCE(${input.internalNotes ?? null}, previous.internal_notes))
+          'before', jsonb_build_object('public_response', updated.previous_public_response, 'internal_notes', updated.previous_internal_notes),
+          'after', jsonb_build_object('public_response', updated.public_response, 'internal_notes', updated.internal_notes)
         )
       FROM updated
       CROSS JOIN lifecycle_change_id
-      JOIN previous ON previous.id = updated.id
     )
-    SELECT * FROM updated
+    SELECT id, drafted_at, edited_at, approved_at, sent_at, resolved_at, resolution_action
+    FROM updated
   `)
   assert(rows[0], 404, 'Appeal not found or already sent')
   return getModerationAppealAfterMutation(appealId)

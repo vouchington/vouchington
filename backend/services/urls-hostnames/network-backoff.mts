@@ -158,18 +158,12 @@ export async function resetHostnameFailures(
       network_backoff_step = 0,
       network_backoff_ends_at = NULL,
       network_backoff_probe_claimed_at = NULL
-    FROM (
-      SELECT id, network_backoff_step
-      FROM url_hostnames
-      WHERE id = $1
-        AND (($2 AND consecutive_dns_failures > 0)
-          OR consecutive_network_failures > 0
-          OR network_backoff_step > 0)
-      FOR UPDATE
-    ) previous
-    WHERE h.id = previous.id
-    RETURNING h.hostname, previous.network_backoff_step AS closed_step
-  `,
+    WHERE h.id = $1
+      AND (($2 AND h.consecutive_dns_failures > 0)
+        OR h.consecutive_network_failures > 0
+        OR h.network_backoff_step > 0)
+    RETURNING WITH (OLD AS prior, NEW AS updated)
+      updated.hostname, prior.network_backoff_step AS closed_step`,
     [hostnameId, options.includeDns],
   )
   const row = rows[0]
