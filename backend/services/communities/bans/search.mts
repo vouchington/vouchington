@@ -118,7 +118,7 @@ export async function listUserActiveCommunityBans(
     LEFT JOIN communities c ON c.id = cb.community_id
     WHERE cb.user_id = ${userId}
       AND cb.lifted_at IS NULL
-      AND (cb.expires_at IS NULL OR cb.expires_at > CURRENT_TIMESTAMP)
+      AND COALESCE(cb.expires_at, 'infinity'::timestamptz) > CURRENT_TIMESTAMP
   `
 
   if (cursorId !== undefined) {
