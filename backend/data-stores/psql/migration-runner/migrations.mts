@@ -2,18 +2,16 @@ import path from 'node:path'
 import {
   readMigrationFile,
   runConfigDriven as runPlatformConfigDriven,
+  type RunConfigDrivenOptions as PlatformRunConfigDrivenOptions,
 } from '@vouchington/postgres'
 import onError from '@modules/on-error'
 import { beginTransaction } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { readCanonicalConfigDrivenGenerator } from './config-driven-generators.mts'
-import type { MigrationLogger } from './migration-logger.mts'
-
-export { type MigrationLogger } from './migration-logger.mts'
 
 export interface RunConfigDrivenOptions {
   folder?: string
-  logger?: MigrationLogger
+  logger?: PlatformRunConfigDrivenOptions['logger']
   writer?: QueryExecutor
 }
 
