@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import {
   CrawlerHttpClientError,
   CrawlerInvalidContentTypeError,
@@ -143,37 +143,40 @@ export async function isOutsideHostnameNetworkBackoff(hostname: {
 
 /**
  * Resets failure state after the hostname answered. Any HTTP response closes the network
- * backoff; only a successful crawl or fetch (includeDns) also resets the DNS counter. The row is
- * locked and written only when there is something to reset.
+ * backoff; only a successful crawl or fetch (includeDns) also resets the DNS counter. The first
+ * guarded write keeps the backoff step available for analytics; a second write clears it before
+ * commit only when a backoff was open.
  */
 export async function resetHostnameFailures(
   hostnameId: string,
   options: { crawlerType: BackoffCrawlerType; includeDns: boolean },
 ): Promise<void> {
-  const { rows } = await write<{ hostname: string; closed_step: number }>(
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction<{ hostname: string; closed_step: number }>(
     `/* resetHostnameFailures */
-    UPDATE url_hostnames h SET
-      consecutive_dns_failures = CASE WHEN $2 THEN 0 ELSE h.consecutive_dns_failures END,
+    UPDATE url_hostnames SET
+      consecutive_dns_failures = CASE WHEN $2 THEN 0 ELSE consecutive_dns_failures END,
       consecutive_network_failures = 0,
-      network_backoff_step = 0,
       network_backoff_ends_at = NULL,
       network_backoff_probe_claimed_at = NULL
-    FROM (
-      SELECT id, network_backoff_step
-      FROM url_hostnames
-      WHERE id = $1
-        AND (($2 AND consecutive_dns_failures > 0)
-          OR consecutive_network_failures > 0
-          OR network_backoff_step > 0)
-      -- lock-reason: prevents: reporting a stale backoff duration when a concurrent failure advances the step on PostgreSQL 18.4; writer: recordHostnameNetworkFailure
-      FOR UPDATE
-    ) previous
-    WHERE h.id = previous.id
-    RETURNING h.hostname, previous.network_backoff_step AS closed_step
+    WHERE id = $1
+      AND (($2 AND consecutive_dns_failures > 0)
+        OR consecutive_network_failures > 0
+        OR network_backoff_step > 0)
+    RETURNING hostname, network_backoff_step AS closed_step
   `,
     [hostnameId, options.includeDns],
   )
   const row = rows[0]
+  if (row && row.closed_step > 0) {
+    await transaction(
+      `/* resetHostnameFailures:closeBackoff */
+      UPDATE url_hostnames SET network_backoff_step = 0
+      WHERE id = $1 AND network_backoff_step > 0`,
+      [hostnameId],
+    )
+  }
+  await transaction.commit()
   if (!row || row.closed_step === 0) return
   trackNetworkBackoffClosed(
     options.crawlerType,
