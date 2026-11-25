@@ -159,11 +159,14 @@ export async function searchRssFeedCrawls(
     : null
   const query = sql`/* searchRssFeedCrawls */ SELECT id, response_code, uuid_extract_timestamp(id) AS created_at
         FROM rss_feed_crawls
-        WHERE rss_feed_id = ${rss_feed_id}
+        WHERE rss_feed_id BETWEEN ${rss_feed_id} AND ${rss_feed_id}
         AND id > ${rss_feed_id} -- UUIDv7 partition pruning
   `
   if (after) query.append(sql` AND id < ${after.id}`)
-  query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
+  // Keep the feed key in the order and cost the limit as a parameter in either plan mode.
+  // This lets the partition scans merge in index order and stop at the lookahead row.
+  query.append(sql`
+    ORDER BY rss_feed_id ASC, id DESC LIMIT (SELECT ${limit + 1}::bigint)`)
   const { rows } = await read<RssFeedCrawlSummary>(query)
   const results = rows.slice(0, limit)
   return {
