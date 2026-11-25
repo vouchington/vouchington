@@ -21,7 +21,8 @@ export async function cleanupVoteIntegrityDetails(
   if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 5_000) {
     throw new RangeError('Flag detail cleanup batch size must be between 1 and 5000')
   }
-  if (flagIds && flagIds.length > batchSize) throw new RangeError('Scoped flags must fit one page')
+  if (flagIds && flagIds.length > batchSize + 1)
+    throw new RangeError('Scoped flags must fit one page')
   const cutoffId = getMinUuidv7ForDate(
     new Date(now.getTime() - readDataRetentionField('vote_integrity_detail_days') * DAY_MS),
   )
