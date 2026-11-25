@@ -1,4 +1,5 @@
 import type Stripe from 'stripe'
+import { collectStripePages, getStripeObjectId, summarizeStripeDisputes } from '@vouchington/stripe'
 import { getStripeClient } from './client.mts'
 import { listAllStripeInvoicePaymentsForPaymentIntent } from './invoice-payments.mts'
 
@@ -21,14 +22,14 @@ export async function getWonStripeDisputeInvoice(
   const stripe = getStripeClient()
   const dispute = await stripe.disputes.retrieve(disputeId)
   if (dispute.status !== 'won') return null
-  const chargeId = getStripeExpandableId(dispute.charge)
+  const chargeId = getStripeObjectId(dispute.charge)
   if (!chargeId) return null
   const charge = await stripe.charges.retrieve(chargeId)
-  const paymentIntentId = getStripeExpandableId(charge.payment_intent)
+  const paymentIntentId = getStripeObjectId(charge.payment_intent)
   if (!paymentIntentId) return null
   const payments = await listAllStripeInvoicePaymentsForPaymentIntent(paymentIntentId, paymentPages)
   const invoiceIds = [
-    ...new Set(payments.map(payment => getStripeExpandableId(payment.invoice))),
+    ...new Set(payments.map(payment => getStripeObjectId(payment.invoice))),
   ].filter((invoiceId): invoiceId is string => invoiceId !== null)
   if (invoiceIds.length === 0) return null
   return {
@@ -66,46 +67,21 @@ async function getStripeChargeDisputeSettlement(
   currency: string,
   maxPages: number,
 ): Promise<StripeDisputeSettlement> {
-  return listStripeDisputePages(
-    chargeId,
-    currency,
-    undefined,
-    { lostDisputeAmountMinorUnits: 0, refundDeferred: false },
-    0,
+  const disputes = await collectStripePages({
+    fetchPage: startingAfter =>
+      getStripeClient().disputes.list({
+        charge: chargeId,
+        limit: 100,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      }),
     maxPages,
-  )
-}
-
-async function listStripeDisputePages(
-  chargeId: string,
-  currency: string,
-  startingAfter: string | undefined,
-  settlement: StripeDisputeSettlement,
-  pageCount: number,
-  maxPages: number,
-): Promise<StripeDisputeSettlement> {
-  if (pageCount >= maxPages)
-    throw new Error(`Stripe charge ${chargeId} exceeded the dispute page limit`)
-  const page = await getStripeClient().disputes.list({
-    charge: chargeId,
-    limit: 100,
-    ...(startingAfter ? { starting_after: startingAfter } : {}),
+    label: 'dispute',
   })
-  let nextSettlement = settlement
-  for (const dispute of page.data) {
-    nextSettlement = getStripeDisputeSettlement(nextSettlement, dispute, currency)
+  const summary = summarizeStripeDisputes(disputes, currency)
+  return {
+    lostDisputeAmountMinorUnits: summary.lostDisputeAmountMinorUnits,
+    refundDeferred: summary.hasOpenDispute,
   }
-  if (!page.has_more) return nextSettlement
-  const lastDispute = page.data.at(-1)
-  if (!lastDispute) throw new Error(`Stripe returned an empty dispute page for charge ${chargeId}`)
-  return listStripeDisputePages(
-    chargeId,
-    currency,
-    lastDispute.id,
-    nextSettlement,
-    pageCount + 1,
-    maxPages,
-  )
 }
 
 /* no-mistakes: integration=stripe */
@@ -116,37 +92,4 @@ export async function getStripePaymentIntentLatestCharge(
     expand: ['latest_charge'],
   })
   return paymentIntent.latest_charge
-}
-
-function getStripeDisputeSettlement(
-  settlement: StripeDisputeSettlement,
-  dispute: Stripe.Dispute,
-  currency: string,
-): StripeDisputeSettlement {
-  switch (dispute.status) {
-    case 'lost':
-      if (dispute.currency !== currency)
-        throw new Error(`Stripe dispute currency ${dispute.currency} did not match ${currency}`)
-      return {
-        ...settlement,
-        lostDisputeAmountMinorUnits: settlement.lostDisputeAmountMinorUnits + dispute.amount,
-      }
-    case 'needs_response':
-    case 'under_review':
-    case 'appeal_needs_response':
-    case 'appeal_under_review':
-    case 'warning_needs_response':
-    case 'warning_under_review':
-      return { ...settlement, refundDeferred: true }
-    case 'prevented':
-    case 'warning_closed':
-    case 'won':
-      return settlement
-    default:
-      throw new Error(`Unsupported Stripe dispute status: ${String(dispute.status)}`)
-  }
-}
-
-function getStripeExpandableId(value: string | { id: string } | null | undefined): string | null {
-  return typeof value === 'string' ? value : (value?.id ?? null)
 }
