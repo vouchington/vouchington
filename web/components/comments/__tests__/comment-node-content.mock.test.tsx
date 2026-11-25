@@ -70,7 +70,7 @@ describe('CommentNodeContent', () => {
     expect(screen.getByText('Bonjour le monde')).toHaveAttribute('lang', 'en')
   })
 
-  it('omits lang when no valid content language is available', () => {
+  it('sets an empty lang when no valid content language is available', () => {
     render(
       <CommentNodeContent
         html={null}
@@ -82,6 +82,6 @@ describe('CommentNodeContent', () => {
       />,
     )
 
-    expect(screen.getByText('Bonjour le monde')).not.toHaveAttribute('lang')
+    expect(screen.getByText('Bonjour le monde')).toHaveAttribute('lang', '')
   })
 })

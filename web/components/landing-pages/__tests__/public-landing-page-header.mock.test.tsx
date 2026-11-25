@@ -44,7 +44,7 @@ describe('PublicLandingPageHeader', () => {
     expect(bio).toHaveTextContent('Bonjour')
   })
 
-  it('leaves the landing-page bio unmarked when detection is absent', () => {
+  it('marks the landing-page bio with an empty lang when detection is absent', () => {
     const { container } = render(
       <PublicLandingPageHeader
         canonicalHref='/user/alex'
@@ -57,7 +57,7 @@ describe('PublicLandingPageHeader', () => {
       />,
     )
 
-    expect(container.querySelector('[lang]')).toBeNull()
+    expect(container.querySelector('[lang]')).toHaveAttribute('lang', '')
     expect(container.querySelector('pre')).toHaveAttribute('dir', 'auto')
   })
 })

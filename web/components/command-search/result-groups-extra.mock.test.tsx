@@ -200,7 +200,7 @@ describe('extra command search result groups', () => {
     )
     expect(screen.getByText('Unsafe Post')).toBeInTheDocument()
     expect(screen.getByText('Unsafe Post')).toHaveAttribute('dir', 'auto')
-    expect(screen.getByText('Unsafe Post')).not.toHaveAttribute('lang')
+    expect(screen.getByText('Unsafe Post')).toHaveAttribute('lang', '')
     expect(screen.queryByRole('button', { name: /unsafe post/i })).not.toBeInTheDocument()
     fireEvent.click(videoButton)
     expect(onOpenChange).toHaveBeenCalledWith(false)

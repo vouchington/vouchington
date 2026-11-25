@@ -75,7 +75,7 @@ export function PostDetailHeading({
         <h1
           className={`text-xl font-bold tracking-tight sm:text-2xl${overflowVisible ? ' pr-14' : ''}`}
           data-pw='post-detail-heading'
-          lang={hasAuthoredTitle ? contentLanguage : undefined}
+          lang={hasAuthoredTitle ? (contentLanguage ?? '') : undefined}
           dir={hasAuthoredTitle ? getContentLanguageDir(contentLanguage) : undefined}
         >
           {post.post_type !== 'comment' ? (

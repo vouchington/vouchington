@@ -252,14 +252,14 @@ describe('MarkdownContent', () => {
     expect(content).toHaveAttribute('dir', 'rtl')
   })
 
-  it('omits lang and sets dir auto when the content language is unknown', () => {
+  it('sets an empty lang and dir auto when the content language is unknown', () => {
     const { container } = render(
       <MarkdownContent
         lang={null}
         html='<p>Hello</p>'
       />,
     )
-    expect(container.querySelector('[lang]')).toBeNull()
+    expect(container.querySelector('[lang]')).toHaveAttribute('lang', '')
     expect(container.querySelector('[dir]')).toHaveAttribute('dir', 'auto')
   })
 })

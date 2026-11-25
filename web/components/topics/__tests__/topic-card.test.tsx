@@ -63,7 +63,7 @@ describe('TopicCard', () => {
     )
 
     const description = screen.getByText('Unknown language description')
-    expect(description).not.toHaveAttribute('lang')
+    expect(description).toHaveAttribute('lang', '')
     expect(description).toHaveAttribute('dir', 'auto')
   })
 

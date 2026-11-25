@@ -20,7 +20,7 @@ export function CrawlAuthoredText({ as: Tag, className, lang, text }: CrawlAutho
   return (
     <Tag
       className={className}
-      lang={language}
+      lang={language ?? ''}
       dir={getContentLanguageDir(language)}
     >
       {text}

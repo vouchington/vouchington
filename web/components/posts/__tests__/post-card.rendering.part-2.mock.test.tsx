@@ -140,7 +140,7 @@ describe('PostCard', () => {
       />,
     )
     const title = screen.getByRole('heading', { level: 3, name: 'مرحبا بالعالم' })
-    expect(title).not.toHaveAttribute('lang')
+    expect(title).toHaveAttribute('lang', '')
     expect(title).toHaveAttribute('dir', 'auto')
   })
 

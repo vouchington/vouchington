@@ -28,7 +28,7 @@ export function RssFeedItemTitle({
   return (
     <span
       className={className}
-      lang={language}
+      lang={language ?? ''}
       dir={getContentLanguageDir(language)}
     >
       {authoredTitle}

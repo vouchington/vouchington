@@ -76,7 +76,7 @@ describe('PostDetail rendering', () => {
     )
 
     const heading = screen.getByRole('heading', { level: 1, name: 'مرحبا بالعالم' })
-    expect(heading).not.toHaveAttribute('lang')
+    expect(heading).toHaveAttribute('lang', '')
     expect(heading).toHaveAttribute('dir', 'auto')
   })
 

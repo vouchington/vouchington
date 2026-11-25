@@ -172,7 +172,7 @@ describe('RssFeedItemModal', () => {
     const fallback = screen
       .getByText('Description from the YouTube RSS media payload.')
       .closest('p')
-    expect(fallback?.getAttribute('lang')).toBe(lang)
+    expect(fallback?.getAttribute('lang')).toBe(lang ?? '')
     expect(fallback).toHaveAttribute('dir', dir)
   })
 

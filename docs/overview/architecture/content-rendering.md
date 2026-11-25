@@ -220,8 +220,9 @@ language, and places `lang` and `dir` on the caller's semantic host without a wr
 uses its UI-owned fallback without either attribute.
 
 `MarkdownContent` remains the boundary for rich post content. Every call passes `lang`. Null means
-the text has no declared or detected language yet, and the component sets `dir="auto"` without a
-`lang` attribute. `web-markdown-content-requires-lang` rejects a call that omits `lang`. Reduced
+the text has no declared or detected language yet, and the component sets `lang=""` and
+`dir="auto"`. An empty `lang` marks the language as unknown; omitting the attribute would let the
+text inherit the page language. `web-markdown-content-requires-lang` rejects a call that omits `lang`. Reduced
 API projections that expose post title or markdown must carry both language fields, and pass the
 resolved language to the rich boundary. Native clients consume the same fields from
 `api-fixtures/v1` and apply direction at the individual text or HTML leaf, never to an enclosing
@@ -247,8 +248,8 @@ that omits `detectedLanguage`. It is not a post-content boundary.
 
 Third-party embed titles and descriptions use `EmbedPreviewCard`. Every call passes `lang`.
 Crawl detail passes the crawl's declared page language. Public link embeds pass null because that
-response does not include a page language; the title and description then set `dir="auto"` without
-a `lang` attribute. Publisher names, source links, and player chrome stay unmarked.
+response does not include a page language; the title and description then set `lang=""` and
+`dir="auto"`. Publisher names, source links, and player chrome stay unmarked.
 `web-embed-preview-card-requires-lang` rejects a call that omits `lang`. It is not a
 post-content boundary.
 
@@ -257,8 +258,8 @@ Crawled page titles and markdown on crawl detail are original page text, so they
 and the language fact remain UI chrome. It is not a post-content boundary.
 
 Fediverse search results carry third-party titles and summaries with no language field. They render
-through `ThirdPartyText` on the search page and in command search, which sets `dir="auto"` and
-omits `lang` rather than guessing. Provider names, hostnames, and result types stay unmarked. It
+through `ThirdPartyText` on the search page and in command search, which sets `lang=""` and
+`dir="auto"` rather than guessing. Provider names, hostnames, and result types stay unmarked. It
 is not a post-content boundary.
 
 Moderation report labels retain `target_label` for system-owned fallbacks. Post/comment authored
