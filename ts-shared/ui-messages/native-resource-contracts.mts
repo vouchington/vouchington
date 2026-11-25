@@ -1,8 +1,8 @@
-import type { GeneratedNativeResource } from './native-resources.mts'
+import type { GeneratedNativeFile } from '@vouchington/localization-compiler'
 
 export function assertNativeResourceLayout(
-  files: readonly GeneratedNativeResource[],
-  repeated: readonly GeneratedNativeResource[],
+  files: readonly GeneratedNativeFile[],
+  repeated: readonly GeneratedNativeFile[],
 ): void {
   const paths = files.map(file => file.path)
   if (
@@ -29,7 +29,7 @@ export function assertNativeResourceLayout(
   }
 }
 
-export function assertNativeModerationResources(files: readonly GeneratedNativeResource[]): void {
+export function assertNativeModerationResources(files: readonly GeneratedNativeFile[]): void {
   for (const suffix of ['/en.lproj/Localizable.strings', '/UiMessages.resx']) {
     const { content, path } = requiredResource(files, suffix)
     for (const key of [
@@ -55,7 +55,7 @@ export function assertNativeModerationResources(files: readonly GeneratedNativeR
   }
 }
 
-export function assertNoRetiredDotnetResources(files: readonly GeneratedNativeResource[]): void {
+export function assertNoRetiredDotnetResources(files: readonly GeneratedNativeFile[]): void {
   const { content, path } = requiredResource(files, '/UiMessages.resx')
   for (const key of [
     'native.dotnet.engineering.agentConversationTitle',
@@ -70,9 +70,9 @@ export function assertNoRetiredDotnetResources(files: readonly GeneratedNativeRe
 }
 
 function requiredResource(
-  files: readonly GeneratedNativeResource[],
+  files: readonly GeneratedNativeFile[],
   suffix: string,
-): GeneratedNativeResource {
+): GeneratedNativeFile {
   const file = files.find(candidate => candidate.path.endsWith(suffix))
   if (file === undefined) throw new Error(`Missing native resource output ${suffix}`)
   return file
