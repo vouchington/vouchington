@@ -12,6 +12,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import {
+  pinRssCategorySqlBatchSize,
   rssWriteItemCategoryCapacity,
   type RssWriteCapacityFixture,
 } from './rss-write-capacity-fixture.mts'
@@ -118,6 +119,7 @@ async function runCategoryInsert(fixture: RssWriteCapacityFixture, rows: ItemCat
     scenario,
     async () => {
       await using query = await beginTransaction()
+      pinRssCategorySqlBatchSize()
       const inserted = await insertMissingCategories(
         rows.map(row => ({ ...row, topicId: fixture.topicId })),
         query,
@@ -171,6 +173,7 @@ async function runCategoryUpdate(fixture: RssWriteCapacityFixture, rows: ItemCat
     scenario,
     async () => {
       await using query = await beginTransaction()
+      pinRssCategorySqlBatchSize()
       const updated = await updateMatchedCategories(
         rows.map(row => ({ ...row, topicId: fixture.topicId })),
         query,
