@@ -2,13 +2,8 @@ import assert from 'http-assert'
 import { isAdminUser, isModerationStaff, assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
-import type {
-  Tool,
-  ToolAnnotations,
-  ToolApiEndpoint,
-  ToolMeta,
-  ToolOutputSchema,
-} from '@services/openai-agents/tool-types'
+import type { Tool, ToolAnnotations, ToolMeta } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@vouchington/mcp-server/types'
 import { requirePrivateToolUser } from '../private-user.mts'
 import { resolveReferenceFields } from '../resolve-entity-reference.mts'
 import { findSchemaViolation } from '@vouchington/mcp-server/schema'

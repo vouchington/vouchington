@@ -1,4 +1,5 @@
 import { beginTransaction, write } from '@data-stores/psql'
+import { getStripeInvoiceSubscriptionId } from '@vouchington/stripe'
 import * as stripeInvoices from '@modules/stripe/invoices'
 import { getStripeCustomer } from '@modules/stripe/customers'
 import { getStripeSubscription } from '@modules/stripe/subscriptions'
@@ -24,9 +25,7 @@ export async function detectIneligibleStripePurchaseFromInvoicePayment(
   applicationContext: StripeMembershipApplicationContext,
 ): Promise<boolean> {
   const retrievedInvoice = await stripeInvoices.getStripeInvoice(invoiceId)
-  const subscriptionObject = retrievedInvoice.parent?.subscription_details?.subscription
-  const subscriptionId =
-    typeof subscriptionObject === 'string' ? subscriptionObject : subscriptionObject?.id
+  const subscriptionId = getStripeInvoiceSubscriptionId(retrievedInvoice)
   if (!subscriptionId) return false
   const subscription = await getStripeSubscription(subscriptionId)
   if (subscription.livemode !== (providerEnvironment === 'production'))

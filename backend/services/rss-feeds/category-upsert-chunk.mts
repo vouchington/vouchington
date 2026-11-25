@@ -19,6 +19,7 @@ export async function upsertRssFeedCategoriesChunk(
     [rssFeedId],
   )
   if (feeds.length === 0) throw createHttpError(409, 'RSS feed is being deleted')
+  // lock-reason: prevents: overwriting a concurrent category remap after the mapping recheck; writer: backfillLinkedAliasFeedPage
   await query(
     sql`/* upsertRssFeedCategories:lockExisting */
           SELECT category_identity_id FROM rss_feed_categories

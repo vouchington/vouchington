@@ -70,6 +70,7 @@ export async function setPrimaryEmailAddress(
 ): Promise<void> {
   const normalized = emailAddress.toLowerCase().trim()
   await runWithTransaction(options.query, async query => {
+    // lock-reason: prevents: updating email credentials during account erasure; writer: account deletion.
     await query(
       sql`/* setPrimaryEmailAddress */ SELECT fn_lock_active_user_for_mutation(${userId})`,
     )
@@ -90,6 +91,7 @@ export async function removeEmailAddress(
   const normalized = emailAddress.toLowerCase().trim()
 
   await runWithTransaction(options.query, async query => {
+    // lock-reason: prevents: changing sign-in credentials during account erasure; writer: account deletion.
     await query(sql`/* removeEmailAddress */ SELECT fn_lock_active_user_for_mutation(${userId})`)
 
     const { rows } = await query<{

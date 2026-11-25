@@ -9,7 +9,8 @@ import {
 import { firstVisibleRssTextField } from '@modules/utils'
 import type { getRssFeedItemByIdCachedBatch } from '@services/entity-fetch'
 import type { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
-import { closedObject, pickProperties } from './read-tool-output-schema.mts'
+import { objectSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 
 type StoryRow = NonNullable<Awaited<ReturnType<typeof getStoryById>>>
 type RssItem = NonNullable<Awaited<ReturnType<typeof getRssFeedItemByIdCachedBatch>>[number]>
@@ -48,7 +49,7 @@ export type McpStoryItem = {
 
 /** The published schema of an `McpStory`, from the generated `Story` contract. */
 export function mcpStorySchema() {
-  return closedObject(pickProperties('Story', STORY_FIELDS))
+  return objectSchema(pickProperties('Story', STORY_FIELDS))
 }
 
 /**
@@ -56,7 +57,7 @@ export function mcpStorySchema() {
  * RSS item contract; the title and markdown are sanitized text the tool builds itself.
  */
 export function mcpStoryItemSchema() {
-  return closedObject(
+  return objectSchema(
     {
       hacker_news_references: mcpHackerNewsReferenceSchema(),
       id: pickProperties('ViewRssFeedItem', ['id']).id!,

@@ -1,5 +1,5 @@
 import type { PrivateUser } from '@services/users/types'
-import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@vouchington/mcp-server/types'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'

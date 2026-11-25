@@ -6,6 +6,7 @@ import {
   startModerationSummarySource,
   type PageStep,
 } from './moderation-summary-pages.mts'
+import { MODERATION_SUMMARY_EVASION_RANK_MAX } from './moderation-summary-work.mts'
 import type { ModerationSummaryScan } from '@queues/background/enqueues/moderation-summary-state'
 
 export async function collectRankReviewPage(
@@ -78,6 +79,6 @@ export async function collectRankEvaders(
       SELECT count(*)::int AS count FROM (SELECT 1 FROM community_members
         WHERE community_id=${scan.communityId} AND removed_at IS NULL AND suspected_ban_evader_at IS NOT NULL
           AND suspected_ban_evader_dismissed_at IS NULL
-        ORDER BY suspected_ban_evader_at DESC LIMIT 100) counted`)
+        ORDER BY suspected_ban_evader_at DESC LIMIT ${MODERATION_SUMMARY_EVASION_RANK_MAX}) counted`)
   return { ...scan, metrics: { ...scan.metrics, suspected_ban_evaders: rows[0]?.count ?? 0 } }
 }

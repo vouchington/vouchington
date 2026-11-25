@@ -113,11 +113,17 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
     )
   }
   if (contract.walCaptureCondition === 'cold') {
+    // Run the preparation before the checkpoint. The previous capture's rolled-back statement
+    // leaves hint-bit work on the pages it touched; if that work runs after the checkpoint,
+    // any concurrent reader on the shared database can consume the first-change full-page
+    // images (checksums log hint bits) before the measured statement does.
+    await input.beforeExplain?.(input)
     // Include full-page images from the first changes to pages after a checkpoint in the measured
     // capture. Repeat for every mode/pass so the WAL gate sees the cold condition each time.
     await write('/* explainWalCaptureCheckpoint */ CHECKPOINT')
+  } else {
+    await input.beforeExplain?.(input)
   }
-  await input.beforeExplain?.(input)
   const result = await explainAnalyze(input.name, input.text, input.values, {
     localSettings: input.localSettings,
     setupSql: input.setupSql,

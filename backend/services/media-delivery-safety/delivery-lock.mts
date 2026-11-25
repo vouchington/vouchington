@@ -72,6 +72,7 @@ export async function lockImageDeliveryMutation(
   await query(advisory)
   // All writers acquire the post/image advisory identities above before changing a binding, so
   // this row lock happens after (never before) the shared copyright placement fence.
+  // lock-reason: prevents: publishing a placement while its delivery authority is changing; writer: placement mutation and registry publication.
   const lockPlacements = sql`/* lockImageDeliveryMutation:lockPlacements */
     WITH bindings AS MATERIALIZED (`
   lockPlacements.append(bindingProbes(requestedPostIds, requestedImageIds, requestedPlacementIds))

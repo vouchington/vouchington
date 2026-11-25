@@ -14,6 +14,7 @@ export async function getModerationCleanupCandidates(
   let rows: { id: string }[]
   switch (kind) {
     case 'reports':
+      // lock-reason: prevents: cascading a newly admitted judgement run or clearing a new judgement’s report link; writers: createReportJudgementRun (moderation_report_judgement_runs), insertReportJudgement (moderation_report_judgements).
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:reports */
         SELECT id FROM moderation_reports WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
@@ -66,16 +67,19 @@ export async function getModerationCleanupCandidates(
         ORDER BY id LIMIT ${limit}`))
       break
     case 'warnings':
+      // lock-reason: prevents: deleting a warning with a newly filed appeal or notification; writers: insertModerationAppeal (moderation_appeals), createUserWarningNotification (notifications).
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:warnings */
         SELECT id FROM user_warnings WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
     case 'suspensions':
+      // lock-reason: prevents: deleting a suspension with a newly filed appeal; writer: insertModerationAppeal writes moderation_appeals.
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:suspensions */
         SELECT id FROM user_suspensions WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
     case 'bans':
+      // lock-reason: prevents: erasing a newly filed ban appeal or clearing a notification reference; writers: insertModerationAppeal (moderation_appeals), createCommunityBanNotification (notifications).
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:bans */
         SELECT id FROM community_bans WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))

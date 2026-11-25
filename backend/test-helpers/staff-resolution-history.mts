@@ -7,6 +7,7 @@ import { insertTestModerationAppeal } from './entities/moderation-appeals.mts'
 import { insertTestReviewDispute } from './entities/review-disputes.mts'
 import { insertTestPost, insertTestPostReview } from './entities/posts.mts'
 import { insertTestTopic } from './entities/topics.mts'
+import { commitRelationWriteDuringCompetingMutationForTest } from './relation-write-interleaving.mts'
 
 export async function createStaffResolutionFixture(kind: 'appeal' | 'dispute', delivered = true) {
   const actor = await createTestUser()
@@ -64,4 +65,20 @@ export async function readStaffDraftHistory(kind: 'appeal' | 'dispute', id: stri
     .append(sql` = ${id} AND change_type = 'edit' ORDER BY id DESC LIMIT 1`)
   const { rows } = await write<{ metadata: Record<string, unknown> }>(query)
   return rows[0]!.metadata
+}
+
+/** Commits a concurrent note edit once the public-response writer starts waiting on the same row. */
+export function commitAppealNoteDuringDraftEditForTest<Result>(
+  appealId: string,
+  internalNotes: string,
+  edit: () => Promise<Result>,
+): Promise<Result> {
+  return commitRelationWriteDuringCompetingMutationForTest(
+    query =>
+      query(sql`/* commitAppealNoteDuringDraftEditForTest */
+      UPDATE moderation_appeals SET internal_notes = ${internalNotes}
+      WHERE id = ${appealId}`),
+    'updateModerationAppealDraft',
+    edit,
+  )
 }

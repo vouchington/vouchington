@@ -9,11 +9,8 @@ import {
 import { addPostHashtag } from '@services/posts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import type {
-  Tool,
-  ToolApiEndpoint,
-  ToolInvocationContext,
-} from '@services/openai-agents/tool-types'
+import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@vouchington/mcp-server/types'
 import { selectApiByArgument } from '@vouchington/mcp-server/tools'
 import { objectSchema, oneOfSchema } from '@vouchington/mcp-server/schema'
 

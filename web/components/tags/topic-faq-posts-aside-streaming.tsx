@@ -5,7 +5,7 @@ import { TopicFaqPostsAsideContent } from './topic-faq-posts-aside-content'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { Topic } from '@/types/topics'
 import type { EntityRelationsResponse } from '@/lib/api/entity-relations'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 
 interface TopicFaqPostsAsideStreamingProps {
   topic: Topic

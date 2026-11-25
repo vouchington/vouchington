@@ -1,9 +1,9 @@
 import { write } from '@data-stores/psql'
-import { getStripeRefundRequestRejection } from '@modules/stripe/refund-request-errors'
+import { getStripeRequestRejection } from '@vouchington/stripe'
 import sql from 'sql-template-strings'
 
 export async function recordRefundRequestRejection(attemptId: string, err: unknown): Promise<void> {
-  const reason = getStripeRefundRequestRejection(err)
+  const reason = getStripeRequestRejection(err)
   if (!reason) {
     await write(sql`/* recordRefundRequestRejection: unknown outcome */
       UPDATE membership_refund_operation_attempts SET outcome_unknown_at = ${new Date()}

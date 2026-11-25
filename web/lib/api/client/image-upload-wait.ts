@@ -1,10 +1,9 @@
 'use client'
 
-import { ApiError } from '@vouchington/api-client'
+import { ApiError, getRetryAfterMs } from '@vouchington/api-client'
 import { getImageUploadState } from './image-upload-api'
 import { ImageBlockedError, ImageProcessingTimeoutError } from './image-upload-errors'
 import { POLL_INTERVAL_MS, POLL_MAX_ERRORS, POLL_TIMEOUT_MS } from './image-upload-polling'
-import { getImageUploadRetryAfterMs } from './image-upload-retry-after'
 
 export async function pollImageUntilUploaded(
   imageId: string,
@@ -32,7 +31,7 @@ export async function pollImageUntilUploaded(
         throw new ImageProcessingTimeoutError(imageId)
       }
       if (!(err instanceof ApiError) || (err.status < 500 && err.status !== 429)) throw err
-      const retryAfterMs = getImageUploadRetryAfterMs(err)
+      const retryAfterMs = getRetryAfterMs(err)
       if (retryAfterMs !== null) {
         timeoutAt += retryAfterMs
         await delay(retryAfterMs, options.signal)

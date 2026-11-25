@@ -22,7 +22,6 @@ const {
   mockGetEntityBookmarks,
   mockToastError,
   mockToastSuccess,
-  mockIsRateLimitError,
   mockGetRateLimitMessage,
 } = vi.hoisted(() => ({
   mockBookmarkEntity: vi.fn<VitestLooseMock>(),
@@ -30,7 +29,6 @@ const {
   mockGetEntityBookmarks: vi.fn<VitestLooseMock>(),
   mockToastError: vi.fn<VitestLooseMock>(),
   mockToastSuccess: vi.fn<VitestLooseMock>(),
-  mockIsRateLimitError: vi.fn<VitestLooseMock>().mockReturnValue(false),
   mockGetRateLimitMessage: vi.fn<VitestLooseMock>().mockReturnValue('Rate limited'),
 }))
 
@@ -55,7 +53,6 @@ vi.mock(
   import('@/lib/api/rate-limit-error'),
   () =>
     ({
-      isRateLimitError: mockIsRateLimitError,
       getRateLimitMessage: mockGetRateLimitMessage,
     }) as unknown as typeof import('@/lib/api/rate-limit-error'),
 )
@@ -66,7 +63,6 @@ function resetEntityBookmarkEdgeDoubles() {
   mockUnbookmarkEntity.mockReset()
   mockGetEntityBookmarks.mockReset()
   mockToastError.mockReset()
-  mockIsRateLimitError.mockReset().mockReturnValue(false)
   mockGetRateLimitMessage.mockReset().mockReturnValue('Rate limited')
 }
 
@@ -74,7 +70,6 @@ export {
   mockBookmarkEntity,
   mockGetEntityBookmarks,
   mockGetRateLimitMessage,
-  mockIsRateLimitError,
   mockToastError,
   resetEntityBookmarkEdgeDoubles,
 }

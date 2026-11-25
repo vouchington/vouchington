@@ -34,6 +34,7 @@ function publish(row: ClaimRow): PauseCollectionDispatch {
 
 async function claimUnleasedPauseCollection(limit: number): Promise<ClaimRow[]> {
   await using transaction = await beginTransaction()
+  // lock-reason: prevents: overlapping dispatches from claiming the same unleased pause-collection request; writer: claimUnleasedPauseCollection
   const { rows } = await transaction<ClaimRow>(sql`/* claimUnleasedPauseCollection */
     WITH due AS (
       SELECT user_id FROM membership_pause_collection_work_items
@@ -58,6 +59,7 @@ async function claimUnleasedPauseCollection(limit: number): Promise<ClaimRow[]> 
 
 async function claimExpiredPauseCollection(limit: number): Promise<ClaimRow[]> {
   await using transaction = await beginTransaction()
+  // lock-reason: prevents: overlapping recovery runs from taking over the same expired pause-collection lease; writer: claimExpiredPauseCollection
   const { rows } = await transaction<ClaimRow>(sql`/* claimExpiredPauseCollection */
     WITH due AS (
       SELECT user_id FROM membership_pause_collection_work_items

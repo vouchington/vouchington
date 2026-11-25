@@ -6,7 +6,8 @@ import { bookmarkEntity, getEntityBookmarks, unbookmarkEntity } from '@/lib/api/
 import { emitBookmarkChange, onBookmarkChange } from '@/hooks/use-bookmark-invalidation'
 import { useDidHydrate } from '@/hooks/use-did-hydrate'
 import { toast } from 'sonner'
-import { isRateLimitError, getRateLimitMessage } from '@/lib/api/rate-limit-error'
+import { isRateLimitError } from '@vouchington/api-client'
+import { getRateLimitMessage } from '@/lib/api/rate-limit-error'
 import { getRelationLimitMessage } from '@/lib/api/relation-limit-error'
 import { useTranslations } from '@/lib/i18n/use-translations'
 

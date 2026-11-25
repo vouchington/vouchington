@@ -28,6 +28,7 @@ export async function lockPostUpdateMutationScopes(
   hashtagIntent?: PostHashtagIntent,
   delegated = false,
 ): Promise<string | null> {
+  // lock-reason: prevents: committing an owned post edit after its editor crosses the deletion fence; writer: post edits and account deletion.
   await lockActiveUserSubjectsForMutation(query, [editorId])
   const { rows } = postUpdateMayAffectCategories(changes, !!hashtagIntent)
     ? await query<{ created_by_id: string | null }>(sql`/* postCategoryOwner */

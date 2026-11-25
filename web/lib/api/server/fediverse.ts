@@ -9,7 +9,7 @@ import type {
   FediverseInstanceResponse,
   FediverseInstancesResponse,
 } from '@/types/fediverse-instances'
-import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
+import { returnNullForMissingEntity } from '@vouchington/api-client'
 import {
   isCurrentFediverseInstancesResponse,
   normalizeFediverseInstanceResponse,

@@ -11,7 +11,8 @@ import { getSentryDsnConfig } from '@ts-shared/utils/sentry-deployment-gate'
  * use an explicit egress proxy before the IPv4 address can be removed.
  *
  * A host's absence from this list is intentional: it is IPv4-only, dynamically discovered, or not
- * called directly by the API. `backend/modules/utils/http-egress-guardrail.mts` wraps the API's
+ * called directly by the API. `backend/modules/utils/http.mts` wires this list into
+ * `@vouchington/http-transport/dispatchers`'s `createOriginGuardrailInterceptor` on the API's
  * shared undici dispatcher and reports (warn-mode only, never blocks) direct egress to a host that
  * is neither on this allowlist nor exempt as internal/private. Keep this list synchronized with the
  * production-server egress catalog in `docs/overview/infrastructure/networking.md`.

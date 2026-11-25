@@ -17,8 +17,8 @@ import {
   type InvalidCursorResult,
   type SearchPageInfo,
 } from './paged-search.mts'
-import { nullable } from '@vouchington/mcp-server/schema'
-import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
+import { nullable, objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 
 const MEMBER_ROLES = [
@@ -71,10 +71,10 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['communities:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/communities/:idOrSlug/members' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       results: {
         type: 'array',
-        items: closedObject({
+        items: objectSchema({
           ...pickProperties('CommunityMember', ['user_id']),
           username: nullable({ type: 'string' }),
           ...pickProperties('CommunityMember', ['role', 'created_at']),

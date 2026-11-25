@@ -22,6 +22,7 @@ export async function createTopicAliases(
   const aliasArray = prepareTopicAliasInput(aliases)
   if (aliasArray.length === 0) return []
   const run = async (query: TransactionQuery) => {
+    // lock-reason: prevents: a topic/alias lock-order deadlock between fn_project_topic_aliases and a slug or hostname change; writer: updateTopic
     const { rows: topicRows } = await query<{ id: string; merged_into_topic_id: string | null }>(
       `/* createTopicAliases lockTopic */
       SELECT id, merged_into_topic_id

@@ -6,7 +6,7 @@ import {
   projectPublicTopicRecommendation,
   type PublicTopicRecommendationPost,
 } from '@services/topic-recommendations/public-projection'
-import { externalText, sanitizedTitle } from './mcp-read-output.mts'
+import { sanitizeTitle, wrapExternalText } from '@vouchington/mcp-server/untrusted'
 
 const SOURCE = 'topic_recommendation'
 
@@ -16,7 +16,7 @@ export type McpTopicRecommendationPost = PublicTopicRecommendationPost & {
 
 /** Text the documented post types as a required string: an empty value stays empty, never null. */
 async function fencedText(text: string, contentType: string): Promise<string> {
-  return (await externalText(text, SOURCE, contentType)) ?? ''
+  return (await wrapExternalText(text, SOURCE, contentType)) ?? ''
 }
 
 /**
@@ -30,13 +30,13 @@ export async function projectMcpRecommendation(
   const extension = publicPost.topic_recommendation
   const [title, markdown, topicTitle, topicMarkdown, aliases, rejectionReason, approvalError] =
     await Promise.all([
-      sanitizedTitle(publicPost.title),
+      sanitizeTitle(publicPost.title),
       fencedText(publicPost.markdown, 'markdown'),
-      sanitizedTitle(extension.topic_title),
-      externalText(extension.topic_markdown, SOURCE, 'topic_markdown'),
-      Promise.all(extension.aliases.map(sanitizedTitle)),
-      externalText(extension.rejection_reason, SOURCE, 'rejection_reason'),
-      externalText(extension.approval_error_message, SOURCE, 'approval_error_message'),
+      sanitizeTitle(extension.topic_title),
+      wrapExternalText(extension.topic_markdown, SOURCE, 'topic_markdown'),
+      Promise.all(extension.aliases.map(sanitizeTitle)),
+      wrapExternalText(extension.rejection_reason, SOURCE, 'rejection_reason'),
+      wrapExternalText(extension.approval_error_message, SOURCE, 'approval_error_message'),
     ])
   return {
     ...publicPost,

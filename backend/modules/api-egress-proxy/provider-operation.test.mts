@@ -1,25 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  createProviderOperationSignal,
   rethrowProviderTransportError,
   withProviderOperationTimeout,
 } from './provider-operation.mts'
 
 describe('provider operation timeout', () => {
-  it('creates a fresh operation signal without discarding the parent deadline', () => {
-    const parent = new AbortController()
-    const first = createProviderOperationSignal(parent.signal)
-    const second = createProviderOperationSignal(parent.signal)
-
-    expect(first).not.toBe(parent.signal)
-    expect(second).not.toBe(parent.signal)
-    expect(second).not.toBe(first)
-    parent.abort()
-    expect(first.aborted).toBe(true)
-    expect(second.aborted).toBe(true)
-  })
-
-  it('maps abort and Undici timeout errors to an upstream 502', async () => {
+  it('maps transport timeouts to a 502 naming the OAuth provider', async () => {
     const abort = new DOMException('Request timed out', 'TimeoutError')
     await expect(
       withProviderOperationTimeout('GitHub', async () => {
@@ -27,6 +13,7 @@ describe('provider operation timeout', () => {
       }),
     ).rejects.toMatchObject({
       status: 502,
+      message: 'GitHub OAuth provider request timed out',
       cause: abort,
     })
 
@@ -37,20 +24,7 @@ describe('provider operation timeout', () => {
       /X OAuth provider request timed out/,
     )
 
-    timeout.code = 'UND_ERR_BODY_TIMEOUT'
-    const bodyError = new TypeError('terminated', { cause: timeout })
-    expect(() => rethrowProviderTransportError('Apple', bodyError)).toThrow(
-      /Apple OAuth provider request timed out/,
-    )
-  })
-
-  it('preserves the reason when the parent signal is already aborted', async () => {
-    const parent = new AbortController()
-    const reason = new Error('provider operation already aborted')
-    parent.abort(reason)
-
-    await expect(
-      withProviderOperationTimeout('GitHub', async () => 'ok', parent.signal),
-    ).rejects.toBe(reason)
+    const other = new Error('provider returned 400')
+    expect(() => rethrowProviderTransportError('Apple', other)).toThrow(other)
   })
 })

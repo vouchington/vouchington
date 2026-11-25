@@ -49,6 +49,7 @@ export async function cleanupDeletedConversationPage(
     }
   }
 
+  // lock-reason: prevents: cascading newly admitted push work during the bounded drain; writer: notification intent capture.
   const notification = await query<{ user_id: string; id: string }>(
     `/* listDeletedConversationNotification */
      -- no-mistakes-disable-next-line postgres-required-predicates: conversation spans recipients; conversation_id leading index bounds the page across user partitions
@@ -60,6 +61,7 @@ export async function cleanupDeletedConversationPage(
   )
   const firstNotification = notification.rows[0]
   if (firstNotification) {
+    // lock-reason: prevents: deleting a push intent or cascading a receipt during a concurrent delivery transition; writer: notification push claim and receipt persistence.
     const intent = await query<{ status: string }>(
       `/* lockDeletedConversationPushIntent */
        SELECT status FROM notification_push_intents

@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { serverApi } from './instance'
-import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
+import { returnNullForMissingEntity } from '@vouchington/api-client'
 import type { LandingPageAnalytics } from '@/types/landing-pages'
 
 interface LandingPageAnalyticsResponseBody {

@@ -44,7 +44,12 @@ export const storybookBrowserOptimizeDeps = [
 
 type OptimizeDepsConfig = { optimizeDeps: { exclude?: string[]; include?: string[] } }
 
-const storybookBrowserOptimizeDepsExclude = ['next/image', 'next/headers'] as const
+export const storybookBrowserOptimizeDepsExclude = [
+  'next/image',
+  'next/headers',
+  // Node-only compiler (`node:sqlite`, `node:fs`) imported by ts-shared/ui-messages native tooling, never in the browser.
+  '@vouchington/localization-compiler',
+] as const
 
 export const applyStorybookBrowserOptimizeDeps = (config: OptimizeDepsConfig): void => {
   const optimizeDeps = config.optimizeDeps

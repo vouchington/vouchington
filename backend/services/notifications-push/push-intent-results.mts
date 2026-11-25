@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { NotificationPushIntent } from './push-intents.mts'
 import {
@@ -35,24 +35,27 @@ export async function listPendingActivePushSubscriptions(
         AND notification_id = ${intent.notification_id}
         AND lease_token = ${intent.lease_token}
         AND lease_expires_at > CURRENT_TIMESTAMP
-    ), expired_owner AS (
-      DELETE FROM web_push_endpoint_owners owner
-      USING web_push_subscriptions subscription, active_claim
+    ), expired AS (
+      UPDATE web_push_subscriptions subscription
+      SET deleted_at = CURRENT_TIMESTAMP
       WHERE subscription.user_id = ${intent.user_id}
         AND subscription.deleted_at IS NULL
         AND subscription.expiration_time_milliseconds IS NOT NULL
         AND subscription.expiration_time_milliseconds <= ${now}
-        AND owner.user_id = subscription.user_id
-        AND owner.subscription_id = subscription.id
-      RETURNING owner.user_id, owner.subscription_id, owner.endpoint
-    ), expired AS (
-      UPDATE web_push_subscriptions subscription
-      SET deleted_at = CURRENT_TIMESTAMP
-      FROM expired_owner owner
-      WHERE subscription.user_id = owner.user_id
-        AND subscription.id = owner.subscription_id
-        AND subscription.endpoint = owner.endpoint
-      RETURNING subscription.id
+        AND EXISTS (SELECT 1 FROM active_claim)
+        AND EXISTS (
+          SELECT 1 FROM web_push_endpoint_owners owner
+          WHERE owner.user_id = subscription.user_id
+            AND owner.subscription_id = subscription.id
+            AND owner.endpoint = subscription.endpoint
+        )
+      RETURNING subscription.user_id, subscription.id, subscription.endpoint
+    ), expired_owners AS (
+      DELETE FROM web_push_endpoint_owners owner
+      USING expired
+      WHERE owner.user_id = expired.user_id
+        AND owner.subscription_id = expired.id
+        AND owner.endpoint = expired.endpoint
     )
     SELECT subscription.id, subscription.user_id, subscription.endpoint, subscription.p256dh, subscription.auth
     FROM web_push_subscriptions subscription
@@ -85,8 +88,11 @@ export async function persistClaimedNotificationPushOutcome(
   const { id, endpoint } = outcome.subscription
   const isDelivered = outcome.kind === 'delivered'
   const isSubscriptionInvalid = outcome.kind === 'subscription_invalid'
-  const terminalStatus = isDelivered ? 'delivered' : 'permanently_failed'
-  const { rows } = await write<{ outcome: NotificationPushOutcomePersistence }>(sql`
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction<{
+    outcome: NotificationPushOutcomePersistence
+    receipt_written: boolean
+  }>(sql`
     /* persistClaimedNotificationPushOutcome */
     WITH active_claim AS MATERIALIZED (
       SELECT 1
@@ -95,92 +101,52 @@ export async function persistClaimedNotificationPushOutcome(
         AND notification_id = ${intent.notification_id}
         AND lease_token = ${intent.lease_token}
         AND lease_expires_at > CURRENT_TIMESTAMP
-    ), owned_subscription AS MATERIALIZED (
-      SELECT subscription.id
-      FROM web_push_subscriptions subscription
-      INNER JOIN web_push_endpoint_owners owner
-        ON owner.user_id = subscription.user_id
-        AND owner.subscription_id = subscription.id
-        AND owner.endpoint = subscription.endpoint
-      CROSS JOIN active_claim
+    ), updated AS (
+      UPDATE web_push_subscriptions subscription
+      SET last_success_at = CASE WHEN ${isDelivered} THEN CURRENT_TIMESTAMP ELSE subscription.last_success_at END,
+          last_failure_at = CASE WHEN ${isDelivered} THEN subscription.last_failure_at ELSE CURRENT_TIMESTAMP END,
+          deleted_at = CASE WHEN ${isSubscriptionInvalid} THEN CURRENT_TIMESTAMP ELSE subscription.deleted_at END
       WHERE subscription.user_id = ${intent.user_id}
         AND subscription.id = ${id}::uuid
         AND subscription.endpoint = ${endpoint}
         AND subscription.deleted_at IS NULL
-      FOR UPDATE OF owner
-    ), terminal_input AS (
-      SELECT ${endpoint}::text AS endpoint,
-        ${terminalStatus}::notification_push_endpoint_statuses AS status
+        AND EXISTS (SELECT 1 FROM active_claim)
+        AND EXISTS (
+          SELECT 1 FROM web_push_endpoint_owners owner
+          WHERE owner.user_id = subscription.user_id
+            AND owner.subscription_id = subscription.id
+            AND owner.endpoint = subscription.endpoint
+        )
+      RETURNING subscription.user_id, subscription.id, subscription.endpoint
     ), receipts AS (
       INSERT INTO notification_push_intent_subscription_receipts (
         user_id, notification_id, subscription_id, endpoint, delivered_at, permanently_failed_at
       )
-      SELECT ${intent.user_id}::uuid AS user_id,
-        ${intent.notification_id}::uuid AS notification_id,
-        ${id}::uuid AS subscription_id,
-        input.endpoint,
-        CASE WHEN input.status = 'delivered' THEN CURRENT_TIMESTAMP END,
-        CASE WHEN input.status = 'permanently_failed' THEN CURRENT_TIMESTAMP END
-      FROM terminal_input input
-      CROSS JOIN owned_subscription
-      ORDER BY user_id ASC NULLS LAST,
-        notification_id ASC NULLS LAST,
-        subscription_id ASC NULLS LAST
+      SELECT updated.user_id, ${intent.notification_id}::uuid, updated.id, updated.endpoint,
+        CASE WHEN ${isDelivered} THEN CURRENT_TIMESTAMP END,
+        CASE WHEN NOT ${isDelivered} THEN CURRENT_TIMESTAMP END
+      FROM updated
+      ORDER BY updated.user_id ASC NULLS LAST, updated.id ASC NULLS LAST
       ON CONFLICT (user_id, notification_id, subscription_id) DO UPDATE
       SET delivered_at = EXCLUDED.delivered_at,
           permanently_failed_at = EXCLUDED.permanently_failed_at
       WHERE notification_push_intent_subscription_receipts.status = 'pending'
-      RETURNING endpoint, subscription_id, status
-    ), invalid_receipts AS (
-      SELECT receipt.subscription_id
-      FROM receipts receipt
-      WHERE receipt.status = 'permanently_failed'
-        AND ${isSubscriptionInvalid}
+      RETURNING user_id, subscription_id, endpoint
     ), removed_invalid_owners AS (
       DELETE FROM web_push_endpoint_owners owner
-      USING invalid_receipts receipt, owned_subscription owned
-      WHERE owner.user_id = ${intent.user_id}
+      USING receipts receipt
+      WHERE ${isSubscriptionInvalid}
+        AND owner.user_id = receipt.user_id
         AND owner.subscription_id = receipt.subscription_id
-        AND owner.subscription_id = owned.id
-        AND owner.endpoint = ${endpoint}
-      RETURNING owner.subscription_id
-    ), subscription_results AS (
-      UPDATE web_push_subscriptions subscription
-      SET last_success_at = CASE
-            WHEN subscription.id IN (SELECT subscription_id FROM receipts WHERE status = 'delivered') THEN CURRENT_TIMESTAMP
-            ELSE subscription.last_success_at
-          END,
-          last_failure_at = CASE
-            WHEN subscription.id IN (SELECT subscription_id FROM receipts WHERE status = 'permanently_failed') THEN CURRENT_TIMESTAMP
-            ELSE subscription.last_failure_at
-          END,
-          deleted_at = CASE
-            WHEN subscription.id IN (SELECT subscription_id FROM invalid_receipts) THEN CURRENT_TIMESTAMP
-            ELSE subscription.deleted_at
-          END
-      FROM owned_subscription owned
-      WHERE subscription.user_id = ${intent.user_id}
-        AND subscription.id = owned.id
-        AND subscription.endpoint = ${endpoint}
-        AND (
-          (${isDelivered} AND subscription.id = ${id}::uuid)
-          OR subscription.id IN (SELECT subscription_id FROM receipts WHERE status = 'permanently_failed')
-        )
-        AND (
-          subscription.id IN (SELECT subscription_id FROM removed_invalid_owners)
-          OR EXISTS (
-            SELECT 1 FROM web_push_endpoint_owners owner
-            WHERE owner.user_id = subscription.user_id
-              AND owner.subscription_id = subscription.id
-              AND owner.endpoint = subscription.endpoint
-          )
-        )
+        AND owner.endpoint = receipt.endpoint
     )
     SELECT CASE
       WHEN NOT EXISTS (SELECT 1 FROM active_claim) THEN 'lease_lost'
-      WHEN NOT EXISTS (SELECT 1 FROM owned_subscription) THEN 'subscription_stale'
+      WHEN NOT EXISTS (SELECT 1 FROM updated) THEN 'subscription_stale'
       ELSE 'persisted'
-    END AS outcome
+    END AS outcome, EXISTS (SELECT 1 FROM receipts) AS receipt_written
   `)
+  // A duplicate terminal receipt leaves the staged subscription change uncommitted.
+  if (rows[0]?.receipt_written) await transaction.commit()
   return rows[0]?.outcome ?? 'lease_lost'
 }
