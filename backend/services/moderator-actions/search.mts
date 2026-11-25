@@ -82,7 +82,15 @@ export async function searchModeratorActions(
     WHERE TRUE
   `
 
-  if (options?.communityId !== undefined) {
+  const useCommunityTypeOrder =
+    options?.communityId !== undefined &&
+    options.actionType !== undefined &&
+    options.actorId === undefined
+  if (useCommunityTypeOrder) {
+    // Single-value ranges keep both scope keys in the ordered index walk.
+    query.append(sql` AND ma.community_id BETWEEN ${options.communityId} AND ${options.communityId}
+      AND ma.action_type BETWEEN ${options.actionType} AND ${options.actionType}`)
+  } else if (options?.communityId !== undefined) {
     query.append(sql` AND ma.community_id = ${options.communityId}`)
   } else if (options?.global) {
     query.append(sql` AND ma.community_id IS NULL`)
@@ -92,7 +100,7 @@ export async function searchModeratorActions(
     query.append(sql` AND ma.actor_user_id = ${options.actorId}`)
   }
 
-  if (options?.actionType !== undefined) {
+  if (!useCommunityTypeOrder && options?.actionType !== undefined) {
     query.append(sql` AND ma.action_type = ${options.actionType}`)
   }
 
@@ -100,10 +108,12 @@ export async function searchModeratorActions(
     query.append(sql` AND ma.id < ${cursorId}`)
   }
 
-  query.append(sql`
-    ORDER BY ma.id DESC
-    LIMIT ${limit + 1}
-  `)
+  query.append(
+    useCommunityTypeOrder
+      ? ' ORDER BY ma.community_id ASC, ma.action_type ASC, ma.id DESC'
+      : ' ORDER BY ma.id DESC',
+  )
+  query.append(sql` LIMIT ${limit + 1}`)
 
   const { rows } = await read<ModeratorAction>(query, options)
 
