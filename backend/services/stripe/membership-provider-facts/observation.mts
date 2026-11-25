@@ -12,6 +12,7 @@ export async function insertStripeMembershipObservation(
   query: QueryExecutor,
 ): Promise<string | null> {
   const observationOrder = observedAt.getTime()
+  // lock-reason: prevents: a concurrent Stripe observation from changing the source pointer between the ordering check and the link write; writer: insertStripeMembershipObservation
   const { rows } = await query(sql`/* insertStripeMembershipObservation */
     WITH current_observation AS (
       SELECT observation.provider_order, evidence.received_at,
