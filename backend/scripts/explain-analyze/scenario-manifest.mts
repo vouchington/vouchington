@@ -39,4 +39,10 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'direct-message-notifications-at-cap',
   'modmail-notifications-at-cap',
   'notification-push-intent-claim-at-cap',
+  'search-user-lists-at-cap',
+  'topic-alias-records-at-cap',
+  'topic-additional-hostnames-at-cap',
+  'top-hashtags-at-cap',
+  'topic-children-at-cap',
+  'url-embeds-at-post-page-cap',
 ] as const
