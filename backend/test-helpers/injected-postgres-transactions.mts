@@ -1,23 +1,33 @@
-import { vi } from 'vitest'
 import * as psql from '@data-stores/psql'
-import type { QueryExecutor } from '@data-stores/psql'
+import type { OwnedTransaction, QueryExecutor } from '@data-stores/psql'
+import {
+  afterNextPostgresCommitForTest as afterNextTargetCommit,
+  afterPostgresTransactionQueryForTest as afterTargetTransactionQuery,
+  beforePostgresTransactionQueryForTest as beforeTargetTransactionQuery,
+  interceptPostgresTransactionsForTest as interceptTargetTransactions,
+  rewritePostgresTransactionRowsForTest as rewriteTargetTransactionRows,
+  type ManagedSqlTransaction,
+  type TransactionBeginTarget,
+} from 'vouchington-tooling/postgres-test-faults'
+
+const rawTransactionTarget = psql.psql as unknown as TransactionBeginTarget
+const ownedTransactionTarget = psql as unknown as TransactionBeginTarget
 
 /**
- * Wrap transactions opened through `psql.beginTransaction` (only the next one when `once`) with
- * `wrap`; returns the restore.
+ * Wrap transactions opened through `psql.psql.beginTransaction` (only the next one when `once`)
+ * with `wrap`; returns the restore.
  */
 export function interceptPostgresTransactionsForTest(
-  wrap: (transaction: Awaited<ReturnType<typeof psql.beginTransaction>>) => QueryExecutor,
+  wrap: (transaction: OwnedTransaction) => QueryExecutor,
   once = false,
 ): () => void {
   // Intercept before the application wrapper registers transaction ownership for commit actions.
-  const realBegin = psql.psql.beginTransaction
-  const spy = vi.spyOn(psql.psql, 'beginTransaction')
-  const intercept = async (options?: Parameters<typeof realBegin>[0]) =>
-    wrap(await realBegin(options)) as Awaited<ReturnType<typeof realBegin>>
-  if (once) spy.mockImplementationOnce(intercept)
-  else spy.mockImplementation(intercept)
-  return () => spy.mockRestore()
+  return interceptTargetTransactions(
+    rawTransactionTarget,
+    transaction =>
+      wrap(transaction as unknown as OwnedTransaction) as unknown as ManagedSqlTransaction,
+    once,
+  )
 }
 
 /**
@@ -30,20 +40,7 @@ export function rewritePostgresTransactionRowsForTest(
   matchesValues: (values: readonly unknown[]) => boolean,
   rewrite: (rows: Record<string, unknown>[]) => Record<string, unknown>[],
 ): () => void {
-  return interceptPostgresTransactionsForTest(
-    transaction =>
-      new Proxy(transaction, {
-        async apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
-          const result = await Reflect.apply(target, thisArgument, argumentsList)
-          const [input] = argumentsList
-          const text = typeof input === 'string' ? input : input.text
-          const values = typeof input === 'string' ? [] : (input.values ?? [])
-          if (!text.includes(marker) || !matchesValues(values)) return result
-          const rows = rewrite(result.rows as Record<string, unknown>[])
-          return { ...result, rows, rowCount: rows.length }
-        },
-      }),
-  )
+  return rewriteTargetTransactionRows(rawTransactionTarget, marker, matchesValues, rewrite)
 }
 
 /**
@@ -52,18 +49,7 @@ export function rewritePostgresTransactionRowsForTest(
  * returns the restore.
  */
 export function afterNextPostgresCommitForTest(effect: () => void): () => void {
-  const realBegin = psql.beginTransaction
-  const spy = vi.spyOn(psql, 'beginTransaction')
-  spy.mockImplementationOnce(async options => {
-    const transaction = await realBegin(options)
-    const commit = transaction.commit
-    transaction.commit = async () => {
-      await commit()
-      effect()
-    }
-    return transaction
-  })
-  return () => spy.mockRestore()
+  return afterNextTargetCommit(ownedTransactionTarget, effect)
 }
 
 /** Run an owned real effect after a matching SQL result was observed, without rewriting its rows. */
@@ -72,22 +58,8 @@ export function afterPostgresTransactionQueryForTest(
   matchesValues: (values: readonly unknown[]) => boolean,
   effect: (transaction: QueryExecutor) => Promise<void>,
 ): () => void {
-  let applied = false
-  return interceptPostgresTransactionsForTest(
-    transaction =>
-      new Proxy(transaction, {
-        async apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
-          const result = await Reflect.apply(target, thisArgument, argumentsList)
-          const [input, parameters] = argumentsList
-          const text = typeof input === 'string' ? input : input.text
-          const values = typeof input === 'string' ? (parameters ?? []) : (input.values ?? [])
-          if (!applied && text.includes(marker) && matchesValues(values)) {
-            applied = true
-            await effect(target)
-          }
-          return result
-        },
-      }),
+  return afterTargetTransactionQuery(rawTransactionTarget, marker, matchesValues, transaction =>
+    effect(transaction as unknown as QueryExecutor),
   )
 }
 
@@ -97,20 +69,5 @@ export function beforePostgresTransactionQueryForTest(
   matchesValues: (values: readonly unknown[]) => boolean,
   effect: () => Promise<void>,
 ): () => void {
-  let applied = false
-  return interceptPostgresTransactionsForTest(
-    transaction =>
-      new Proxy(transaction, {
-        async apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
-          const [input, parameters] = argumentsList
-          const text = typeof input === 'string' ? input : input.text
-          const values = typeof input === 'string' ? (parameters ?? []) : (input.values ?? [])
-          if (!applied && text.includes(marker) && matchesValues(values)) {
-            applied = true
-            await effect()
-          }
-          return Reflect.apply(target, thisArgument, argumentsList)
-        },
-      }),
-  )
+  return beforeTargetTransactionQuery(rawTransactionTarget, marker, matchesValues, () => effect())
 }

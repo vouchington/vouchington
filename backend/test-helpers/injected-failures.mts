@@ -1,7 +1,22 @@
 import { vi } from 'vitest'
 import * as psql from '@data-stores/psql'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
-import { interceptPostgresTransactionsForTest } from './injected-postgres-transactions.mts'
+import {
+  answerPostgresReadsForTest as answerTargetPostgresReads,
+  answerPostgresWritesForTest as answerTargetPostgresWrites,
+  beforePostgresTransactionQueryForTest as beforeTargetTransactionQuery,
+  rejectNextPostgresTransactionForTest as rejectNextTargetTransaction,
+  rejectPostgresReadForTest as rejectTargetPostgresRead,
+  rejectPostgresWriteForTest as rejectTargetPostgresWrite,
+  rejectQuery as rejectTargetQuery,
+  runAfterPostgresWriteForTest as runAfterTargetPostgresWrite,
+  withRejectedPostgresQueryForTest as withRejectedTargetPostgresQuery,
+  type CallableSqlQueryExecutor,
+  type ManagedSqlTransaction,
+  type ReadQueryTarget,
+  type TransactionBeginTarget,
+  type WriteQueryTarget,
+} from 'vouchington-tooling/postgres-test-faults'
 import { backgroundQueue } from './shared-background-queue.mts'
 export { rejectNextClassifierRunDispatcherAddForTest } from './injected-classifier-queue-failures.mts'
 export {
@@ -12,32 +27,35 @@ export {
   rejectNextBackgroundJobAddBulkForTest,
 } from './injected-queue-failures.mts'
 
-/** Reject one write made through a caller-owned executor while preserving its transaction. */
+/**
+ * Reject one write made through a caller-owned executor while preserving its transaction.
+ * Adapts `@vouchington/postgres`'s `SQLStatement`-based `QueryExecutor` to upstream's generic
+ * `CallableSqlQueryExecutor` type.
+ */
 export function rejectQuery<Query extends QueryExecutor>(
   query: Query,
   matches: (statement: string, values: readonly unknown[]) => boolean,
   message: string | Error,
 ): Query {
-  return new Proxy(query, {
-    apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
-      const [input, parameters] = argumentsList
-      const statement = typeof input === 'string' ? input : input.text
-      const values = typeof input === 'string' ? (parameters ?? []) : input.values
-      if (matches(statement, values))
-        throw typeof message === 'string' ? new Error(message) : message
-      return Reflect.apply(target, thisArgument, argumentsList)
-    },
-  })
+  return rejectTargetQuery(
+    query as unknown as CallableSqlQueryExecutor,
+    matches,
+    message,
+  ) as unknown as Query
 }
 
 /** Inject one write failure through a caller-owned real PostgreSQL transaction. */
-export async function withRejectedPostgresQueryForTest<Result>(
+export function withRejectedPostgresQueryForTest<Result>(
   matches: (statement: string, values: readonly unknown[]) => boolean,
   message: string,
   operation: (query: QueryExecutor) => Promise<Result>,
 ): Promise<Result> {
-  await using transaction = await beginTransaction()
-  return await operation(rejectQuery(transaction, matches, message))
+  return withRejectedTargetPostgresQuery(
+    beginTransaction as unknown as () => Promise<ManagedSqlTransaction>,
+    matches,
+    message,
+    query => operation(query as unknown as QueryExecutor),
+  )
 }
 
 /** Reject matching pool reads outside caller-owned transactions; returns the restore. */
@@ -48,16 +66,13 @@ export function rejectPostgresReadForTest(
   onRejected: (values: readonly unknown[]) => void = () => {},
   matchesValues: (values: readonly unknown[]) => boolean = () => true,
 ): () => void {
-  const realRead = psql.read
-  const spy = vi.spyOn(psql, 'read').mockImplementation((query, ...rest) => {
-    const text = typeof query === 'string' ? query : query.text
-    const values = typeof query === 'string' ? [] : (query.values ?? [])
-    if (!text.includes(marker) || !matchesValues(values)) return realRead(query, ...rest)
-    onRejected(values)
-    // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Callers inject non-Error rejection values on purpose.
-    return Promise.reject(error)
-  })
-  return () => spy.mockRestore()
+  return rejectTargetPostgresRead(
+    psql as unknown as ReadQueryTarget,
+    marker,
+    error,
+    onRejected,
+    matchesValues,
+  )
 }
 
 /** Reject matching pool writes outside caller-owned transactions; returns the restore. */
@@ -67,22 +82,17 @@ export function rejectPostgresWriteForTest(
   /** Narrow the rejection to statements bound to specific values, such as one row's id. */
   matchesValues: (values: readonly unknown[]) => boolean = () => true,
 ): () => void {
-  const realWrite = psql.write
-  const spy = vi.spyOn(psql, 'write').mockImplementation((query, ...rest) => {
-    const text = typeof query === 'string' ? query : query.text
-    const values =
-      typeof query === 'string' ? (Array.isArray(rest[0]) ? rest[0] : []) : (query.values ?? [])
-    // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Callers inject non-Error rejection values on purpose.
-    if (text.includes(marker) && matchesValues(values)) return Promise.reject(error)
-    return realWrite(query, ...rest)
-  })
-  return () => spy.mockRestore()
+  return rejectTargetPostgresWrite(
+    psql as unknown as WriteQueryTarget,
+    marker,
+    error,
+    matchesValues,
+  )
 }
 
 /** Reject the next default-pool transaction opening, then run normally; returns the restore. */
 export function rejectNextPostgresTransactionForTest(error: Error): () => void {
-  const spy = vi.spyOn(psql, 'beginTransaction').mockRejectedValueOnce(error)
-  return () => spy.mockRestore()
+  return rejectNextTargetTransaction(psql as unknown as TransactionBeginTarget, error)
 }
 
 /** Answer matching pool reads in order; exhausted answers run for real. Returns the restore. */
@@ -90,16 +100,7 @@ export function answerPostgresReadsForTest(
   marker: string,
   answers: ReadonlyArray<Record<string, unknown>[]>,
 ): () => void {
-  const realRead = psql.read
-  let calls = 0
-  const spy = vi.spyOn(psql, 'read').mockImplementation((query, ...rest) => {
-    const text = typeof query === 'string' ? query : query.text
-    if (!text.includes(marker)) return realRead(query, ...rest)
-    const rows = answers[calls++]
-    if (!rows) return realRead(query, ...rest)
-    return Promise.resolve({ command: 'SELECT', rowCount: rows.length, oid: 0, fields: [], rows })
-  })
-  return () => spy.mockRestore()
+  return answerTargetPostgresReads(psql as unknown as ReadQueryTarget, marker, answers)
 }
 
 /** Answer matching pool writes in order; undefined/exhausted answers run for real. Returns the restore. */
@@ -107,16 +108,7 @@ export function answerPostgresWritesForTest(
   marker: string,
   answers: ReadonlyArray<Record<string, unknown>[] | undefined>,
 ): () => void {
-  const realWrite = psql.write
-  let calls = 0
-  const spy = vi.spyOn(psql, 'write').mockImplementation((query, ...rest) => {
-    const text = typeof query === 'string' ? query : query.text
-    if (!text.includes(marker)) return realWrite(query, ...rest)
-    const rows = answers[calls++]
-    if (!rows) return realWrite(query, ...rest)
-    return Promise.resolve({ command: 'UPDATE', rowCount: rows.length, oid: 0, fields: [], rows })
-  })
-  return () => spy.mockRestore()
+  return answerTargetPostgresWrites(psql as unknown as WriteQueryTarget, marker, answers)
 }
 
 /** Run each default-pool query for real, then await its observer before returning the result. */
@@ -127,14 +119,7 @@ export function runAfterPostgresWriteForTest(
     result: { rowCount: number | null; rows: readonly Record<string, unknown>[] },
   ) => void | Promise<void>,
 ): () => void {
-  const realWrite = psql.write
-  const spy = vi.spyOn(psql, 'write').mockImplementation(async (query, ...rest) => {
-    const result = await realWrite(query, ...rest)
-    if (typeof query === 'string') await after(query, [], result)
-    else await after(query.text, query.values ?? [], result)
-    return result
-  })
-  return () => spy.mockRestore()
+  return runAfterTargetPostgresWrite(psql as unknown as WriteQueryTarget, after)
 }
 
 /** Observe a named job's real acceptance, including reply loss injected by throwing from after. */
@@ -156,22 +141,11 @@ export function runBeforePostgresStatementForTest(
   marker: string,
   beforeStatement: (transaction: QueryExecutor) => Promise<void>,
 ): () => void {
-  let ran = false
-  return interceptPostgresTransactionsForTest(
-    transaction =>
-      new Proxy(transaction, {
-        apply(target, thisArgument, argumentsList: Parameters<typeof transaction>) {
-          const [input] = argumentsList
-          const text = typeof input === 'string' ? input : input.text
-          if (ran || !text.includes(marker))
-            return Reflect.apply(target, thisArgument, argumentsList)
-          ran = true
-          return (async () => {
-            await beforeStatement(target)
-            return Reflect.apply(target, thisArgument, argumentsList)
-          })()
-        },
-      }),
+  return beforeTargetTransactionQuery(
+    psql.psql as unknown as TransactionBeginTarget,
+    marker,
+    () => true,
+    transaction => beforeStatement(transaction as unknown as QueryExecutor),
   )
 }
 export { loseNextPsqlJobAddReplyForTest } from './injected-psql-failures.mts'

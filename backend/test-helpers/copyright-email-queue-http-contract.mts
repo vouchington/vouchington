@@ -11,11 +11,10 @@ import type { listCopyrightStaffEmailIntakePage } from '../services/copyright-no
 import { copyrightStaffEmailIntakeQueueCursorScope } from '../services/copyright-notices/read-models-staff-email-intakes.mts'
 import type { createRequest } from './api/server.mts'
 import { encodeUuidCursorBefore } from './modules/pagination/uuid-cursors.mts'
-import { ownedKeysetReadPolicy } from '../../test-helpers/vitest-owned-keyset-read-policy.mts'
 import {
-  recordSharedDbScopeViolation,
-  sharedDbScopeTestIdentity,
-} from '../../test-helpers/vitest-shared-db-scope-violations.mts'
+  ownedEmailQueueKeysetPolicy,
+  sharedDbScopeGuard,
+} from '../../test-helpers/vitest-shared-db-scope-guard.mts'
 
 /** Read the original staff route from the immediate predecessor of a real eligible fixture. */
 export async function readOwnedCopyrightEmailQueue(
@@ -49,10 +48,10 @@ export async function readOwnedCopyrightEmailQueue(
       'Invalid owned intake continuation',
     ),
   ).toEqual({ timestamp, id: afterId, scope: copyrightStaffEmailIntakeQueueCursorScope })
-  const close = ownedKeysetReadPolicy.register(
-    sharedDbScopeTestIdentity(),
+  const close = ownedEmailQueueKeysetPolicy.register(
+    sharedDbScopeGuard.currentTestIdentity(),
     { actorId: moderator.id, id: fixture.id, timestamp, afterId },
-    recordSharedDbScopeViolation,
+    sharedDbScopeGuard.recordViolation,
   )
   let observed: Promise<{ response: Response } | { err: unknown }> | undefined
   // A timeout ends observation, not the real HTTP request. Drain it before unregistering.

@@ -8,7 +8,7 @@ import {
 } from '../data-stores/psql/setup.mts'
 import { createTestPostgresMultiWait } from './postgres-multi-client-lock-observer.mts'
 
-import type { PsqlPoolSocketHandles } from './psql-pool-metrics.mts'
+import type { PsqlPoolSocketHandles } from 'vouchington-tooling/postgres-test-faults'
 
 describe('PostgreSQL pool metrics', () => {
   it('reports the initialized write, read, advisory, and job serialization pools', () => {

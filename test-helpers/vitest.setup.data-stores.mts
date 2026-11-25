@@ -1,6 +1,7 @@
 import { writeSync } from 'node:fs'
 
-import { configureTestPostgresSessions } from './vitest-postgres-session-settings.mts'
+import { configureTestPostgresSessions } from 'vouchington-tooling/shared-db-scope-guard'
+import { VOUCHA_TEST_POSTGRES_SESSION_OPTIONS } from './vitest-shared-db-scope-guard.mts'
 import { withSetupPhaseDeadline } from './vitest-setup-phase-deadline.mts'
 import {
   collectDbBackedTestSetupInput,
@@ -25,7 +26,7 @@ if (!setupCheck.ok) {
 }
 
 // Session startup options apply before any pool opens, including the global setup pools.
-configureTestPostgresSessions()
+configureTestPostgresSessions(process.env, VOUCHA_TEST_POSTGRES_SESSION_OPTIONS)
 
 // Required for API key HMAC checksum generation in tests
 process.env.API_KEY_CHECKSUM_SECRET ??= 'this is a fake test API key checksum secret'

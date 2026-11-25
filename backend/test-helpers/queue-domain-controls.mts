@@ -1,6 +1,6 @@
 import { addAbortListener } from 'node:events'
 import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
-import { parseTestStatementTimeout } from './statement-timeout-constant.mts'
+import { parseTestStatementTimeout } from 'vouchington-tooling/shared-db-scope-guard'
 import sql from 'sql-template-strings'
 import { write } from '@data-stores/psql'
 

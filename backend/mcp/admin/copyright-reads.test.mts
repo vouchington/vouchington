@@ -16,11 +16,10 @@ import { openTestGuestCopyrightNotice } from '@voucha/test-helpers/services/copy
 import { createAcceptedCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/accepted-notice'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { copyrightStaffEmailIntakeQueueCursorScope } from '@services/copyright-notices/read-models-staff-email-intakes'
-import { ownedKeysetReadPolicy } from '../../../test-helpers/vitest-owned-keyset-read-policy.mts'
 import {
-  recordSharedDbScopeViolation,
-  sharedDbScopeTestIdentity,
-} from '../../../test-helpers/vitest-shared-db-scope-violations.mts'
+  ownedEmailQueueKeysetPolicy,
+  sharedDbScopeGuard,
+} from '../../../test-helpers/vitest-shared-db-scope-guard.mts'
 import { copyrightStaffQueueCursorScope } from '@services/copyright-notices/read-models-staff'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { appendCopyrightEmailIntakeRecommendation } from '@services/copyright-notices/email-recommendations'
@@ -66,10 +65,10 @@ describe('copyright admin MCP reads against live services', () => {
       afterId,
       copyrightStaffEmailIntakeQueueCursorScope,
     )
-    const close = ownedKeysetReadPolicy.register(
-      sharedDbScopeTestIdentity(),
+    const close = ownedEmailQueueKeysetPolicy.register(
+      sharedDbScopeGuard.currentTestIdentity(),
       { actorId: administrator.id, id: intake.id, timestamp, afterId },
-      recordSharedDbScopeViolation,
+      sharedDbScopeGuard.recordViolation,
     )
     type QueuePage = {
       copyright_email_intakes: Array<{ id: string }>

@@ -1,6 +1,8 @@
-import { configureTestPostgresSessions } from './vitest-postgres-session-settings.mts'
-import { installSharedDbScopeObserver } from './vitest-shared-db-scope-observer.mts'
-import { rejectUnscopedSharedDbCall } from './vitest-shared-db-scope-violations.mts'
+import { configureTestPostgresSessions } from 'vouchington-tooling/shared-db-scope-guard'
+import {
+  sharedDbScopeGuard,
+  VOUCHA_TEST_POSTGRES_SESSION_OPTIONS,
+} from './vitest-shared-db-scope-guard.mts'
 
-configureTestPostgresSessions()
-installSharedDbScopeObserver(rejectUnscopedSharedDbCall)
+configureTestPostgresSessions(process.env, VOUCHA_TEST_POSTGRES_SESSION_OPTIONS)
+sharedDbScopeGuard.installObserver()

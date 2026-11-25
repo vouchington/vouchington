@@ -3,9 +3,9 @@ import { v7 } from 'uuid'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
 import { hasTestRetainedIdentityRoot, insertTestRetainedIdentityRoot } from '@voucha/test-helpers'
 import {
-  installSharedDbScopeObserver,
+  sharedDbScopeGuard,
   type SharedDbScopeEvent,
-} from '../../../../test-helpers/vitest-shared-db-scope-observer.mts'
+} from '../../../../test-helpers/vitest-shared-db-scope-guard.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-identities.mts'
 
@@ -25,7 +25,7 @@ async function observe<T>(
   observer?: (event: SharedDbScopeEvent) => void,
 ): Promise<{ result: T; events: SharedDbScopeEvent[] }> {
   const events: SharedDbScopeEvent[] = []
-  const dispose = installSharedDbScopeObserver(event => {
+  const dispose = sharedDbScopeGuard.installObserver(event => {
     events.push(event)
     observer?.(event)
   })

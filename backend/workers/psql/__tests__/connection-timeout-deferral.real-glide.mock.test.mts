@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
 import { waitForEmitterEvent } from '../../../test-helpers/real-glide-terminal-deadline.mts'
-import { createTestPostgresConnectionWaitPool } from '@voucha/test-helpers/postgres-connection-wait'
+import { createTestPostgresConnectionWaitPool } from 'vouchington-tooling/postgres-test-faults'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
