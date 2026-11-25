@@ -2297,9 +2297,6 @@ importers:
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../on-error
       '@modules/utils':
         specifier: workspace:^
         version: link:../utils
@@ -2312,9 +2309,6 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
-      undici:
-        specifier: ^8.12.4
-        version: 8.12.4
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -4162,9 +4156,6 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -4192,9 +4183,6 @@ importers:
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
-      undici:
-        specifier: ^8.12.4
-        version: 8.12.4
     devDependencies:
       '@services/elections-votes':
         specifier: workspace:^
@@ -11132,6 +11120,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@vouchington/http-transport':
+        specifier: ^0.1.2
+        version: 0.1.2
       '@vouchington/postgres':
         specifier: ^0.6.2
         version: 0.6.2
@@ -11662,9 +11653,6 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -11695,6 +11683,9 @@ importers:
       '@vouchington/domain-verification':
         specifier: ^0.0.0
         version: 0.0.0
+      '@vouchington/http-transport':
+        specifier: ^0.1.2
+        version: 0.1.2
       '@vouchington/pagination':
         specifier: ^0.0.5
         version: 0.0.5
@@ -12221,6 +12212,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/http-transport':
+        specifier: ^0.1.2
+        version: 0.1.2
       '@vouchington/sentry':
         specifier: ^0.7.0
         version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))

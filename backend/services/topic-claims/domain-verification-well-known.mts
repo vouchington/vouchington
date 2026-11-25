@@ -1,5 +1,5 @@
-import { fetchWithTimeout } from '@modules/utils/http'
-import onError from '@modules/on-error'
+import { fetchWithTimeout, reportHttpTransportError } from '@modules/utils/http'
+import { withAbortableBody } from '@vouchington/http-transport/fetch'
 import { validateUrl } from 'ssrf-guard/node'
 import { fetchWellKnownText, type SecureHttpTransport } from '@vouchington/domain-verification'
 
@@ -30,7 +30,7 @@ export async function fetchWellKnownToken(hostname: string): Promise<string | nu
       // SecureHttpTransport.get must return a bare Response — @vouchington/domain-verification
       // reads the body itself with no signal parameter of its own — so the body-phase timeout
       // is applied by wrapping the body stream to abort once responseSignal fires.
-      return withAbortableBody(response, responseSignal)
+      return withAbortableBody(response, responseSignal, { onError: reportHttpTransportError })
     },
   }
   try {
@@ -48,54 +48,4 @@ export async function fetchWellKnownToken(hostname: string): Promise<string | nu
     // only changes how long that swallow takes to happen, not this function's return value.
     return null
   }
-}
-
-/**
- * Wraps a Response so its body stream aborts once `signal` fires. Used to hand a body-phase
- * timeout to code that reads the body itself and offers no way to pass a signal in.
- */
-function withAbortableBody(response: Response, signal: AbortSignal): Response {
-  if (!response.body) return response
-  const reader = response.body.getReader()
-  let released = false
-
-  function release(): void {
-    if (released) return
-    released = true
-    signal.removeEventListener('abort', onAbort)
-  }
-
-  function onAbort(): void {
-    void reader.cancel(signal.reason).catch(onError).finally(release)
-  }
-
-  if (signal.aborted) onAbort()
-  else signal.addEventListener('abort', onAbort, { once: true })
-
-  return new Response(
-    new ReadableStream<Uint8Array>({
-      async pull(controller) {
-        try {
-          const result = await reader.read()
-          if (result.done) {
-            release()
-            controller.close()
-          } else {
-            const chunk: unknown = result.value
-            if (!(chunk instanceof Uint8Array))
-              throw new TypeError('Response body chunk is not bytes')
-            controller.enqueue(chunk)
-          }
-        } catch (err) {
-          release()
-          controller.error(err)
-        }
-      },
-      async cancel(reason) {
-        release()
-        await reader.cancel(reason).catch(onError)
-      },
-    }),
-    { status: response.status, statusText: response.statusText, headers: response.headers },
-  )
 }
