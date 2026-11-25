@@ -66,6 +66,16 @@ function evaluateExpectation(
         )
       return
     }
+    case 'maxFunctionScanRows': {
+      const total = nodes
+        .filter(node => node['Node Type'] === 'Function Scan')
+        .reduce((sum, node) => sum + processedRows(node), 0)
+      if (total > expectation.max)
+        throw new Error(
+          `${result.name} processed ${total} rows in function scans; expected at most ${expectation.max}`,
+        )
+      return
+    }
     case 'noSeqScan': {
       if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
         return

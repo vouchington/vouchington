@@ -5,6 +5,7 @@ import { isKnownCustomPlanCheck } from './plan-custom-checks.mts'
 export type PlanExpectation =
   | { kind: 'maxProcessedRows'; relation: string; max: number }
   | { kind: 'maxBitmapIndexRows'; max: number }
+  | { kind: 'maxFunctionScanRows'; max: number }
   | {
       kind: 'usesIndexes'
       indexes: readonly string[]
@@ -92,6 +93,7 @@ function assertExpectationKinds(id: string, contract: ScenarioPlanContract): voi
   const kinds = new Set([
     'maxProcessedRows',
     'maxBitmapIndexRows',
+    'maxFunctionScanRows',
     'usesIndexes',
     'queryBinds',
     'noSeqScan',
