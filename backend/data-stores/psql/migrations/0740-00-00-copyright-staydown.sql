@@ -152,7 +152,9 @@ BEGIN
     SELECT DISTINCT candidate.id FROM unnest(ARRAY[old_case_id, new_case_id]) candidate(id)
     WHERE candidate.id IS NOT NULL ORDER BY candidate.id
   LOOP
-    -- lock-reason: prevents: a blocker-generation change crossing the case purge proof; writer: runLockedPage and deleteCopyrightCaseFinalTail write copyright_notices.
+    -- lock-reason: prevents: closing evidence erasure or deleting the notice while a blocker-generation update is in flight.
+    -- writer: runLockedPage takes FOR UPDATE on copyright_notices for evidence closeout. deleteCopyrightCaseFinalTail deletes the notice.
+    -- The proof read relies on SERIALIZABLE. The final pointer UPDATE is a non-key update compatible with KEY SHARE.
     PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
     IF FOUND THEN
       INSERT INTO copyright_notice_thread_blocker_generations

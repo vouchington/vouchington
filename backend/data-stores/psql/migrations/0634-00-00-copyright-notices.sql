@@ -250,7 +250,9 @@ BEGIN
   ELSE
     notice_id := NEW.copyright_notice_id;
   END IF;
-  -- lock-reason: prevents: a party-generation change crossing the case purge proof; writer: runLockedPage and deleteCopyrightCaseFinalTail write copyright_notices.
+  -- lock-reason: prevents: closing evidence erasure or deleting the notice while a party-generation update is in flight.
+  -- writer: runLockedPage takes FOR UPDATE on copyright_notices for evidence closeout. deleteCopyrightCaseFinalTail deletes the notice.
+  -- The proof read relies on SERIALIZABLE. The final pointer UPDATE is a non-key update compatible with KEY SHARE.
   PERFORM 1 FROM copyright_notices WHERE id = notice_id FOR KEY SHARE;
   INSERT INTO copyright_notice_thread_party_generations (copyright_notice_id, generation)
   VALUES (notice_id, 1)
