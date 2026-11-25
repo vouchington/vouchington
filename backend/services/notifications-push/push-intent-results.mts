@@ -126,6 +126,7 @@ export async function persistClaimedNotificationPushOutcome(
         CASE WHEN ${isDelivered} THEN CURRENT_TIMESTAMP END,
         CASE WHEN NOT ${isDelivered} THEN CURRENT_TIMESTAMP END
       FROM updated
+      ORDER BY updated.user_id ASC NULLS LAST, updated.id ASC NULLS LAST
       ON CONFLICT (user_id, notification_id, subscription_id) DO UPDATE
       SET delivered_at = EXCLUDED.delivered_at,
           permanently_failed_at = EXCLUDED.permanently_failed_at
