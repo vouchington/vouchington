@@ -77,8 +77,11 @@ describe('hostname-block operational retention references', () => {
       await cleanupOperationalTombstonesForTest('other_hostname_blocks', options),
     ).toMatchObject({
       deleted: 1,
-      hasMore: false,
+      hasMore: true,
     })
+    expect(
+      await cleanupOperationalTombstonesForTest('other_hostname_blocks', options),
+    ).toMatchObject({ deleted: 0, hasMore: false, continuation: null })
     for (const descendant of descendants)
       expect(await operationalRowExistsForTest(query, 'url_hostname_blocks', descendant.id)).toBe(
         true,
@@ -113,7 +116,7 @@ describe('hostname-block operational retention references', () => {
     expect(
       await cleanupOperationalTombstonesForTest('other_hostname_blocks', {
         batchSize: 1,
-        maxBatches: 1,
+        maxBatches: 2,
         now,
         ids: [root.id],
         borrowedQuery: query,
@@ -148,7 +151,7 @@ describe('hostname-block operational retention references', () => {
     )
     const result = await cleanupOperationalTombstonesForTest('other_hostname_blocks', {
       batchSize: 1,
-      maxBatches: 2,
+      maxBatches: 3,
       now,
       ids: [first.id, second.id],
       borrowedQuery: query,
@@ -203,12 +206,13 @@ describe('hostname-block operational retention references', () => {
     )
 
     await using cleanup = await beginTransaction()
+    const finalOptions = { ...options, borrowedQuery: cleanup }
     expect(
-      await cleanupOperationalTombstonePageForTest('other_hostname_blocks', {
-        ...options,
-        borrowedQuery: cleanup,
-      }),
-    ).toMatchObject({ deleted: 1, hasMore: false, stalled: false })
+      await cleanupOperationalTombstonePageForTest('other_hostname_blocks', finalOptions),
+    ).toMatchObject({ deleted: 1, hasMore: true, stalled: false })
+    expect(
+      await cleanupOperationalTombstonePageForTest('other_hostname_blocks', finalOptions),
+    ).toMatchObject({ deleted: 0, hasMore: false, stalled: false })
     expect(await getTestHostnamePenaltySources(cleanup, [held, available])).toEqual({
       [held]: null,
       [available]: null,
@@ -266,7 +270,15 @@ describe('hostname-block operational retention references', () => {
           batchSize: 1,
           now,
         }),
-      ).toMatchObject({ deleted: 1, hasMore: false, stalled: false })
+      ).toMatchObject({ deleted: 1, hasMore: true, stalled: false })
+      expect(
+        await cleanupOperationalTombstonePageForTest('other_hostname_blocks', {
+          borrowedQuery: retry,
+          ids: [root.id],
+          batchSize: 1,
+          now,
+        }),
+      ).toMatchObject({ deleted: 0, hasMore: false, stalled: false })
     } finally {
       await using cleanup = await beginTransaction()
       await cleanup(

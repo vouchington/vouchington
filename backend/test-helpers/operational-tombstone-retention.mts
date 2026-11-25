@@ -110,6 +110,18 @@ export async function insertOperationalAttestationKeyForTest(
   return rows[0]!.id
 }
 
+export async function refreshOperationalAttestationKeyForTest(
+  query: TransactionQuery,
+  keyId: string,
+  usedAt: Date,
+): Promise<void> {
+  await query(
+    `/* refreshOperationalAttestationKeyForTest */
+     UPDATE app_attestation_keys SET last_used_at = $2::timestamptz WHERE id = $1::uuid`,
+    [keyId, usedAt],
+  )
+}
+
 export async function insertTestHostnamePenalty(
   query: TransactionQuery,
   userId: string,

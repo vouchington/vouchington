@@ -49,7 +49,7 @@ describe('ActivityPub operational retention', () => {
         ids: [oldIdentity.id, recentIdentity.id],
         borrowedQuery: query,
       }),
-    ).toMatchObject({ deleted: 1, hasMore: false })
+    ).toMatchObject({ deleted: 1, hasMore: true })
     expect(await operationalRowExistsForTest(query, 'activitypub_post_likes', oldIdentity.id)).toBe(
       false,
     )
