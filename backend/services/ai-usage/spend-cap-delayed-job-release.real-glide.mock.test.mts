@@ -57,6 +57,46 @@ describe('AI spend-cap atomic promotion with real GlideMQ', () => {
     }
   })
 
+  it('deletes a page of finished registry entries in one script call', async () => {
+    const day = `test-${randomUUID()}`
+    const registryKey = spendCapDelayedRegistryKey(day)
+    const queue = new Queue<SpendCapTestJobData>(AI_AGENTS_QUEUE_NAME, connection)
+    const deletions: { args: unknown[] }[] = []
+
+    try {
+      const jobIds = [randomUUID(), randomUUID(), randomUUID()]
+      let generation = ''
+      for (const id of jobIds) {
+        const job = {
+          id,
+          data: {},
+          updateData: vi.fn<() => Promise<void>>(),
+        } as unknown as Job<SpendCapTestJobData>
+        generation = (await registerSpendCapDelayedJob(job, day)).generation
+      }
+      const lease = await beginSpendCapDelayedJobRelease(day, generation)
+      if (!lease) throw new Error('Expected release lease')
+      interceptRegistryScriptsForTest(options => {
+        if (options?.keys?.includes(registryKey)) deletions.push({ args: options.args ?? [] })
+      })
+
+      await expect(releaseSpendCapDelayedJobs(day, lease, queue)).resolves.toEqual({
+        released: 0,
+        hasPending: false,
+        cursor: '0',
+      })
+      expect(deletions).toHaveLength(1)
+      expect(deletions[0]?.args).toHaveLength(1 + jobIds.length * 2)
+      await expect(workerQueueCommandClient.hlen(registryKey)).resolves.toBe(3)
+    } finally {
+      try {
+        await workerQueueCommandClient.unlink([registryKey])
+      } finally {
+        await queue.close()
+      }
+    }
+  })
+
   it('atomically stages a page of priority jobs for numeric scheduling', async () => {
     const day = `test-${randomUUID()}`
     const registryKey = spendCapDelayedRegistryKey(day)
