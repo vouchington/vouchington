@@ -29,7 +29,8 @@ export async function runTopicChildCapacityScenario(): Promise<void> {
           kind: 'usesIndexes',
           indexes: ['idx_relation__topic__parent__topic__reverse_index'],
         },
-        // #6397 tracks the generic continuation scanning the entire fixture prefix.
+        // The generic continuation scans and filters the earlier child edges.
+        // https://github.com/vouchington/vouchington/issues/6397
         { kind: 'maxProcessedRows', relation: 'relation__topic__parent__topic', max: ids.length },
       ],
     })

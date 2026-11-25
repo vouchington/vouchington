@@ -28,7 +28,8 @@ export async function runUrlEmbedCapacityScenario(): Promise<void> {
       crawls: 'The latest eligible crawl for an origin URL may be in any arrival-time partition.',
     },
     expectations: [
-      // #6398 tracks the hosted custom item scan and the local full source-association scan.
+      // Paired captures scan RSS items, source associations, feeds and topics.
+      // https://github.com/vouchington/vouchington/issues/6398
       { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: 36_689 },
       { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: 75_433 },
       { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 2_578 },

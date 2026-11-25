@@ -62,7 +62,8 @@ export async function runTopHashtagCapacityScenario(): Promise<void> {
     registerScenarioContract(scenario, {
       seededRows: { mv_top_hashtags: aliasIds.length + 1 },
       expectations: [
-        // #6396 tracks the full alias and ranking scans in the current custom/generic plans.
+        // The custom first page and generic continuation scan all aliases and ranked rows.
+        // https://github.com/vouchington/vouchington/issues/6396
         { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_628 },
         { kind: 'maxProcessedRows', relation: 'mv_top_hashtags', max: 602 },
       ],
