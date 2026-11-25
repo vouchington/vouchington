@@ -128,6 +128,7 @@ describe('territorial decision predecessor purge', () => {
 describe('territorial decision history purge', () => {
   const setPageSize = useCopyrightCasePurgePageSize()
 
+  // no-mistakes-timeout-reason: a real case purge is a few hundred bounded pages, each run under the shared purge lock behind every parallel purge test
   it('deletes monthly decision and redress history only for the permitted case and table', async () => {
     await setPageSize(20)
     const scene = await createTestEuParticipantCase('no_action')
@@ -188,5 +189,5 @@ describe('territorial decision history purge', () => {
       decision: null,
       redress: null,
     })
-  })
+  }, 30_000)
 })

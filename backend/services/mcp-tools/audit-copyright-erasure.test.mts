@@ -28,6 +28,7 @@ describe('MCP copyright audit after evidence erasure', () => {
   const bucket = useCopyrightEvidenceBucket()
   const setPageSize = useCopyrightCasePurgePageSize()
 
+  // no-mistakes-timeout-reason: a real case purge is a few hundred bounded pages, each run under the shared purge lock behind every parallel purge test
   it('retains an admitted rationale through purge admission and removes it with the owned case', async () => {
     await setPageSize(100)
     const user = await createTestUser({ administrator: true })
@@ -95,8 +96,9 @@ describe('MCP copyright audit after evidence erasure', () => {
     expect(await Promise.all(fixture.evidenceKeys.map(bucket.countVersions))).toEqual(
       fixture.evidenceKeys.map(() => 0),
     )
-  })
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: a real case purge is a few hundred bounded pages, each run under the shared purge lock behind every parallel purge test
   it('cannot admit rationale from a snapshot taken before the real purge erases evidence', async () => {
     await setPageSize(100)
     const user = await createTestUser({ administrator: true })
@@ -165,7 +167,7 @@ describe('MCP copyright audit after evidence erasure', () => {
     expect((await readTestMcpCallAuditEvents(user.id)).map(event => event.outcome)).toEqual(
       conflict ? [] : ['accepted'],
     )
-  })
+  }, 30_000)
 
   it('keeps only the security attempt when rationale admission starts after case erasure', async () => {
     const user = await createTestUser({ administrator: true })
