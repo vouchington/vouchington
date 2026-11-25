@@ -171,6 +171,7 @@ export async function deleteOrphanedOAuthAccountBatch(
   query.append(sql`
       ORDER BY unlinked_at ASC, id ASC
       LIMIT ${batchSize}
+      -- lock-reason: prevents: account removal cascading OAuth authorizations or clearing friend references during cleanup; writer: OAuth authorization and friend-edge admission.
       FOR UPDATE SKIP LOCKED
     ))`)
 

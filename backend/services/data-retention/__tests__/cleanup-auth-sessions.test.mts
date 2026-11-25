@@ -16,6 +16,11 @@ import {
   testRetentionRowExists,
   testRetentionTombstoneExists,
 } from '@voucha/test-helpers'
+import { issueEmailAddressLoginToken } from '@services/users/authentication'
+import {
+  getTestPostgresBackendProcessId,
+  observeTestPostgresActionOrWait,
+} from '@voucha/test-helpers/postgres-lock-wait'
 import {
   cleanupEmailAddressLoginTokens,
   cleanupExpiredUserSessions,
@@ -26,6 +31,36 @@ import {
 const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('auth and session retention', () => {
+  it('waits for an in-flight token invalidation, then deletes the processed token', async () => {
+    const window = createTestExpiryWindow()
+    const now = new Date(window.upperBoundDate.getTime() + DAY_MS)
+    const emailAddress = `tests+${crypto.randomUUID()}@voucha.ai`
+    await using setup = await beginTransaction()
+    const id = await insertTestRetentionToken(
+      setup,
+      'email_address_login_tokens',
+      window.firstEligibleDate,
+      emailAddress,
+    )
+    await setup.commit()
+
+    await using writer = await beginTransaction()
+    await issueEmailAddressLoginToken(emailAddress, undefined, { query: writer })
+    const writerPid = await getTestPostgresBackendProcessId(writer)
+    const cleanup = cleanupEmailAddressLoginTokens({
+      batchSize: 1,
+      maxBatches: 1,
+      now,
+      lowerBoundDate: window.lowerBoundDate,
+    })
+    await observeTestPostgresActionOrWait(writerPid, 'deleteAuthSessionRetentionTokenPage', cleanup)
+    await writer.commit()
+
+    expect(await cleanup).toEqual({ deleted: 1, hasMore: true, continuation: { at: null, id } })
+    await using read = await beginTransaction()
+    expect(await testRetentionRowExists(read, 'email_address_login_tokens', id)).toBe(false)
+  })
+
   it.each([
     ['email_address_login_tokens', cleanupEmailAddressLoginTokens],
     ['phone_number_login_tokens', cleanupPhoneNumberLoginTokens],
@@ -55,10 +90,16 @@ describe('auth and session retention', () => {
     expect(await testRetentionRowExists(query, family, first)).toBe(false)
     expect(await testRetentionRowExists(query, family, second)).toBe(true)
 
-    expect(await cleanup(options)).toEqual({ deleted: 1, hasMore: false, continuation: null })
-    expect(await getTestRetentionCursor(query, family)).toMatchObject({ cursor_id: null })
+    expect(await cleanup(options)).toEqual({
+      deleted: 1,
+      hasMore: true,
+      continuation: { at: null, id: second },
+    })
+    expect(await getTestRetentionCursor(query, family)).toMatchObject({ cursor_id: second })
     expect(await testRetentionRowExists(query, family, second)).toBe(false)
     expect(await testRetentionRowExists(query, family, recent)).toBe(true)
+    expect(await cleanup(options)).toEqual({ deleted: 0, hasMore: false, continuation: null })
+    expect(await getTestRetentionCursor(query, family)).toMatchObject({ cursor_id: null })
   })
 
   it('deletes expired active and revoked sessions through the expiry index', async () => {
@@ -93,11 +134,17 @@ describe('auth and session retention', () => {
       cursor_id: active,
       cursor_at: window.firstEligibleDate,
     })
-    expect(await cleanupExpiredUserSessions(options)).toEqual({
+    expect(await cleanupExpiredUserSessions(options)).toMatchObject({
       deleted: 1,
+      hasMore: true,
+      continuation: { at: expect.any(String), id: revoked },
+    })
+    expect(await cleanupExpiredUserSessions(options)).toEqual({
+      deleted: 0,
       hasMore: false,
       continuation: null,
     })
+    expect(await getTestRetentionCursor(query, 'user_sessions')).toMatchObject({ cursor_id: null })
     expect(await testRetentionRowExists(query, 'user_sessions', revoked)).toBe(false)
     expect(await testRetentionRowExists(query, 'user_sessions', recent)).toBe(true)
   })
@@ -129,10 +176,18 @@ describe('auth and session retention', () => {
       cursor_id: first,
       cursor_partition_key: user.id,
     })
-    expect(await cleanupWebPushSubscriptionTombstones(options)).toEqual({
+    expect(await cleanupWebPushSubscriptionTombstones(options)).toMatchObject({
       deleted: 1,
+      hasMore: true,
+      continuation: { at: expect.any(String), id: second, userId: user.id },
+    })
+    expect(await cleanupWebPushSubscriptionTombstones(options)).toEqual({
+      deleted: 0,
       hasMore: false,
       continuation: null,
+    })
+    expect(await getTestRetentionCursor(query, 'web_push_subscriptions')).toMatchObject({
+      cursor_id: null,
     })
     expect(await testRetentionTombstoneExists(query, user.id, second)).toBe(false)
     expect(await testRetentionTombstoneExists(query, user.id, recent)).toBe(true)
@@ -177,10 +232,10 @@ describe('auth and session retention', () => {
       continuation: { at: expect.any(String), id: protectedId },
     })
     expect(protectedPage.continuation?.at).toContain('.123456')
-    expect(await cleanupWebPushSubscriptionTombstones(options)).toEqual({
+    expect(await cleanupWebPushSubscriptionTombstones(options)).toMatchObject({
       deleted: 1,
-      hasMore: false,
-      continuation: null,
+      hasMore: true,
+      continuation: { at: expect.any(String), id: removableId, userId: user.id },
     })
     expect(await testRetentionTombstoneExists(query, user.id, protectedId)).toBe(true)
     expect(await testRetentionTombstoneExists(query, user.id, removableId)).toBe(false)
@@ -214,10 +269,10 @@ describe('auth and session retention', () => {
     })
     expect(await testRetentionTombstoneExists(query, users[0]!, sharedId)).toBe(false)
     expect(await testRetentionTombstoneExists(query, users[1]!, sharedId)).toBe(true)
-    expect(await cleanupWebPushSubscriptionTombstones(options)).toEqual({
+    expect(await cleanupWebPushSubscriptionTombstones(options)).toMatchObject({
       deleted: 1,
-      hasMore: false,
-      continuation: null,
+      hasMore: true,
+      continuation: { at: expect.any(String), id: sharedId, userId: users[1] },
     })
     expect(await testRetentionTombstoneExists(query, users[1]!, sharedId)).toBe(false)
   })

@@ -36,6 +36,7 @@ export function cleanupMembershipOperationPage(
         LIMIT ${pageSize + 1}`)
       return (await query<{ id: string; due: boolean }>(statement)).rows
     },
+    // lock-reason: prevents: losing newly written refund evidence between fiscal eligibility and root erasure; writer: membership refund and reversal workflows.
     lockDue: async (query, dueId) => {
       const { rows } = await query<{ id: string }>(sql`/* lockExpiredMembershipOperationLedger */
         SELECT operation.id FROM membership_operations operation WHERE operation.id = ${dueId}

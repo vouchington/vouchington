@@ -21,8 +21,7 @@ export async function cleanupVoteIntegrityDetails(
   if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 5_000) {
     throw new RangeError('Flag detail cleanup batch size must be between 1 and 5000')
   }
-  if (flagIds && flagIds.length > batchSize + 1)
-    throw new RangeError('Scoped flags must fit one page')
+  if (flagIds && flagIds.length > batchSize) throw new RangeError('Scoped flags must fit one page')
   const cutoffId = getMinUuidv7ForDate(
     new Date(now.getTime() - readDataRetentionField('vote_integrity_detail_days') * DAY_MS),
   )
@@ -56,38 +55,37 @@ export async function cleanupVoteIntegrityDetails(
   const scopedPredicate = flagIds ? 'AND id = ANY($3::uuid[])' : ''
   const limitPlaceholder = flagIds ? '$4' : '$3'
   const candidateArguments = flagIds
-    ? [sweepCutoffId, lowerId, flagIds, batchSize + 1]
-    : [sweepCutoffId, lowerId, batchSize + 1]
-  const { rows: candidates } = await query<{ id: string }>(
-    `/* listVoteIntegrityDetailCleanupCandidates */
-     SELECT id FROM vote_integrity_flags
-     WHERE id < $1::uuid AND id > $2::uuid AND details ?| ${identifyingKeys}
-       ${scopedPredicate}
-     ORDER BY id LIMIT ${limitPlaceholder}`,
-    candidateArguments,
-  )
-  const page = candidates.slice(0, batchSize)
-  const { rowCount } = await query(
+    ? [sweepCutoffId, lowerId, flagIds, batchSize]
+    : [sweepCutoffId, lowerId, batchSize]
+  const { rows } = await query<{ id: string }>(
     `/* redactVoteIntegrityFlagDetails */
-     WITH locked AS MATERIALIZED (
-       SELECT id FROM vote_integrity_flags WHERE id = ANY($1::uuid[])
-       ORDER BY id FOR UPDATE SKIP LOCKED
-     )
      UPDATE vote_integrity_flags flag
      SET details = details - ${identifyingKeys}
-     FROM locked WHERE flag.id = locked.id AND flag.id < $2::uuid
-       AND flag.details ?| ${identifyingKeys}`,
-    [page.map(row => row.id), sweepCutoffId],
+     WHERE flag.id = ANY(ARRAY(
+       SELECT id FROM vote_integrity_flags
+       WHERE id < $1::uuid AND id > $2::uuid AND details ?| ${identifyingKeys}
+         ${scopedPredicate}
+       ORDER BY id LIMIT ${limitPlaceholder}
+     ))
+       AND flag.id < $1::uuid AND flag.details ?| ${identifyingKeys}
+     RETURNING flag.id`,
+    candidateArguments,
   )
-  const hasMore = candidates.length > batchSize
+  const hasMore = rows.length === batchSize
+  const lastId = hasMore
+    ? rows
+        .map(row => row.id)
+        .toSorted()
+        .at(-1)
+    : null
   if (!flagIds)
     await query(
       `/* checkpointVoteIntegrityDetailCleanupCursor */
        UPDATE vote_integrity_flag_detail_cleanup_cursors SET cursor_flag_id = $1,
          sweep_cutoff_id = CASE WHEN $2::boolean THEN sweep_cutoff_id ELSE NULL END
        WHERE is_singleton`,
-      [hasMore ? page.at(-1)!.id : null, hasMore],
+      [lastId, hasMore],
     )
   await query.commit()
-  return { scanned: page.length, redacted: rowCount ?? 0, hasMore }
+  return { scanned: rows.length, redacted: rows.length, hasMore }
 }

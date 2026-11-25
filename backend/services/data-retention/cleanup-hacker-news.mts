@@ -50,8 +50,8 @@ async function cleanupHackerNewsReferenceBatch(
   batchSize: number,
   urlIds?: readonly string[],
 ) {
-  // This lock is also taken by the writer before touching children. A refresh that wins
-  // first moves its row beyond the cutoff; one that waits recreates a complete fresh snapshot.
+  // lock-reason: prevents: deadlock with a refresh that holds totals rows in URL-ID order while retention pages by lookup time; writer: replaceHackerNewsReferences.
+  // Skip busy totals before retiring their story and comment rows.
   const page = await query<{ url_id: string; present: boolean }>(
     `/* selectExpiredHackerNewsReferences */
       SELECT url_id, (story_count > 0 OR comment_count > 0) AS present FROM url_hacker_news_totals

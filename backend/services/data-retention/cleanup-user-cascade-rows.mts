@@ -8,6 +8,7 @@ export async function cleanupUserListRows(
   userId: string,
   limit: number,
 ): Promise<number> {
+  // lock-reason: prevents: a final list DELETE cascading new entries outside the row budget; writer: user list item admission.
   const { rows } = await query<{ id: string }>(sql`/* cleanupUserListRows:list */
     SELECT id FROM user_lists WHERE owner_user_id = ${userId} ORDER BY id LIMIT 1 FOR UPDATE`)
   const list = rows[0]
