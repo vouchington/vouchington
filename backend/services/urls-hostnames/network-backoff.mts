@@ -141,28 +141,42 @@ export async function isOutsideHostnameNetworkBackoff(hostname: {
   return claimHostnameNetworkProbe(hostname.id)
 }
 
+const RESET_FAILURE_FIELDS = `consecutive_dns_failures = CASE WHEN $2 THEN 0 ELSE consecutive_dns_failures END,
+  consecutive_network_failures = 0,
+  network_backoff_ends_at = NULL,
+  network_backoff_probe_claimed_at = NULL`
+
+const HAS_FAILURES_TO_RESET = `(($2 AND consecutive_dns_failures > 0)
+  OR consecutive_network_failures > 0 OR network_backoff_step > 0)`
+
 /**
  * Resets failure state after the hostname answered. Any HTTP response closes the network
- * backoff; only a successful crawl or fetch (includeDns) also resets the DNS counter. The first
- * guarded write keeps the backoff step available for analytics; a second write clears it before
- * commit only when a backoff was open.
+ * backoff; only a successful crawl or fetch (includeDns) also resets the DNS counter.
  */
 export async function resetHostnameFailures(
   hostnameId: string,
   options: { crawlerType: BackoffCrawlerType; includeDns: boolean },
 ): Promise<void> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ hostname: string; closed_step: number }>(
+  // A concurrent opening can defeat the UPDATE while the snapshot still shows counters to reset.
+  const { rows: pending } = await write(
     `/* resetHostnameFailures */
-    UPDATE url_hostnames SET
-      consecutive_dns_failures = CASE WHEN $2 THEN 0 ELSE consecutive_dns_failures END,
-      consecutive_network_failures = 0,
-      network_backoff_ends_at = NULL,
-      network_backoff_probe_claimed_at = NULL
-    WHERE id = $1
-      AND (($2 AND consecutive_dns_failures > 0)
-        OR consecutive_network_failures > 0
-        OR network_backoff_step > 0)
+    WITH needs_reset AS (
+      SELECT id FROM url_hostnames WHERE id = $1 AND ${HAS_FAILURES_TO_RESET}
+    ), reset_counters AS (
+      UPDATE url_hostnames SET ${RESET_FAILURE_FIELDS}
+      WHERE id = $1 AND network_backoff_step = 0 AND ${HAS_FAILURES_TO_RESET}
+        AND EXISTS (SELECT 1 FROM needs_reset) RETURNING id
+    )
+    SELECT id FROM needs_reset WHERE NOT EXISTS (SELECT 1 FROM reset_counters)`,
+    [hostnameId, options.includeDns],
+  )
+  if (pending.length === 0) return
+  await using transaction = await beginTransaction()
+  // Leave the step intact until RETURNING captures it, then clear it before commit.
+  const { rows } = await transaction<{ hostname: string; closed_step: number }>(
+    `/* resetHostnameFailures:prepareBackoffReset */
+    UPDATE url_hostnames SET ${RESET_FAILURE_FIELDS}
+    WHERE id = $1 AND ${HAS_FAILURES_TO_RESET}
     RETURNING hostname, network_backoff_step AS closed_step
   `,
     [hostnameId, options.includeDns],
