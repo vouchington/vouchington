@@ -1,11 +1,6 @@
+import { parseStripeEventBridgeEvent } from '@vouchington/stripe'
 import type { SqsMessage } from '@vouchington/worker-runtime/sqs'
 import { ingestStripeEvent } from '@services/stripe/events'
-
-type StripeEvent = Parameters<typeof ingestStripeEvent>[0]
-
-interface EventBridgeEnvelope {
-  detail?: unknown
-}
 
 // EventBridge-to-SQS delivery has no raw-message-delivery equivalent (unlike the SNS subscription
 // ses-bounce-sqs reads): the queue body is always the full PutEvents envelope
@@ -18,24 +13,5 @@ interface EventBridgeEnvelope {
 // malformed or non-enveloped message throws rather than being swallowed, so SQS
 // redelivery/maxReceiveCount routes it to the DLQ instead of silently dropping it.
 export async function processStripeEventsSqsMessage(message: SqsMessage): Promise<void> {
-  let envelope: EventBridgeEnvelope | null
-  try {
-    envelope = JSON.parse(message.body) as EventBridgeEnvelope | null
-  } catch (err) {
-    if (err instanceof SyntaxError) {
-      err.message = `stripe-events-sqs: invalid JSON body: ${err.message}`
-    }
-    throw err
-  }
-
-  const detail = envelope?.detail
-  if (detail == null || typeof detail !== 'object' || Array.isArray(detail)) {
-    throw new Error('EventBridge envelope missing detail')
-  }
-  const detailRecord = detail as Record<string, unknown>
-  if (typeof detailRecord.id !== 'string' || typeof detailRecord.type !== 'string') {
-    throw new Error('EventBridge envelope detail is not a Stripe event')
-  }
-
-  await ingestStripeEvent(detail as StripeEvent)
+  await ingestStripeEvent(parseStripeEventBridgeEvent(message.body))
 }

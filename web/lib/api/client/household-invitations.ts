@@ -1,7 +1,7 @@
 'use client'
 
 import { clientApi } from './instance'
-import { assertEncodablePathSegmentIdentifier } from './path-identifiers'
+import { assertEncodablePathSegmentIdentifier } from '@vouchington/api-client'
 import type { ListResponse } from '@/types/api-responses'
 import type { HouseholdInvitation } from '@/types/household-invitations'
 import type { HouseholdMembership } from '@/types/my'

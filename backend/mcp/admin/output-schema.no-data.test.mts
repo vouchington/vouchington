@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { adminRouteOutputSchema } from './output-schema.mts'
-import { findSchemaViolation } from '@vouchington/mcp-server/schema'
-import { assertMcpLocalSchemaRefs } from '../../test-helpers/mcp-local-schema-refs.mts'
+import { assertLocalSchemaRefs, findSchemaViolation } from '@vouchington/mcp-server/schema'
 
 describe('admin REST output schemas', () => {
   it('retains inline staff schemas when no named response exists', () => {
@@ -10,7 +9,7 @@ describe('admin REST output schemas', () => {
       path: '/api/v1/users/:userId/suspension',
     })
     expect(schema).toMatchObject({ type: 'object', required: ['user'] })
-    assertMcpLocalSchemaRefs(schema)
+    assertLocalSchemaRefs(schema)
     expect(findSchemaViolation(schema, {})).not.toBeNull()
   })
   it('rejects staff tools without a checked-in response contract', () => {
@@ -19,7 +18,7 @@ describe('admin REST output schemas', () => {
         method: 'GET',
         path: '/api/v1/missing-admin-contract',
       }),
-    ).toThrow('No checked-in admin response for GET:/api/v1/missing-admin-contract')
+    ).toThrow('No checked-in response contract for GET:/api/v1/missing-admin-contract.')
   })
   it('keeps crawler response alternatives inside the required MCP object root', () => {
     const schema = adminRouteOutputSchema({

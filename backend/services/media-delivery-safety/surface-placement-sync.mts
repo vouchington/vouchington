@@ -95,6 +95,7 @@ export async function syncImageSurfacePlacement(
   existingStatement.append(sql` AND surface.image_id = ${imageId}
     ORDER BY placement.id DESC
     LIMIT 1
+    -- lock-reason: prevents: using a stale placement revision to update external delivery; writer: placement retirement, revival and registry publication.
     FOR UPDATE OF placement
   `)
   const existing = await query<ImagePlacementTuple>(existingStatement)

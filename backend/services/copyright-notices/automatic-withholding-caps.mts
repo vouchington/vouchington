@@ -2,16 +2,13 @@ import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AutomaticWithholdingRefusalReason } from './automatic-withholding-gates.mts'
 import type { AutomaticWithholdingThresholds } from './config.mts'
-import { lockAdvisoryKeysInOrder } from './advisory-key-locks.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
 /**
- * Rolling-24-hour caps on automatic withholding, counted over the automated clear-screen
- * assessments already recorded. Counting assessments rather than restrictions keeps the cap exact
- * when enforcement lags: the caller records its own assessment in this transaction, under the
- * claimant and poster locks taken here, so two concurrent notices cannot both pass at one slot
- * below the cap. A cap of zero refuses everything.
+ * Best-effort rolling 24-hour caps on automatic withholding. Count recorded automated clear-screen
+ * assessments so enforcement lag does not hide prior decisions. Concurrent screenings can see the
+ * same available slot and overshoot a cap. A cap of zero refuses everything.
  */
 export async function checkAutomaticWithholdingCaps(
   transaction: TransactionQuery,
@@ -33,13 +30,6 @@ export async function checkAutomaticWithholdingCaps(
     ORDER BY post.created_by_id
   `)
   const posterIds = posterRows.map(row => row.user_id)
-  // Claimant first, then posters in ID order, so concurrent notices always lock in one order.
-  await lockAdvisoryKeysInOrder(
-    transaction,
-    [`claimant:${input.claimantId}`, ...posterIds.map(id => `poster:${id}`)].map(
-      key => `copyright-automatic-withholding:${key}`,
-    ),
-  )
   const { rows: claimantRows } = await transaction<{ total: number }>(sql`
     /* checkAutomaticWithholdingCaps:claimant */
     -- cross-partition: the legal assessment time is independent of the UUIDv7 insertion clock;
@@ -47,7 +37,7 @@ export async function checkAutomaticWithholdingCaps(
     SELECT count(*)::int AS total
     FROM copyright_notices notice
     JOIN copyright_notice_submissions submission ON submission.copyright_notice_id = notice.id
-    -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the exact rolling cap across retained assessment partitions
+    -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the best-effort rolling cap across retained assessment partitions
     JOIN copyright_notice_submission_assessments assessment
       ON assessment.copyright_notice_submission_id = submission.id
     WHERE notice.claimant_user_id = ${input.claimantId}
@@ -72,7 +62,7 @@ export async function checkAutomaticWithholdingCaps(
     JOIN copyright_notice_targets target ON target.placement_id = image_placement.placement_id
     JOIN copyright_notice_submissions submission
       ON submission.copyright_notice_id = target.copyright_notice_id
-    -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the exact rolling cap across retained assessment partitions
+    -- no-mistakes-disable-next-line postgres-required-predicates: assessed_at defines the best-effort rolling cap across retained assessment partitions
     JOIN copyright_notice_submission_assessments assessment
       ON assessment.copyright_notice_submission_id = submission.id
     WHERE post.created_by_id = ANY(${posterIds}::uuid[])

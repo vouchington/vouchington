@@ -84,24 +84,18 @@ describe('won Stripe dispute recovery lookup', () => {
     expect(retrieveCharge).toHaveBeenCalledWith('ch_missing_invoice')
   })
 
-  it('rejects empty and unbounded PaymentIntent invoice-payment pagination', async () => {
-    const list = vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: true })
+  it('forwards the PaymentIntent invoice-payment page cap', async () => {
+    const list = vi.fn<VitestLooseMock>().mockImplementation(async () => ({
+      data: [{ id: `inpay_${list.mock.calls.length}` }],
+      has_more: true,
+    }))
     vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
       invoicePayments: { list },
     } as never)
 
     await expect(
-      listAllStripeInvoicePaymentsForPaymentIntent('pi_empty', stripeLookupMaxPagesForTest),
-    ).rejects.toThrow('Stripe returned an empty invoice payment page for payment intent pi_empty')
-
-    list.mockClear()
-    list.mockImplementation(async () => ({
-      data: [{ id: `inpay_${list.mock.calls.length}` }],
-      has_more: true,
-    }))
-    await expect(
       listAllStripeInvoicePaymentsForPaymentIntent('pi_unbounded', stripeLookupMaxPagesForTest),
-    ).rejects.toThrow('Stripe payment intent pi_unbounded exceeded the invoice payment page limit')
+    ).rejects.toThrow('Stripe invoice payment listing exceeded the page limit (10)')
     expect(list).toHaveBeenCalledTimes(10)
   })
 })

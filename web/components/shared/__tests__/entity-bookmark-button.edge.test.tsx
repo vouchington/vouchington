@@ -2,11 +2,11 @@ import {
   mockBookmarkEntity,
   mockGetEntityBookmarks,
   mockGetRateLimitMessage,
-  mockIsRateLimitError,
   mockToastError,
   resetEntityBookmarkEdgeDoubles,
 } from '@/test-helpers/components/shared/entity-bookmark-button-edge.mock-support'
 
+import { ApiError } from '@vouchington/api-client'
 import { emitBookmarkChange } from '@/hooks/use-bookmark-invalidation'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -79,8 +79,7 @@ describe('EntityBookmarkButton Edge Cases', () => {
   })
 
   it('rolls back state and shows rate limit toast when bookmark toggle fails with a rate limit error', async () => {
-    mockBookmarkEntity.mockRejectedValue(new Error('rate limit'))
-    mockIsRateLimitError.mockReturnValue(true)
+    mockBookmarkEntity.mockRejectedValue(new ApiError('rate limit', 429))
     mockGetRateLimitMessage.mockReturnValue('Custom rate limit message')
 
     render(

@@ -1,8 +1,13 @@
 import { captureException } from '@sentry/nextjs'
 import { captureError } from '@vouchington/sentry/browser'
 import { toast } from 'sonner'
-import { ApiError, isExpectedApiError, getApiErrorMessage } from '@vouchington/api-client'
-import { getRateLimitMessage, isRateLimitError } from '@/lib/api/rate-limit-error'
+import {
+  ApiError,
+  getApiErrorMessage,
+  isExpectedApiError,
+  isRateLimitError,
+} from '@vouchington/api-client'
+import { getRateLimitMessage } from '@/lib/api/rate-limit-error'
 
 interface OnErrorOptions {
   fallback: string

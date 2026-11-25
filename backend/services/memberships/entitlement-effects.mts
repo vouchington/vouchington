@@ -45,6 +45,7 @@ export async function claimPendingMembershipEntitlementEffects(
 ): Promise<MembershipEntitlementEffect[]> {
   const deliveryClaimToken = crypto.randomUUID()
   await using query = await beginTransaction()
+  // lock-reason: prevents: overlapping delivery and recovery jobs from claiming the same entitlement effect; writer: claimPendingMembershipEntitlementEffects
   const { rows } = await query(sql`/* claimPendingMembershipEntitlementEffects */
       WITH candidates AS (
         SELECT id

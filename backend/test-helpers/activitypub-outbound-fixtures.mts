@@ -1,7 +1,7 @@
 import dns from 'node:dns'
 import net from 'node:net'
 import { onTestFinished, vi } from 'vitest'
-import undici from 'undici'
+import * as http from '@modules/utils/http'
 import { verifySignature } from '@modules/http-signatures'
 import { createRemoteActorFixture } from './ap-inbox-activity-fixtures.mts'
 import {
@@ -26,19 +26,19 @@ export function stubActivityPubSocketForTest(
 ): CapturedActivityPubRequest[] {
   const captured: CapturedActivityPubRequest[] = []
   stubPublicDnsForTest()
-  const originalFetch = undici.fetch
-  const fetchSpy = vi.spyOn(undici, 'fetch').mockImplementation((async (
-    url: string,
-    init?: Record<string, unknown>,
-  ) => {
-    if (init?.method !== 'POST') return originalFetch(url, init as never)
+  const originalFetchWithTimeout = http.fetchWithTimeout
+  const fetchSpy = vi.spyOn(http, 'fetchWithTimeout').mockImplementation(async options => {
+    if (options.method !== 'POST') return originalFetchWithTimeout(options)
     captured.push({
-      url,
-      body: init.body as string,
-      headers: init.headers as Record<string, string>,
+      url: options.url,
+      body: options.body as string,
+      headers: options.headers,
     })
-    return respond()
-  }) as never)
+    return {
+      response: respond(),
+      responseSignal: new AbortController().signal,
+    }
+  })
   onTestFinished(() => fetchSpy.mockRestore())
   return captured
 }

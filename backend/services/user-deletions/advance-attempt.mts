@@ -50,9 +50,8 @@ async function finalizeUserDeletionAttempt(
 }
 
 /**
- * Locks the users row `FOR NO KEY UPDATE` before the "no remaining owned data" check. Writers
- * that still fence take `FOR SHARE` on this row, so one that started earlier commits first and is
- * counted. Ballot writers do not fence; a late ballot is removed by `canCompleteUserDeletion`.
+ * lock-reason: prevents: finalizing erasure before in-flight user-owned data has been drained; writer: active-user mutation callers.
+ * Fenced writers take `FOR SHARE` on this row. A late ballot is removed by `canCompleteUserDeletion`.
  */
 async function lockUserRow(userId: string, query: TransactionQuery) {
   await query(sql`/* advanceUserDeletionAttempt:lockUser */

@@ -91,6 +91,7 @@ async function readAdmittedPasskey(
   credentialId: string,
   query: TransactionQuery,
 ) {
+  // lock-reason: prevents: admitting a passkey session after erasure starts; writer: account deletion and passkey removal.
   await query(
     '/* admitDiscoverablePasskeyLogin:userFence */ SELECT fn_lock_active_user_for_mutation($1)',
     [verification.userId],

@@ -27,6 +27,7 @@ export async function deleteMergedTopicDerivedPage(
     derivedColumnNames,
     'topicMergeDerivedColumn',
   )
+  // lock-reason: prevents: a concurrent metrics update invalidating the selected tuple before deletion; writer: advanceTopicRatingRevision
   const { rowCount } = await query(
     `/* deleteMergedTopicDerivedPage */
       WITH page AS MATERIALIZED (

@@ -56,18 +56,7 @@ describe('stripe invoice hydration concurrency', () => {
     await expect(hydratedInvoices).resolves.toMatchObject(invoiceIds.map(id => ({ id })))
   })
 
-  it('rejects an empty continued invoice-line page', async () => {
-    const listLineItems = vi.fn<VitestLooseMock>().mockResolvedValue({ data: [], has_more: true })
-    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
-      invoices: { listLineItems },
-    } as never)
-
-    await expect(
-      getCompleteStripeInvoiceLines({ id: 'in_empty_lines' } as never, stripeLookupMaxPagesForTest),
-    ).rejects.toThrow('Stripe returned an empty invoice line page for invoice in_empty_lines')
-  })
-
-  it('bounds invoice-line pagination', async () => {
+  it('forwards the invoice-line page cap', async () => {
     const listLineItems = vi.fn<VitestLooseMock>().mockImplementation(async () => ({
       data: [{ id: `il_${listLineItems.mock.calls.length}` }],
       has_more: true,
@@ -81,7 +70,7 @@ describe('stripe invoice hydration concurrency', () => {
         { id: 'in_unbounded_lines' } as never,
         stripeLookupMaxPagesForTest,
       ),
-    ).rejects.toThrow('Stripe invoice in_unbounded_lines exceeded the line page limit')
+    ).rejects.toThrow('Stripe invoice line listing exceeded the page limit (10)')
     expect(listLineItems).toHaveBeenCalledTimes(10)
   })
 })

@@ -1,9 +1,5 @@
-import type {
-  Tool,
-  ToolMeta,
-  ToolAnnotations,
-  ToolOutputSchema,
-} from '@services/openai-agents/tool-types'
+import type { Tool, ToolMeta, ToolAnnotations } from '@services/openai-agents/tool-types'
+import type { ToolOutputSchema } from '@vouchington/mcp-server/types'
 import { getToolRequiredScopes } from './select.mts'
 import {
   validateOptionOutputPointers,

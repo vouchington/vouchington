@@ -10,7 +10,7 @@ import {
   type McpUsersPage,
 } from './mcp-user-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
@@ -42,7 +42,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['users:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/users' }],
-    outputSchema: foundOrNotFoundSchema(usersPageProperties()),
+    outputSchema: outcomeSchema('success', usersPageProperties()),
   },
   function:
     (_currentUser: BasicUser) =>

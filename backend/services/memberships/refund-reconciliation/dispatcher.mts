@@ -9,6 +9,7 @@ export async function dispatchDueRefundReconciliations(
 ): Promise<{ dispatches: RefundReconciliationDispatch[] }> {
   const batchSize = Math.min(limit, getMembershipWorkLimit('refund_reconciliation_batch_size'))
   await using transaction = await beginTransaction()
+  // lock-reason: prevents: dispatch and direct execution competing for the same due refund operation; writer: leaseDueRefundReconciliation
   const { rows } = await transaction<RefundReconciliationDispatch>(
     sql`/* dispatchDueRefundReconciliations */
     WITH due AS (

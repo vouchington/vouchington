@@ -6,7 +6,7 @@ import {
   loadModmailReplyAccess,
   replyToModmailThread,
 } from '@services/modmail/member-actions'
-import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@vouchington/mcp-server/types'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
 import { componentSchema } from './route-response-schema.mts'
 import { objectSchema, successSchema } from '@vouchington/mcp-server/schema'

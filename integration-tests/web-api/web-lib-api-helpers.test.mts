@@ -8,8 +8,7 @@ import {
   listenOnFetchSafeLoopback,
 } from './routes.mts'
 import { ApiError } from '@vouchington/api-client'
-import { isRateLimitError, getRateLimitMessage } from '@/lib/api/rate-limit-error'
-import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
+import { getRateLimitMessage } from '@/lib/api/rate-limit-error'
 import { buildWorkerSecretHeader } from '@/lib/api/worker-secret'
 import { clientFetch } from '@/test-helpers/api-fixture-fetch'
 import { recordCommunityAutomodFeedback } from '@/lib/api/client/community-automod'
@@ -111,23 +110,6 @@ describe('web/lib/api utility helpers — integration', () => {
 
   // ─── rate-limit-error.ts ─────────────────────────────────────────────────
 
-  describe('isRateLimitError', () => {
-    it('returns true for a 429 ApiError', () => {
-      const error = new ApiError('Too many requests', 429, null)
-      expect(isRateLimitError(error)).toBe(true)
-    })
-
-    it('returns false for a non-429 ApiError', () => {
-      const error = new ApiError('Not found', 404, null)
-      expect(isRateLimitError(error)).toBe(false)
-    })
-
-    it('returns false for a plain Error', () => {
-      const error = new Error('not an ApiError')
-      expect(isRateLimitError(error)).toBe(false)
-    })
-  })
-
   describe('getRateLimitMessage', () => {
     it('returns plural "seconds" when retry_after is greater than 1', () => {
       const error = new ApiError('Too many requests', 429, { retry_after: 5 })
@@ -157,49 +139,9 @@ describe('web/lib/api utility helpers — integration', () => {
     })
   })
 
-  // ─── return-null-for-missing-entity.ts ───────────────────────────────────
+  // ─── missing-entity server wiring ────────────────────────────────────────
 
-  describe('returnNullForMissingEntity', () => {
-    it('passes through a resolved value unchanged', async () => {
-      const value = { id: 'abc', name: 'test' }
-      const result = await returnNullForMissingEntity(Promise.resolve(value))
-      expect(result).toEqual(value)
-    })
-
-    it('returns null for a 404 ApiError (default nullStatusCodes)', async () => {
-      const error = new ApiError('Not found', 404, null)
-      expect(await returnNullForMissingEntity(Promise.reject(error))).toBeNull()
-    })
-
-    it('rethrows a 403 ApiError by default', async () => {
-      const error = new ApiError('Forbidden', 403, null)
-      await expect(returnNullForMissingEntity(Promise.reject(error))).rejects.toThrow(error)
-    })
-
-    it('rethrows an ApiError whose status is not in the default nullStatusCodes', async () => {
-      const error = new ApiError('Unauthorized', 401, null)
-      await expect(returnNullForMissingEntity(Promise.reject(error))).rejects.toThrow(error)
-    })
-
-    it('rethrows a non-ApiError', async () => {
-      const error = new Error('network error')
-      await expect(returnNullForMissingEntity(Promise.reject(error))).rejects.toThrow(error)
-    })
-
-    it('returns null for a 403 status in custom nullStatusCodes', async () => {
-      const error = new ApiError('Forbidden', 403, null)
-      expect(
-        await returnNullForMissingEntity(Promise.reject(error), { nullStatusCodes: [403, 404] }),
-      ).toBeNull()
-    })
-
-    it('rethrows when status is not in custom nullStatusCodes', async () => {
-      const error = new ApiError('Not found', 404, null)
-      await expect(
-        returnNullForMissingEntity(Promise.reject(error), { nullStatusCodes: [403] }),
-      ).rejects.toThrow(error)
-    })
-
+  describe('getPost missing-entity handling', () => {
     it('returns null for a real 404 from the backend (missing entity)', async () => {
       // getPost internally uses returnNullForMissingEntity; this confirms the
       // real error shape from the backend flows through correctly.

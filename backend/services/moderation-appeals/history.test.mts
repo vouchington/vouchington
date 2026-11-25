@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  commitAppealNoteDuringDraftEditForTest,
   createStaffResolutionFixture,
   readStaffResolutionState,
   readStaffDraftHistory,
@@ -55,6 +56,26 @@ describe('moderation-appeals staff history', () => {
     expect(await readStaffDraftHistory('appeal', id)).toEqual({
       before: { public_response: 'Original response', internal_notes: 'Original note' },
       after: { public_response: 'Revised response', internal_notes: 'Original note' },
+    })
+  })
+  it('audits the row version actually replaced by an overlapping edit', async () => {
+    const { actorId, id } = await createStaffResolutionFixture('appeal', false)
+    await updateDraft(actorId, id, {
+      publicResponse: 'Original response',
+      internalNotes: 'Original note',
+    })
+
+    await commitAppealNoteDuringDraftEditForTest(id, 'Concurrent note', () =>
+      updateDraft(actorId, id, { publicResponse: 'Revised response' }),
+    )
+
+    expect(await readStaffResolutionState('appeal', id)).toMatchObject({
+      public_response: 'Revised response',
+      internal_notes: 'Concurrent note',
+    })
+    expect(await readStaffDraftHistory('appeal', id)).toEqual({
+      before: { public_response: 'Original response', internal_notes: 'Concurrent note' },
+      after: { public_response: 'Revised response', internal_notes: 'Concurrent note' },
     })
   })
 })

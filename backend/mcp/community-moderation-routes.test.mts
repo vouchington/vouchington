@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { isCommunityOwnerAiOperation } from '@voucha/test-helpers/mcp-write-exclusions-community-owner'
 import { ALL_TOOLS, getRegisteredToolByName } from './registry/index.mts'
 import { communityModerationGroups } from './community-moderation-tools.mts'
-import { validateToolArguments } from '../services/mcp-tools/validate-tool-arguments.mts'
+import { validateToolArguments } from '@vouchington/mcp-server/schema'
 import { planMcpCalls } from '../services/mcp-tools/classify-calls.mts'
 import { COMMUNITY_MODERATION_MCP_SERVER_CONFIG } from '../services/mcp-tools/config.mts'
 

@@ -7,7 +7,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 import { callMcpTool } from './call-tool.mts'
-import { validateToolArguments } from './validate-tool-arguments.mts'
+import { validateToolArguments } from '@vouchington/mcp-server/schema'
 
 const id = randomUUID()
 // One representative for each domain/builder family, using schema-valid arguments so

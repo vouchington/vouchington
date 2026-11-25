@@ -1,15 +1,15 @@
 import { HttpNoBodyError, HttpResponseSizeError } from '@vouchington/sentry'
-import onError from '@modules/on-error'
-import type { Response as UndiciResponse } from 'undici'
+import { withAbortableBody, type ResponseWithBody } from '@vouchington/http-transport/fetch'
 import {
   MissingResponseBodyError,
   readResponseBodyAsBuffer as readBoundedResponseBody,
   ResponseBodyTooLargeError,
   type ReadResponseBodyOptions as BoundedReadResponseBodyOptions,
 } from '@vouchington/utils/http-body'
+import { reportHttpTransportError } from './http.mts'
 
 export type ReadResponseBodyOptions = Omit<BoundedReadResponseBodyOptions, 'response'> & {
-  readonly response: Pick<Response, 'body'> | Pick<UndiciResponse, 'body'>
+  readonly response: ResponseWithBody
 }
 
 /* no-mistakes: integration=http */
@@ -19,7 +19,9 @@ export const readResponseBodyAsBuffer = async (
   try {
     return await readBoundedResponseBody({
       ...options,
-      response: responseWithCompatibleBody(options.response, options.signal),
+      response: withAbortableBody(options.response, options.signal, {
+        onError: reportHttpTransportError,
+      }),
     })
   } catch (err) {
     if (err instanceof MissingResponseBodyError) throw new HttpNoBodyError(err.url)
@@ -33,59 +35,4 @@ export const readResponseBodyAsBuffer = async (
 export const readResponseBody = async (options: ReadResponseBodyOptions): Promise<string> => {
   const buffer = await readResponseBodyAsBuffer(options)
   return buffer.toString('utf8')
-}
-
-function responseWithCompatibleBody(
-  response: ReadResponseBodyOptions['response'],
-  signal?: AbortSignal,
-): Response {
-  if (response instanceof Response) return response
-  if (!response.body) return new Response()
-  const reader = response.body.getReader()
-  let released = false
-  let abortListener: (() => void) | undefined
-
-  function release(): void {
-    if (released) return
-    released = true
-    if (signal && abortListener) signal.removeEventListener('abort', abortListener)
-    reader.releaseLock()
-  }
-
-  function cancel(reason: unknown): Promise<void> {
-    return reader.cancel(reason).catch(onError).finally(release)
-  }
-
-  if (signal) {
-    abortListener = () => {
-      void cancel(signal.reason)
-    }
-    if (signal.aborted) abortListener()
-    else signal.addEventListener('abort', abortListener, { once: true })
-  }
-
-  return new Response(
-    new ReadableStream({
-      async pull(controller) {
-        try {
-          const result = await reader.read()
-          if (result.done) {
-            release()
-            controller.close()
-          } else {
-            const chunk: unknown = result.value
-            if (!(chunk instanceof Uint8Array))
-              throw new TypeError('Response body chunk is not bytes')
-            controller.enqueue(chunk)
-          }
-        } catch (err) {
-          release()
-          controller.error(err)
-        }
-      },
-      async cancel(reason) {
-        await cancel(reason)
-      },
-    }),
-  )
 }

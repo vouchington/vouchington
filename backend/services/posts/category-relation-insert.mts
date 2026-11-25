@@ -151,6 +151,7 @@ function appendRelationUpsert(
   query.append(` r
         WHERE r.subject_id = input.subject_id
           AND r.object_id = input.object_id
+        -- lock-reason: prevents: deriving category activation from a stale relation tombstone; writer: post category writers and relation deletion.
         FOR UPDATE
       ) locked ON true
     ), ${prefix}_upserted AS (

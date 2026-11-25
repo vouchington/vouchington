@@ -19,7 +19,7 @@ import type {
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { getUserLabel } from '@/lib/users/user-helpers'
 import { ModlogFilters } from '@/components/admin/modlog-filters'
-import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
+import { returnNullForMissingEntity } from '@vouchington/api-client'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations()

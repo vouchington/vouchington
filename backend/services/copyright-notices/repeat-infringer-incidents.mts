@@ -156,13 +156,11 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
   const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
   assert(lockedNotice, 404, 'Copyright repeat-infringer incident not found')
   const { rows } = await transaction<{
-    copyright_notice_id: string
     current_disposition: CopyrightRepeatInfringerDisposition | null
   }>(sql`
     /* recordCopyrightRepeatInfringerDisposition */
-    SELECT copyright_notice_id, current_disposition FROM copyright_repeat_infringer_incidents
+    SELECT current_disposition FROM copyright_repeat_infringer_incidents
     WHERE id = ${input.incidentId}
-    FOR UPDATE
   `)
   const incident = rows[0]
   assert(incident, 404, 'Copyright repeat-infringer incident not found')
@@ -171,15 +169,16 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
     409,
     'Copyright repeat-infringer incident already has a disposition',
   )
-  await transaction(sql`
+  const { rowCount } = await transaction(sql`
     /* recordCopyrightRepeatInfringerDisposition:current */
     UPDATE copyright_repeat_infringer_incidents
     SET is_operative = false,
       current_disposition = ${input.disposition},
       current_disposition_recorded_at = ${input.recordedAt},
       current_disposition_recorded_by_id = ${input.currentUser.id}
-    WHERE id = ${input.incidentId}
+    WHERE id = ${input.incidentId} AND current_disposition IS NULL
   `)
+  assert(rowCount === 1, 409, 'Copyright repeat-infringer incident already has a disposition')
   const { rows: inserted } = await transaction<{ id: string }>(sql`
     /* recordCopyrightRepeatInfringerDisposition:insert */
     INSERT INTO copyright_repeat_infringer_dispositions (
@@ -193,7 +192,7 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
     RETURNING id
   `)
   assert(inserted[0], 409, 'Copyright repeat-infringer incident already has a disposition')
-  await syncCopyrightRepeatInfringerIncidents(incident.copyright_notice_id, transaction)
+  await syncCopyrightRepeatInfringerIncidents(noticeId, transaction)
   await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await transaction.commit()
 }

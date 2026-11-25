@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import type { Context } from './process-verification-types.mts'
 
 export async function getContext(id: string, query: QueryExecutor): Promise<Context | null> {
+  // lock-reason: prevents: competing Google verification attempts from finalizing the same purchase evidence and both proceeding to acknowledgement; writer: processGooglePlayMembershipVerification
   const { rows } = await query<Context>(sql`/* getPendingGooglePlayVerification */
     SELECT verification.id AS "verificationId", verification.user_id AS "userId", verification.membership_purchase_intent_id AS "purchaseIntentId",
       context.id AS "providerContextId", context.environment, context.application_id AS "applicationId", evidence.id AS "evidenceId", evidence.encrypted_evidence AS "encryptedEvidence", evidence.evidence_lookup_sha256 AS "evidenceLookupSha256",

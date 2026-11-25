@@ -4,7 +4,10 @@ import { fileURLToPath } from 'node:url'
 
 import { importUsages, type ImportUsagesResult } from 'no-mistakes'
 
-import { storybookBrowserOptimizeDeps } from '../test-helpers/vitest-config/storybook-browser-optimize-deps.mts'
+import {
+  storybookBrowserOptimizeDeps,
+  storybookBrowserOptimizeDepsExclude,
+} from '../test-helpers/vitest-config/storybook-browser-optimize-deps.mts'
 import { permanentReleaseAgePackageNames } from './no-mistakes-config.mts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -16,6 +19,7 @@ export type ReadImportUsages = (root: string, files: string[]) => Promise<Import
 export type OptimizeDepsAuditInput = {
   root: string
   include: readonly string[]
+  exclude?: readonly string[]
   firstPartyNames: Set<string>
   readImports: ReadImportUsages
 }
@@ -79,10 +83,12 @@ function packageRoot(specifier: string): string {
 export async function storybookBrowserOptimizeDepsErrors({
   root,
   include,
+  exclude = [],
   firstPartyNames,
   readImports,
 }: OptimizeDepsAuditInput): Promise<string[]> {
   const included = new Set(include)
+  const excluded = new Set(exclude)
   const parents = new Set<string>(requiredNestedParents)
   const errors: string[] = []
   for (const entry of include) {
@@ -107,6 +113,7 @@ export async function storybookBrowserOptimizeDepsErrors({
   for (const { parent, specifiers } of audited) {
     for (const specifier of specifiers) {
       const dependency = packageRoot(specifier)
+      if (excluded.has(specifier) || excluded.has(dependency)) continue
       const firstParty = dependency.startsWith('@vouchington/') || firstPartyNames.has(dependency)
       if (firstParty && !included.has(specifier) && !included.has(`${parent} > ${specifier}`)) {
         errors.push(`${parent}: add '${parent} > ${specifier}' to storybookBrowserOptimizeDeps`)
@@ -121,6 +128,7 @@ if (import.meta.main) {
   const errors = await storybookBrowserOptimizeDepsErrors({
     root: repoRoot,
     include: storybookBrowserOptimizeDeps,
+    exclude: storybookBrowserOptimizeDepsExclude,
     firstPartyNames: await permanentReleaseAgePackageNames(),
     // Deadline-free so a concurrent `no-mistakes check` queues this call instead of failing it.
     readImports: (root, files) => importUsages({ root, files, timeout: 0, lockTimeout: 0 }),
