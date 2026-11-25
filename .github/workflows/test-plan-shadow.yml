@@ -76,7 +76,7 @@ jobs:
         id: pnpm-version
         if: steps.reports.outputs.count != '0'
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@95129ce4ac652ea4adf29635b91e42de2557c502 # v3.6.2
+        uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@273d313fc952c000baa7ee36056ca0e403666581 # v3.6.4
       - uses: pnpm/setup@731dfb6463bbd11c11fd0ee11fe00ed0e36d48a1 # v3.2.0
         if: steps.reports.outputs.count != '0'
         timeout-minutes: 1
