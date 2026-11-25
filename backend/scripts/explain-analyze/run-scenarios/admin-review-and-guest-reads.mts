@@ -19,6 +19,7 @@ import {
   GUEST_CAPABILITY_SEEDED_ROWS,
   seedAdminReviewAndGuestReadFixtures,
 } from '../seed-data/admin-review-and-guest-reads.mts'
+import { seedUuid } from '../seed-data/common.mts'
 
 const PAGE_LIMIT = 100
 const moderator = { ...seedUser, roles: ['moderator'] as const }
@@ -52,10 +53,22 @@ async function runAdminReviewQueuePages(): Promise<void> {
         after = encodeCursor({ id: ids.at(-1)! })
         assert.equal(page.page_info.end_cursor, after)
       }
+
+      // The oldest reviewable posts come from the platform-removal seed.
+      const last = await searchPostsForAdminReview({
+        limit: PAGE_LIMIT,
+        after: encodeCursor({ id: seedUuid(PAGE_LIMIT, '18') }),
+      })
+      assert.deepEqual(
+        last.results.map(row => row.id),
+        Array.from({ length: PAGE_LIMIT }, (_, index) => seedUuid(PAGE_LIMIT - index - 1, '18')),
+      )
+      assert.equal(last.page_info.has_next_page, false)
+      assert.equal(last.page_info.end_cursor, null)
     },
     undefined,
     queryName,
-    { exactCapturedNames: [queryName, queryName] },
+    { exactCapturedNames: [queryName, queryName, queryName] },
   )
 }
 
@@ -96,10 +109,22 @@ async function runAssociationSearchAtHardCap(): Promise<void> {
           after = encodeScopedUuidCursor(candidates.at(-1)!, scope)
           assert.equal(page.page_info.end_cursor, after)
         }
+
+        const last = await searchCopyrightNoticeAssociationTargets(
+          moderator,
+          ASSOCIATION_QUERY,
+          after,
+        )
+        assert.deepEqual(
+          last.copyright_notices.map(notice => notice.id),
+          ASSOCIATION_FIXTURE_IDS.slice(2 * candidateLimit),
+        )
+        assert.equal(last.page_info.has_next_page, false)
+        assert.equal(last.page_info.end_cursor, null)
       },
       undefined,
       queryName,
-      { exactCapturedNames: [queryName, queryName] },
+      { exactCapturedNames: [queryName, queryName, queryName] },
     )
   } finally {
     if (previous !== undefined) copyrightSweepConfig.fields.set(key, previous)
