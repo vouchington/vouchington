@@ -36,8 +36,9 @@ async function runSavedReplies({ communityId, replies, seededRows }: Fixture) {
   const name = 'getCommunitySavedReplies'
   registerScenarioContract(scenario, {
     seededRows,
-    // This is the current main plan's worst observed scan. Tighten in #6392.
-    expectations: [{ kind: 'maxProcessedRows', relation: 'community_saved_replies', max: 259 }],
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'community_saved_replies', max: pageSize + 2 },
+    ],
   })
   await runAndCapture(
     scenario,
