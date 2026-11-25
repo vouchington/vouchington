@@ -45,7 +45,8 @@
     "@vouchington/queue-errors": "^0.2.1",
     "@vouchington/sentry": "^0.7.0",
     "http-assert": "^1.5.0",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

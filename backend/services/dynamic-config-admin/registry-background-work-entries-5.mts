@@ -13,6 +13,10 @@ import {
   rssFeedItemsWorkConfig,
   rssFeedItemsWorkMaxValues,
 } from '@services/rss-feed-items/work-limits'
+import {
+  rssFeedItemIngestionConfig,
+  rssFeedItemIngestionMaxValues,
+} from '@services/rss-feed-items/processing-limits'
 import { rssFeedsWorkConfig, rssFeedsWorkMaxValues } from '@services/rss-feeds/work-limits'
 import {
   notificationsWorkConfig,
@@ -62,6 +66,17 @@ export const backgroundWorkRegistryEntries5 = {
         'Story category change batch size for rss feed items processing.',
     },
   }),
+  'rss-feed-item-ingestion-config': defineBoundedWorkNamespace({
+    namespace: 'rss-feed-item-ingestion-config',
+    config: rssFeedItemIngestionConfig,
+    label: 'RSS feed item ingestion',
+    maxValues: rssFeedItemIngestionMaxValues,
+    descriptions: {
+      fetch_max_items: 'Maximum valid items admitted from a feed fetch.',
+      item_max_categories: 'Maximum distinct categories admitted for one RSS feed item.',
+      podcast_chapters_max_count: 'Maximum podcast chapters returned for one item.',
+    },
+  }),
   'rss-feeds-work-config': defineBoundedWorkNamespace({
     namespace: 'rss-feeds-work-config',
     config: rssFeedsWorkConfig,
@@ -69,6 +84,7 @@ export const backgroundWorkRegistryEntries5 = {
     maxValues: rssFeedsWorkMaxValues,
     descriptions: {
       category_sql_batch_size: 'Category sql batch size for rss feeds processing.',
+      podcast_max_categories: 'Maximum distinct podcast categories extracted for one feed.',
       category_backfill_batch_size: 'Category backfill batch size for rss feeds processing.',
       topic_alias_category_mapping_reconciliation_batch_size:
         'Topic alias category mapping reconciliation batch size for rss feeds processing.',
@@ -104,6 +120,7 @@ export const backgroundWorkRegistryEntries5 = {
     descriptions: {
       bloom_batch_size: 'Bloom batch size for bookmarks processing.',
       bloom_lookup_batch_size: 'Bloom lookup batch size for bookmarks processing.',
+      set_bookmark_max_targets: 'Maximum targets admitted by one MCP bookmark request.',
     },
   }),
   'mcp-tools-work-config': defineBoundedWorkNamespace({

@@ -1970,6 +1970,9 @@ importers:
       '@services/attribution':
         specifier: workspace:^
         version: link:../services/attribution
+      '@services/bookmarks':
+        specifier: workspace:^
+        version: link:../services/bookmarks
       '@services/comments':
         specifier: workspace:^
         version: link:../services/comments
@@ -12366,6 +12369,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^

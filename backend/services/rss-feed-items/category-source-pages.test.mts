@@ -1,5 +1,5 @@
 import { readOwnedRssCategorySourceUnion } from '@voucha/test-helpers/rss-category-source-union'
-import { normalizeRssFeedItemCategories } from './processing-limits.mts'
+import { normalizeRssFeedItemCategories, rssFeedItemIngestionConfig } from './processing-limits.mts'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
@@ -109,7 +109,7 @@ describe('RSS category source and stale-category pages', () => {
       afterFeedId: null,
     })
   })
-  it('matches the complete collated union beyond twenty categories with cross-page case duplicates', async () => {
+  it('keeps the hard-capped collated source union when category admission is lowered', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
         category_snapshot_reconciliation_batch_size: 1,
@@ -136,13 +136,26 @@ describe('RSS category source and stale-category pages', () => {
       await readOwnedRssCategorySourceUnion(item!.id, [first.id, second.id]),
     )
     expect(expected).toHaveLength(20)
+    await rssFeedItemIngestionConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(rssFeedItemIngestionConfig, { item_max_categories: 1 }),
+    )
     const page = await getRssFeedItemCategorySnapshotPage(item!.id, null)
     expect(page.afterFeedId).not.toBeNull()
+    expect(page.categories).toEqual(earlier)
     const final = await getRssFeedItemCategorySnapshotPage(
       item!.id,
       page.afterFeedId,
       page.categories,
     )
     expect(final).toEqual({ categories: expected, afterFeedId: null })
+    const pending = await reconcileRssFeedItemCategorySnapshots(1, [item!.id])
+    const continued = await reconcileRssFeedItemCategorySourcePage(pending.sourcePages![0]!)
+    await expect(
+      reconcileRssFeedItemCategorySourcePage(continued.sourcePages![0]!),
+    ).resolves.toEqual({ reconciled: 1 })
+    await expect(getTestRssFeedItemCategoryProjectionResult(item!.id)).resolves.toMatchObject({
+      categories: [expected[0]],
+    })
   })
 })

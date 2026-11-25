@@ -1,9 +1,10 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import onError from '@modules/on-error'
-
-export const RSS_FEED_IMPORT_MAX_URLS = 500
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export type UserImportExportConfig = {
+  topic_import_max_items: number
+  rss_feed_import_max_urls: number
   sync_export_max_items: number
   /** Largest JSON body, in bytes, the RSS feed import endpoint reads. */
   import_max_body_bytes: number
@@ -22,6 +23,8 @@ export type UserImportExportConfig = {
 export const USER_IMPORT_EXPORT_CONFIG_KEY = 'user-import-export-config'
 
 const DEFAULT_USER_IMPORT_EXPORT_CONFIG: UserImportExportConfig = {
+  topic_import_max_items: 500,
+  rss_feed_import_max_urls: 500,
   sync_export_max_items: 1_000,
   import_max_body_bytes: 2 * 1024 * 1024,
   import_dispatch_page_size: 100,
@@ -33,6 +36,8 @@ const DEFAULT_USER_IMPORT_EXPORT_CONFIG: UserImportExportConfig = {
 }
 
 export const USER_IMPORT_EXPORT_MIN_VALUES: UserImportExportConfig = {
+  topic_import_max_items: 1,
+  rss_feed_import_max_urls: 1,
   sync_export_max_items: 1,
   import_max_body_bytes: 1_024,
   import_dispatch_page_size: 1,
@@ -45,7 +50,9 @@ export const USER_IMPORT_EXPORT_MIN_VALUES: UserImportExportConfig = {
 
 // The budget stays below the worker's default lock, so a row that spends all of it still finishes
 // before its lock expires.
-export const USER_IMPORT_EXPORT_MAX_VALUES: UserImportExportConfig = {
+export const USER_IMPORT_EXPORT_MAX_VALUES = {
+  topic_import_max_items: 500,
+  rss_feed_import_max_urls: 500,
   sync_export_max_items: 50_000,
   import_max_body_bytes: 16 * 1024 * 1024,
   import_dispatch_page_size: 1_000,
@@ -54,9 +61,11 @@ export const USER_IMPORT_EXPORT_MAX_VALUES: UserImportExportConfig = {
   rss_feed_import_budget_ms: 25_000,
   export_cursor_batch_size: 10_000,
   topic_import_attempt_prune_batch_size: 1_000,
-}
+} as const satisfies UserImportExportConfig
 
 const fieldTypes: Record<keyof UserImportExportConfig, 'number'> = {
+  topic_import_max_items: 'number',
+  rss_feed_import_max_urls: 'number',
   sync_export_max_items: 'number',
   import_max_body_bytes: 'number',
   import_dispatch_page_size: 'number',
@@ -72,6 +81,20 @@ export const userImportExportConfig = new DynamicConfig({
   fieldTypes,
   defaultFields: DEFAULT_USER_IMPORT_EXPORT_CONFIG,
 })
+
+export function getTopicImportLimit(): number {
+  return getBoundedPositiveIntegerField(userImportExportConfig, 'topic_import_max_items', {
+    defaultValue: DEFAULT_USER_IMPORT_EXPORT_CONFIG.topic_import_max_items,
+    maxValue: USER_IMPORT_EXPORT_MAX_VALUES.topic_import_max_items,
+  })
+}
+
+export function getRssFeedImportUrlLimit(): number {
+  return getBoundedPositiveIntegerField(userImportExportConfig, 'rss_feed_import_max_urls', {
+    defaultValue: DEFAULT_USER_IMPORT_EXPORT_CONFIG.rss_feed_import_max_urls,
+    maxValue: USER_IMPORT_EXPORT_MAX_VALUES.rss_feed_import_max_urls,
+  })
+}
 
 export function getUserImportExportConfig(): UserImportExportConfig {
   const fields = userImportExportConfig.getFields() ?? {}

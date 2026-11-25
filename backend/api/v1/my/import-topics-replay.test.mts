@@ -1,8 +1,11 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { userImportExportConfig } from '@services/user-import-export/config'
 import {
   createTestTopic,
   createTestUser,
+  expireTopicImportAttemptForTest,
   getTopicImportRequestForTest,
   getTopicFollowExistsForTest,
 } from '@voucha/test-helpers'
@@ -16,9 +19,10 @@ describe('POST /api/v1/my/import/topics response replay', () => {
     user = await createTestUser()
   })
 
-  it('replays the exact existing-topic response after transport loss', async () => {
+  it('replays the exact existing-topic response after lowering the admission limit', async () => {
     const topic = await createTestTopic({ user })
     const idempotencyKey = crypto.randomUUID()
+    const names = [topic.name, topic.name]
     const request = createRequest()
     await request.authenticateAs(user)
 
@@ -26,19 +30,52 @@ describe('POST /api/v1/my/import/topics response replay', () => {
       .post('/api/v1/my/import/topics')
       .set('Content-Type', 'application/json')
       .set('Idempotency-Key', idempotencyKey)
-      .send({ names: [topic.name] })
+      .send({ names })
       .expect(200)
+    await userImportExportConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(userImportExportConfig, { topic_import_max_items: 1 }),
+    )
     const replay = await request
       .post('/api/v1/my/import/topics')
       .set('Content-Type', 'application/json')
       .set('Idempotency-Key', idempotencyKey)
-      .send({ names: [topic.name] })
+      .send({ names })
       .expect(200)
 
-    expect(first.body.results).toEqual([
-      expect.objectContaining({ status: 'followed', entity_id: topic.id }),
-    ])
+    expect(first.body.results).toHaveLength(2)
+    expect(first.body.results[0]).toMatchObject({ status: 'followed', entity_id: topic.id })
     expect(replay.body).toEqual(first.body)
+
+    const freshKey = crypto.randomUUID()
+    await request
+      .post('/api/v1/my/import/topics')
+      .set('Content-Type', 'application/json')
+      .set('Idempotency-Key', freshKey)
+      .send({ names })
+      .expect(400)
+    await expect(getTopicImportFailureStateForTest(user.id, freshKey)).resolves.toBeNull()
+
+    const mismatch = await request
+      .post('/api/v1/my/import/topics')
+      .set('Content-Type', 'application/json')
+      .set('Idempotency-Key', idempotencyKey)
+      .send({ names: [topic.name, 'Different topic'] })
+      .expect(409)
+    expect(mismatch.body).toMatchObject({ code: 'IDEMPOTENCY_KEY_REUSED' })
+
+    await expireTopicImportAttemptForTest(user.id, idempotencyKey, new Date('2000-01-01T00:00:00Z'))
+    await request
+      .post('/api/v1/my/import/topics')
+      .set('Content-Type', 'application/json')
+      .set('Idempotency-Key', idempotencyKey)
+      .send({ names })
+      .expect(400)
+    await expect(getTopicImportFailureStateForTest(user.id, idempotencyKey)).resolves.toMatchObject(
+      {
+        response: first.body.results,
+      },
+    )
   })
 
   it('returns a server error without partial imports when the topic lookup rejects NUL', async () => {

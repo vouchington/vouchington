@@ -83,6 +83,7 @@ export const REGISTRY_ORDER = [
   'notifications-work-config',
   'rss-feeds-work-config',
   'rss-feed-items-work-config',
+  'rss-feed-item-ingestion-config',
   'post-publication-work-config',
   'ai-usage-work-config',
   'bluesky-follows-work-config',

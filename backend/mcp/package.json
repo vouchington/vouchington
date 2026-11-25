@@ -26,6 +26,7 @@
     "@services/admin-imports": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/attribution": "workspace:^",
+    "@services/bookmarks": "workspace:^",
     "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/community-member-vacations": "workspace:^",

@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { userImportExportConfig } from './config.mts'
 import { getRssFeedImportRowIds } from '@voucha/test-helpers/rss-feed-import-rows'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
@@ -15,6 +17,22 @@ describe('RSS feed import records', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
+  })
+
+  it('enforces the configured URL count while accepting a batch at the limit', async () => {
+    await userImportExportConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(userImportExportConfig, { rss_feed_import_max_urls: 1 }),
+    )
+    const urls = [
+      `https://rss-cap-${randomUUID()}.example.com/one`,
+      `https://rss-cap-${randomUUID()}.example.com/two`,
+    ]
+    await expect(createRssFeedImport(user.id, WEB_PROVENANCE, urls, false)).rejects.toMatchObject({
+      status: 422,
+    })
+    const created = await createRssFeedImport(user.id, WEB_PROVENANCE, urls.slice(0, 1), false)
+    await expect(getRssFeedImportRowIds(created.import.id)).resolves.toHaveLength(1)
   })
 
   it('returns row IDs in the input order', async () => {

@@ -3,8 +3,8 @@ import { getImageOrigin } from '@modules/utils/image-origin'
 import { normalizeUrlForUrlTable } from '@modules/utils/urls'
 import { getSigningKeys } from './signing-keys.mts'
 import { recordValue, stringValue } from './chapters-values.mts'
+import { getRssFeedItemIngestionLimit } from './processing-limits.mts'
 
-const CHAPTERS_MAX_COUNT = 200
 const CHAPTERS_MAX_SECONDS = 1_000_000
 
 export type PodcastChapter = {
@@ -44,7 +44,8 @@ export function normalizePodcastChapters(payload: unknown): PodcastChapter[] {
   })
 
   const sorted = normalized.toSorted((left, right) => left.start_seconds - right.start_seconds)
-  return sorted.slice(0, CHAPTERS_MAX_COUNT).map((chapter, index) => ({
+  const chapterLimit = getRssFeedItemIngestionLimit('podcast_chapters_max_count')
+  return sorted.slice(0, chapterLimit).map((chapter, index) => ({
     ...chapter,
     end_seconds: chapter.end_seconds ?? sorted[index + 1]?.start_seconds ?? null,
   }))
