@@ -28,6 +28,12 @@ import {
 } from './run-scenarios/notification-inbox-capacity.mts'
 import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
 import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
+import {
+  runReviewRatingWriteCapacity,
+  runDataPointTopicInsertCapacity,
+  runDataPointTopicReplaceCapacity,
+} from './run-scenarios/post-topic-write-capacity.mts'
+import { runApplicationQuestions } from './run-scenarios/community-application-question-write.mts'
 
 export type OrderedRunner = () => Promise<unknown>
 
@@ -106,6 +112,11 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runMarkNotificationInboxCapacityScenario,
   runRelatedPostUrlCapacityScenario,
   runRssIngestCapacityScenario,
+  runReviewRatingWriteCapacity,
+  runDataPointTopicInsertCapacity,
+  runDataPointTopicReplaceCapacity,
+  // The retained form corpus changes question statistics. Analyze it after ordinary plans.
+  runApplicationQuestions,
 ]
 
 /**

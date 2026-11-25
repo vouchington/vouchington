@@ -166,7 +166,6 @@
     "modmail-opening-two-parties",
     "modmail-first-reply-last-slot",
     "community-invite-redeem",
-    "community-application-questions",
     "community-application-questions-at-cap",
     "session-limit-hasAuthenticatedSession",
     "session-limit-hasAuthenticatedSession-missing",
@@ -604,6 +603,10 @@
     "notifications-inbox-at-cap",
     "notifications-mark-all-read-at-cap",
     "related-posts-by-url-at-cap",
-    "rss-ingest-content-at-cap"
+    "rss-ingest-content-at-cap",
+    "post-review-ratings-write-at-cap",
+    "post-data-point-topics-insert-at-cap",
+    "post-data-point-topics-replace-at-cap",
+    "community-application-questions-write-at-cap"
   ]
 }
