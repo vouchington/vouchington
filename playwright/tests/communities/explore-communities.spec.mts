@@ -4,6 +4,7 @@ import {
   withMonitoredPage,
   protectPlaywrightHookTimeouts,
 } from '../../helpers/test.mts'
+import { apiRequest } from '../../helpers/api-request.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsTestUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
@@ -35,19 +36,12 @@ test.describe('Explore Communities Page', () => {
 
     await withMonitoredPage(browser, testInfo, async page => {
       await loginAsTestUser(page)
-      await page.evaluate(
-        async ({ name, slug }) => {
-          const res = await fetch('/api/v1/communities', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ name, slug }),
-          })
-          if (!res.ok && res.status !== 409)
-            throw new Error(`Failed to create community: ${res.status}`)
-        },
-        { name: COMMUNITY_NAME, slug: COMMUNITY_SLUG },
-      )
+      const res = await apiRequest(page, 'POST', '/api/v1/communities', {
+        name: COMMUNITY_NAME,
+        slug: COMMUNITY_SLUG,
+      })
+      if (!res.ok() && res.status() !== 409)
+        throw new Error(`Failed to create community: ${res.status()}`)
     })
   })
 

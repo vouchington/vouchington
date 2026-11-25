@@ -8,9 +8,6 @@ const TEST_SID = '019f0000-0000-7000-8000-000000000012'
 
 const mockCreateDeviceAndSessionTokens = vi.fn<() => unknown>()
 const mockCreateVerifiedMfaTestSession = vi.fn<() => unknown>()
-const mockRetryOnConnectionLost = vi.fn<(...args: Array<never>) => unknown>(
-  (fn: () => Promise<unknown>) => fn(),
-)
 const mockAddCookies = vi.fn<() => unknown>()
 
 function createMockTokenResult(deviceToken: string, sessionToken: string) {
@@ -47,7 +44,6 @@ describe('loginAsUser helpers', () => {
   afterEach(() => {
     mockCreateDeviceAndSessionTokens.mockReset()
     mockCreateVerifiedMfaTestSession.mockReset()
-    mockRetryOnConnectionLost.mockClear()
     mockAddCookies.mockReset()
   })
 
@@ -60,7 +56,7 @@ describe('loginAsUser helpers', () => {
     await loginAsUser(page as never, TEST_UID, {
       createDeviceAndSessionTokens: mockCreateDeviceAndSessionTokens as never,
       mintUUIDv7: () => TEST_DID,
-      retryOnConnectionLost: mockRetryOnConnectionLost as never,
+      cookieOrigin: () => 'https://example.test',
     })
 
     expect(mockCreateDeviceAndSessionTokens).toHaveBeenCalledWith({
@@ -68,11 +64,8 @@ describe('loginAsUser helpers', () => {
       uid: TEST_UID,
       deviceContext: { user_agent: 'Synthetic browser' },
     })
-    expect(mockRetryOnConnectionLost).toHaveBeenCalledTimes(1)
-    expect(page.goto).toHaveBeenNthCalledWith(1, '/', { waitUntil: 'domcontentloaded' })
-    // Exactly one navigation: the origin-establishing goto. Guards against a
-    // future regression that re-adds a post-login navigation.
-    expect(page.goto).toHaveBeenCalledTimes(1)
+    // No navigation at all: the cookie origin comes from the project baseURL.
+    expect(page.goto).not.toHaveBeenCalled()
     expect(page.context).toHaveBeenCalledTimes(1)
     expect(mockAddCookies).toHaveBeenCalledWith([
       {
@@ -105,7 +98,7 @@ describe('loginAsUser helpers', () => {
       createDeviceAndSessionTokens: mockCreateDeviceAndSessionTokens as never,
       createVerifiedMfaTestSession: mockCreateVerifiedMfaTestSession as never,
       mintUUIDv7: () => TEST_DID,
-      retryOnConnectionLost: mockRetryOnConnectionLost as never,
+      cookieOrigin: () => 'https://example.test',
     }
 
     await loginAsTestUser(page as never, dependencies)
