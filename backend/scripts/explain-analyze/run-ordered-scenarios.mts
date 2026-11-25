@@ -28,6 +28,7 @@ import {
 } from './run-scenarios/notification-inbox-capacity.mts'
 import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
 import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
+import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard-delete-source-capacity.mts'
 import {
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
@@ -112,6 +113,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runMarkNotificationInboxCapacityScenario,
   runRelatedPostUrlCapacityScenario,
   runRssIngestCapacityScenario,
+  runRssHardDeleteSourceCapacityScenario,
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,

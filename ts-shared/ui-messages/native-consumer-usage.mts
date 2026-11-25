@@ -1,3 +1,7 @@
+import {
+  nativeKeyIdentifier,
+  stripCodeCommentsAndStrings,
+} from '@vouchington/localization-compiler'
 import type { NativeConsumer, NativeConsumerManifestEntry } from './native-consumer-manifest.mts'
 import {
   isDotnetCsharpProductSource,
@@ -5,29 +9,12 @@ import {
   isSwiftProductSource,
   type NativeProductSource,
 } from './native-consumer-source-discovery.mts'
-import { stripCodeCommentsAndStrings } from './native-source-code-mask.mts'
 import { xamlMessageKeys } from './native-xaml-message-keys.mts'
 
 export type { NativeProductSource }
 
 const SWIFT_IDENTIFIER_PREFIX = '(?:common|extracted|native|nav|notificationsKind|settings|shared)'
 const INTERNAL_VARIANT_SUFFIX = /\.(?:__plural\.(?:one|other)|__select\.[^.]+\.(?:one|other))$/
-
-export function nativeKeyIdentifier(key: string, consumer: NativeConsumer): string {
-  const words = key
-    .replaceAll(/([a-z0-9])([A-Z])/g, '$1.$2')
-    .split(/[^A-Za-z0-9]+/)
-    .filter(Boolean)
-  const upperFirst = consumer === 'dotnet'
-  return words
-    .map((word, index) => {
-      const normalized = word.toLowerCase()
-      return index === 0 && !upperFirst
-        ? normalized
-        : normalized.charAt(0).toUpperCase() + normalized.slice(1)
-    })
-    .join('')
-}
 
 function canonicalNativeKey(key: string): string {
   return key.replace(INTERNAL_VARIANT_SUFFIX, '')

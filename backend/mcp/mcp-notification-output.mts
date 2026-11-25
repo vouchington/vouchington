@@ -3,8 +3,9 @@ import type {
   NotificationHydration,
   NotificationResult,
 } from '@services/notifications'
-import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
-import { externalText, iso, sanitizedTitle } from './mcp-read-output.mts'
+import type { ToolApiEndpoint } from '@vouchington/mcp-server/types'
+import { iso } from './mcp-read-output.mts'
+import { sanitizeTitle, wrapExternalText } from '@vouchington/mcp-server/untrusted'
 import { routeResponseSchema } from './route-response-schema.mts'
 import { routePropertySchema } from '@vouchington/mcp-server/schema'
 
@@ -71,25 +72,27 @@ export async function toMcpNotificationBody(
   const [communities, actors, posts, rssFeedItems, publicTexts] = await Promise.all([
     mapRecord(source.communities, async community => ({
       ...community,
-      name: await sanitizedTitle(community.name),
+      name: await sanitizeTitle(community.name),
     })),
     mapRecord(source.actors, async actor => ({
       ...actor,
-      username: await sanitizedTitle(actor.username),
+      username: await sanitizeTitle(actor.username),
     })),
     mapRecord(source.posts, async post => ({
       ...post,
       snippet:
-        (await externalText(post.snippet, 'notification', 'notification_post_snippet')) ?? '',
+        (await wrapExternalText(post.snippet, 'notification', 'notification_post_snippet')) ?? '',
     })),
     mapRecord(source.rss_feed_items, async item => ({
       ...item,
-      feed_name: await sanitizedTitle(item.feed_name),
-      snippet: (await externalText(item.snippet, 'notification', 'notification_rss_snippet')) ?? '',
+      feed_name: await sanitizeTitle(item.feed_name),
+      snippet:
+        (await wrapExternalText(item.snippet, 'notification', 'notification_rss_snippet')) ?? '',
     })),
     mapRecord(
       source.public_texts,
-      async text => (await externalText(text, 'notification', 'notification_public_text')) ?? '',
+      async text =>
+        (await wrapExternalText(text, 'notification', 'notification_public_text')) ?? '',
     ),
   ])
   return {

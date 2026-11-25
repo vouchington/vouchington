@@ -58,6 +58,7 @@ export async function createEmailVerificationToken(
   const tokenHash = hashToken('email-address-verification-token', token)
 
   await runWithTransaction(options.query, async query => {
+    // lock-reason: prevents: minting a verification token after credential erasure starts; writer: account deletion.
     await query(
       sql`/* createEmailVerificationToken */ SELECT fn_lock_active_user_for_mutation(${userId})`,
     )
@@ -100,6 +101,7 @@ async function verifyTokenAndAddEmailAddress(
   normalizedToken: string,
   query: TransactionQuery,
 ): Promise<void> {
+  // lock-reason: prevents: verifying a new email after credential erasure starts; writer: account deletion.
   await query(
     sql`/* verifyEmailVerificationToken */ SELECT fn_lock_active_user_for_mutation(${userId})`,
   )

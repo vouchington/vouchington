@@ -40,7 +40,6 @@ export const backendNoDataUnitTestFiles = [
   'backend/mcp/admin/output-schema.no-data.test.mts',
   'backend/mcp/untrusted-output.no-data.test.mts',
   'backend/modules/openrouter-utils/create-response-flex-fallback.no-data.test.mts',
-  'backend/modules/utils/http-egress-guardrail.no-data.test.mts',
   'backend/services/fediverse-search/adapters/__tests__/lemmy-pagination.no-data.test.mts',
   'backend/services/fediverse-search/adapters/lemmy.no-data.test.mts',
   'backend/services/mcp-tools/catalog/agent-tool-catalog.no-data.test.mts',

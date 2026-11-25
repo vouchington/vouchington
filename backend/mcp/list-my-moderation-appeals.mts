@@ -10,7 +10,7 @@ import {
   type SearchPageInfo,
 } from './paged-search.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type Args = { status?: (typeof MODERATION_APPEAL_STATUSES)[number]; limit?: number; after?: string }
@@ -42,7 +42,7 @@ const tool: MergedToolSource<Args, Result> = {
     suspendedAccess: true,
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/appeals' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       appeals: { type: 'array', items: APPEAL_SCHEMA },
       page_info: pageInfoSchema(),
     }),

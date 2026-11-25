@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@vouchington/mcp-server/types'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'

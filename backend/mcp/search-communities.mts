@@ -24,7 +24,7 @@ import {
   type InvalidCursorResult,
   type SearchPageInfo,
 } from './paged-search.mts'
-import { closedObject, foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 // The sorts GET /api/v1/communities accepts.
@@ -83,8 +83,8 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['communities:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/communities' }],
-    outputSchema: foundOrNotFoundSchema({
-      results: { type: 'array', items: closedObject(mcpCommunityEntryProperties()) },
+    outputSchema: outcomeSchema('success', {
+      results: { type: 'array', items: objectSchema(mcpCommunityEntryProperties()) },
       page_info: communityPageInfoSchema(),
     }),
   },

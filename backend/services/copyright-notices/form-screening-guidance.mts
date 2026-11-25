@@ -40,7 +40,7 @@ const ACTIONS = new Set([
 ])
 const MAX_SUMMARY = 2000
 const MAX_NOTE = 1000
-const MAX_RISK_NOTES = 6
+export const COPYRIGHT_FORM_RISK_NOTES_MAX = 6
 
 /**
  * Cross-workspace validation boundary shared by the copyright form-screening agent and the
@@ -74,7 +74,7 @@ function isElements(value: unknown): boolean {
 }
 
 function isRiskNotes(value: unknown): boolean {
-  if (!Array.isArray(value) || value.length > MAX_RISK_NOTES) return false
+  if (!Array.isArray(value) || value.length > COPYRIGHT_FORM_RISK_NOTES_MAX) return false
   const valid = value.every(
     item =>
       hasExactKeys(item, ['kind', 'note']) &&

@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@modules/scopes": "workspace:^",
-    "@services/users": "workspace:^"
+    "@services/users": "workspace:^",
+    "@vouchington/mcp-server": "^0.2.1"
   }
 }

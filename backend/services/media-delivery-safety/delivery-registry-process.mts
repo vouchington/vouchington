@@ -39,6 +39,7 @@ async function claimMediaDeliveryRegistryRecord(
   now: Date,
 ): Promise<MediaDeliveryClaim | null> {
   await using transaction = await beginTransaction()
+  // lock-reason: prevents: overlapping claims for the same registry record; writer: inline publication and projection recovery.
   const { rows: locked } = await transaction(sql`/* claimMediaDeliveryRegistryRecord:lock */
     SELECT id FROM media_delivery_registry_records
     WHERE id = ${mediaDeliveryRegistryRecordId} FOR UPDATE SKIP LOCKED
@@ -58,6 +59,7 @@ async function failMediaDeliveryRegistryRecord(
   failureMessage: string,
 ): Promise<void> {
   await using transaction = await beginTransaction()
+  // lock-reason: prevents: inverting registry and work-item writes during failure recording; writer: projection failure and registry publication.
   await transaction(sql`/* failMediaDeliveryRegistryRecord:lock */
     SELECT id FROM media_delivery_registry_records WHERE id = ${claim.media_delivery_registry_record_id} FOR UPDATE
   `)

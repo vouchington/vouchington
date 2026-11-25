@@ -160,6 +160,7 @@ async function lockOAuthAuthorizationForMutation(
   await transaction(
     '/* withLockedOAuthAuthorization:isolation */ SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
   )
+  // lock-reason: prevents: two exchanges issuing downstream tokens for one flow; writer: OAuth authorization exchange.
   await transaction(
     '/* withLockedOAuthAuthorization:lock */ SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT',
     [flowId],

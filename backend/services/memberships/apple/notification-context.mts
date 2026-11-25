@@ -14,6 +14,7 @@ export async function getAppleProjectionContext(
   evidenceId: string,
   query: QueryExecutor,
 ): Promise<AppleProjectionContext | null> {
+  // lock-reason: prevents: an Apple notification and a verification from processing the same pending evidence concurrently; writer: acceptAppleVerificationObservation
   const { rows } = await query(sql`/* reconcileAppleNotification.context */
     SELECT provider_context.application_id AS "applicationId", provider_context.environment,
       evidence.membership_provider_context_id AS "providerContextId",

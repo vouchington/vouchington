@@ -17,4 +17,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'notifications-mark-all-read-at-cap',
   'related-posts-by-url-at-cap',
   'rss-ingest-content-at-cap',
+  'rss-hard-delete-sources-at-cap',
 ] as const

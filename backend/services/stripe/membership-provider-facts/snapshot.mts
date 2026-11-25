@@ -1,7 +1,7 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import type Stripe from 'stripe'
 import sql from 'sql-template-strings'
-import { getStripeObjectNumber } from '@vouchington/stripe'
+import { getStripeObjectTimestamp, getStripeSubscriptionPeriod } from '@vouchington/stripe'
 import { mapStripeSubscriptionStatus } from '../event-utils.mts'
 
 export class StripeProviderFactVerdictError extends Error {
@@ -55,25 +55,22 @@ export async function getAuthoritativeStripeMembershipSnapshot(
     throw new StripeProviderFactVerdictError(
       `Stripe subscription ${subscription.id} is missing a fixed recurring price`,
     )
-  const periodEnd =
-    getTimestamp(subscription, 'current_period_end') ??
-    (item ? getTimestamp(item, 'current_period_end') : null)
+  const { currentPeriodStart, currentPeriodEnd: periodEnd } =
+    getStripeSubscriptionPeriod(subscription)
   const effectiveAt =
-    getTimestamp(subscription, 'start_date') ??
-    getTimestamp(subscription, 'current_period_start') ??
-    fact.effective_at
+    getStripeObjectTimestamp(subscription.start_date) ?? currentPeriodStart ?? fact.effective_at
   const status = mapStripeSubscriptionStatus(subscription.status)
   const recoverableCancellation = subscription.status === 'unpaid'
   const recoverableExpiration = subscription.status === 'incomplete'
   const cancelledAt =
     status === 'cancelled'
-      ? (getTimestamp(subscription, 'canceled_at') ??
+      ? (getStripeObjectTimestamp(subscription.canceled_at) ??
         fact.cancelled_at ??
         (recoverableCancellation ? observedAt : fact.received_at))
       : null
   const expiredAt =
     status === 'expired'
-      ? (getTimestamp(subscription, 'ended_at') ??
+      ? (getStripeObjectTimestamp(subscription.ended_at) ??
         fact.expired_at ??
         (recoverableExpiration ? observedAt : fact.received_at))
       : null
@@ -81,7 +78,7 @@ export async function getAuthoritativeStripeMembershipSnapshot(
   const pausedAt = status === 'paused' ? (fact.paused_at ?? observedAt) : null
   const terminal =
     subscription.status === 'canceled' || subscription.status === 'incomplete_expired'
-  const cancelAt = getTimestamp(subscription, 'cancel_at')
+  const cancelAt = getStripeObjectTimestamp(subscription.cancel_at)
   const autoRenews =
     !terminal &&
     !subscription.cancel_at_period_end &&
@@ -184,9 +181,4 @@ function getFixedPrice(
   )
     return null
   return price as Stripe.Price & { unit_amount: number }
-}
-
-function getTimestamp(object: object, name: string): Date | null {
-  const value = getStripeObjectNumber((object as Record<string, unknown>)[name])
-  return value ? new Date(value * 1000) : null
 }

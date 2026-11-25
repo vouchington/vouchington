@@ -20,6 +20,7 @@ export async function prepublishImagePlacementDenials(
     imageIds: input.imageId ? [input.imageId] : [],
     placementOnly: options.imageOnly,
   })
+  // lock-reason: prevents: publishing a denial for a stale placement revision; writer: placement mutation and edge publication.
   const { rows } = await query<{ placement_id: string; revision: number; image_id: string }>(sql`
     /* prepublishImagePlacementDenials */
     SELECT placement.id AS placement_id, placement.revision, binding.image_id

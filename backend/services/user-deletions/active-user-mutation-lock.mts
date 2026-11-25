@@ -8,6 +8,7 @@ export async function lockActiveUserSubjectsForMutation(
   const distinctUserIds = [...new Set(userIds)].toSorted((left, right) => left.localeCompare(right))
   if (distinctUserIds.length === 0) return
 
+  // lock-reason: prevents: new user-owned writes after deletion scans the subject; writer: account deletion.
   await query(sql`/* lockActiveUserSubjectsForMutation */
     SELECT fn_lock_active_user_for_mutation(ordered.user_id)
     FROM (
@@ -18,6 +19,7 @@ export async function lockActiveUserSubjectsForMutation(
 }
 
 /**
+ * lock-reason: prevents: advancing retention or owned-data work across concurrent deletion; writer: account deletion.
  * Takes `FOR SHARE` on the users rows in one id-ordered statement and returns the ones still
  * active. Deletion locks the same row `FOR NO KEY UPDATE`, so it waits for this transaction and a
  * waiter that resumes after deletion sees the committed `deleted_at`. Unlike

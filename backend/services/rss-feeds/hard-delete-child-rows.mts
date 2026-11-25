@@ -17,6 +17,7 @@ export async function lockHardDeleteRssFeedChildRows(
 ): Promise<HardDeleteChildRow[]> {
   switch (phase) {
     case 'setting_changes':
+      // lock-reason: prevents: a stale deletion count if retention removes selected decisions; writer: deleteOldRssSettingHistoryPage
       return (
         await query<HardDeleteChildRow>(
           `/* hardDeleteRssFeedChildPage:settingChanges */
@@ -27,6 +28,7 @@ export async function lockHardDeleteRssFeedChildRows(
         )
       ).rows
     case 'crawls':
+      // lock-reason: prevents: overlapping deletion pages counting the same crawl rows; writer: hardDeleteRssFeedChildPage
       return (
         await query<HardDeleteChildRow>(
           `/* hardDeleteRssFeedChildPage:crawls */
@@ -37,6 +39,7 @@ export async function lockHardDeleteRssFeedChildRows(
         )
       ).rows
     case 'community_list_feeds':
+      // lock-reason: prevents: publishing community keys from list links already removed by an overlapping page; writer: hardDeleteRssFeedChildPage
       return (
         await query<HardDeleteChildRow>(
           `/* hardDeleteRssFeedChildPage:communityLists */
@@ -47,6 +50,7 @@ export async function lockHardDeleteRssFeedChildRows(
         )
       ).rows
     case 'curated_asides':
+      // lock-reason: prevents: publishing keys from a curated item already removed by an overlapping page; writer: hardDeleteRssFeedChildPage
       return (
         await query<HardDeleteChildRow>(
           `/* hardDeleteRssFeedChildPage:curatedAsides */
@@ -57,6 +61,7 @@ export async function lockHardDeleteRssFeedChildRows(
         )
       ).rows
     case 'user_import_requests':
+      // lock-reason: prevents: publishing author keys for requests already removed by retention; writer: mutatePage (user import request retention)
       return (
         await query<HardDeleteChildRow>(
           `/* hardDeleteRssFeedChildPage:userImportRequests */
@@ -67,6 +72,7 @@ export async function lockHardDeleteRssFeedChildRows(
         )
       ).rows
     case 'feed_categories':
+      // lock-reason: prevents: publishing a superseded topic mapping during category removal; writer: backfillLinkedAliasFeedPage
       return (
         await query<HardDeleteChildRow>(
           `/* hardDeleteRssFeedChildPage:feedCategories */
@@ -77,6 +83,7 @@ export async function lockHardDeleteRssFeedChildRows(
         )
       ).rows
     case 'canonical_redirects':
+      // lock-reason: prevents: publishing a redirect clear after the canonical target changes; writer: setCanonicalRssFeed
       return (
         await query<HardDeleteChildRow>(
           `/* hardDeleteRssFeedChildPage:canonicalRedirects */
@@ -87,6 +94,7 @@ export async function lockHardDeleteRssFeedChildRows(
         )
       ).rows
     case 'user_import_rows':
+      // lock-reason: prevents: counting and clearing the same import rows in overlapping pages; writer: hardDeleteRssFeedChildPage
       return (
         await query<HardDeleteChildRow>(
           `/* hardDeleteRssFeedChildPage:userImportRows */

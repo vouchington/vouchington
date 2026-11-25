@@ -71,6 +71,7 @@ async function cleanupOAuthFriendEdgePage(
   const accountFilter = accountId ? 'AND id = $2::uuid' : ''
   const accountParameters = accountId ? [now, accountId] : [now]
   await using query = await beginTransaction()
+  // lock-reason: prevents: retaining or erasing edges from the wrong linkage generation; writer: OAuth provider unlink and relink.
   if (phase === 'erase') {
     const { rows } = await query<{ id: string; cutoff: string }>(
       `/* lockUnlinkedFriendEdgeAccount */

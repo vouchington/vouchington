@@ -11,7 +11,7 @@ import {
   getMyHouseholdInvitationsClient,
   revokeHouseholdInvitation,
 } from '@/lib/api/client/household-invitations'
-import { pageHasContinuation } from '@/lib/api/page-has-continuation'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { householdLimitDisplayMessages } from '@/lib/api/household-limit-messages'
 import onError, { onSuccess } from '@/lib/on-error'
 import { useTranslations } from '@/lib/i18n/use-translations'

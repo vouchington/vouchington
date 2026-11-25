@@ -7,7 +7,7 @@ import type { PrivateUser } from '@services/users/types'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
-import { validateToolArguments } from './validate-tool-arguments.mts'
+import { validateToolArguments } from '@vouchington/mcp-server/schema'
 
 // Plan-gating coverage (free/plus/pro listing, denial-before-invocation, and the synthetic
 // pro-only fixture) lives in ./plan-gating.test.mts to keep this file under the max-lines budget.

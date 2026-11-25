@@ -36,6 +36,7 @@ export function cleanupMembershipReversalCasePage(
         LIMIT ${pageSize + 1}`)
       return (await query<{ id: string; due: boolean }>(statement)).rows
     },
+    // lock-reason: prevents: a reversal workflow changing a case or adding evidence during the capped fiscal drain; writer: membership purchase reversal processing.
     lockDue: async (query, dueId) => {
       const { rows } = await query<{ id: string }>(sql`/* lockExpiredMembershipReversalCase */
         SELECT reversal_case.id FROM membership_ineligible_purchase_reversal_cases reversal_case

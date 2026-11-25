@@ -28,6 +28,7 @@ async function insertAndShareCommunityIdentities(
   await query(
     `/* sharePublicationCommunityIdentityOwnership */
     SELECT id FROM post_publication_community_identities
+    -- lock-reason: prevents: purging a retained community identity before publication can reference it; writer: retained identity cleanup and publication capture.
     WHERE id = ANY($1::uuid[]) ORDER BY id FOR KEY SHARE`,
     [ordered],
   )
