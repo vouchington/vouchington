@@ -43,7 +43,8 @@ describe('DynamicConfig test overrides across refresh()', () => {
   })
 
   it('fails with a clear cause when refresh() has no applyFieldsFromMap to hook', () => {
-    const config = { ...new RefreshableConfig(), refresh: () => Promise.resolve() }
+    const { key, fieldTypes, fields } = new RefreshableConfig()
+    const config = { key, fieldTypes, fields, defaultFields: {}, refresh: () => Promise.resolve() }
 
     expect(() => overrideDynamicConfigFieldsForTest(config, { limit: 8 })).toThrow(
       'applyFieldsFromMap',
