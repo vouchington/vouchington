@@ -42,7 +42,6 @@ import {
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,
-  runRssStorySearchCapacityScenarios,
 } from './run-scenarios/post-topic-write-capacity.mts'
 import { runApplicationQuestions } from './run-scenarios/community-application-question-write.mts'
 
