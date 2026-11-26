@@ -1,3 +1,4 @@
+import { runPostModerationBatchCapacityScenario } from './run-scenarios/post-moderation-batch-capacity.mts'
 import { runPostModerationHistoryPageScenarios } from './run-scenarios/post-moderation-history-page.mts'
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
 import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
@@ -10,6 +11,7 @@ import { runQueryShapeNoOpScenarios } from './run-scenarios/query-shape-no-ops.m
 import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
 import { runModerationRerunOutcomeScenarios } from './run-scenarios/moderation-rerun-outcomes.mts'
 import { runHeavyFollowScenarios } from './run-scenarios/heavy-follows.mts'
+import { runRssCardBookmarkCapacityScenario } from './run-scenarios/rss-card-bookmark-capacity.mts'
 import { runHotPathLoaderScenarios } from './run-scenarios/hot-path-loaders.mts'
 import { runPublicRssPostSnapshotScenarios } from './run-scenarios/public-rss-post-snapshots.mts'
 import { runStorySearchScenarios } from './run-scenarios/story-search.mts'
@@ -80,7 +82,9 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runAgentModerationRetentionScenarios,
   runModerationTransparencyReleaseScenario,
   runPostModerationHistoryPageScenarios,
+  runPostModerationBatchCapacityScenario,
   runHotPathLoaderScenarios,
+  runRssCardBookmarkCapacityScenario,
   runPublicRssPostSnapshotScenarios,
   runPostElectionReadCapacityScenario,
   // Hidden-feed story search leaves 240 story_posts rows. Profile collection pages join

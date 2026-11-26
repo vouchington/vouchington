@@ -46,6 +46,7 @@ export const RETENTION_WORK_SCENARIOS = [
   'post-moderation-pass-evidence-retention-page',
   'post-moderation-successor-retention-probe',
   'post-moderation-history-page',
+  'post-moderation-batch-at-cap',
   'post-moderation-history-ranked-comparison',
   'agent-moderation-retention-idle',
   'agent-moderation-retention-repair-page',
