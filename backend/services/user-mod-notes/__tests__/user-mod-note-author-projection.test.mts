@@ -28,6 +28,10 @@ describe('listUserModNotes author projection', () => {
       author,
       parseCreateUserModNoteInput({ targetUserId: noteTarget.id, body: 'Author projection' }),
     )
+    expect(note).toMatchObject({
+      author_username: author.username,
+      author_display_name: 'Alice S.',
+    })
     const visible = await listUserModNotes(staff, noteTarget.id)
     expect(visible.notes.find(row => row.id === note.id)).toMatchObject({
       author_user_id: author.id,
@@ -36,6 +40,17 @@ describe('listUserModNotes author projection', () => {
     })
 
     await setUserVerificationFields(author.id, { verifiedBadgeVisible: false })
+    const hiddenNote = await createUserModNote(
+      author,
+      parseCreateUserModNoteInput({
+        targetUserId: noteTarget.id,
+        body: 'Hidden author projection',
+      }),
+    )
+    expect(hiddenNote).toMatchObject({
+      author_username: author.username,
+      author_display_name: null,
+    })
     const hidden = await listUserModNotes(staff, noteTarget.id)
     expect(hidden.notes.find(row => row.id === note.id)).toMatchObject({
       author_user_id: author.id,
