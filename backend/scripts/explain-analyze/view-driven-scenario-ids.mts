@@ -19,6 +19,7 @@ export const VIEW_DRIVEN_SCENARIO_IDS = [
   'search-community-posts-hot-1m-after',
   'search-list-items',
   'collection-saved-posts-ineligible-page',
+  'collection-saved-posts-at-cap',
   'collection-list-posts-ineligible-page',
   'collection-list-union-ineligible-page',
   'collection-community-list-posts-ineligible-page',

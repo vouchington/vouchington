@@ -13,6 +13,7 @@ import {
   INELIGIBLE_COLLECTION_NOISE_COMMUNITY_COUNT,
   ineligibleCollectionPageIds,
 } from '../seed-data/ineligible-collection-pages.mts'
+import { captureSavedPostsAtCap } from './saved-posts-capacity.mts'
 
 const { userId, listId, communityId, subjectPostId } = ineligibleCollectionPageIds
 const viewerUser = {
@@ -85,6 +86,7 @@ export async function runIneligibleCollectionPageScenarios(): Promise<void> {
     },
   )
 
+  await captureSavedPostsAtCap(viewerUser)
   await captureFilled(
     'collection-list-posts-ineligible-page',
     'user_list_posts',
