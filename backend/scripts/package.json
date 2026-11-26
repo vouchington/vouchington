@@ -149,6 +149,7 @@
   },
   "devDependencies": {
     "@services/notifications-push": "workspace:^",
+    "@services/oauth-accounts": "workspace:^",
     "@services/openai-agents": "workspace:^",
     "@services/post-content-limits": "workspace:^",
     "@services/tag-limits": "workspace:^",

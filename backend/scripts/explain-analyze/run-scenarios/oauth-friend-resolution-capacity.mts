@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomInt, randomUUID } from 'node:crypto'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
-import { resolveFriendReferencePage } from '../../../services/oauth-accounts/resolve-friend-reference-page.mts'
+import { resolveFriendReferencePage } from '@services/oauth-accounts/resolve-friend-reference-page'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuidAtTimestamp } from '../seed-data/common.mts'

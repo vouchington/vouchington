@@ -4049,6 +4049,9 @@ importers:
       '@services/notifications-push':
         specifier: workspace:^
         version: link:../services/notifications-push
+      '@services/oauth-accounts':
+        specifier: workspace:^
+        version: link:../services/oauth-accounts
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../services/openai-agents
