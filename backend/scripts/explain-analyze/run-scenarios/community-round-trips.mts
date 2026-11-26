@@ -1,3 +1,4 @@
+import { runCommunityRaidSuggestionCapacity } from './community-raid-suggestion-capacity.mts'
 import { runCommunityBanSignalCapacity } from './community-ban-signal-capacity.mts'
 import { runCommunityInviteCleanupCapacity } from './community-invite-cleanup-capacity.mts'
 import { runCommunityListFeedAdmission } from './community-list-feed-admission.mts'
@@ -137,5 +138,6 @@ export async function runCommunityRoundTripScenarios(): Promise<void> {
   await runCommunityInviteCleanupCapacity()
   await runInviteRedeem(communityId)
   await runApplicationQuestionListScenario()
+  await runCommunityRaidSuggestionCapacity()
   await runCommunityListFeedAdmission()
 }

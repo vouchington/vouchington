@@ -18,6 +18,7 @@ export const ROUND_TRIP_SHAPE_SCENARIO_IDS = [
   'modmail-first-reply-last-slot',
   'community-invite-redeem',
   'community-invite-member-cleanup-at-cap',
+  'community-raid-mode-suggestion',
   'community-ban-hash-triggering-post',
   'community-ban-hash-candidate-history',
   'community-ban-embedding-triggering-post',
