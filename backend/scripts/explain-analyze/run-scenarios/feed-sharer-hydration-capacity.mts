@@ -6,14 +6,13 @@ import { seedUuid } from '../seed-data/common.mts'
 
 export async function runFeedSharerHydrationCapacityScenario(): Promise<void> {
   const limit = paginationMaxima.max_limit
-  // Alternate across the ordinary users and the developer-role cohort seeded at index 10,000
-  // and above. Developer roles stay private and do not make a sharer an official account.
+  // Alternate across ordinary users and the developer-role cohort seeded at index 10,000
+  // and above. Neither cohort qualifies for an official account type.
   const expected = Array.from({ length: limit }, (_, offset) => {
     const index = offset % 2 === 0 ? 1_700 + 61 * offset : 18_000 - 61 * offset
     return {
       id: seedUuid(index, '01'),
       username: `seeduser${index}`,
-      roles: [],
       account_type: null,
     }
   })
@@ -30,7 +29,6 @@ export async function runFeedSharerHydrationCapacityScenario(): Promise<void> {
             user && {
               id: user.id,
               username: user.username,
-              roles: user.roles,
               account_type: user.account_type,
             },
         ),
