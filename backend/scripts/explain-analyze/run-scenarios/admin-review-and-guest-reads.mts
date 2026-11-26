@@ -7,6 +7,7 @@ import {
   copyrightSweepConfig,
 } from '@services/copyright-notices/work-limits'
 import { searchPostsForAdminReview } from '@services/post-clearance/search-review-queue'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import {
@@ -15,6 +16,8 @@ import {
   ASSOCIATION_FIXTURE_IDS,
   ASSOCIATION_MATCH_IDS,
   ASSOCIATION_QUERY,
+  ASSOCIATION_TERMINAL_CURSOR_ID,
+  ASSOCIATION_TERMINAL_NOTICE_ID,
   GUEST_CAPABILITY_FIXTURE_IDS,
   GUEST_CAPABILITY_SEEDED_ROWS,
   seedAdminReviewAndGuestReadFixtures,
@@ -75,8 +78,6 @@ async function runAdminReviewQueuePages(): Promise<void> {
 async function runAssociationSearchAtHardCap(): Promise<void> {
   const scenario = 'search-copyright-association-at-hard-cap'
   const queryName = 'searchCopyrightNoticeAssociationTargets'
-  const key = 'association_search_candidate_rows'
-  const previous = copyrightSweepConfig.fields.get(key)
   const candidateLimit = copyrightNoticesAdditionalMaxValues.association_search_candidate_rows
   const matchingIds = new Set(ASSOCIATION_MATCH_IDS)
   const scope = `copyright-notice-association:${ASSOCIATION_QUERY}`
@@ -87,7 +88,9 @@ async function runAssociationSearchAtHardCap(): Promise<void> {
     seededRows: { copyright_notices: ASSOCIATION_FIXTURE_COUNT },
   })
   // Exercise the supported hard maximum (the live default is 100).
-  copyrightSweepConfig.fields.set(key, candidateLimit)
+  const restore = overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
+    association_search_candidate_rows: candidateLimit,
+  })
   try {
     await runAndCapture(
       scenario,
@@ -113,11 +116,11 @@ async function runAssociationSearchAtHardCap(): Promise<void> {
         const last = await searchCopyrightNoticeAssociationTargets(
           moderator,
           ASSOCIATION_QUERY,
-          after,
+          encodeScopedUuidCursor(ASSOCIATION_TERMINAL_CURSOR_ID, scope),
         )
         assert.deepEqual(
           last.copyright_notices.map(notice => notice.id),
-          ASSOCIATION_FIXTURE_IDS.slice(2 * candidateLimit),
+          [ASSOCIATION_TERMINAL_NOTICE_ID],
         )
         assert.equal(last.page_info.has_next_page, false)
         assert.equal(last.page_info.end_cursor, null)
@@ -127,8 +130,7 @@ async function runAssociationSearchAtHardCap(): Promise<void> {
       { exactCapturedNames: [queryName, queryName, queryName] },
     )
   } finally {
-    if (previous !== undefined) copyrightSweepConfig.fields.set(key, previous)
-    else copyrightSweepConfig.fields.delete(key)
+    restore()
   }
 }
 
