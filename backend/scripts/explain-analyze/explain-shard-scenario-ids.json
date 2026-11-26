@@ -615,6 +615,8 @@
     "membership-orphaned-queued-grant-candidates",
     "membership-orphaned-queued-grant-nil-cursor",
     "membership-orphaned-queued-grant-activation",
+    "membership-entitlement-effect-claim-at-default",
+    "membership-entitlement-effect-complete-at-default",
     "crawler-refresh-existing-stale",
     "community-muted-topic-exists",
     "ai-usage-totals-page",

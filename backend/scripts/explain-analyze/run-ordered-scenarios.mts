@@ -1,3 +1,4 @@
+import { runMembershipEntitlementEffectCapacityScenarios } from './run-scenarios/membership-entitlement-effect-capacity.mts'
 import { runMessageNotificationWriteCapacity } from './run-scenarios/message-notification-write-capacity.mts'
 import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
 import { runAccountHistoryScenarios } from './run-scenarios/account-history-pages.mts'
@@ -152,6 +153,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
+  runMembershipEntitlementEffectCapacityScenarios,
 ]
 
 /**
