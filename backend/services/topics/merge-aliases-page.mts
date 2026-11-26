@@ -65,15 +65,15 @@ async function repointPendingUnlinks(
   mergerId: string,
   limit: number,
 ): Promise<number> {
+  // Bind the bounded ID page as an array so the update can use the primary key.
   const { rows } = await query<{ id: string }>(
     `/* processTopicMergeAliasPage repointPendingUnlinks */
-      WITH repointed_unlinks AS (
-        SELECT id FROM topic_aliases WHERE unlink_topic_id = $1::uuid ORDER BY id LIMIT $4::integer
-      )
       UPDATE topic_aliases
       SET unlink_topic_id = $2::uuid,
         updated_by_id = (SELECT id FROM users WHERE id = $3::uuid AND deleted_at IS NULL)
-      WHERE id IN (SELECT id FROM repointed_unlinks)
+      WHERE id = ANY(ARRAY(
+        SELECT id FROM topic_aliases WHERE unlink_topic_id = $1::uuid ORDER BY id LIMIT $4::integer
+      ))
       RETURNING id`,
     [sourceId, destinationId, mergerId, limit],
   )
