@@ -25,6 +25,8 @@ import {
 } from './seed-data/dispatch-work-plans.mts'
 import { runAnalyze } from './seed-data/maintenance.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
+import { runCriticalAlertRecipientCapacityScenario } from './run-scenarios/critical-alert-recipient-capacity.mts'
+import { runRssItemFeedHydrationCapacityScenario } from './run-scenarios/rss-item-feed-hydration-capacity.mts'
 import { runConversationMessageCapacityScenario } from './run-scenarios/conversation-message-capacity.mts'
 import {
   runMarkNotificationInboxCapacityScenario,
@@ -126,6 +128,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // Keep the extra communities out of ordinary search and ranking plan captures.
   runAiUsageTotalsScenarios,
   runPostImageWriteScenarios,
+  runCriticalAlertRecipientCapacityScenario,
   runConversationMessageCapacityScenario,
   runNotificationInboxCapacityScenario,
   runMarkNotificationInboxCapacityScenario,
@@ -144,6 +147,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runTopicAliasCapacityScenario,
   runTopicHostnameCapacityScenario,
   runTopHashtagCapacityScenario,
+  runRssItemFeedHydrationCapacityScenario,
   runTopicChildCapacityScenario,
   runUrlEmbedCapacityScenario,
   runReviewRatingWriteCapacity,

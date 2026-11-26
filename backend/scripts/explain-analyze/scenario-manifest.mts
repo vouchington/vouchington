@@ -14,6 +14,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   ...USERS_AND_VOTES_SCENARIOS,
   'conversation-messages-at-cap',
   'notifications-inbox-at-cap',
+  'critical-moderation-alert-recipients-at-cap',
+  'rss-item-feed-hydration-at-cap',
   'notifications-mark-all-read-at-cap',
   'topic-claims-for-topic-at-live-cap',
   'topic-claims-for-user-at-live-cap',
