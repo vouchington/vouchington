@@ -53,6 +53,7 @@ import { runTopHashtagCapacityScenario } from './run-scenarios/top-hashtag-capac
 import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capacity.mts'
 import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
 import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
+import { runCopyrightEmailFormDispatchCapacityScenarios } from './run-scenarios/copyright-email-form-dispatch.mts'
 
 export type OrderedRunner = () => Promise<unknown>
 
@@ -152,6 +153,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
+  runCopyrightEmailFormDispatchCapacityScenarios,
 ]
 
 /**

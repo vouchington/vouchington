@@ -664,6 +664,12 @@
     "post-data-point-topics-insert-at-cap",
     "post-data-point-topics-replace-at-cap",
     "community-application-questions-write-at-cap",
-    "copyright-ai-run-retention-at-cap"
+    "copyright-ai-run-retention-at-cap",
+    "copyright-agent-dispatch-email-first",
+    "copyright-agent-dispatch-email-continuation",
+    "copyright-agent-dispatch-form-screening-first",
+    "copyright-agent-dispatch-form-screening-continuation",
+    "copyright-agent-dispatch-form-effect-first",
+    "copyright-agent-dispatch-form-effect-continuation"
   ]
 }
