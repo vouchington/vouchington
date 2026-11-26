@@ -5,10 +5,7 @@ import type { QueryExecutor } from '@data-stores/psql/types'
 import { paginationMaxima } from '@services/pagination/config'
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 import { postsWorkConfig, postsWorkMaxValues } from '@services/posts/work-limits'
-import {
-  overrideDynamicConfigFieldsForTest,
-  pinDynamicConfigFields,
-} from '@voucha/test-helpers/dynamic-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { heavyFollowUser, runAndCapture, seedHostnameIds, seedUser } from '../run-support.mts'
 import { contentHash } from '../seed-data/common.mts'
@@ -114,7 +111,6 @@ export async function runRelatedPostUrlCapacityScenario(): Promise<void> {
     await runAndCapture(
       scenario,
       async () => {
-        pinDynamicConfigFields(postsWorkConfig, { max_posts_per_url: POSTS_PER_URL })
         const actual = await getPostIdsByUrlIds(heavyFollowUser, urlIds)
         assert.equal(Object.keys(actual).length, URL_COUNT)
         assert.equal(actual[hotUrlId]?.length, POSTS_PER_URL)

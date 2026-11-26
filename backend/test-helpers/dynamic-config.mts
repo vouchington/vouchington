@@ -3,6 +3,7 @@ import '@data-stores/valkey/dynamic-config'
 import { closeDynamicConfigValkeySubscriptionClient } from 'valkyries'
 // oxlint-disable-next-line no-restricted-imports -- Isolated test keys intentionally bypass the production registry union.
 import { DynamicConfig as RawDynamicConfig, dynamicConfigs } from 'valkyries/dynamic-config'
+import { holdDynamicConfigFieldsAcrossRefresh } from './dynamic-config-overlay.mts'
 import { applyOperationalTestBaseline } from './dynamic-config-operational-baseline.mts'
 
 const TEST_DYNAMIC_CONFIG_PREFIX = 'dynamic-config:test-'
@@ -86,10 +87,12 @@ export function overrideDynamicConfigFieldsForTest(
   let restored = false
 
   pinDynamicConfigFields(config, overrides)
+  const release = holdDynamicConfigFieldsAcrossRefresh(config, Object.keys(overrides))
 
   return function restoreDynamicConfigFields(): void {
     if (restored) return
     restored = true
+    release()
     for (const { name, hadValue, value } of snapshot) {
       if (hadValue && value !== undefined) config.fields.set(name, value)
       else config.fields.delete(name)

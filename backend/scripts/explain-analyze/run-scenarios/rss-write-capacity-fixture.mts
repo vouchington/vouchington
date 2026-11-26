@@ -4,12 +4,8 @@ import {
   RSS_FEED_FETCH_MAX_ITEMS,
   RSS_FEED_ITEM_MAX_CATEGORIES,
 } from '@services/rss-feed-items/processing-limits'
-import {
-  rssFeedItemsWorkConfig,
-  rssFeedItemsWorkMaxValues,
-} from '@services/rss-feed-items/work-limits'
+import { rssFeedItemsWorkMaxValues } from '@services/rss-feed-items/work-limits'
 import { rssFeedsWorkMaxValues } from '@services/rss-feeds/work-limits'
-import { pinDynamicConfigFields } from '@voucha/test-helpers/dynamic-config'
 import { contentHash, seedUuid } from '../seed-data/common.mts'
 
 // The crawler is the only writer caller. Its 500-item and 20-category parser caps bind
@@ -26,15 +22,6 @@ export const rssWriteFeedCategoryCapacity = Math.min(
   rssFeedsWorkMaxValues.podcast_max_categories,
   rssFeedsWorkMaxValues.category_sql_batch_size,
 )
-
-// A Valkey refresh replaces the shared field map between awaits and resets the pinned batch size
-// to its 1,000 default, which splits one measured write into several statements. Pin it again in
-// the same turn as the measured call, as topic-data-point-insights does.
-export function pinRssCategorySqlBatchSize(): void {
-  pinDynamicConfigFields(rssFeedItemsWorkConfig, {
-    category_sql_batch_size: rssWriteItemCategoryCapacity,
-  })
-}
 
 export async function seedRssWriteCapacity() {
   const prefix = `explainrss${randomUUID().replaceAll('-', '')}`
