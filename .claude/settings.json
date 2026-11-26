@@ -9,7 +9,6 @@
       "Bash(pnpm exec oxfmt *)",
       "Bash(pnpm exec no-mistakes *)",
       "Bash(./ci/lint-links.sh *)",
-      "Bash(pnpm exec selene *)",
       "Bash(pnpm exec knip *)",
       "Bash(pnpm exec syncpack *)",
       "Bash(pr-shepherd *)",

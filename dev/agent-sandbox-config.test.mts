@@ -250,6 +250,14 @@ describe('Codex project rules', () => {
   })
 })
 
+describe('Claude pnpm exec allows name workspace-installed tools', () => {
+  it('does not allow `pnpm exec selene`, which is a mise-pinned binary', () => {
+    // .mise.toml pins selene and `pnpm run selene` invokes it directly. It is not a package
+    // dependency, so `pnpm exec selene` cannot resolve and the entry would name nothing.
+    expect(claudeSettings.permissions.allow).not.toContain('Bash(pnpm exec selene *)')
+  })
+})
+
 describe('Claude review-skip for pinned search and line-count tools', () => {
   it('keeps rg and scc and does not review-skip unused rga or tokei', () => {
     // .mise.toml pins ripgrep and scc. rga and tokei have no repository command,
