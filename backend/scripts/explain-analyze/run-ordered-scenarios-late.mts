@@ -20,6 +20,7 @@ import { runMembershipProviderRecoveryScenarios } from './run-scenarios/membersh
 import { runRetentionStagePageScenarios } from './run-scenarios/retention-stage-pages.mts'
 import { runStripeEventRecoveryScenario } from './run-scenarios/stripe-event-recovery.mts'
 import { runPaymentLedgerRetentionScenarios } from './run-scenarios/payment-ledger-retention.mts'
+import { runPostCommunityHydrationCapacityScenario } from './run-scenarios/post-community-hydration-capacity.mts'
 import { runLatePostPageScenarios } from './run-scenarios/late-post-pages.mts'
 import { runVoteScoreRankingScenarios } from './run-scenarios/vote-score-ranking.mts'
 import { runMembershipRenewalSelectionScenario } from './run-scenarios/membership-renewal-selection.mts'
@@ -79,6 +80,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // The actor probes read the agent moderation and report context corpora seeded earlier in this
   // segment, so they stay in it, ahead of the hot publication fixtures.
   runFkActorIndexScenarios,
+  runPostCommunityHydrationCapacityScenario,
   // Hot publication fixtures live only after all ordinary corpus plans and clean up on failure.
   runNotificationVisibilityScenarios,
   runPublicationScopePageScenarios,

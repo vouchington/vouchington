@@ -275,7 +275,8 @@
     "membership-google-acknowledgement-recovery",
     "fk-actor-images-deleted-by-no-match",
     "fk-actor-agent-moderations-deleted-by-no-match",
-    "fk-actor-moderation-cases-resolved-by-no-match"
+    "fk-actor-moderation-cases-resolved-by-no-match",
+    "post-communities-batch-at-cap"
   ],
   "main-3": [
     "notification-post-content-page",

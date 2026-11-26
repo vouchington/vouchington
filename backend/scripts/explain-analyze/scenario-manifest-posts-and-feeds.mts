@@ -5,6 +5,7 @@ import { STORY_SCENARIO_IDS } from './story-scenario-ids.mts'
 export const POSTS_AND_FEEDS_SCENARIOS = [
   'post-by-slug',
   'post-communities-batch',
+  'post-communities-batch-at-cap',
   'post-elections-batch',
   'post-facets',
   'post-facets-text',
