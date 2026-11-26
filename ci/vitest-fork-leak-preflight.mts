@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
@@ -115,7 +116,7 @@ it('sees runnable work settled before the next test', async () => {
       [settlingPath, checkpointPath].map(path => basename(path)),
     )
     try {
-      childResult = execFileAsync(process.execPath, [vitestCliPath, 'run'], {
+      childResult = execFileAsync(process.execPath, [vitestCliPath, 'run', '--reporter=verbose'], {
         cwd: dir,
         env: {
           ...loadCurrentWorktreeEnv(repoRoot, process.env),
@@ -133,9 +134,17 @@ it('sees runnable work settled before the next test', async () => {
             (err as { signal?: NodeJS.Signals | null }).signal
           ) {
             const output = `${failed.stdout ?? ''}\n${failed.stderr ?? ''}`
-            throw new Error(`Nested Vitest did not exit normally:\n${output.slice(-4_000)}`, {
-              cause: err,
-            })
+            // Which fixture markers exist tells a child that never reached the settle hook (no
+            // marker) from one parked on the release (marker and release both present).
+            const markers = [settlingPath, checkpointPath, releasePath]
+              .map(path => `${basename(path)}=${existsSync(path)}`)
+              .join(' ')
+            throw new Error(
+              `Nested Vitest did not exit normally (killed=${String((err as { killed?: boolean }).killed)} signal=${String((err as { signal?: string | null }).signal)} markers: ${markers}):\n${output.slice(-4_000)}`,
+              {
+                cause: err,
+              },
+            )
           }
           return { exitCode: failed.code, output: `${failed.stdout ?? ''}\n${failed.stderr ?? ''}` }
         })
