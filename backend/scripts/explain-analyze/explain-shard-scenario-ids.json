@@ -674,6 +674,7 @@
     "crawler-refresh-existing-stale",
     "community-muted-topic-exists",
     "ai-usage-totals-page",
+    "community-moderator-workload-leaderboard-at-cap",
     "post-create-images-at-cap",
     "post-created-recovery-related-urls-at-cap",
     "post-replace-images-at-cap",
