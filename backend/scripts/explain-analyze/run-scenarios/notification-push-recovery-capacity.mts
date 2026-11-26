@@ -43,6 +43,7 @@ export async function runNotificationPushRecoveryCapacityScenario(): Promise<voi
       DELETE FROM notification_push_intents WHERE user_id = ${user.id}`)
     await write(sql`/* seedExplainPushRecoveryIntents */
       INSERT INTO notification_push_intents
+        -- no-mistakes-disable-next-line postgres-no-generated-column-writes: fixture-only timestamps isolate the unscoped recovery watermark and create a cursor tie
         (user_id, notification_id, updated_at, lease_token, leased_at, lease_expires_at, delivered_at)
       SELECT ${user.id}, fixture.id,
         CASE WHEN fixture.ordinal <= ${activeLeases} THEN TIMESTAMPTZ '2001-01-01'
