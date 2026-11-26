@@ -2,6 +2,7 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
+import { verifiedDisplayNameSql } from '@services/users/verified-display-name-sql'
 import { DELETED_USER_ID } from '@services/users/constants'
 import { isModerationStaff, isUserCommunityModerator } from './authorization.mts'
 import type { CreateUserModNoteInput } from './parse.mts'
@@ -25,7 +26,8 @@ export async function createUserModNote(
   }
 
   try {
-    const { rows } = await write<UserModNote>(sql`/* createUserModNote */
+    const { rows } = await write<UserModNote>(
+      sql`/* createUserModNote */
       WITH target_check AS (
         SELECT id FROM users
         WHERE id = ${input.targetUserId}
@@ -39,13 +41,14 @@ export async function createUserModNote(
         RETURNING id, created_at, target_user_id, author_user_id, community_id, body, deleted_at
       )
       SELECT n.id, n.created_at, n.target_user_id, n.author_user_id,
-        author_profile.username AS author_username,
-        author_profile.verified_display_name AS author_display_name,
+        author.username AS author_username,
+        `.append(verifiedDisplayNameSql('author')).append(sql` AS author_display_name,
         n.community_id, community.name AS community_name, n.body, n.deleted_at
       FROM inserted n
-        LEFT JOIN view_users_public author_profile ON author_profile.id = n.author_user_id
+      LEFT JOIN users author ON author.id = n.author_user_id AND author.deleted_at IS NULL
       LEFT JOIN communities community ON community.id = n.community_id
-    `)
+    `),
+    )
 
     const note = rows[0]
     assert(note, 404, 'Target user not found')
