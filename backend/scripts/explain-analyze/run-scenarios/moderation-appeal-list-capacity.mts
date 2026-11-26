@@ -41,18 +41,27 @@ async function captureAppealPages(
 ) {
   const name = 'listModerationAppeals'
   const args = { appellantUserId, limit: PAGE_SIZE }
-  // Tighten the current scan bounds in the corresponding staff or appellant plan fix.
-  // Staff: https://github.com/vouchington/vouchington/issues/6543
-  // Appellant: https://github.com/vouchington/vouchington/issues/6544
-  const rowBounds = appellantUserId ? [1301, 1101] : [367, 314]
+  // The appellant plan has a separate follow-up: https://github.com/vouchington/vouchington/issues/6544
+  const rowBounds = appellantUserId ? [1301, 1101] : [PAGE_SIZE + 1, PAGE_SIZE + 1]
   registerScenarioContract(scenario, {
     seededRows: { moderation_appeals: APPEAL_COUNT },
-    expectations: rowBounds.map((max, captureIndex) => ({
-      kind: 'maxProcessedRows',
-      relation: 'moderation_appeals',
-      max,
-      captureIndex,
-    })),
+    expectations: [
+      ...rowBounds.map((max, captureIndex) => ({
+        kind: 'maxProcessedRows' as const,
+        relation: 'moderation_appeals',
+        max,
+        captureIndex,
+      })),
+      ...(appellantUserId
+        ? []
+        : [
+            {
+              kind: 'usesIndexes' as const,
+              indexes: ['idx_moderation_appeals__status_created'],
+              noSort: true,
+            },
+          ]),
+    ],
   })
   let continuation: string | null = null
   await runAndCapture(
