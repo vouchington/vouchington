@@ -19,7 +19,11 @@ export async function seedRssStorySearchCapacity() {
   await using query = await beginTransaction()
   const {
     rows: [feed],
-  } = await query<{ id: string; url_id: string }>(sql`/* seedExplainStoryCapacityFeed */
+  } = await query<{
+    id: string
+    url_id: string
+    topic_id: string
+  }>(sql`/* seedExplainStoryCapacityFeed */
     WITH owner AS (
       INSERT INTO topics (name, slug, created_via, bedrock_nova_multimodal_v1_content_sha256)
       VALUES (${cohort}, ${cohort}, 'system', decode(repeat('00', 32), 'hex')) RETURNING id
@@ -30,7 +34,7 @@ export async function seedRssStorySearchCapacity() {
     )
     INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, created_via)
     SELECT feed_url.id, owner.id, ${cohort}, 'system' FROM feed_url CROSS JOIN owner
-    RETURNING id, rss_feed_url_id AS url_id`)
+    RETURNING id, rss_feed_url_id AS url_id, topic_id`)
   assert.ok(feed)
   await query(sql`/* seedExplainStoryCapacityFeedSettings */
     INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
@@ -81,6 +85,8 @@ export async function seedRssStorySearchCapacity() {
   )
   return {
     feedId: feed.id,
+    urlId: feed.url_id,
+    topicId: feed.topic_id,
     feedCount: feedCorpus.count,
     storyIds,
     itemIds: items.map(item => item.id),
@@ -99,9 +105,19 @@ export async function seedRssStorySearchCapacity() {
 export async function removeRssStorySearchItems(
   fixture: Awaited<ReturnType<typeof seedRssStorySearchCapacity>>,
 ): Promise<void> {
+  await using query = await beginTransaction()
   // Deleting owned GUIDs cascades to their RSS items and source associations.
-  await write(sql`/* cleanupExplainStoryCapacityItems */
+  await query(sql`/* cleanupExplainStoryCapacityItems */
     DELETE FROM rss_feed_item_guids WHERE id = ANY(${fixture.itemIds}::uuid[])`)
-  await write(sql`/* cleanupExplainStoryCapacityStories */
+  await query(sql`/* cleanupExplainStoryCapacityStories */
     DELETE FROM stories WHERE id = ANY(${fixture.storyIds}::uuid[])`)
+  await query(sql`/* cleanupExplainStoryCapacityFeed */
+    DELETE FROM rss_feeds WHERE id = ${fixture.feedId}`)
+  await query(sql`/* cleanupExplainStoryCapacityUrl */
+    DELETE FROM urls WHERE id = ${fixture.urlId}`)
+  await query(sql`/* cleanupExplainStoryCapacityTopic */
+    DELETE FROM topics WHERE id = ${fixture.topicId}`)
+  await query(sql`/* cleanupExplainStoryCapacityTopicIdentity */
+    DELETE FROM retained_topic_identities WHERE id = ${fixture.topicId}`)
+  await query.commit()
 }
