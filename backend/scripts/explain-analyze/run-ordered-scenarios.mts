@@ -1,3 +1,4 @@
+import { runMembershipRefundDispatchScenario } from './run-scenarios/membership-refund-dispatch.mts'
 import { runMessageNotificationWriteCapacity } from './run-scenarios/message-notification-write-capacity.mts'
 import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
 import { runAccountHistoryScenarios } from './run-scenarios/account-history-pages.mts'
@@ -118,6 +119,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // Expiry fixtures come after the shared membership writer's corpus and all ordinary plans.
   runMembershipExpiryPageScenarios,
   runMembershipOrphanedQueuedGrantScenarios,
+  runMembershipRefundDispatchScenario,
   runConversationListCapacityScenario,
   runCommunitySearchCapacityScenario,
   runCommunityMembershipReadCapacityScenarios,
