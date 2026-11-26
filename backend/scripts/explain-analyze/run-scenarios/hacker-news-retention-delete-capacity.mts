@@ -6,10 +6,7 @@ import {
   getHackerNewsWorkLimit,
   hackerNewsWorkConfig,
 } from '@services/urls/hacker-news-work-limits'
-import {
-  overrideDynamicConfigFieldsForTest,
-  pinDynamicConfigFields,
-} from '@voucha/test-helpers/dynamic-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import sql from 'sql-template-strings'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -58,10 +55,6 @@ export async function runHackerNewsRetentionDeleteCapacityScenario(): Promise<vo
       scenario,
       async () => {
         await using query = await beginTransaction()
-        // A Valkey refresh replaces the shared field map between awaits and resets the pinned
-        // retention_max_batches to its default of 20, which lets one run delete all 501 expired
-        // rows. Pin it again in the same turn as the measured call.
-        pinDynamicConfigFields(hackerNewsWorkConfig, { retention_max_batches: 1 })
         const result = await cleanupHackerNewsReferences({ query, now })
         assert.deepEqual(result, { deleted: batchSize, hasMore: true })
         const { rows } = await query<{

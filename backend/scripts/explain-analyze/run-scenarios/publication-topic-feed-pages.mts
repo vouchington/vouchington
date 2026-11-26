@@ -4,10 +4,7 @@ import {
   postPublicationWorkConfig,
   postPublicationWorkMaxValues,
 } from '@services/post-publication/work-limits'
-import {
-  overrideDynamicConfigFieldsForTest,
-  pinDynamicConfigFields,
-} from '@voucha/test-helpers/dynamic-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import {
@@ -51,7 +48,6 @@ async function capturePage(name: string, after: string | null, lastIndex: number
     ],
   })
   await runAndCapture(name, async () => {
-    pinDynamicConfigFields(postPublicationWorkConfig, { capture_batch_size: limit })
     const page = await listTopicPublicationFeedsPage(publicationTopicFeedIds, after)
     assert.equal(page.ids.length, limit)
     assert.equal(page.hasMore, true)
