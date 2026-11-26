@@ -18,6 +18,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-claims-for-topic-at-live-cap',
   'topic-claims-for-user-at-live-cap',
   'rss-feed-crawls-at-page-cap',
+  'hacker-news-post-card-sidecars-at-cap',
+  'hacker-news-rss-card-sidecars-at-cap',
   'search-posts-for-admin-review-at-cap',
   'search-copyright-association-at-hard-cap',
   'list-copyright-guest-capabilities-at-cap',
@@ -56,4 +58,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-ai-run-retention-at-cap',
   'copyright-action-attempt-retention-at-cap',
   'copyright-delivery-attempt-retention-at-cap',
+  'copyright-unlinked-email-intake-attachment-retention-at-cap',
 ] as const

@@ -5,6 +5,7 @@ import { STORY_SCENARIO_IDS } from './story-scenario-ids.mts'
 export const POSTS_AND_FEEDS_SCENARIOS = [
   'post-by-slug',
   'post-communities-batch',
+  'post-communities-batch-at-cap',
   'post-elections-batch',
   'post-facets',
   'post-facets-text',
@@ -39,6 +40,9 @@ export const POSTS_AND_FEEDS_SCENARIOS = [
   'recommended-topics-long-vote-history',
   'report-judgement-contexts-batch',
   'review-succession-candidates',
+  'hacker-news-post-flag-posts-at-cap',
+  'hacker-news-post-flag-related-at-cap',
+  'hacker-news-post-flag-repair-at-cap',
   'remote-follower-inbox-late-cursor',
   'rss-feed-item-feed',
   'rss-feed-item-feed-after',

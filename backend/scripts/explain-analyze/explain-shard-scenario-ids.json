@@ -34,6 +34,7 @@
     "household-individual-bind",
     "household-owner-capacity",
     "household-member-capacity",
+    "post-and-creator-bookmarks-at-cap",
     "story-search-new",
     "story-search-best",
     "story-search-hot",
@@ -275,7 +276,8 @@
     "membership-google-acknowledgement-recovery",
     "fk-actor-images-deleted-by-no-match",
     "fk-actor-agent-moderations-deleted-by-no-match",
-    "fk-actor-moderation-cases-resolved-by-no-match"
+    "fk-actor-moderation-cases-resolved-by-no-match",
+    "post-communities-batch-at-cap"
   ],
   "main-3": [
     "notification-post-content-page",
@@ -390,7 +392,9 @@
     "hacker-news-retention-deletes-at-cap",
     "retention-expired-oauth-authorizations",
     "retention-retained-user-identity-roots",
-    "retention-retained-user-relation-identities"
+    "retention-retained-user-relation-identities",
+    "hacker-news-post-card-sidecars-at-cap",
+    "hacker-news-rss-card-sidecars-at-cap"
   ],
   "main-4": [
     "notification-unread-summary-at-cap",
@@ -399,10 +403,13 @@
     "community-search-at-cap",
     "community-membership-cache-user-at-cap",
     "my-community-memberships-at-cap",
+    "community-member-metric-invalidation-at-cap",
     "search-community-members-at-cap",
     "list-user-member-communities-at-cap",
     "community-pending-reports-cap-severity",
     "community-pending-reports-cap-created_at_desc",
+    "moderation-reports-staff-unclustered-at-cap",
+    "moderation-reports-member-unclustered-at-cap",
     "community-agent-moderations-cap",
     "community-pinned-posts-cap",
     "search-community-applications-at-cap",
@@ -632,10 +639,15 @@
     "search-posts-for-admin-review-at-cap",
     "search-copyright-association-at-hard-cap",
     "list-copyright-guest-capabilities-at-cap",
+    "moderation-appeals-staff-at-cap",
+    "moderation-appeals-appellant-at-cap",
     "direct-message-notifications-at-cap",
     "modmail-notifications-at-cap",
     "notification-push-intent-claim-at-cap",
     "related-posts-by-url-at-cap",
+    "hacker-news-post-flag-posts-at-cap",
+    "hacker-news-post-flag-related-at-cap",
+    "hacker-news-post-flag-repair-at-cap",
     "account-modmail-threads-at-cap",
     "account-modmail-messages-at-cap",
     "account-conversation-participants-at-cap",
@@ -666,6 +678,11 @@
     "community-application-questions-write-at-cap",
     "copyright-ai-run-retention-at-cap",
     "copyright-action-attempt-retention-at-cap",
-    "copyright-delivery-attempt-retention-at-cap"
+    "copyright-delivery-attempt-retention-at-cap",
+    "copyright-unlinked-email-intake-attachment-retention-at-cap",
+    "api-key-expiry-reminder-first-page",
+    "api-key-expiry-reminder-continuation",
+    "api-key-expiry-reminder-details",
+    "api-key-expiry-reminder-claim"
   ]
 }

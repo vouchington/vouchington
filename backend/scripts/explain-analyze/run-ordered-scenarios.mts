@@ -4,6 +4,7 @@ import { runAccountHistoryScenarios } from './run-scenarios/account-history-page
 import { runAccountMessagingScenarios } from './run-scenarios/account-messaging-pages.mts'
 import { runConversationListCapacityScenario } from './run-scenarios/conversation-list-capacity.mts'
 import { runAccountListCapacityScenarios } from './run-scenarios/account-lists-at-cap.mts'
+import { runCommunityMemberMetricPages } from './run-scenarios/community-member-metric-pages.mts'
 import { runCommunitySearchCapacityScenario } from './run-scenarios/community-search-capacity.mts'
 import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/community-membership-read-capacity.mts'
 import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
@@ -25,6 +26,7 @@ import {
 } from './seed-data/dispatch-work-plans.mts'
 import { runAnalyze } from './seed-data/maintenance.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
+import { runModerationReportListCapacity } from './run-scenarios/moderation-report-list-capacity.mts'
 import { runConversationMessageCapacityScenario } from './run-scenarios/conversation-message-capacity.mts'
 import {
   runMarkNotificationInboxCapacityScenario,
@@ -33,18 +35,19 @@ import {
 import { runTopicClaimCapacityScenarios } from './run-scenarios/topic-claim-capacity.mts'
 import { runRssFeedCrawlCapacityScenario } from './run-scenarios/rss-feed-crawl-capacity.mts'
 import { runAdminReviewAndGuestReadScenarios } from './run-scenarios/admin-review-and-guest-reads.mts'
+import { runHackerNewsPostFlagPages } from './run-scenarios/hacker-news-post-flag-pages.mts'
 import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
 import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
 import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard-delete-source-capacity.mts'
 import { runRssWriteCapacityScenarios } from './run-scenarios/rss-write-capacity.mts'
 import { runCopyrightExecutionRetentionScenarios } from './run-scenarios/copyright-execution-retention.mts'
+import { runCopyrightUnlinkedEmailRetentionScenario } from './run-scenarios/copyright-unlinked-email-retention.mts'
 import {
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,
 } from './run-scenarios/post-topic-write-capacity.mts'
 import { runApplicationQuestions } from './run-scenarios/community-application-question-write.mts'
-
 import { runUserListCapacityScenario } from './run-scenarios/user-list-capacity.mts'
 import {
   runTopicAliasCapacityScenario,
@@ -53,10 +56,10 @@ import {
 import { runTopHashtagCapacityScenario } from './run-scenarios/top-hashtag-capacity.mts'
 import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capacity.mts'
 import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
+import { runApiKeyExpiryCapacityScenarios } from './run-scenarios/api-key-expiry-capacity.mts'
 import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
-
+import { runModerationAppealListCapacity } from './run-scenarios/moderation-appeal-list-capacity.mts'
 export type OrderedRunner = () => Promise<unknown>
-
 // Order matters: earlier scenarios mutate the one shared corpus. See the comments in the
 // early and late files before moving a runner.
 //
@@ -121,7 +124,9 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runMembershipOrphanedQueuedGrantScenarios,
   runConversationListCapacityScenario,
   runCommunitySearchCapacityScenario,
+  runCommunityMemberMetricPages,
   runCommunityMembershipReadCapacityScenarios,
+  runModerationReportListCapacity,
   // These fixtures change crawler-table statistics; keep them after every existing plan.
   runAggregateExistenceScenarios,
   // Keep the extra communities out of ordinary search and ranking plan captures.
@@ -135,6 +140,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runAdminReviewAndGuestReadScenarios,
   runMessageNotificationWriteCapacity,
   runRelatedPostUrlCapacityScenario,
+  runHackerNewsPostFlagPages,
   runAccountMessagingScenarios,
   runRssIngestCapacityScenario,
   runRssHardDeleteSourceCapacityScenario,
@@ -154,6 +160,9 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
   runCopyrightExecutionRetentionScenarios,
+  runCopyrightUnlinkedEmailRetentionScenario,
+  runModerationAppealListCapacity,
+  runApiKeyExpiryCapacityScenarios,
 ]
 
 /**
