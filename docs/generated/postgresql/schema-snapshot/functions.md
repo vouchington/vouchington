@@ -1330,6 +1330,7 @@ CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_user_deletion_external_wo
 CREATE OR REPLACE FUNCTION public.fn_reject_notification_push_intent_conversation_mismatch()
  RETURNS trigger
  LANGUAGE plpgsql
+ SET plan_cache_mode TO 'force_generic_plan'
 ```
 
 ## `fn_reject_oauth_event_mutation`

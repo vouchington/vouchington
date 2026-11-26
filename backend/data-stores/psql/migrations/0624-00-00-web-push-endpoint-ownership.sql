@@ -150,7 +150,9 @@ DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_endpoint_owner_subscription();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_reject_notification_push_intent_conversation_mismatch() RETURNS TRIGGER AS $$
+-- This key lookup returns at most one row for any recipient. Reuse its plan across the batch.
+CREATE OR REPLACE FUNCTION fn_reject_notification_push_intent_conversation_mismatch() RETURNS TRIGGER
+SET plan_cache_mode = force_generic_plan AS $$
 DECLARE
   notification_conversation_id UUID;
   context_changed BOOLEAN;
