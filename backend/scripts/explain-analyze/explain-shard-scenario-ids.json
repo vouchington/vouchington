@@ -271,6 +271,8 @@
     "membership-verification-recovery-upper",
     "membership-verification-recovery-page",
     "membership-google-active-source-recovery",
+    "copyright-hold-restore-recovery-first",
+    "copyright-hold-restore-recovery-continuation",
     "membership-microsoft-source-recovery",
     "membership-google-acknowledgement-recovery",
     "fk-actor-images-deleted-by-no-match",
