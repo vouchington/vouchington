@@ -143,8 +143,8 @@ async function runUserModNotes({ noteTargetId, noteIds, seededRows }: Fixture) {
   const name = 'listUserModNotes'
   registerScenarioContract(scenario, {
     seededRows,
-    // This is the current main plan's worst observed scan. Tighten in #6395.
-    expectations: [{ kind: 'maxProcessedRows', relation: 'user_moderator_notes', max: 3_391 }],
+    // The custom plan can sort the target's live notes before taking the page.
+    expectations: [{ kind: 'maxProcessedRows', relation: 'user_moderator_notes', max: 224 }],
   })
   await runAndCapture(
     scenario,
