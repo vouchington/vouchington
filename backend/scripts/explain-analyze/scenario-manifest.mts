@@ -137,4 +137,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-agent-dispatch-appeal-continuation',
   'copyright-agent-dispatch-submission-guidance-first',
   'copyright-agent-dispatch-submission-guidance-continuation',
+  'copyright-retained-email-lookup-first',
+  'copyright-retained-email-lookup-continuation',
 ] as const
