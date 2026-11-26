@@ -10,6 +10,8 @@ export const ROUND_TRIP_SHAPE_SCENARIO_IDS = [
   'community-post-review-load',
   'community-lifecycle-notifications',
   'community-create',
+  'community-list-feed-admission-insert-at-cap',
+  'community-list-feed-admission-reject-at-cap',
   'conversation-participant-add-read',
   'conversation-participant-admission',
   'modmail-opening-two-parties',

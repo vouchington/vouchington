@@ -1,3 +1,4 @@
+import { runCommunityListFeedAdmission } from './community-list-feed-admission.mts'
 import { runCommunityAgentPromptPageScenarios } from './community-agent-prompt-pages.mts'
 import { runCommunityMembershipCapScenarios } from './community-membership-caps.mts'
 import { runApplicationQuestionListScenario } from './community-application-question-list.mts'
@@ -132,4 +133,5 @@ export async function runCommunityRoundTripScenarios(): Promise<void> {
   await runModmailFirstReplyScenario()
   await runInviteRedeem(communityId)
   await runApplicationQuestionListScenario()
+  await runCommunityListFeedAdmission()
 }
