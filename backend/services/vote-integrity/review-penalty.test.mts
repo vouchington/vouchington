@@ -18,6 +18,7 @@ import {
 import { getVoteWeightPenaltyReviewsDue, reviewVoteWeightPenalty } from './review-penalty.mts'
 import { getVoteWeightPenaltyByIdFromPrimary } from './get-penalties.mts'
 import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
+import { commitRelationWriteDuringCompetingMutationForTest } from '@voucha/test-helpers/relation-write-interleaving'
 
 describe('vote weight penalty annual review', () => {
   it('uses the configured default and maximum for direct due-review reads', async () => {
@@ -84,6 +85,40 @@ describe('vote weight penalty annual review', () => {
     expect(
       (await getVoteWeightPenaltyReviewsDue({ after })).results.map(row => row.id),
     ).not.toContain(penaltyId)
+  })
+
+  it('audits the due date committed by a competing reschedule', async () => {
+    const reviewer = await createTestUser()
+    const target = await createTestUser()
+    const penaltyId = await insertTestVoteWeightPenaltyRecord({
+      userId: target.id,
+      createdById: reviewer.id,
+    })
+    const firstDue = new Date('2001-01-01T00:00:00.000Z')
+    const rescheduledDue = '2002-01-01T00:00:00.123456Z'
+    await setTestVoteWeightPenaltyReviewDueAt(penaltyId, firstDue)
+
+    const reviewed = await commitRelationWriteDuringCompetingMutationForTest(
+      query => setTestVoteWeightPenaltyReviewDueAt(penaltyId, rescheduledDue, { query }),
+      'reviewVoteWeightPenalty.confirm',
+      () => reviewVoteWeightPenalty(penaltyId, reviewer.id),
+    )
+
+    expect(reviewed).toMatchObject({ id: penaltyId, reviewed_by_id: reviewer.id })
+    expect(reviewed.review_due_at.getTime()).toBeGreaterThan(Date.now())
+    const durable = await getVoteWeightPenaltyByIdFromPrimary(penaltyId)
+    expect(durable).toMatchObject({
+      reviewed_by_id: reviewer.id,
+      review_due_at: reviewed.review_due_at,
+    })
+    const actions = (await getModeratorActionRowsForTest({ targetUserId: target.id })).filter(
+      action => action.action_type === 'vote_integrity_penalty_review',
+    )
+    expect(actions).toHaveLength(1)
+    expect(actions[0]!.metadata).toEqual({
+      before: { review_due_at: new Date(rescheduledDue).toISOString() },
+      after: { review_due_at: reviewed.review_due_at.toISOString() },
+    })
   })
 
   it('retains both annual review decisions and the first reviewer after account purge', async () => {

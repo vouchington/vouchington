@@ -1,4 +1,4 @@
-import { read, write, type TransactionQuery } from '@data-stores/psql'
+import { read, write, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export type TestVoteWeightPenalty = {
@@ -131,10 +131,14 @@ export async function insertTestVoteWeightPenaltyRecord(options: {
 export async function setTestVoteWeightPenaltyReviewDueAt(
   id: string,
   dueAt: Date | string,
+  options: QueryOptions = {},
 ): Promise<void> {
-  await write(sql`/* setTestVoteWeightPenaltyReviewDueAt */
+  await write(
+    sql`/* setTestVoteWeightPenaltyReviewDueAt */
     UPDATE vote_weight_penalties SET review_due_at = ${dueAt} WHERE id = ${id}::uuid
-  `)
+  `,
+    options,
+  )
 }
 
 export async function insertTestVoteIntegrityFlag(params: {
