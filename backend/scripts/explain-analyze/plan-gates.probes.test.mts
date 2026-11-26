@@ -1,7 +1,12 @@
 import type { ExplainResult } from '@vouchington/explain-plan'
-import { describe, expect, it } from 'vitest'
-import { registerScenarioContract } from './plan-expectations.mts'
-import { assertRequiredPlanShape } from './plan-gates.mts'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+async function loadGates() {
+  vi.resetModules()
+  const gates = await import('./plan-gates.mts')
+  const expectations = await import('./plan-expectations.mts')
+  return { ...gates, ...expectations }
+}
 
 function result(scenarioId: string, node: Record<string, unknown>): ExplainResult {
   return {
@@ -16,7 +21,12 @@ function result(scenarioId: string, node: Record<string, unknown>): ExplainResul
 }
 
 describe('EXPLAIN input row budgets', () => {
-  it('caps the rows a sort reads even when its parent consumes one result', () => {
+  afterEach(() => {
+    vi.resetModules()
+  })
+
+  it('caps the rows a sort reads even when its parent consumes one result', async () => {
+    const { assertRequiredPlanShape, registerScenarioContract } = await loadGates()
     const scenario = 'rss-ingest-identities-at-cap'
     registerScenarioContract(scenario, {
       expectations: [{ kind: 'maxInputRows', nodeType: 'Sort', max: 500 }],
@@ -41,7 +51,8 @@ describe('EXPLAIN input row budgets', () => {
     )
   })
 
-  it('sums function scan input rows across loops and nodes', () => {
+  it('sums function scan input rows across loops and nodes', async () => {
+    const { assertRequiredPlanShape, registerScenarioContract } = await loadGates()
     const scenario = 'rss-ingest-source-associations-at-cap'
     registerScenarioContract(scenario, {
       expectations: [{ kind: 'maxInputRows', nodeType: 'Function Scan', max: 500 }],
