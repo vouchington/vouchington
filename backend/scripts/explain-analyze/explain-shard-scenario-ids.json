@@ -1,5 +1,7 @@
 {
-  "main": ["top-url-insert-batch"],
+  "main": [
+    "top-url-insert-batch"
+  ],
   "main-2": [
     "post-moderation-retention-idle-keepers",
     "post-moderation-version-retention-page",
@@ -434,6 +436,9 @@
     "retention-expired-oauth-authorizations",
     "retention-retained-user-identity-roots",
     "retention-retained-user-relation-identities",
+    "oauth-facebook-friend-resolution-at-connect-cap",
+    "oauth-github-friend-resolution-at-connect-cap",
+    "oauth-x-friend-resolution-at-connect-cap",
     "hacker-news-post-card-sidecars-at-cap",
     "hacker-news-rss-card-sidecars-at-cap"
   ],
