@@ -52,8 +52,10 @@ async function withDataPointLimit(run: () => Promise<void>): Promise<void> {
 
 export async function runReviewRatingWriteCapacity(): Promise<void> {
   const scenario = 'post-review-ratings-write-at-cap'
-  // Both modes insert the same 100 rows. The forced-custom trigger cost is tracked in #6401.
-  registerScenarioContract(scenario, { allowEmptyResult: true, expectations: [] })
+  registerScenarioContract(scenario, {
+    allowEmptyResult: true,
+    expectations: [{ kind: 'custom', name: 'reviewRatingWriteBufferBound' }],
+  })
   const ratings = Array.from({ length: reviewLimit }, (_, index) => ({
     topic_id: seedUuid(index, '04'),
     rating: (index % 5) + 1,

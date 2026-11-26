@@ -216,6 +216,7 @@ CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission
 CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()
  RETURNS trigger
  LANGUAGE plpgsql
+ SET plan_cache_mode TO 'force_generic_plan'
 ```
 
 ## `fn_ensure_copyright_email_ancestor_live_endpoints`
