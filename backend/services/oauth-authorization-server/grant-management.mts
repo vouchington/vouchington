@@ -13,6 +13,8 @@ export async function listUserOAuthGrants(
   currentUserId: string,
   options: { limit: number; afterId?: string },
 ): Promise<OAuthManagementPage<OAuthGrantView>> {
+  const { afterId } = options
+  // A separate cursor predicate lets generic plans seek. NULLS LAST matches the active owner index.
   const { rows } = await read<OAuthGrantRow>(
     `/* listUserOAuthGrants */ SELECT
        oauth_grant.id,
@@ -44,10 +46,12 @@ export async function listUserOAuthGrants(
      ) AS token_use ON TRUE
      WHERE oauth_grant.user_id = $1
        AND oauth_grant.revoked_at IS NULL
-       AND ($2::uuid IS NULL OR oauth_grant.id < $2::uuid)
-     ORDER BY oauth_grant.id DESC
-     LIMIT $3`,
-    [currentUserId, options.afterId ?? null, options.limit + 1],
+       ${afterId == null ? '' : 'AND oauth_grant.id < $3'}
+     ORDER BY oauth_grant.id DESC NULLS LAST
+     LIMIT $2`,
+    afterId == null
+      ? [currentUserId, options.limit + 1]
+      : [currentUserId, options.limit + 1, afterId],
   )
   const results = rows
     .slice(0, options.limit)

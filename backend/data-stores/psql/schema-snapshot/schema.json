@@ -86701,6 +86701,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_oauth_grants__user_active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_grants__user_active ON public.oauth_grants USING btree (user_id, id DESC NULLS LAST) WHERE (revoked_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revoked_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "oauth_grants_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,

@@ -114,13 +114,9 @@ export async function runAccountListCapacityScenarios(): Promise<void> {
     )
     registerScenarioContract('account-oauth-grants-at-cap', {
       expectations: [
-        { kind: 'noSeqScan', relation: 'oauth_grants' },
-        {
-          kind: 'maxProcessedRows',
-          relation: 'oauth_grants',
-          // The custom first page walks the global primary index. https://github.com/vouchington/vouchington/issues/6389
-          max: 6_735,
-        },
+        // Lookahead is 101 grants. At most one client in every eight is revoked in the fixture.
+        { kind: 'maxProcessedRows', relation: 'oauth_grants', max: 116 },
+        { kind: 'usesIndexes', indexes: ['idx_oauth_grants__user_active'], noSort: true },
         { kind: 'noSeqScan', relation: 'oauth_access_tokens' },
       ],
     })
