@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict'
 import { beginTransaction } from '@data-stores/psql'
-import {
-  overrideDynamicConfigFieldsForTest,
-  pinDynamicConfigFields,
-} from '@voucha/test-helpers/dynamic-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   postPublicationWorkConfig,
   postPublicationWorkMaxValues,
@@ -102,15 +99,8 @@ export async function captureAliasUnlinkPrecaptureScenarios(): Promise<void> {
     restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
       topic_alias_unlink_page_size: PAGE_SIZE,
     })
-    // Valkey refresh replaces the shared field map between awaits. Pin again in the same turn as the read.
-    const pinPageSize = (): void => {
-      pinDynamicConfigFields(postPublicationWorkConfig, {
-        topic_alias_unlink_page_size: PAGE_SIZE,
-      })
-    }
     for (const { phase, relation, index, deleteName, key } of phases) {
       const page = { topicAliasId: seed.alias, phase, pageCursor: '' } as TopicAliasUnlinkPage
-      pinPageSize()
       const staged = await stageTopicAliasUnlinkPage(page)
       assert(staged.phase !== 'finalize', `${phase} fixture stages a child page`)
       assert.equal(staged.rows.length, PAGE_SIZE, `hot ${phase} fixture needs a full page`)
@@ -127,7 +117,6 @@ export async function captureAliasUnlinkPrecaptureScenarios(): Promise<void> {
         ],
       })
       await runAndCapture(stageId, async () => {
-        pinPageSize()
         const selected = await stageTopicAliasUnlinkPage(page)
         assert.equal(selected.rows.length, PAGE_SIZE)
       })

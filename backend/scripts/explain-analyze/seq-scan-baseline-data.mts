@@ -47,8 +47,4 @@ export const BASELINE_FINGERPRINTS = [
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
   'topic-search-text|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
-  // Paired CI 45645552593 scans topic_aliases in these two ranking plans.
-  // https://github.com/vouchington/vouchington/issues/6396
-  'top-hashtags-at-cap|0|searchTopHashtags:force_custom_plan|force_custom_plan:topic_aliases',
-  'top-hashtags-at-cap|1|searchTopHashtags:force_generic_plan|force_generic_plan:topic_aliases',
 ] as const
