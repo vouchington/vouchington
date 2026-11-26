@@ -20,8 +20,9 @@ backfills, transition matrix). This skill holds Voucha's package, registry, and 
 - Update the domain queue/worker README, the
   [queue inventory](../../../docs/overview/architecture/queues/README.md), and, when applicable,
   the replayability matrix, scheduled/backfill registries, and placement policy.
-- A queue contract change resets staging: Voucha is unlaunched, so no drain, compatibility path,
-  or migration for old jobs.
+- A queue contract change rewrites producers and workers together, with no drain, compatibility
+  path, or migration for old jobs, per the root [AGENTS.md](../../../AGENTS.md) "One current
+  contract" rule (keep an exact replay envelope only where a replay contract requires it).
 
 ## Priorities, lanes, and the shared queue
 
