@@ -43,17 +43,21 @@ export async function listCommunityAgentPromptHistory(
       c.revised_by_id AS changed_by_user_id,
       u.username AS changed_by_username
     FROM community_agent_prompt_revisions c
-    LEFT JOIN users u ON u.id = c.revised_by_id AND u.deleted_at IS NULL
-    WHERE c.community_id = ${communityId}`
+    LEFT JOIN users u ON u.id = c.revised_by_id AND u.deleted_at IS NULL`
 
   if (options.promptId) {
-    query.append(sql` AND c.community_agent_prompt_id = ${options.promptId}`)
+    query.append(sql` WHERE c.community_id = ${communityId}
+      AND c.community_agent_prompt_id = ${options.promptId}`)
+  } else {
+    // A single-value range keeps community_id as an ordering key for the scoped index.
+    query.append(sql` WHERE c.community_id BETWEEN ${communityId} AND ${communityId}`)
   }
   if (options.before) {
     query.append(sql` AND c.id < ${options.before}`)
   }
 
-  query.append(sql` ORDER BY c.id DESC LIMIT ${limit + 1}`)
+  query.append(options.promptId ? ' ORDER BY c.id DESC' : ' ORDER BY c.community_id ASC, c.id DESC')
+  query.append(sql` LIMIT ${limit + 1}`)
 
   const { rows } = await read<{
     id: string

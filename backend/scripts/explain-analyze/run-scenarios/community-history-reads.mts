@@ -71,9 +71,12 @@ async function runPromptHistory({ communityId, revisionIds, seededRows }: Fixtur
   const name = 'listCommunityAgentPromptHistory'
   registerScenarioContract(scenario, {
     seededRows,
-    // This is the current main plan's worst observed scan. Tighten in #6393.
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'community_agent_prompt_revisions', max: 597 },
+      {
+        kind: 'maxProcessedRows',
+        relation: 'community_agent_prompt_revisions',
+        max: promptHistoryPageSize + 1,
+      },
     ],
   })
   await runAndCapture(
