@@ -640,6 +640,8 @@
     "account-modmail-messages-at-cap",
     "account-conversation-participants-at-cap",
     "rss-ingest-content-at-cap",
+    "rss-unmapped-categories-at-cap",
+    "notification-push-recovery-at-cap",
     "rss-hard-delete-sources-at-cap",
     "account-email-addresses-at-cap",
     "account-api-keys-at-cap",
