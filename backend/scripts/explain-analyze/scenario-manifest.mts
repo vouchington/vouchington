@@ -25,6 +25,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'community-curated-url-list-at-cap',
   'community-curated-feed-list-at-cap',
   'community-curated-list-counts-at-cap',
+  'moderation-report-order-cursor-at-cap',
   'search-posts-for-admin-review-at-cap',
   'search-copyright-association-at-hard-cap',
   'list-copyright-guest-capabilities-at-cap',
