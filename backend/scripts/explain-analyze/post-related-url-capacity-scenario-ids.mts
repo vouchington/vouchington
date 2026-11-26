@@ -4,6 +4,7 @@ export const POST_URL_CAPACITY_SCENARIOS = [
   'post-url-capacity-default-overcap',
   'post-url-capacity-maximum-overcap',
   'post-url-capacity-batched-subjects',
+  'story-post-related-url-existing-receipts-default',
   'story-post-related-url-admission-prefix-default',
   'story-post-related-url-admission-prefix-maximum',
   'story-post-related-url-prefix-hostname-blocks-default',
