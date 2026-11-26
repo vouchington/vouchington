@@ -181,6 +181,7 @@ describe('refund reconciliation retries', () => {
     const refundId = `re_recovered_${randomUUID()}`
     const recoveredRefund: Awaited<ReturnType<typeof stripeRefunds.getStripeRefund>> = {
       amount: 700,
+      application: null,
       balance_transaction: null,
       charge: refundRequest.providerPaymentReference,
       created: Math.floor(Date.now() / 1000),
@@ -206,11 +207,7 @@ describe('refund reconciliation retries', () => {
       .spyOn(stripeRefunds, 'listStripeRefundsForPaymentPage')
       .mockImplementation(async ({ startingAfter }) =>
         startingAfter
-          ? {
-              hasMore: false,
-              nextCursor: undefined,
-              refunds: [recoveredRefund],
-            }
+          ? { hasMore: false, nextCursor: undefined, refunds: [recoveredRefund] }
           : {
               hasMore: true,
               nextCursor: headId,

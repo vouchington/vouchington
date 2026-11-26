@@ -1394,7 +1394,7 @@ importers:
         version: link:../../ts-shared/money
       '@vouchington/stripe':
         specifier: ^0.2.1
-        version: 0.2.1(stripe@23.1.0(@types/node@26.6.6))
+        version: 0.2.1(stripe@23.2.0(@types/node@26.6.6))
 
   backend/data-stores/analytics:
     dependencies:
@@ -2667,13 +2667,13 @@ importers:
         version: link:../../config
       '@vouchington/stripe':
         specifier: ^0.2.1
-        version: 0.2.1(stripe@23.1.0(@types/node@26.6.6))
+        version: 0.2.1(stripe@23.2.0(@types/node@26.6.6))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
       stripe:
-        specifier: ^23.1.0
-        version: 23.1.0(@types/node@26.6.6)
+        specifier: ^23.2.0
+        version: 23.2.0(@types/node@26.6.6)
     devDependencies:
       '@types/node':
         specifier: ^26.6.6
@@ -8284,7 +8284,7 @@ importers:
         version: 0.7.0(@sentry/browser@11.14.0)(@sentry/core@11.14.0)(@sentry/node@11.14.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))
       '@vouchington/stripe':
         specifier: ^0.2.1
-        version: 0.2.1(stripe@23.1.0(@types/node@26.6.6))
+        version: 0.2.1(stripe@23.2.0(@types/node@26.6.6))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -11586,7 +11586,7 @@ importers:
         version: 0.2.0
       '@vouchington/stripe':
         specifier: ^0.2.1
-        version: 0.2.1(stripe@23.1.0(@types/node@26.6.6))
+        version: 0.2.1(stripe@23.2.0(@types/node@26.6.6))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11594,8 +11594,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       stripe:
-        specifier: ^23.1.0
-        version: 23.1.0(@types/node@26.6.6)
+        specifier: ^23.2.0
+        version: 23.2.0(@types/node@26.6.6)
       valkyries:
         specifier: ^0.15.0
         version: 0.15.0
@@ -11623,10 +11623,10 @@ importers:
         version: link:../stripe
       '@vouchington/stripe':
         specifier: ^0.2.1
-        version: 0.2.1(stripe@23.1.0(@types/node@26.6.6))
+        version: 0.2.1(stripe@23.2.0(@types/node@26.6.6))
       stripe:
-        specifier: ^23.1.0
-        version: 23.1.0(@types/node@26.6.6)
+        specifier: ^23.2.0
+        version: 23.2.0(@types/node@26.6.6)
     devDependencies:
       '@modules/stripe':
         specifier: workspace:^
@@ -13101,7 +13101,7 @@ importers:
         version: 0.4.0(@jongleberry/api-server@3.1.0)(valkyries@0.15.0)
       '@vouchington/stripe':
         specifier: ^0.2.1
-        version: 0.2.1(stripe@23.1.0(@types/node@26.6.6))
+        version: 0.2.1(stripe@23.2.0(@types/node@26.6.6))
       '@vouchington/utils':
         specifier: ^0.13.0
         version: 0.13.0
@@ -13170,8 +13170,8 @@ importers:
         specifier: ^0.0.1
         version: 0.0.1
       stripe:
-        specifier: ^23.1.0
-        version: 23.1.0(@types/node@26.6.6)
+        specifier: ^23.2.0
+        version: 23.2.0(@types/node@26.6.6)
       typescript:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
@@ -15235,7 +15235,7 @@ importers:
         version: link:../../services/stripe
       '@vouchington/stripe':
         specifier: ^0.2.1
-        version: 0.2.1(stripe@23.1.0(@types/node@26.6.6))
+        version: 0.2.1(stripe@23.2.0(@types/node@26.6.6))
       '@vouchington/worker-runtime':
         specifier: ^0.3.2
         version: 0.3.2(@aws-sdk/client-sqs@3.1172.0)(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.1.1)
@@ -24400,8 +24400,8 @@ packages:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
     engines: {node: '>=14.16'}
 
-  stripe@23.1.0:
-    resolution: {integrity: sha512-fVUfMSfTPoukfoV//MUKAx2+YxyKmYaYtnAL9VkfnHfaPNQylFdWZMD+zgUFerI8rjbaiER8Vzj2XEUQ2AhAsQ==}
+  stripe@23.2.0:
+    resolution: {integrity: sha512-0W0J4yA9qFO2rnF61v8Y62OiO2SmAR+Cv04VJaFUMpCxiq8lG5bxEYbeSMSpMDR9ofFZGd+Z/iUIgSFbOolmUw==}
     engines: {node: '>=20'}
     peerDependencies:
       '@types/node': '>=20'
@@ -30177,9 +30177,9 @@ snapshots:
       '@vouchington/uuid-v7': 0.0.0
       jose: 6.2.18
 
-  '@vouchington/stripe@0.2.1(stripe@23.1.0(@types/node@26.6.6))':
+  '@vouchington/stripe@0.2.1(stripe@23.2.0(@types/node@26.6.6))':
     dependencies:
-      stripe: 23.1.0(@types/node@26.6.6)
+      stripe: 23.2.0(@types/node@26.6.6)
 
   '@vouchington/utils@0.13.0': {}
 
@@ -33865,7 +33865,7 @@ snapshots:
 
   strip-json-comments@5.0.3: {}
 
-  stripe@23.1.0(@types/node@26.6.6):
+  stripe@23.2.0(@types/node@26.6.6):
     optionalDependencies:
       '@types/node': 26.6.6
 
