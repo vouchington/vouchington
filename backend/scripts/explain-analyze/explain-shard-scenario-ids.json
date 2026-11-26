@@ -717,6 +717,7 @@
     "rss-item-category-hashtag-aliases-at-cap",
     "rss-item-category-insert-at-cap",
     "rss-item-category-update-at-cap",
+    "rss-item-category-clear-at-cap",
     "rss-feed-category-upsert-at-cap",
     "account-membership-history-at-cap",
     "account-referral-links-at-cap",

@@ -6,6 +6,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { contentHash } from '../seed-data/common.mts'
 import { runRssItemCategoryWriteScenarios } from './rss-write-capacity-item-categories.mts'
+import { runRssItemCategoryClearScenario } from './rss-item-category-clear.mts'
 import { runRssFeedCategoryWriteScenario } from './rss-write-capacity-feed-categories.mts'
 import {
   cleanupRssWriteCapacity,
@@ -19,6 +20,7 @@ export async function runRssWriteCapacityScenarios(): Promise<void> {
     await runIdentityWrite(fixture)
     await runSourceWrite(fixture)
     await runRssItemCategoryWriteScenarios(fixture)
+    await runRssItemCategoryClearScenario(fixture)
     await runRssFeedCategoryWriteScenario(fixture)
   } finally {
     await cleanupRssWriteCapacity(fixture)

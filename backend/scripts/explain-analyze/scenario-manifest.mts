@@ -76,6 +76,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-item-category-hashtag-aliases-at-cap',
   'rss-item-category-insert-at-cap',
   'rss-item-category-update-at-cap',
+  'rss-item-category-clear-at-cap',
   'rss-feed-category-upsert-at-cap',
   'direct-message-notifications-at-cap',
   'modmail-notifications-at-cap',
