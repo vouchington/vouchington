@@ -1,3 +1,4 @@
+import { runPostModerationBatchCapacityScenario } from './run-scenarios/post-moderation-batch-capacity.mts'
 import { runPostModerationHistoryPageScenarios } from './run-scenarios/post-moderation-history-page.mts'
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
 import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
@@ -81,6 +82,7 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runAgentModerationRetentionScenarios,
   runModerationTransparencyReleaseScenario,
   runPostModerationHistoryPageScenarios,
+  runPostModerationBatchCapacityScenario,
   runHotPathLoaderScenarios,
   runRssCardBookmarkCapacityScenario,
   runPublicRssPostSnapshotScenarios,
