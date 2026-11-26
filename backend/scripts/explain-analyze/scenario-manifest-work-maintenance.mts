@@ -17,6 +17,8 @@ export const MAINTENANCE_WORK_SCENARIOS = [
   'topic-alias-feed-category-fan-in',
   'topic-alias-item-category-fan-in',
   'topic-alias-unlinked-category-fan-in',
+  'topic-text-item-category-page-at-cap',
+  'topic-text-feed-category-page-at-cap',
   'import-retention-parent',
   'user-import-approval-first-page',
   'user-import-approval-continuation',

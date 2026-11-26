@@ -9,6 +9,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { continueAfterFailure } from '../scenario-failures.mts'
 import { runPostUrlCapacityScenarios } from './post-related-url-capacity.mts'
+import { runStoryProjectionReceiptCleanupScenario } from './story-projection-receipt-cleanup.mts'
 import {
   seedStoryProjectionDispatcherWitness,
   removeStoryProjectionDispatcherWitness,
@@ -17,6 +18,10 @@ import {
 /** Mutating behavioral witness: run once, outside EXPLAIN's captured statement replay. */
 export async function runStoryProjectionWorkScenarios(): Promise<void> {
   await continueAfterFailure(runPostUrlCapacityScenarios.name, runPostUrlCapacityScenarios)
+  await continueAfterFailure(
+    runStoryProjectionReceiptCleanupScenario.name,
+    runStoryProjectionReceiptCleanupScenario,
+  )
 
   console.log('Running: story-projection-global-dispatcher')
   const fixture = await seedStoryProjectionDispatcherWitness()

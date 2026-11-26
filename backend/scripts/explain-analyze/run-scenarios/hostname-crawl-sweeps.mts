@@ -3,6 +3,7 @@ import {
   getNextCrawlHostnameBucket,
 } from '@services/crawls/hostname-dispatch-candidates'
 import { resolveSeedAnchor } from '../seed-data/seed-anchor.mts'
+import { runHostnameFailureResetScenarios } from './hostname-failure-reset.mts'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
@@ -17,6 +18,7 @@ import {
 import { crawlSeedUuid, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 
 export async function runHostnameCrawlSweepScenarios(): Promise<void> {
+  await runHostnameFailureResetScenarios()
   await runAndCapture('crawl-hostname-threshold-seek', async () => {
     if ((await getNextCrawlHostnameBucket(1)) !== 7)
       throw new Error('Expected indexed seek into the seeded seven-day bucket')

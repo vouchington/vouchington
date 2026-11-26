@@ -4,6 +4,7 @@ import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-
 import { runManyAliasTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-many-aliases.mts'
 import { runLargeTopicRatingStatsScenario } from './run-scenarios/topic-rating-stats-large.mts'
 import { runTopicAliasCategoryWorkScenarios } from './run-scenarios/topic-alias-category-work.mts'
+import { runTopicTextCategoryPageScenarios } from './run-scenarios/topic-text-category-pages.mts'
 import { runHackerNewsFilterScenarios } from './run-scenarios/hacker-news-filter.mts'
 import { runRetentionStagePageScenarios } from './run-scenarios/retention-stage-pages.mts'
 import { runHackerNewsCardSidecarScenarios } from './run-scenarios/hacker-news-card-sidecars.mts'
@@ -16,6 +17,7 @@ export const PUBLICATION_TOPICS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runManyAliasTopicViewerCountsScenario,
   runLargeTopicRatingStatsScenario,
   runTopicAliasCategoryWorkScenarios,
+  runTopicTextCategoryPageScenarios,
   runHackerNewsFilterScenarios,
   runRetentionStagePageScenarios,
   runHackerNewsCardSidecarScenarios,

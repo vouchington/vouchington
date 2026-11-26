@@ -4,6 +4,7 @@ import {
   reconcileRssFeedItemCategorySourcePage,
 } from '@services/rss-feed-items/category-snapshot-reconciliations'
 import { CATEGORY_PROJECTION_SCENARIO_IDS } from '../category-projection-scenario-ids.mts'
+import { runRssCategoryReconciliationPageScenarios } from './rss-category-reconciliation-pages.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { HOSTNAME_COUNT, RSS_FEED_SEED_COUNT } from '../seed-data/common.mts'
@@ -23,7 +24,8 @@ const cases = [
 ] as const
 
 export async function runCategoryProjectionScenarios(): Promise<void> {
-  const itemId = await seedCategoryProjection()
+  const { itemId, pendingRows } = await seedCategoryProjection()
+  await runRssCategoryReconciliationPageScenarios(pendingRows)
   for (const [index, [queryName, state]] of cases.entries()) {
     const id = CATEGORY_PROJECTION_SCENARIO_IDS[index]!
     const sourceUnion = queryName === 'getRssFeedItemCategorySnapshotPage'

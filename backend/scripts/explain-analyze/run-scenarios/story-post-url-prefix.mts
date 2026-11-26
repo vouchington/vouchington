@@ -25,6 +25,7 @@ import {
   STORY_ID,
 } from './story-post-url-prefix-setup.mts'
 import { captureStoryPostUrlPrefixEffectScenarios } from './story-post-url-prefix-effects.mts'
+import { captureStoryPostUrlExistingReceipts } from './story-post-url-existing-receipts.mts'
 
 /** Child hostname row plus parent-suffix probes. The capacity seed host has three labels. */
 const URL_HOSTNAME_PROBE_LIMIT = 5
@@ -40,6 +41,7 @@ export async function captureStoryPostUrlPrefixScenarios(): Promise<void> {
     await attachPrefixItems()
     await leasePruneJobs()
     await insertMaxCapReceipts()
+    await captureStoryPostUrlExistingReceipts(projectionWork(seed.posts[1]!, MAXIMUM_LEASE))
     await captureAdmission('story-post-related-url-admission-prefix-default', 1000, itemIndexes)
     await captureAdmission('story-post-related-url-admission-prefix-maximum', 10_000, itemIndexes)
     await captureBlockedHostnames('story-post-related-url-prefix-hostname-blocks-default', 1000)

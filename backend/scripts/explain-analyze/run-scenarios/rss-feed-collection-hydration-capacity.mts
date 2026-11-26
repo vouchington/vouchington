@@ -71,11 +71,20 @@ async function captureFollowingFeedHydration(feedCount: number): Promise<void> {
 
 async function captureRecentFeedTypeFilter(feedCount: number): Promise<void> {
   const scenario = 'rss-recent-feed-type-filter-at-cap'
-  // The recently-viewed window includes missing feeds. The base seed creates article feeds.
-  const articles = Array.from({ length: RECENTLY_VIEWED_ZSET_LIMIT - 100 }, (_, index) =>
+  const articles = Array.from({ length: RECENTLY_VIEWED_ZSET_LIMIT - 102 }, (_, index) =>
     seedUuid(700 + index, '08'),
   )
   const missing = Array.from({ length: 100 }, (_, index) => seedUuid(10_000_000 + index, '08'))
+  const podcastId = seedUuid(700 + articles.length, '08')
+  const {
+    rows: [deleted],
+  } = await write<{ id: string }>(sql`/* selectExplainRecentDeletedArticleFeed */
+    SELECT id FROM rss_feeds
+    WHERE feed_type = 'article' AND deleted_at IS NOT NULL
+    ORDER BY id LIMIT 1`)
+  assert.ok(deleted)
+  const ids = [...articles, ...missing, podcastId, deleted.id]
+  assert.equal(new Set(ids).size, RECENTLY_VIEWED_ZSET_LIMIT)
   registerScenarioContract(scenario, {
     seededRows: { rss_feeds: feedCount },
     expectations: [
@@ -83,13 +92,22 @@ async function captureRecentFeedTypeFilter(feedCount: number): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'rss_feeds', max: feedCount },
     ],
   })
-  await runAndCapture(
-    scenario,
-    async () => {
-      const matching = await filterRssFeedIdsByFeedType([...articles, ...missing], 'article')
-      assert.deepEqual(matching, new Set(articles))
-    },
-    undefined,
-    'filterRssFeedIdsByFeedType',
-  )
+  const podcast = await write(sql`/* seedExplainRecentPodcastFeed */
+    UPDATE rss_feeds SET feed_type = 'podcast'
+    WHERE id = ${podcastId} AND feed_type = 'article' AND deleted_at IS NULL`)
+  assert.equal(podcast.rowCount, 1)
+  try {
+    await runAndCapture(
+      scenario,
+      async () => {
+        const matching = await filterRssFeedIdsByFeedType(ids, 'article')
+        assert.deepEqual(matching, new Set(articles))
+      },
+      undefined,
+      'filterRssFeedIdsByFeedType',
+    )
+  } finally {
+    await write(sql`/* restoreExplainRecentPodcastFeed */
+      UPDATE rss_feeds SET feed_type = 'article' WHERE id = ${podcastId}`)
+  }
 }
