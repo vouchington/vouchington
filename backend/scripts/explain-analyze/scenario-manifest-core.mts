@@ -54,6 +54,7 @@ export const CORE_SCENARIOS = [
   'community-saved-replies-at-cap',
   'community-agent-prompt-history-at-caller-bound',
   'search-moderator-actions-community-at-cap',
+  'community-moderator-workload-leaderboard-at-cap',
   'list-user-mod-notes-at-cap',
   'search-community-invites-at-cap',
   'search-community-restrictions-at-cap',

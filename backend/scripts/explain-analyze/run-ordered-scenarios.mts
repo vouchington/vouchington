@@ -13,6 +13,7 @@ import { runPostImageWriteScenarios } from './run-scenarios/post-image-writes.mt
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
 import { runAiUsageLookupScenarios } from './run-scenarios/ai-usage-lookups.mts'
 import { runMembershipScenarios } from './run-scenarios/memberships.mts'
+import { runModeratorWorkloadCapacity } from './run-scenarios/moderator-workload-capacity.mts'
 import { runAiUsageTotalsScenarios } from './run-scenarios/ai-usage-totals.mts'
 import { continueAfterFailure as runStep } from './scenario-failures.mts'
 import { EARLY_RUNNERS } from './run-ordered-scenarios-early.mts'
@@ -125,6 +126,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runAggregateExistenceScenarios,
   // Keep the extra communities out of ordinary search and ranking plan captures.
   runAiUsageTotalsScenarios,
+  runModeratorWorkloadCapacity,
   runPostImageWriteScenarios,
   runConversationMessageCapacityScenario,
   runNotificationInboxCapacityScenario,
