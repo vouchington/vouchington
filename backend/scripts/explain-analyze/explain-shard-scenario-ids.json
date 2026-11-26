@@ -1,7 +1,5 @@
 {
-  "main": [
-    "top-url-insert-batch"
-  ],
+  "main": ["top-url-insert-batch"],
   "main-2": [
     "post-moderation-retention-idle-keepers",
     "post-moderation-version-retention-page",
@@ -774,6 +772,8 @@
     "moderation-report-post-context-at-cap",
     "moderation-report-post-indicators-at-cap",
     "copyright-ai-run-retention-at-cap",
+    "membership-outstanding-grants-at-cap",
+    "membership-active-catalog-near-cap",
     "moderation-digest-memberships-at-cap",
     "moderation-digest-reviews-at-cap",
     "moderation-digest-applications-at-cap",

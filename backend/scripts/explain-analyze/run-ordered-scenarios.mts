@@ -9,7 +9,10 @@ import {
 } from './seed-data/dispatch-work-plans.mts'
 import { runAnalyze } from './seed-data/maintenance.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
-import { AFTER_MEMBERSHIPS_RUNNERS } from './run-ordered-scenarios-after-memberships.mts'
+import {
+  AFTER_MEMBERSHIPS_RUNNERS,
+  AFTER_MEMBERSHIP_CAPACITY_RUNNERS,
+} from './run-ordered-scenarios-after-memberships.mts'
 import { AFTER_COMMUNITIES_RUNNERS } from './run-ordered-scenarios-after-communities.mts'
 import { AFTER_NOTIFICATIONS_RUNNERS } from './run-ordered-scenarios-after-notifications.mts'
 import { AFTER_ACCOUNTS_RSS_RUNNERS } from './run-ordered-scenarios-after-accounts-rss.mts'
@@ -77,6 +80,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   ...AFTER_ACCOUNTS_RSS_RUNNERS,
   ...AFTER_TOPICS_RUNNERS,
   ...AFTER_RETENTION_RUNNERS,
+  ...AFTER_MEMBERSHIP_CAPACITY_RUNNERS,
 ]
 
 /**
