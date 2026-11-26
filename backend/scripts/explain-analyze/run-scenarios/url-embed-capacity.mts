@@ -54,12 +54,13 @@ export async function runUrlEmbedCapacityScenario(): Promise<void> {
       crawls: 'The latest eligible crawl for an origin URL may be in any arrival-time partition.',
     },
     expectations: [
-      // Paired captures scan RSS items, source associations, feeds and topics.
+      // Each requested URL selects one current item, then one eligible show per selected item.
+      // Keyed probes keep work proportional to the 60 RSS-backed URLs, not corpus size.
       // https://github.com/vouchington/vouchington/issues/6398
-      { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: 36_689 },
-      { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: 75_433 },
-      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 2_578 },
-      { kind: 'maxProcessedRows', relation: 'topics', max: 15_070 },
+      { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: rssCount },
+      { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: rssCount },
+      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: rssCount },
+      { kind: 'maxProcessedRows', relation: 'topics', max: rssCount },
     ],
   })
   // Earlier seed updates leave rss_feeds between 155 and 198 pages depending on when autovacuum
