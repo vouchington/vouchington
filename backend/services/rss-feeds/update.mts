@@ -45,6 +45,7 @@ export const updateRssFeedById = async (
     }
     // lock-reason: prevents: publishing an outdated former topic when topic_id changes without setting changes; writer: updateRssFeedById
     const existing = await query<{ id: string; topic_id: string }>(
+      // lock-reason: prevents: a SHARE-to-UPDATE projection deadlock and overriding a newer human decision from a stale read when settings change; writer: updateRssFeedWithStateAsCurrentUser
       changes.topic_id === undefined && stateChanges.length === 0
         ? sql`/* updateRssFeedById:exists */ SELECT id, topic_id FROM rss_feeds WHERE id = ${id}`
         : sql`/* updateRssFeedById:lock */ SELECT id, topic_id FROM rss_feeds WHERE id = ${id} FOR UPDATE`,
