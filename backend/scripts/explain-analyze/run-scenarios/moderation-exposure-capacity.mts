@@ -7,8 +7,8 @@ import {
   EXPOSURE_COUNT_DISPLAY_CAP_MAX,
   EXPOSURE_WINDOW_MINUTES,
   getExposureCountDisplayCap,
-} from '../../../services/moderation-exposure/config.mts'
-import { getExposureState } from '../../../services/moderation-exposure/get.mts'
+} from '@services/moderation-exposure/config'
+import { getExposureState } from '@services/moderation-exposure/get'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedPostId } from '../run-support.mts'
 
