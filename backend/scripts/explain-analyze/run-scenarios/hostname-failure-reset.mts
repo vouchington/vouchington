@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
+import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames/get'
 import { resetHostnameFailures } from '@services/urls-hostnames/network-backoff'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -20,9 +21,11 @@ export async function runHostnameFailureResetScenarios(): Promise<void> {
      VALUES ($1, 0, 0), ($2, 2, 3) RETURNING id, hostname`,
     [`clean-${prefix}.example`, `failures-${prefix}.example`],
   )
-  const cleanId = rows.find(row => row.hostname.startsWith('clean-'))!.id
+  const cleanHost = rows.find(row => row.hostname.startsWith('clean-'))!
+  const cleanId = cleanHost.id
   const failuresId = rows.find(row => row.hostname.startsWith('failures-'))!.id
   try {
+    await captureCrawlerHostnameLookup(cleanHost)
     const clean = await readFailureState(cleanId)
     await captureFailureReset('crawl-hostname-failure-reset-noop', cleanId, true, async () => {
       assert.deepEqual(await readFailureState(cleanId), clean)
@@ -51,6 +54,23 @@ export async function runHostnameFailureResetScenarios(): Promise<void> {
       [[cleanId, failuresId]],
     )
   }
+}
+
+async function captureCrawlerHostnameLookup(host: { id: string; hostname: string }) {
+  const scenario = 'crawl-hostname-details-point-read'
+  registerScenarioContract(scenario, { expectations: [] })
+  await runAndCapture(
+    scenario,
+    async () => {
+      const details = await getUrlHostnameCrawlerDetailsById(host.id)
+      assert.equal(details?.id, host.id)
+      assert.equal(details.hostname, host.hostname)
+      assert.equal(details.network_backoff_step, 0)
+      assert.equal(details.network_backoff_ends_at, null)
+    },
+    undefined,
+    'getUrlHostnameCrawlerDetailsById',
+  )
 }
 
 async function captureFailureReset(

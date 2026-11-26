@@ -7,6 +7,7 @@ export const DISPATCH_AND_CRAWL_SCENARIO_IDS = [
   'bloom-repair-window',
   'bloom-repair-capped',
   'bloom-repair-resumed',
+  'crawl-hostname-details-point-read',
   'crawl-hostname-failure-reset-noop',
   'crawl-hostname-failure-reset-counters',
   'crawl-hostname-threshold-seek',
