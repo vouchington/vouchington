@@ -113,13 +113,9 @@ async function captureSemanticSearch(fixture: Fixture): Promise<void> {
     },
     seededRows: { rss_feeds: fixture.feedCount },
     expectations: [
-      // Main revisits and ranks the feed in both pages. https://github.com/vouchington/vouchington/issues/6566
+      // Exact story ranking still compares the candidates before applying the cursor.
       { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: fixture.itemIds.length },
-      {
-        kind: 'maxProcessedRows',
-        relation: 'rss_feeds',
-        max: Math.max(fixture.feedCount, fixture.itemIds.length),
-      },
+      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 1 },
     ],
   })
   await runAndCapture(

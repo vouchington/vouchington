@@ -6,10 +6,7 @@ import {
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
-import {
-  feedIsEnabledAndDiscoverableSql,
-  itemHasDiscoverableSourceSql,
-} from '@modules/feed-query-builders/discoverability-sql'
+import { itemHasDiscoverableSourceSql } from '@modules/feed-query-builders/discoverability-sql'
 import type { SearchRssFeedItemsOptions } from './search-types.mts'
 import {
   buildCategoryTopicFilter,
@@ -74,17 +71,21 @@ export function buildRssFeedItemFilters(options: SearchRssFeedItemsOptions): SQL
   }
 
   if (rss_feed_ids.length > 0) {
-    const filter = sql`EXISTS (
+    const sourceFeed =
+      rss_feed_ids.length === 1
+        ? sql`rfis.rss_feed_id = ${rss_feed_ids[0]}::uuid`
+        : sql`rfis.rss_feed_id = ANY(${rss_feed_ids})`
+    filters.push(
+      sql`EXISTS (
       SELECT 1 FROM rss_feed_item_sources rfis
       JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
       WHERE rfis.rss_feed_item_id = rss_feed_items.id
-        AND rfis.rss_feed_id = ANY(${rss_feed_ids})
+        AND `.append(sourceFeed).append(sql`
         AND rf.deleted_at IS NULL
-        AND `
-    filter.append(feedIsEnabledAndDiscoverableSql('rf'))
-    filter.append(sql`
-    )`)
-    filters.push(filter)
+        AND rf.is_enabled = TRUE
+        AND rf.is_discoverable = TRUE
+    )`),
+    )
   }
   if (topic_ids.length > 0) {
     filters.push(buildFeedOwnerTopicFilter(topic_ids))
