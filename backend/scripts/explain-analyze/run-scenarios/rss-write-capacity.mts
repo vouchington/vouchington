@@ -11,6 +11,7 @@ import { runRecentlyViewedRssTypeScenarios } from './recently-viewed-rss-types.m
 import { runRssStoryProjectionRefreshScenario } from './rss-story-projection-refresh.mts'
 import { runRssCategorySnapshotWriteScenario } from './rss-category-snapshot-write.mts'
 import { runRssCategorySnapshotSourcePages } from './rss-category-snapshot-source-pages.mts'
+import { runRssListabilityScenario } from './rss-listability.mts'
 import { runRssFeedCategoryWriteScenario } from './rss-write-capacity-feed-categories.mts'
 import {
   cleanupRssWriteCapacity,
@@ -28,6 +29,7 @@ export async function runRssWriteCapacityScenarios(): Promise<void> {
     await runRssItemCategoryWriteScenarios(fixture)
     await runRssItemCategoryClearScenario(fixture)
     await runRssFeedCategoryWriteScenario(fixture)
+    await runRssListabilityScenario(fixture)
     await runRecentlyViewedRssTypeScenarios(fixture)
     await runRssCategorySnapshotSourcePages(fixture)
   } finally {
