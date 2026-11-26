@@ -284,4 +284,10 @@ CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__user_id__foreign_key
   ON user_referral_program_links (user_id)
   WHERE user_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__user_id__list
+  ON user_referral_program_links (user_id, id DESC)
+  WHERE deleted_at IS NULL AND parent_link_id IS NULL;
+COMMENT ON INDEX idx_user_referral_program_links__user_id__list IS 'Pages through one owner''s live top-level links in descending ID order.';
+
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__topic__id ON user_referral_program_links(referral_program_topic_id,id);
