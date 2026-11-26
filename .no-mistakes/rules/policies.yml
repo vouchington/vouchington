@@ -4366,6 +4366,11 @@
 - name: Actions downloads verify integrity
   rule: github-actions-download-integrity
   scope: repository
+  options:
+    downloadHelpers: [ci_download_to]
+    shellSourceInclude: ['.github/workflows/**/*.sh', '.github/actions/*/*.sh']
+    strictSequencing: true
+    skipAnnotationScope: line
 
 - name: checkouts are never sparse
   rule: no-sparse-checkout
