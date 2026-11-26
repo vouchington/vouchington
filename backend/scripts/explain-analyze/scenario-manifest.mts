@@ -109,4 +109,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'notification-redirect-target-at-cap',
   'topic-merge-relation-preflight-at-cap',
   'topic-merge-alias-move-tail-at-cap',
+  'copyright-unlinked-email-recommendation-retention-at-cap',
 ] as const
