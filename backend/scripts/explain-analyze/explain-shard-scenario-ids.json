@@ -664,6 +664,14 @@
     "post-data-point-topics-insert-at-cap",
     "post-data-point-topics-replace-at-cap",
     "community-application-questions-write-at-cap",
-    "copyright-ai-run-retention-at-cap"
+    "copyright-ai-run-retention-at-cap",
+    "moderation-digest-memberships-at-cap",
+    "moderation-digest-reviews-at-cap",
+    "moderation-digest-applications-at-cap",
+    "moderation-digest-reportposts-at-cap",
+    "moderation-digest-reports-at-cap",
+    "moderation-digest-members-at-cap",
+    "moderation-digest-activityposts-at-cap",
+    "moderation-digest-replies-at-cap"
   ]
 }
