@@ -54,4 +54,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-children-at-cap',
   'url-embeds-at-post-page-cap',
   'copyright-ai-run-retention-at-cap',
+  'copyright-action-attempt-retention-at-cap',
+  'copyright-delivery-attempt-retention-at-cap',
 ] as const

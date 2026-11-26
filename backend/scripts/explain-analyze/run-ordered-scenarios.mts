@@ -37,6 +37,7 @@ import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-
 import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
 import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard-delete-source-capacity.mts'
 import { runRssWriteCapacityScenarios } from './run-scenarios/rss-write-capacity.mts'
+import { runCopyrightExecutionRetentionScenarios } from './run-scenarios/copyright-execution-retention.mts'
 import {
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
@@ -152,6 +153,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
+  runCopyrightExecutionRetentionScenarios,
 ]
 
 /**
