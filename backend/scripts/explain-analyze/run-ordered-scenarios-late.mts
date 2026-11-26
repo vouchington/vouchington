@@ -62,6 +62,9 @@ import { runRssCrawlFetchLookupCapacity } from './run-scenarios/rss-crawl-fetch-
 import { runRssFeedDiscoverabilityCapacity } from './run-scenarios/rss-feed-discoverability-capacity.mts'
 import { runRssIngestExistingItemsCapacity } from './run-scenarios/rss-ingest-existing-items-capacity.mts'
 import { runRssTrendingCapacity } from './run-scenarios/rss-trending-capacity.mts'
+import { runNotificationRssSnapshotCapacity } from './run-scenarios/notification-rss-snapshot-capacity.mts'
+import { runNotificationPostSnapshotCapacity } from './run-scenarios/notification-post-snapshot-capacity.mts'
+import { runNotificationRedirectCapacity } from './run-scenarios/notification-redirect-capacity.mts'
 
 export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runClassifierHumanVoteComparisonScenarios,
@@ -130,4 +133,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runRssFeedDiscoverabilityCapacity,
   runRssIngestExistingItemsCapacity,
   runRssTrendingCapacity,
+  runNotificationRssSnapshotCapacity,
+  runNotificationPostSnapshotCapacity,
+  runNotificationRedirectCapacity,
 ]

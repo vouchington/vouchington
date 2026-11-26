@@ -104,4 +104,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-feed-search-trending-first-at-cap',
   'rss-feed-search-trending-next-at-cap',
   'rss-feed-search-trending-terminal-at-cap',
+  'notification-rss-reconciliation-snapshot',
+  'notification-post-reconciliation-snapshot',
+  'notification-redirect-target-at-cap',
 ] as const
