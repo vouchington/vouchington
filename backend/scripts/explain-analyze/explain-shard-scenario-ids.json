@@ -399,6 +399,7 @@
     "community-search-at-cap",
     "community-membership-cache-user-at-cap",
     "my-community-memberships-at-cap",
+    "community-member-metric-invalidation-at-cap",
     "search-community-members-at-cap",
     "list-user-member-communities-at-cap",
     "community-pending-reports-cap-severity",
