@@ -1,3 +1,4 @@
+import { runModerationExposureCapacity } from './moderation-exposure-capacity.mts'
 import { getReportJudgementContextsForEntitiesBatch } from '@services/moderation-reports/judgement-context'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -39,4 +40,5 @@ export async function runModerationReportContextScenarios(): Promise<void> {
     undefined,
     'getReportJudgementContextsForEntitiesBatch',
   )
+  await runModerationExposureCapacity()
 }

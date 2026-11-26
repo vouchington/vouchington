@@ -41,6 +41,7 @@ export const POSTS_AND_FEEDS_SCENARIOS = [
   'recommended-topics',
   'recommended-topics-long-vote-history',
   'report-judgement-contexts-batch',
+  'moderation-exposure-state-at-cap',
   'review-succession-candidates',
   'hacker-news-post-flag-posts-at-cap',
   'hacker-news-post-flag-related-at-cap',

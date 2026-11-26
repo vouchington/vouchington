@@ -264,6 +264,7 @@
     "dispatch-referral-crawl-due-selectivity",
     "dispatch-referral-unfurl-due-selectivity",
     "report-judgement-contexts-batch",
+    "moderation-exposure-state-at-cap",
     "moderation-report-detail-post-report",
     "moderation-report-detail-post-judgement",
     "moderation-report-detail-user-report",
