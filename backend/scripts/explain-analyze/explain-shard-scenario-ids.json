@@ -265,6 +265,8 @@
     "vote-weight-family-source-effective_at",
     "vote-weight-family-source-expires_at",
     "vote-weight-family-source-rejected_at-evidence",
+    "copyright-pending-enforcement-first",
+    "copyright-pending-enforcement-continuation",
     "copyright-statutory-restoration-first",
     "copyright-statutory-restoration-continuation",
     "copyright-suspended-claimant-recovery-first",
