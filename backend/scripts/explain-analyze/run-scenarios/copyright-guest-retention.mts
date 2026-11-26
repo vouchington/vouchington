@@ -24,7 +24,12 @@ export async function runCopyrightGuestRetentionScenario(): Promise<void> {
         copyright_notice_guest_capabilities: fixture.seededRows.capabilities,
         copyright_notice_submissions: fixture.seededRows.submissions,
       },
-      expectations: [{ kind: 'queryBinds', token: 'ANY' }],
+      expectations: [
+        { kind: 'queryBinds', token: 'ANY' },
+        { kind: 'noSeqScan', relation: 'copyright_notice_submissions' },
+        { kind: 'usesIndexes', indexes: ['idx_copyright_notice_submissions__guest_capability'] },
+        { kind: 'maxProcessedRows', relation: 'copyright_notice_submissions', max: PAGE_SIZE },
+      ],
     })
     await runAndCapture(
       SCENARIO_ID,
@@ -48,6 +53,16 @@ export async function runCopyrightGuestRetentionScenario(): Promise<void> {
         assert.deepEqual(
           survivors.map(row => row.id),
           expectedSurvivors,
+        )
+        const { rows: identities } = await transaction<{ id: string }>(
+          `/* readCopyrightGuestRetentionIdentities */ SELECT id
+           FROM copyright_notice_guest_capability_identities
+           WHERE id = ANY($1::uuid[]) ORDER BY id`,
+          [fixture.allIds],
+        )
+        assert.deepEqual(
+          identities.map(row => row.id),
+          fixture.allIds.toSorted(),
         )
         const { rows: submissions } = await transaction<{ id: string }>(
           `/* readCopyrightGuestRetentionProtectedSubmission */ SELECT id

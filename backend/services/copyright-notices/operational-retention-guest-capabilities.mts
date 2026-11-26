@@ -26,9 +26,12 @@ export async function deleteExpiredCopyrightGuestCapabilities(
       DELETE FROM copyright_notice_guest_capabilities capability
       WHERE capability.id = ANY(${[...ids]}::uuid[])
         AND capability.expires_at <= ${cutoff}
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_submissions submission
-          WHERE submission.copyright_notice_guest_capability_id = capability.id)
+        -- A scalar lookup keeps the submission probe keyed to each expired page candidate.
+        AND (
+          SELECT TRUE FROM copyright_notice_submissions submission
+          WHERE submission.copyright_notice_guest_capability_id = capability.id
+          LIMIT 1
+        ) IS NULL
       RETURNING copyright_notice_id, updated_at, expires_at, revoked_at
     ), retained_clock AS (
       INSERT INTO copyright_notice_thread_retention_activities
