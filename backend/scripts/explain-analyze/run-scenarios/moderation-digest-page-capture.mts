@@ -17,8 +17,7 @@ import {
 } from '../seed-data/moderation-digest-pages.mts'
 
 const MAIN_ROWS: Record<ModerationSummaryPagedStage, Record<string, readonly number[]>> = {
-  // https://github.com/vouchington/vouchington/issues/6574 tracks the custom continuation walk.
-  memberships: { community_members: [1, 10, 26] },
+  memberships: { community_members: [1, 10, 1] },
   reviews: { community_post_reviews: [1, 25, 1], posts: [0, 25, 1] },
   applications: { community_applications: [1, 286, 1] },
   reportPosts: { posts: [1, 25, 25], moderation_reports: [0, 0, 1] },
