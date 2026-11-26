@@ -73,18 +73,18 @@ async function insertMissingCategoriesChunk(
         input.category_text,
         input.topic_id,
         ta.id AS topic_alias_id
-      FROM (
-        SELECT
-          unnest($1::uuid[]) as rss_feed_item_id,
-          unnest($2::text[]) as category_text,
-          unnest($3::text[]) as hashtag_alias,
-          unnest($4::uuid[]) as topic_id
-      ) as input
-      JOIN rss_category_identities identity
-        ON identity.category_text = LOWER(TRIM(input.category_text))
-      LEFT JOIN topic_aliases ta
-        ON ta.alias = input.hashtag_alias
-        AND ta.unlink_requested_at IS NULL
+      FROM unnest($1::uuid[], $2::text[], $3::text[], $4::uuid[])
+        AS input(rss_feed_item_id, category_text, hashtag_alias, topic_id)
+      CROSS JOIN LATERAL (
+        SELECT id FROM rss_category_identities
+        WHERE category_text = LOWER(TRIM(input.category_text))
+        LIMIT 1
+      ) identity
+      LEFT JOIN LATERAL (
+        SELECT id FROM topic_aliases
+        WHERE alias = input.hashtag_alias AND unlink_requested_at IS NULL
+        LIMIT 1
+      ) ta ON TRUE
       ORDER BY input.rss_feed_item_id, identity.id
       ON CONFLICT (rss_feed_item_id, category_identity_id) DO NOTHING
       RETURNING rss_feed_item_id, NULL::uuid AS previous_topic_id, topic_id,
@@ -132,11 +132,15 @@ async function updateMatchedCategoriesChunk(
   const { rows } = await query<CategoryTopicMutation>(
     `/* updateMatchedCategories */
       WITH updates AS (
-        SELECT
-          unnest($1::uuid[]) as rss_feed_item_id,
-          unnest($2::text[]) as category_text,
-          unnest($3::uuid[]) as topic_id
-          , unnest($4::uuid[]) as topic_alias_id
+        SELECT input.rss_feed_item_id, identity.id AS category_identity_id,
+          input.topic_id, input.topic_alias_id
+        FROM unnest($1::uuid[], $2::text[], $3::uuid[], $4::uuid[])
+          AS input(rss_feed_item_id, category_text, topic_id, topic_alias_id)
+        CROSS JOIN LATERAL (
+          SELECT id FROM rss_category_identities
+          WHERE category_text = LOWER(TRIM(input.category_text))
+          LIMIT 1
+        ) identity
       ), candidates AS (
         SELECT
           category.rss_feed_item_id,
@@ -145,12 +149,15 @@ async function updateMatchedCategoriesChunk(
           category.topic_alias_id AS previous_topic_alias_id,
           updates.topic_id AS requested_topic_id,
           updates.topic_alias_id AS requested_topic_alias_id
-        FROM rss_feed_item_categories category
-        JOIN rss_category_identities identity
-          ON identity.id = category.category_identity_id
-        JOIN updates
+        FROM unnest(ARRAY(SELECT updates FROM updates)) AS updates(
+          rss_feed_item_id uuid,
+          category_identity_id uuid,
+          topic_id uuid,
+          topic_alias_id uuid
+        )
+        JOIN rss_feed_item_categories category
           ON category.rss_feed_item_id = updates.rss_feed_item_id
-         AND identity.category_text = LOWER(TRIM(updates.category_text))
+         AND category.category_identity_id = updates.category_identity_id
         WHERE category.topic_id IS DISTINCT FROM COALESCE(updates.topic_id, category.topic_id)
            OR category.topic_alias_id IS DISTINCT FROM COALESCE(updates.topic_alias_id, category.topic_alias_id)
         ORDER BY category.rss_feed_item_id, category.category_identity_id
@@ -159,7 +166,15 @@ async function updateMatchedCategoriesChunk(
         UPDATE rss_feed_item_categories category
         SET topic_id = COALESCE(candidates.requested_topic_id, category.topic_id),
             topic_alias_id = COALESCE(candidates.requested_topic_alias_id, category.topic_alias_id)
-        FROM candidates
+        -- Keep the locked pairs together and use their keys for target index probes.
+        FROM unnest(ARRAY(SELECT candidates FROM candidates)) AS candidates(
+          rss_feed_item_id uuid,
+          category_identity_id uuid,
+          previous_topic_id uuid,
+          previous_topic_alias_id uuid,
+          requested_topic_id uuid,
+          requested_topic_alias_id uuid
+        )
         WHERE category.rss_feed_item_id = candidates.rss_feed_item_id
           AND category.category_identity_id = candidates.category_identity_id
         RETURNING category.rss_feed_item_id, candidates.previous_topic_id, category.topic_id,
