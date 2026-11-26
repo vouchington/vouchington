@@ -23,8 +23,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-bedrock": "^3.1171.0",
-    "@aws-sdk/client-s3": "^3.1171.0",
+    "@aws-sdk/client-bedrock": "^3.1172.0",
+    "@aws-sdk/client-s3": "^3.1172.0",
     "@data-stores/psql": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",

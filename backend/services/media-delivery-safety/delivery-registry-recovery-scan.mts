@@ -26,7 +26,7 @@ export async function failExpiredExhaustedMediaDeliveryRegistryRecords(
 ): Promise<number> {
   if (recordIds?.length === 0) return 0
   await using transaction = await beginTransaction()
-  // lock-reason: prevents: multiple workers terminalizing the same expired claim; writer: expired-claim recovery and active projection processors.
+  // lock-reason: prevents: recording a duplicate failure or replacing a completed publication with an expired-lease failure; writer: another expired-lease scan or the active edge publisher.
   const { rows: candidates } = await transaction<{
     media_delivery_registry_record_id: string
   }>(sql`/* failExpiredExhaustedMediaDeliveryRegistryRecords:lock */

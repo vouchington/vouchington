@@ -1,5 +1,9 @@
+import { runMessageNotificationWriteCapacity } from './run-scenarios/message-notification-write-capacity.mts'
 import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
+import { runAccountHistoryScenarios } from './run-scenarios/account-history-pages.mts'
+import { runAccountMessagingScenarios } from './run-scenarios/account-messaging-pages.mts'
 import { runConversationListCapacityScenario } from './run-scenarios/conversation-list-capacity.mts'
+import { runAccountListCapacityScenarios } from './run-scenarios/account-lists-at-cap.mts'
 import { runCommunitySearchCapacityScenario } from './run-scenarios/community-search-capacity.mts'
 import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/community-membership-read-capacity.mts'
 import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
@@ -26,15 +30,28 @@ import {
   runMarkNotificationInboxCapacityScenario,
   runNotificationInboxCapacityScenario,
 } from './run-scenarios/notification-inbox-capacity.mts'
+import { runTopicClaimCapacityScenarios } from './run-scenarios/topic-claim-capacity.mts'
+import { runRssFeedCrawlCapacityScenario } from './run-scenarios/rss-feed-crawl-capacity.mts'
+import { runAdminReviewAndGuestReadScenarios } from './run-scenarios/admin-review-and-guest-reads.mts'
 import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
 import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
 import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard-delete-source-capacity.mts'
+import { runRssWriteCapacityScenarios } from './run-scenarios/rss-write-capacity.mts'
 import {
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,
 } from './run-scenarios/post-topic-write-capacity.mts'
 import { runApplicationQuestions } from './run-scenarios/community-application-question-write.mts'
+
+import { runUserListCapacityScenario } from './run-scenarios/user-list-capacity.mts'
+import {
+  runTopicAliasCapacityScenario,
+  runTopicHostnameCapacityScenario,
+} from './run-scenarios/topic-identity-capacity.mts'
+import { runTopHashtagCapacityScenario } from './run-scenarios/top-hashtag-capacity.mts'
+import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capacity.mts'
+import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
 
 export type OrderedRunner = () => Promise<unknown>
 
@@ -111,9 +128,23 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runConversationMessageCapacityScenario,
   runNotificationInboxCapacityScenario,
   runMarkNotificationInboxCapacityScenario,
+  runTopicClaimCapacityScenarios,
+  runRssFeedCrawlCapacityScenario,
+  runAdminReviewAndGuestReadScenarios,
+  runMessageNotificationWriteCapacity,
   runRelatedPostUrlCapacityScenario,
+  runAccountMessagingScenarios,
   runRssIngestCapacityScenario,
   runRssHardDeleteSourceCapacityScenario,
+  runAccountListCapacityScenarios,
+  runRssWriteCapacityScenarios,
+  runAccountHistoryScenarios,
+  runUserListCapacityScenario,
+  runTopicAliasCapacityScenario,
+  runTopicHostnameCapacityScenario,
+  runTopHashtagCapacityScenario,
+  runTopicChildCapacityScenario,
+  runUrlEmbedCapacityScenario,
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,

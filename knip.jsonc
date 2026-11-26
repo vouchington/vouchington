@@ -318,6 +318,7 @@
         "storybook/mocks/get-translations.ts",
         "storybook/mocks/languages.ts",
         "storybook/mocks/load-server-messages.ts",
+        "storybook/mocks/use-login-turnstile.ts",
         "storybook/mocks/upgrade-membership-aside.tsx",
         // Invoked as Node CLI entrypoints by the local and image smoke shell programs.
         "test-helpers/compile-localization-smoke-catalog.mts",

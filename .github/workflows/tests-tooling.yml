@@ -53,7 +53,7 @@ jobs:
         id: setup-backend
         timeout-minutes: 5
       - name: Install Gitleaks and Lychee for tooling tests
-        uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+        uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
         with:
           cache: false
           install_args: aqua:gitleaks/gitleaks aqua:lycheeverse/lychee
@@ -91,7 +91,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@587aba5d3c208c86523968bacee37f401a08e7b8 # v3.7.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: tooling
       - name: Upload full tooling LCOV to GitHub (attempt 2)
@@ -99,7 +99,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@587aba5d3c208c86523968bacee37f401a08e7b8 # v3.7.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: tooling
           name-suffix: -retry

@@ -100,7 +100,7 @@ export async function runDataPointTopicInsertCapacity(): Promise<void> {
   const scenario = 'post-data-point-topics-insert-at-cap'
   registerScenarioContract(scenario, {
     allowEmptyResult: true,
-    expectations: [{ kind: 'maxFunctionScanRows', max: topicLimit }],
+    expectations: [{ kind: 'maxInputRows', nodeType: 'Function Scan', max: topicLimit }],
   })
   await withDataPointLimit(() =>
     cardTopicFixture(topicLimit, topicIds =>

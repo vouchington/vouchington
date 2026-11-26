@@ -29,7 +29,7 @@
     "@services/review-disputes": "workspace:^",
     "@services/topic-claims": "workspace:^",
     "@vouchington/ai": "^0.4.1",
-    "openai": "^7.59.0"
+    "openai": "^7.60.0"
   },
   "devDependencies": {
     "@services/users": "workspace:^",

@@ -13,11 +13,12 @@ import type {
   WithInvocationOptions,
 } from 'no-mistakes'
 
+type CurrentReport = Exclude<AnalyzeProjectReportRequest, { type: 'related' }>
+type CurrentOptions = Omit<AnalyzeProjectOptions, 'reports'> & { reports: CurrentReport[] }
+
 const noMistakes = vi.hoisted(() => ({
   analyzeProject:
-    vi.fn<
-      (options: WithInvocationOptions<AnalyzeProjectOptions>) => Promise<AnalyzeProjectResult>
-    >(),
+    vi.fn<(options: WithInvocationOptions<CurrentOptions>) => Promise<AnalyzeProjectResult>>(),
 }))
 
 vi.mock<typeof import('no-mistakes')>(
