@@ -3868,6 +3868,9 @@ importers:
       '@services/moderation-claims':
         specifier: workspace:^
         version: link:../services/moderation-claims
+      '@services/moderation-exposure':
+        specifier: workspace:^
+        version: link:../services/moderation-exposure
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../services/moderation-reports

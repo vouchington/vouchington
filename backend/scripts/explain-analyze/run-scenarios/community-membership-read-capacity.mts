@@ -11,6 +11,7 @@ import {
 } from '@services/entity-cache/community-memberships'
 import sql from 'sql-template-strings'
 import { runAndCapture, seedUser } from '../run-support.mts'
+import { runProfileCommunityMembershipCounts } from './profile-community-membership-counts.mts'
 
 const membershipLimit = COMMUNITY_MEMBERSHIP_LIMIT_MAX_VALUES.communities_per_user
 const pageLimit = 100
@@ -141,4 +142,5 @@ export async function runCommunityMembershipReadCapacityScenarios(): Promise<voi
       invalidateCommunityMembershipCaches([userId], []),
     ])
   }
+  await runProfileCommunityMembershipCounts()
 }

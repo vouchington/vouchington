@@ -1,3 +1,7 @@
+import { runCommunityRaidSuggestionCapacity } from './community-raid-suggestion-capacity.mts'
+import { runCommunityBanSignalCapacity } from './community-ban-signal-capacity.mts'
+import { runCommunityInviteCleanupCapacity } from './community-invite-cleanup-capacity.mts'
+import { runCommunityListFeedAdmission } from './community-list-feed-admission.mts'
 import { runCommunityAgentPromptPageScenarios } from './community-agent-prompt-pages.mts'
 import { runCommunityMembershipCapScenarios } from './community-membership-caps.mts'
 import { runApplicationQuestionListScenario } from './community-application-question-list.mts'
@@ -120,6 +124,7 @@ async function runCommunityCreate(): Promise<void> {
 
 export async function runCommunityRoundTripScenarios(): Promise<void> {
   await runCommunityBanPageScenarios()
+  await runCommunityBanSignalCapacity()
   await runCommunityMembershipCapScenarios()
   await runCommunityAgentPromptPageScenarios()
   const communityId = await seededCommunityId()
@@ -130,6 +135,9 @@ export async function runCommunityRoundTripScenarios(): Promise<void> {
   await runConversationParticipantAdmission(communityId)
   await runModmailOpeningScenario()
   await runModmailFirstReplyScenario()
+  await runCommunityInviteCleanupCapacity()
   await runInviteRedeem(communityId)
   await runApplicationQuestionListScenario()
+  await runCommunityRaidSuggestionCapacity()
+  await runCommunityListFeedAdmission()
 }

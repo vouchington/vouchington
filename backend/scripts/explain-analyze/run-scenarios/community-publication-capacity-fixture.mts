@@ -142,6 +142,9 @@ export async function seedCommunityPublicationCapacity() {
   )
   return {
     communityId,
+    otherCommunityId: communityIds[1]!,
+    posts,
+    reports,
     pinnedIds,
     agentPostId,
     rankedReportIds,

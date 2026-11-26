@@ -87,6 +87,7 @@
     "@services/moderation": "workspace:^",
     "@services/moderation-analytics": "workspace:^",
     "@services/moderation-claims": "workspace:^",
+    "@services/moderation-exposure": "workspace:^",
     "@services/moderation-reports": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/modmail": "workspace:^",
