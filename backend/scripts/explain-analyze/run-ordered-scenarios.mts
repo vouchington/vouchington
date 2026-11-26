@@ -31,6 +31,8 @@ import {
   runNotificationInboxCapacityScenario,
 } from './run-scenarios/notification-inbox-capacity.mts'
 import { runTopicClaimCapacityScenarios } from './run-scenarios/topic-claim-capacity.mts'
+import { runRssLatestCrawlCapacityScenario } from './run-scenarios/rss-latest-crawl-capacity.mts'
+import { runRssHackerNewsFlagPagesCapacity } from './run-scenarios/rss-hacker-news-flag-pages-capacity.mts'
 import { runRssFeedCrawlCapacityScenario } from './run-scenarios/rss-feed-crawl-capacity.mts'
 import { runAdminReviewAndGuestReadScenarios } from './run-scenarios/admin-review-and-guest-reads.mts'
 import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
@@ -147,6 +149,8 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runTopicChildCapacityScenario,
   runUrlEmbedCapacityScenario,
   runReviewRatingWriteCapacity,
+  runRssLatestCrawlCapacityScenario,
+  runRssHackerNewsFlagPagesCapacity,
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
