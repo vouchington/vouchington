@@ -21,6 +21,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'hacker-news-post-card-sidecars-at-cap',
   'hacker-news-rss-card-sidecars-at-cap',
   'community-active-restrictions-at-cap',
+  'community-auto-tagger-catalog-at-cap',
   'search-posts-for-admin-review-at-cap',
   'search-copyright-association-at-hard-cap',
   'list-copyright-guest-capabilities-at-cap',

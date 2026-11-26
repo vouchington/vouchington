@@ -692,6 +692,7 @@
     "topic-claims-for-user-at-live-cap",
     "rss-feed-crawls-at-page-cap",
     "community-active-restrictions-at-cap",
+    "community-auto-tagger-catalog-at-cap",
     "search-posts-for-admin-review-at-cap",
     "search-copyright-association-at-hard-cap",
     "list-copyright-guest-capabilities-at-cap",
