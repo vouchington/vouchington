@@ -1,7 +1,5 @@
 {
-  "main": [
-    "top-url-insert-batch"
-  ],
+  "main": ["top-url-insert-batch"],
   "main-2": [
     "post-moderation-retention-idle-keepers",
     "post-moderation-version-retention-page",
