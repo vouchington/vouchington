@@ -234,6 +234,7 @@
     "url-canonical-root-read",
     "url-hacker-news-root-lookup",
     "url-canonical-rewrite",
+    "community-list-url-hydration-at-cap",
     "relatable-post-access-batch",
     "url-blocked-policy-with-values",
     "cached-topic-hostname-elections",

@@ -1,11 +1,14 @@
+import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
 import { addUrls } from '@services/urls/upsert'
 import { findUrlIdByIdentity } from '@services/urls/url-identities'
+import { getUrlsByIdBatch } from '@services/urls/get-batch'
 import { getCanonicalUrlsByIdBatch } from '@services/urls/get-canonical'
 import { getHackerNewsLookupTargets } from '@services/urls/hacker-news-lookup-state'
 import { setCanonicalUrl } from '@services/urls/set-canonical'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
+import { HOSTNAME_COUNT, seedUuid } from '../seed-data/common.mts'
 
 /** Variant inserts find their identity owner through the unique identity index, never a urls scan. */
 export async function runUrlIdentityScenarios(): Promise<void> {
@@ -101,5 +104,37 @@ export async function runUrlIdentityScenarios(): Promise<void> {
     () => setCanonicalUrl(rewritten[0]!.id, ownerId),
     undefined,
     ['resolveCanonicalTargets', 'flattenCanonicalChain', 'setCanonicalUrl'],
+  )
+  await runCommunityUrlHydrationCapacity()
+}
+
+async function runCommunityUrlHydrationCapacity(): Promise<void> {
+  // Community URL lists hydrate all 100 entries on a full caller page.
+  const limit = 100
+  const scenario = 'community-list-url-hydration-at-cap'
+  const offsets = Array.from({ length: limit }, (_, index) => index * 29).toReversed()
+  const ids = offsets.map(index => seedUuid(index, '03'))
+  const expected = offsets.map((index, position) => ({
+    id: ids[position],
+    hostnameId: seedUuid(index % HOSTNAME_COUNT, '02'),
+  }))
+  registerScenarioContract(scenario, {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'urls', max: limit },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: limit },
+    ],
+  })
+  await runAndCapture(
+    scenario,
+    async () => {
+      const urls = await getUrlsByIdBatch(ids)
+      assert.deepEqual(
+        urls.map(url => ({ id: url?.id, hostnameId: url?.hostname.id })),
+        expected,
+      )
+    },
+    undefined,
+    'getUrlsByIdBatch',
+    { exactCapturedNames: ['getUrlsByIdBatch'] },
   )
 }
