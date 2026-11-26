@@ -37,7 +37,9 @@ export function collaborativeFeedsCtesSql(): string {
           AND ufr1.subject_id != $1
           AND ufr1.deleted_at IS NULL
         ORDER BY ufr1.created_at DESC, ufr1.subject_id DESC
-        LIMIT ${coFollowerLimit}
+        -- The scalar limit lets the planner cost an ordered partial walk when the heap
+        -- visibility map offers little benefit and the average feed has fewer followers.
+        LIMIT (SELECT ${coFollowerLimit}::bigint)
       ) co_follower
       JOIN users source_user ON source_user.id = co_follower.subject_id
       CROSS JOIN viewer
