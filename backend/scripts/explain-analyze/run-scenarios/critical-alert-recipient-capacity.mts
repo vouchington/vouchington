@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
-import { getPagedDispatchLimit } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import { listCriticalAlertRecipientPage } from '@services/notifications/create-critical-moderation-alert-notification'
 import sql from 'sql-template-strings'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -9,7 +8,7 @@ import { runAndCapture } from '../run-support.mts'
 
 export async function runCriticalAlertRecipientCapacityScenario(): Promise<void> {
   const scenario = 'critical-moderation-alert-recipients-at-cap'
-  const limit = getPagedDispatchLimit('notifications_page_size')
+  const limit = 500 // Default notifications_page_size in paged-dispatcher-config.mts.
   const background = 3_000
   const cohort = `explain-alert-recipient-${randomUUID()}`
   const { rows } = await write<{ id: string }>(sql`/* seedExplainCriticalAlertRecipients */
