@@ -12,6 +12,13 @@ import {
   setPostSpamDetectionComplete,
   safeUsername,
 } from '@voucha/test-helpers'
+import {
+  getLatestPostClearanceDecision,
+  getTestCurrentPostClearance,
+  readTestPostClearanceAuthor,
+} from '@voucha/test-helpers/entities/post-clearance-reads'
+import { reassignPostAuthorWhileClearanceResets } from '@voucha/test-helpers/post-clearance-author-race'
+import { DELETED_USER_ID } from '@voucha/types/entities/user-constants'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 
 import { checkPostClearance, resetPostClearance, updateClearanceStatus } from '../index.mts'
@@ -221,6 +228,33 @@ describe('resetPostClearance', () => {
     await expect(getPostClearanceChanges(postId)).resolves.toContainEqual({
       change_type: 'reset_to_pending',
       changed_by_id: userId,
+    })
+  })
+
+  it('appends the reset for the author committed by a concurrent reassignment', async () => {
+    const author = await createTestUser()
+    const postId = await insertTestPost({
+      title: `reset-reassigned-${randomSuffix()}`,
+      slug: `reset-reassigned-${randomSuffix()}`,
+      createdById: author.id,
+      markdown: 'test',
+      clearanceStatus: 'approved',
+    })
+    const prior = await getTestCurrentPostClearance(postId)
+
+    await expect(
+      reassignPostAuthorWhileClearanceResets(author, () => resetPostClearance(postId, userId)),
+    ).resolves.toBe(true)
+
+    const decision = await getLatestPostClearanceDecision(postId)
+    await expect(readTestPostClearanceAuthor(decision!.id)).resolves.toBe(DELETED_USER_ID)
+    await expect(getPostClearanceChanges(postId)).resolves.toContainEqual({
+      change_type: 'reset_to_pending',
+      changed_by_id: userId,
+    })
+    await expect(getTestCurrentPostClearance(postId)).resolves.toMatchObject({
+      clearance_version: String(BigInt(prior!.clearance_version) + 1n),
+      clearance_status: 'pending',
     })
   })
 

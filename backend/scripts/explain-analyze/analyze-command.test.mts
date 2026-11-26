@@ -236,6 +236,29 @@ describe('generic plan regression gate', () => {
     ).not.toThrow()
   })
 
+  it('applies the standard timing safeguard to each report-only continuation capture', () => {
+    const scenario = 'community-moderation-queue-report-continuation'
+    const custom = {
+      ...planResult('force_custom_plan', 500),
+      scenario_id: scenario,
+      name: 'searchCommunityModerationQueue:force_custom_plan',
+    }
+    const generic = {
+      ...planResult('force_generic_plan', 5_001),
+      scenario_id: scenario,
+      name: 'searchCommunityModerationQueue:force_generic_plan',
+    }
+    const results = [custom, generic]
+    expect(() => assertNoGenericPlanRegressions(results, results)).toThrow(
+      /community-moderation-queue-report-continuation capture 0/,
+    )
+
+    const anotherCapture = results.map(result => ({ ...result, capture_index: 1 }))
+    expect(() => assertNoGenericPlanRegressions(anotherCapture, anotherCapture)).toThrow(
+      /community-moderation-queue-report-continuation capture 1/,
+    )
+  })
+
   it('does not compare different scenarios or statements', () => {
     const custom = planResult('force_custom_plan', 10)
     const generic = planResult('force_generic_plan', 1000)
