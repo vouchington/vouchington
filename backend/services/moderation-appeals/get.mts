@@ -108,7 +108,12 @@ export async function listModerationAppeals(
   if (beforeId) {
     query.append(sql` AND ma.id < ${beforeId}`)
   }
-  query.append(sql` ORDER BY ma.id DESC LIMIT ${fetchLimit}`)
+  // Pending rows share a NULL resolved_at, so this prefix exposes the queue index order.
+  const order =
+    status === 'pending' && !appellantUserId
+      ? sql` ORDER BY ma.resolved_at, ma.id DESC`
+      : sql` ORDER BY ma.id DESC`
+  query.append(order).append(sql` LIMIT ${fetchLimit}`)
 
   const { rows } = await read(query)
   const appeals = (rows as ModerationAppealSummary[]).map(appeal => addIsOverdue(appeal, now))
