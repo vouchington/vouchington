@@ -145790,6 +145790,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_topic_claims__topic_live_page": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_claims__topic_live_page ON public.topic_claims USING btree (topic_id, id DESC) WHERE ((rejected_at IS NULL) AND (revoked_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((rejected_at IS NULL) AND (revoked_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_topic_claims__topic_user_live": {
           "accessMethod": "btree",
           "constraintBacked": false,

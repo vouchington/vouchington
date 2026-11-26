@@ -97,3 +97,8 @@ COMMENT ON COLUMN topic_claims.rejected_by_id IS 'Staff who rejected the claim.'
 COMMENT ON COLUMN topic_claims.revoked_by_id IS 'Staff who revoked the verified claim.';
 
 CREATE INDEX IF NOT EXISTS idx_topic_claims__topic__id ON topic_claims(topic_id,id);
+
+-- Staff live claims by topic in page order
+CREATE INDEX IF NOT EXISTS idx_topic_claims__topic_live_page
+  ON topic_claims (topic_id, id DESC)
+  WHERE rejected_at IS NULL AND revoked_at IS NULL;

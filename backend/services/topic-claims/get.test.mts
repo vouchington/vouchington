@@ -109,7 +109,7 @@ describe('getVerifiedTopicClaim', () => {
 })
 
 describe('listTopicClaimsForTopic', () => {
-  it('paginates and scopes a cursor to the claimant filter', async () => {
+  it.each([false, true])('scopes claimant cursors with activeOnly=%s', async activeOnly => {
     const owner = await createTestUser()
     const topicId = await insertTestTopic({
       name: `Claim page ${crypto.randomUUID().slice(0, 8)}`,
@@ -120,7 +120,7 @@ describe('listTopicClaimsForTopic', () => {
     for (const claimant of claimants) {
       await createTopicClaim(claimant.id, { topicId, claimedRole: 'Issuer', evidence: '' })
     }
-    const first = await listTopicClaimsForTopic(topicId, { limit: 1 })
+    const first = await listTopicClaimsForTopic(topicId, { limit: 1, activeOnly })
     expect(first.results).toHaveLength(1)
     expect(first.results[0]?.topic_name).toMatch(/^Claim page /)
     expect(first.results[0]?.claimant_username).toEqual(
@@ -129,6 +129,7 @@ describe('listTopicClaimsForTopic', () => {
     expect(first.page_info.has_next_page).toBe(true)
     const second = await listTopicClaimsForTopic(topicId, {
       limit: 1,
+      activeOnly,
       after: first.page_info.end_cursor!,
     })
     expect(second.results).toHaveLength(1)
@@ -136,12 +137,14 @@ describe('listTopicClaimsForTopic', () => {
     await expect(
       listTopicClaimsForTopic(topicId, {
         limit: 1,
+        activeOnly,
         claimantUserId: claimants[0]!.id,
         after: first.page_info.end_cursor!,
       }),
     ).rejects.toThrow('Invalid claim cursor')
     const own = await listTopicClaimsForTopic(topicId, {
       limit: 1,
+      activeOnly,
       claimantUserId: claimants[0]!.id,
     })
     expect(own.results.map(claim => claim.claimant_user_id)).toEqual([claimants[0]!.id])

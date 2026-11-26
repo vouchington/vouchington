@@ -59,6 +59,7 @@ _none_
 - `idx_topic_claims__rejected_by_id`: `CREATE INDEX idx_topic_claims__rejected_by_id ON public.topic_claims USING btree (rejected_by_id) WHERE (rejected_by_id IS NOT NULL)`
 - `idx_topic_claims__revoked_by_id`: `CREATE INDEX idx_topic_claims__revoked_by_id ON public.topic_claims USING btree (revoked_by_id) WHERE (revoked_by_id IS NOT NULL)`
 - `idx_topic_claims__topic__id`: `CREATE INDEX idx_topic_claims__topic__id ON public.topic_claims USING btree (topic_id, id)`
+- `idx_topic_claims__topic_live_page`: `CREATE INDEX idx_topic_claims__topic_live_page ON public.topic_claims USING btree (topic_id, id DESC) WHERE ((rejected_at IS NULL) AND (revoked_at IS NULL))`
 - `idx_topic_claims__topic_user_live`: `CREATE UNIQUE INDEX idx_topic_claims__topic_user_live ON public.topic_claims USING btree (topic_id, claimant_user_id) WHERE ((rejected_at IS NULL) AND (revoked_at IS NULL))`
 - `idx_topic_claims__verification_hostname_id`: `CREATE INDEX idx_topic_claims__verification_hostname_id ON public.topic_claims USING btree (verification_hostname_id) WHERE (verification_hostname_id IS NOT NULL)`
 - `idx_topic_claims__verified`: `CREATE INDEX idx_topic_claims__verified ON public.topic_claims USING btree (topic_id, claimant_user_id) WHERE ((verified_at IS NOT NULL) AND (revoked_at IS NULL))`

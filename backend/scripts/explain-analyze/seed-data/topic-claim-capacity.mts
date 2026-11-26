@@ -39,6 +39,7 @@ export async function createTopicClaimFixtureTopic(): Promise<string> {
 export async function insertTopicClaimFixtures(
   topicIds: readonly string[],
   claimantIds: readonly string[],
+  historyPerLiveClaim = HISTORY_PER_LIVE_CLAIM,
 ): Promise<{ liveIds: string[]; allIds: string[] }> {
   assert.equal(topicIds.length, claimantIds.length)
   const { rows: liveRows } = await write<{ id: string }>(sql`
@@ -58,7 +59,7 @@ export async function insertTopicClaimFixtures(
       'Explain analyze capacity history'
     FROM unnest(${topicIds}::uuid[], ${claimantIds}::uuid[])
       AS fixture(topic_id, claimant_user_id)
-    CROSS JOIN generate_series(1, ${HISTORY_PER_LIVE_CLAIM}::int)
+    CROSS JOIN generate_series(1, ${historyPerLiveClaim}::int)
     RETURNING id
   `)
   return {
