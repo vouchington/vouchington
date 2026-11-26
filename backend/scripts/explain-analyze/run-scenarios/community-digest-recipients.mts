@@ -4,6 +4,7 @@ import { getNotificationsWorkLimit } from '@services/notifications/work-limits'
 import { registerScenarioContract, type ScenarioPlanContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { COMMUNITY_MEMBERSHIP_CAP_USER_ID } from '../seed-data/community-membership-caps.mts'
+import { runCommunityActivityDigestCapacity } from './community-activity-digest-capacity.mts'
 import { withArchivedDigestMemberships } from '../seed-data/community-digest-membership-pages.mts'
 
 export async function runCommunityDigestRecipientScenarios(): Promise<void> {
@@ -63,4 +64,5 @@ export async function runCommunityDigestRecipientScenarios(): Promise<void> {
       assert.equal(page.nextCommunityId, communityIds[batchSize * 2 - 1])
     })
   })
+  await runCommunityActivityDigestCapacity()
 }

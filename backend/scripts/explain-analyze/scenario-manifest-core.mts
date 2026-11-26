@@ -71,6 +71,7 @@ export const CORE_SCENARIOS = [
   'community-activity-digest-recipients',
   'community-activity-digest-archived-first',
   'community-activity-digest-archived-later',
+  'community-activity-digest-recipient-capacity',
   'conversations-by-user',
   'crawl-chunks-by-crawl',
   'crawl-latest-successful',
