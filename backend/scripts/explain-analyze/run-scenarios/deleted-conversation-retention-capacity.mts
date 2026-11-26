@@ -93,8 +93,8 @@ async function runMessagePage(fixture: Fixture) {
     allowEmptyResult: true,
     expectations: [
       { kind: 'singleLeaf', parent: 'conversation_messages', key: 'conversation_id' },
-      // Main scans the target leaf twice in the custom plan. Tighten in #6419.
-      { kind: 'maxProcessedRows', relation: 'conversation_messages', max: 23_002 },
+      { kind: 'noSeqScan', relation: 'conversation_messages' },
+      { kind: 'maxProcessedRows', relation: 'conversation_messages', max: 2 * pageSize },
     ],
     seededRows: fixture.seededRows,
   })
