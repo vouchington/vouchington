@@ -675,6 +675,7 @@
     "topic-merge-alias-repoint-unlinks-at-cap",
     "rss-source-publication-backfill-at-cap",
     "rss-source-publication-backfill-tail-at-cap",
+    "notification-rss-hydration-at-cap",
     "rss-mapped-topics-at-cap",
     "top-hashtags-at-cap",
     "topic-children-at-cap",
