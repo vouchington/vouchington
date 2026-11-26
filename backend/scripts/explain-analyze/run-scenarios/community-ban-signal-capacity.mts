@@ -7,6 +7,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { resolveSeedAnchor, SEED_ANCHOR_DATE_ENV } from '../seed-data/seed-anchor.mts'
 import { runCommunityBanEmbeddingCapacity } from './community-ban-embedding-capacity.mts'
+import { runCommunityBanReferralSignalCapacity } from './community-ban-referral-signal-capacity.mts'
 
 const QUERY = 'checkContentHashMatchToBannedPosts'
 const TRIGGER_SCENARIO = 'community-ban-hash-triggering-post'
@@ -160,6 +161,7 @@ export async function runCommunityBanSignalCapacity(): Promise<void> {
       matchingPostId,
       stalePostId,
     )
+    await runCommunityBanReferralSignalCapacity(communityId, userIds)
   } finally {
     await write('/* cleanupCommunityBanHashPosts */ DELETE FROM posts WHERE id = ANY($1::uuid[])', [
       posts.map(post => post.id),

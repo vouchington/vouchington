@@ -190,6 +190,7 @@
     "community-ban-hash-candidate-history",
     "community-ban-embedding-triggering-post",
     "community-ban-embedding-candidate-history",
+    "community-ban-referral-link-signal",
     "community-application-questions-at-cap",
     "session-limit-hasAuthenticatedSession",
     "session-limit-hasAuthenticatedSession-missing",

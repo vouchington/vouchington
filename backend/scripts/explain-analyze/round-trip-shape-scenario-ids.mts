@@ -23,6 +23,7 @@ export const ROUND_TRIP_SHAPE_SCENARIO_IDS = [
   'community-ban-hash-candidate-history',
   'community-ban-embedding-triggering-post',
   'community-ban-embedding-candidate-history',
+  'community-ban-referral-link-signal',
   'community-application-questions-at-cap',
   'rss-feed-state-changes',
   'post-visibility-batch',
