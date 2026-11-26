@@ -60,7 +60,12 @@ export async function searchTopHashtags(options: {
         hashtags.latest_content_id,
         active_topic.id AS topic_id
       FROM mv_top_hashtags hashtags
-      JOIN topic_aliases aliases ON aliases.id = hashtags.topic_alias_id
+      JOIN LATERAL (
+        SELECT alias.alias, alias.topic_id
+        FROM topic_aliases alias
+        WHERE alias.id = hashtags.topic_alias_id
+        LIMIT 1
+      ) aliases ON TRUE
       LEFT JOIN topics active_topic
         ON active_topic.id = aliases.topic_id
         AND active_topic.deleted_at IS NULL

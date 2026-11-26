@@ -62,10 +62,18 @@ export async function runTopHashtagCapacityScenario(): Promise<void> {
     registerScenarioContract(scenario, {
       seededRows: { mv_top_hashtags: aliasIds.length + 1 },
       expectations: [
-        // The custom first page and generic continuation scan all aliases and ranked rows.
+        // Both plan modes keep the ordered ranking walk and keyed alias lookup at the page cap.
+        // The tied continuation visits 501 ranked rows before reaching its one remaining match.
         // https://github.com/vouchington/vouchington/issues/6396
-        { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_628 },
-        { kind: 'maxProcessedRows', relation: 'mv_top_hashtags', max: 602 },
+        { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 501 },
+        { kind: 'maxProcessedRows', relation: 'mv_top_hashtags', max: 501 },
+        { kind: 'noSeqScan', relation: 'topic_aliases' },
+        { kind: 'noSeqScan', relation: 'mv_top_hashtags' },
+        {
+          kind: 'usesIndexes',
+          indexes: ['idx_mv_top_hashtags__ranking'],
+          noSort: true,
+        },
       ],
     })
     await runAndCapture(
