@@ -9,4 +9,5 @@ export const MEMBERSHIP_SCENARIO_IDS = [
   'membership-refund-target-heavy-current',
   'membership-refund-target-heavy-history',
   ...MEMBERSHIP_EXPIRY_SCENARIO_IDS,
+  'membership-pending-state-at-default',
 ] as const

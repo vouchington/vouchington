@@ -8,6 +8,7 @@ import { runCommunitySearchCapacityScenario } from './run-scenarios/community-se
 import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/community-membership-read-capacity.mts'
 import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
+import { runMembershipPendingStateCapacity } from './run-scenarios/membership-pending-state-capacity.mts'
 import { runMembershipOrphanedQueuedGrantScenarios } from './run-scenarios/membership-orphaned-queued-grants.mts'
 import { runPostImageWriteScenarios } from './run-scenarios/post-image-writes.mts'
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
@@ -150,6 +151,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
+  runMembershipPendingStateCapacity,
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
 ]
