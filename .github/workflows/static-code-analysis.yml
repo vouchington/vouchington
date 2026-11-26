@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 2 # the baseline check diffs a pull request against HEAD^1
         timeout-minutes: 3
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@324c8741aa605d4c28897dcfcce17cc8f56ff08a # v3.10.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -180,7 +180,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.checkout-2.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@324c8741aa605d4c28897dcfcce17cc8f56ff08a # v3.10.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
