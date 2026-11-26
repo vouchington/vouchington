@@ -3,6 +3,13 @@
 // PR #3018 removed 48 story-hydration rss_feeds/topics fingerprints after keyed RSS feed
 // hydration passed paired custom/generic captures (2026-10-17T02-25-09-194Z).
 export const BASELINE_FINGERPRINTS = [
+  // Paired main-4 custom pending-report plans scan the review table. Tighten in #6402.
+  'community-pending-reports-cap-created_at_desc|0|listCommunityPendingModerationReports:force_custom_plan|force_custom_plan:community_post_reviews',
+  'community-pending-reports-cap-severity|0|listCommunityPendingModerationReports:force_custom_plan|force_custom_plan:community_post_reviews',
+  'community-pending-reports-cap-severity|2|listCommunityPendingModerationReports:force_custom_plan|force_custom_plan:community_post_reviews',
+  // The merged queue on main scans reviews in both branches before the page sort. Tighten in #6390.
+  'community-moderation-queue-merged-first|0|searchCommunityModerationQueue:force_custom_plan|force_custom_plan:community_post_reviews',
+  'community-moderation-queue-merged-continuation|0|searchCommunityModerationQueue:force_custom_plan|force_custom_plan:community_post_reviews',
   // Engagement recipients are globally ranked by claimed-at fairness across eligible users.
   // Paired CI 42086515835 also selected these custom scans after the prompt fixture grew users.
   'engagement-follow-news-sources|0|getFollowNewsSourcesRecipients:force_custom_plan|force_custom_plan:relation__user__follow__rss_feed',
@@ -28,6 +35,10 @@ export const BASELINE_FINGERPRINTS = [
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_custom_plan|force_custom_plan:notifications',
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_generic_plan|force_generic_plan:notifications',
   'recommended-topics|0|buildRecommendationQuery:force_custom_plan|force_custom_plan:topics',
+  // Hosted artifact 15034796173 repeated both custom RSS category write scans.
+  // Remove these entries with #6417.
+  'rss-item-category-insert-at-cap|0|insertMissingCategories:force_custom_plan|force_custom_plan:topic_aliases',
+  'rss-item-category-update-at-cap|0|updateMatchedCategories:force_custom_plan|force_custom_plan:rss_feed_item_categories',
   'search-admin-users-email|0|searchAdminUsers:email:force_custom_plan|force_custom_plan:users',
   'search-admin-users-email|0|searchAdminUsers:email:force_generic_plan|force_generic_plan:users',
   'search-admin-users-uuid|0|searchAdminUsers:uuid:force_generic_plan|force_generic_plan:users',
@@ -36,4 +47,14 @@ export const BASELINE_FINGERPRINTS = [
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
   'topic-search-text|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
+  // Paired CI 45645552593 scans topic_aliases in these two ranking plans.
+  // https://github.com/vouchington/vouchington/issues/6396
+  'top-hashtags-at-cap|0|searchTopHashtags:force_custom_plan|force_custom_plan:topic_aliases',
+  'top-hashtags-at-cap|1|searchTopHashtags:force_generic_plan|force_generic_plan:topic_aliases',
+  // Paired CI 45645552593 scans RSS feeds and topics during embed hydration.
+  // https://github.com/vouchington/vouchington/issues/6398
+  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_custom_plan|force_custom_plan:rss_feeds',
+  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_custom_plan|force_custom_plan:topics',
+  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_generic_plan|force_generic_plan:rss_feeds',
+  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_generic_plan|force_generic_plan:topics',
 ] as const

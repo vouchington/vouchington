@@ -95,15 +95,20 @@ export function reportTargetAvailableSql() {
   END`
 }
 
+export function communityPostApprovalPredicateSql(postAlias: 'target_post' | 'root_post') {
+  return sql``.append(`cpr_vis.community_id = ${postAlias}.community_id
+    AND cpr_vis.post_id = ${postAlias}.id
+    AND cpr_vis.approved_at IS NOT NULL
+    AND cpr_vis.rejected_at IS NULL
+    AND cpr_vis.unpublished_at IS NULL`)
+}
+
 export function communityPostNotApprovedSql(postAlias: 'target_post' | 'root_post') {
-  return sql``.append(`(${postAlias}.community_id IS NOT NULL AND NOT EXISTS (
-      SELECT 1 FROM community_post_reviews cpr_vis
-      WHERE cpr_vis.community_id = ${postAlias}.community_id
-        AND cpr_vis.post_id = ${postAlias}.id
-        AND cpr_vis.approved_at IS NOT NULL
-        AND cpr_vis.rejected_at IS NULL
-        AND cpr_vis.unpublished_at IS NULL
-    ))`)
+  return sql``
+    .append(`(${postAlias}.community_id IS NOT NULL AND NOT EXISTS (
+      SELECT 1 FROM community_post_reviews cpr_vis WHERE `)
+    .append(communityPostApprovalPredicateSql(postAlias))
+    .append(sql`))`)
 }
 
 /**

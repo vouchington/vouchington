@@ -41,6 +41,7 @@
     "@services/ap-inbox-activities": "workspace:^",
     "@services/api-keys": "workspace:^",
     "@services/articles": "workspace:^",
+    "@services/attribution": "workspace:^",
     "@services/autotagger": "workspace:^",
     "@services/bedrock-embeddings-batch": "workspace:^",
     "@services/bluesky-accounts": "workspace:^",
@@ -85,7 +86,9 @@
     "@services/mfa": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/moderation-analytics": "workspace:^",
+    "@services/moderation-claims": "workspace:^",
     "@services/moderation-reports": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
     "@services/modmail": "workspace:^",
     "@services/my": "workspace:^",
     "@services/notifications": "workspace:^",
@@ -113,6 +116,7 @@
     "@services/spam-detection": "workspace:^",
     "@services/stories": "workspace:^",
     "@services/stripe": "workspace:^",
+    "@services/topic-claims": "workspace:^",
     "@services/topic-recommendations": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/trending-topics": "workspace:^",
@@ -146,8 +150,10 @@
   "devDependencies": {
     "@services/notifications-push": "workspace:^",
     "@services/openai-agents": "workspace:^",
+    "@services/post-content-limits": "workspace:^",
+    "@services/tag-limits": "workspace:^",
     "@vouchington/explain-plan": "^0.0.1",
     "husky": "^9.1.7",
-    "vouchington-tooling": "^3.7.0"
+    "vouchington-tooling": "^3.10.0"
   }
 }

@@ -36,6 +36,7 @@ export async function markSkippedPostBanEvasionEmbeddings(
       WHERE id = ANY(${lockedIds}::uuid[])
       ORDER BY id
       LIMIT ${lockedIds.length}
+      -- lock-reason: prevents: a stale ban-evasion marker from suppressing detection on the new first post; writer: post deletion, moderation removal, and author-deletion reassignment.
       FOR NO KEY UPDATE
     ), skipped(post_id, first_post_id, user_id, community_id, input_sha256) AS (
       VALUES `.append(input).append(sql`
