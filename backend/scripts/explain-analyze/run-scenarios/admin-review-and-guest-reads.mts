@@ -138,8 +138,11 @@ async function runGuestCapabilityPages(): Promise<void> {
   const noticeId = ASSOCIATION_FIXTURE_IDS[0]!
   registerScenarioContract(scenario, {
     expectations: [
-      // #6414 tracks first-page scans of capabilities from unrelated notices.
-      { kind: 'maxProcessedRows', relation: 'copyright_notice_guest_capabilities', max: 501 },
+      {
+        kind: 'maxProcessedRows',
+        relation: 'copyright_notice_guest_capabilities',
+        max: PAGE_LIMIT + 1,
+      },
     ],
     seededRows: { copyright_notice_guest_capabilities: GUEST_CAPABILITY_SEEDED_ROWS },
   })
