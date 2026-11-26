@@ -3,6 +3,7 @@ import { runCopyrightSuspendedClaimantRecoveryCapacityScenarios } from './run-sc
 import { runCopyrightStatutoryRestorationCapacityScenarios } from './run-scenarios/copyright-statutory-restoration.mts'
 import { runCopyrightPendingEnforcementScenarios } from './run-scenarios/copyright-pending-enforcement.mts'
 import { runCopyrightActionIntentRecoveryCapacityScenarios } from './run-scenarios/copyright-action-intent-recovery.mts'
+import { runCopyrightDeliveryIntentRecoveryCapacityScenarios } from './run-scenarios/copyright-delivery-intent-recovery.mts'
 import { runModerationReportDetailScenarios } from './run-scenarios/moderation-report-detail.mts'
 import { runMcpAdmissionScenario } from './run-scenarios/mcp-admission.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
@@ -85,6 +86,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightStatutoryRestorationCapacityScenarios,
   runCopyrightPendingEnforcementScenarios,
   runCopyrightActionIntentRecoveryCapacityScenarios,
+  runCopyrightDeliveryIntentRecoveryCapacityScenarios,
   runMembershipProviderRecoveryScenarios,
   // The actor probes read the agent moderation and report context corpora seeded earlier in this
   // segment, so they stay in it, ahead of the hot publication fixtures.
