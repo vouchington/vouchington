@@ -22,7 +22,7 @@ export async function resetPostClearanceIfContentCurrent(
       WHERE id = ${postId}
         AND llm_moderation_content_sha256 = ${contentSha256}
     `
-    // lock-reason: prevents: resetting clearance for content that replaced the checked digest; writer: post content edits and clearance listeners.
+    // lock-reason: prevents: resetting clearance for a replaced digest or treating a post as already pending while an approval is in flight; writer: post content edits and setPostClearanceStatus.
     if (!alreadyReset) statement.append(' FOR UPDATE')
     const { rows } = await query(statement)
     if (rows.length === 0) return false
