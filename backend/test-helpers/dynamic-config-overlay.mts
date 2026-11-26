@@ -12,7 +12,8 @@ const heldNamesByConfig = new WeakMap<object, Set<string[]>>()
  *
  * Known gap: valkyries' pub/sub handler (`dynamic-config.mjs` ~134-145) calls `this.fields.set`
  * directly and bypasses this hook, so a `setFields` publish on the same key from another process
- * can still overwrite an override. A public hold API upstream would close it.
+ * can still overwrite an override. A public hold API upstream would close it:
+ * https://github.com/jonathanong/valkyries/issues/238
  */
 export function holdDynamicConfigFieldsAcrossRefresh(
   config: object,
