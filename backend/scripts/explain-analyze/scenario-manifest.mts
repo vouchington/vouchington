@@ -25,6 +25,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-stuck-appeal-runs-at-cap',
   'copyright-stuck-guidance-runs-at-cap',
   'copyright-expired-guest-capabilities-at-cap',
+  'copyright-dsa-recovery-first-page',
+  'copyright-dsa-recovery-continuation',
   'related-posts-by-url-at-cap',
   'account-modmail-threads-at-cap',
   'account-modmail-messages-at-cap',

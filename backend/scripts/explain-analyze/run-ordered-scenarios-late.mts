@@ -1,3 +1,4 @@
+import { runCopyrightDsaRecoveryCapacityScenarios } from './run-scenarios/copyright-dsa-recovery.mts'
 import { runReferralValidationPages } from './run-scenarios/referral-program-validation-pages.mts'
 import { runModerationReportDetailScenarios } from './run-scenarios/moderation-report-detail.mts'
 import { runMcpAdmissionScenario } from './run-scenarios/mcp-admission.mts'
@@ -79,6 +80,8 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // The actor probes read the agent moderation and report context corpora seeded earlier in this
   // segment, so they stay in it, ahead of the hot publication fixtures.
   runFkActorIndexScenarios,
+  // The immutable submission ledger stays in the last fixture of main-2.
+  runCopyrightDsaRecoveryCapacityScenarios,
   // Hot publication fixtures live only after all ordinary corpus plans and clean up on failure.
   runNotificationVisibilityScenarios,
   runPublicationScopePageScenarios,
