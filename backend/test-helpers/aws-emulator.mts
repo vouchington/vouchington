@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import undici from 'undici'
 import { startAwsEmulator, type RunningAwsEmulator } from '@vouchington/aws/testing'
+import { startWithStalledDownloadRetry } from './aws-emulator-download-attempts.mts'
 
 /**
  * The AWS Emulator package every test run uses. AWS publishes versioned packages under
@@ -23,21 +24,29 @@ const LINUX_RUNTIME_IMAGE =
 
 const cacheDir = resolve(import.meta.dirname, '..', '..', '.cache', 'aws-emulator')
 
-/** Starts the pinned emulator; the package download honors HTTPS_PROXY where a sandbox needs one. */
-export async function startVouchaAwsEmulator(): Promise<RunningAwsEmulator> {
-  const dispatcher = new undici.EnvHttpProxyAgent()
-  try {
-    return await startAwsEmulator({
-      package: {
-        pin: AWS_EMULATOR_PACKAGE_PIN,
-        cacheDir,
-        fetch: (url, init) =>
-          undici.fetch(url, { dispatcher, signal: init.signal }) as unknown as Promise<Response>,
-      },
-      dockerImage: LINUX_RUNTIME_IMAGE,
-      namePrefix: 'voucha-aws-emulator',
-    })
-  } finally {
-    await dispatcher.close()
-  }
+/**
+ * Starts the pinned emulator; the package download honors HTTPS_PROXY where a sandbox needs one.
+ * A download that stalls is cancelled and started again, see `startWithStalledDownloadRetry`.
+ */
+export function startVouchaAwsEmulator(): Promise<RunningAwsEmulator> {
+  return startWithStalledDownloadRetry(async attemptSignal => {
+    const dispatcher = new undici.EnvHttpProxyAgent()
+    try {
+      return await startAwsEmulator({
+        package: {
+          pin: AWS_EMULATOR_PACKAGE_PIN,
+          cacheDir,
+          fetch: (url, init) =>
+            undici.fetch(url, {
+              dispatcher,
+              signal: AbortSignal.any([init.signal, attemptSignal]),
+            }) as unknown as Promise<Response>,
+        },
+        dockerImage: LINUX_RUNTIME_IMAGE,
+        namePrefix: 'voucha-aws-emulator',
+      })
+    } finally {
+      await dispatcher.close()
+    }
+  })
 }
