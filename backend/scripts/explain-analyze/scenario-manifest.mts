@@ -18,6 +18,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-claims-for-topic-at-live-cap',
   'topic-claims-for-user-at-live-cap',
   'rss-feed-crawls-at-page-cap',
+  'rss-story-preview-feed-batch-at-cap',
+  'rss-semantic-search-at-cap',
   'search-posts-for-admin-review-at-cap',
   'search-copyright-association-at-hard-cap',
   'list-copyright-guest-capabilities-at-cap',

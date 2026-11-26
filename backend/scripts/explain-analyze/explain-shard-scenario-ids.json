@@ -641,6 +641,8 @@
     "account-conversation-participants-at-cap",
     "rss-ingest-content-at-cap",
     "rss-hard-delete-sources-at-cap",
+    "rss-story-preview-feed-batch-at-cap",
+    "rss-semantic-search-at-cap",
     "account-email-addresses-at-cap",
     "account-api-keys-at-cap",
     "account-oauth-apps-at-cap",
