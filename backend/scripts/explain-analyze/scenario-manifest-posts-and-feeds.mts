@@ -43,6 +43,7 @@ export const POSTS_AND_FEEDS_SCENARIOS = [
   'report-judgement-contexts-batch',
   'moderation-exposure-state-at-cap',
   'review-succession-candidates',
+  'post-created-recovery-related-urls-at-cap',
   'hacker-news-post-flag-posts-at-cap',
   'hacker-news-post-flag-related-at-cap',
   'hacker-news-post-flag-repair-at-cap',

@@ -675,6 +675,7 @@
     "community-muted-topic-exists",
     "ai-usage-totals-page",
     "post-create-images-at-cap",
+    "post-created-recovery-related-urls-at-cap",
     "post-replace-images-at-cap",
     "post-image-placement-retain-bindings-at-cap",
     "post-image-placement-create-parent-at-cap",
