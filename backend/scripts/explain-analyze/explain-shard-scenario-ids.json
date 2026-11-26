@@ -184,6 +184,7 @@
     "modmail-opening-two-parties",
     "modmail-first-reply-last-slot",
     "community-invite-redeem",
+    "community-invite-member-cleanup-at-cap",
     "community-application-questions-at-cap",
     "session-limit-hasAuthenticatedSession",
     "session-limit-hasAuthenticatedSession-missing",

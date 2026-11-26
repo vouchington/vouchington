@@ -1,3 +1,4 @@
+import { runCommunityInviteCleanupCapacity } from './community-invite-cleanup-capacity.mts'
 import { runCommunityListFeedAdmission } from './community-list-feed-admission.mts'
 import { runCommunityAgentPromptPageScenarios } from './community-agent-prompt-pages.mts'
 import { runCommunityMembershipCapScenarios } from './community-membership-caps.mts'
@@ -131,6 +132,7 @@ export async function runCommunityRoundTripScenarios(): Promise<void> {
   await runConversationParticipantAdmission(communityId)
   await runModmailOpeningScenario()
   await runModmailFirstReplyScenario()
+  await runCommunityInviteCleanupCapacity()
   await runInviteRedeem(communityId)
   await runApplicationQuestionListScenario()
   await runCommunityListFeedAdmission()
