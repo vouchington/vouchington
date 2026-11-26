@@ -21,6 +21,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'search-posts-for-admin-review-at-cap',
   'search-copyright-association-at-hard-cap',
   'list-copyright-guest-capabilities-at-cap',
+  'copyright-expired-guest-capabilities-at-cap',
   'related-posts-by-url-at-cap',
   'account-modmail-threads-at-cap',
   'account-modmail-messages-at-cap',

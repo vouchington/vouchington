@@ -26,6 +26,7 @@ import { runMembershipRenewalSelectionScenario } from './run-scenarios/membershi
 import { runClassifierHumanVoteComparisonScenarios } from './run-scenarios/classifier-human-vote-comparison.mts'
 import { runCopyrightDeliveryBatchScenarios } from './run-scenarios/copyright-delivery-batches.mts'
 import { runCopyrightCasePurgeScenarios } from './run-scenarios/copyright-case-purge.mts'
+import { runCopyrightGuestRetentionScenario } from './run-scenarios/copyright-guest-retention.mts'
 import { runClaimantMisuseWindowScenarios } from './run-scenarios/claimant-misuse-windows.mts'
 import { runCopyrightStatementFactsScenarios } from './run-scenarios/copyright-statement-facts.mts'
 import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-reconciliation.mts'
@@ -50,6 +51,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightDeliveryBatchScenarios,
   runCopyrightCasePurgeScenarios,
   runClaimantMisuseWindowScenarios,
+  runCopyrightGuestRetentionScenario,
   seedMediaDeliveryReplay,
   runMediaDeliveryReplayScenarios,
   runMediaDeliveryScopedPageScenarios,
