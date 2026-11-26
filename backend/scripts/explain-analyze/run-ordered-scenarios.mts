@@ -1,20 +1,3 @@
-import { runMessageNotificationWriteCapacity } from './run-scenarios/message-notification-write-capacity.mts'
-import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
-import { runAccountHistoryScenarios } from './run-scenarios/account-history-pages.mts'
-import { runAccountMessagingScenarios } from './run-scenarios/account-messaging-pages.mts'
-import { runConversationListCapacityScenario } from './run-scenarios/conversation-list-capacity.mts'
-import { runAccountListCapacityScenarios } from './run-scenarios/account-lists-at-cap.mts'
-import { runCommunityMemberMetricPages } from './run-scenarios/community-member-metric-pages.mts'
-import { runCommunitySearchCapacityScenario } from './run-scenarios/community-search-capacity.mts'
-import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/community-membership-read-capacity.mts'
-import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
-import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
-import { runMembershipOrphanedQueuedGrantScenarios } from './run-scenarios/membership-orphaned-queued-grants.mts'
-import { runPostImageWriteScenarios } from './run-scenarios/post-image-writes.mts'
-import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
-import { runAiUsageLookupScenarios } from './run-scenarios/ai-usage-lookups.mts'
-import { runMembershipScenarios } from './run-scenarios/memberships.mts'
-import { runAiUsageTotalsScenarios } from './run-scenarios/ai-usage-totals.mts'
 import { continueAfterFailure as runStep } from './scenario-failures.mts'
 import { EARLY_RUNNERS } from './run-ordered-scenarios-early.mts'
 import { LATE_RUNNERS } from './run-ordered-scenarios-late.mts'
@@ -26,39 +9,12 @@ import {
 } from './seed-data/dispatch-work-plans.mts'
 import { runAnalyze } from './seed-data/maintenance.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
-import { runModerationReportListCapacity } from './run-scenarios/moderation-report-list-capacity.mts'
-import { runConversationMessageCapacityScenario } from './run-scenarios/conversation-message-capacity.mts'
-import {
-  runMarkNotificationInboxCapacityScenario,
-  runNotificationInboxCapacityScenario,
-} from './run-scenarios/notification-inbox-capacity.mts'
-import { runTopicClaimCapacityScenarios } from './run-scenarios/topic-claim-capacity.mts'
-import { runRssFeedCrawlCapacityScenario } from './run-scenarios/rss-feed-crawl-capacity.mts'
-import { runAdminReviewAndGuestReadScenarios } from './run-scenarios/admin-review-and-guest-reads.mts'
-import { runHackerNewsPostFlagPages } from './run-scenarios/hacker-news-post-flag-pages.mts'
-import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
-import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
-import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard-delete-source-capacity.mts'
-import { runRssWriteCapacityScenarios } from './run-scenarios/rss-write-capacity.mts'
-import { runCopyrightExecutionRetentionScenarios } from './run-scenarios/copyright-execution-retention.mts'
-import { runCopyrightUnlinkedEmailRetentionScenario } from './run-scenarios/copyright-unlinked-email-retention.mts'
-import {
-  runReviewRatingWriteCapacity,
-  runDataPointTopicInsertCapacity,
-  runDataPointTopicReplaceCapacity,
-} from './run-scenarios/post-topic-write-capacity.mts'
-import { runApplicationQuestions } from './run-scenarios/community-application-question-write.mts'
-import { runUserListCapacityScenario } from './run-scenarios/user-list-capacity.mts'
-import {
-  runTopicAliasCapacityScenario,
-  runTopicHostnameCapacityScenario,
-} from './run-scenarios/topic-identity-capacity.mts'
-import { runTopHashtagCapacityScenario } from './run-scenarios/top-hashtag-capacity.mts'
-import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capacity.mts'
-import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
-import { runApiKeyExpiryCapacityScenarios } from './run-scenarios/api-key-expiry-capacity.mts'
-import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
-import { runModerationAppealListCapacity } from './run-scenarios/moderation-appeal-list-capacity.mts'
+import { AFTER_MEMBERSHIPS_RUNNERS } from './run-ordered-scenarios-after-memberships.mts'
+import { AFTER_COMMUNITIES_RUNNERS } from './run-ordered-scenarios-after-communities.mts'
+import { AFTER_NOTIFICATIONS_RUNNERS } from './run-ordered-scenarios-after-notifications.mts'
+import { AFTER_ACCOUNTS_RSS_RUNNERS } from './run-ordered-scenarios-after-accounts-rss.mts'
+import { AFTER_TOPICS_RUNNERS } from './run-ordered-scenarios-after-topics.mts'
+import { AFTER_RETENTION_RUNNERS } from './run-ordered-scenarios-after-retention.mts'
 export type OrderedRunner = () => Promise<unknown>
 // Order matters: earlier scenarios mutate the one shared corpus. See the comments in the
 // early and late files before moving a runner.
@@ -115,54 +71,12 @@ export function getShardPrelude(shard: OrdinaryExplainShard): readonly OrderedRu
 // Late fixture writers seed after every ordinary plan and never read the comment partitions.
 // They run at the end of the last ordinary shard.
 export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
-  runCategoryProjectionScenarios,
-  runExistenceFilterScenarios,
-  runAiUsageLookupScenarios,
-  runMembershipScenarios,
-  // Expiry fixtures come after the shared membership writer's corpus and all ordinary plans.
-  runMembershipExpiryPageScenarios,
-  runMembershipOrphanedQueuedGrantScenarios,
-  runConversationListCapacityScenario,
-  runCommunitySearchCapacityScenario,
-  runCommunityMemberMetricPages,
-  runCommunityMembershipReadCapacityScenarios,
-  runModerationReportListCapacity,
-  // These fixtures change crawler-table statistics; keep them after every existing plan.
-  runAggregateExistenceScenarios,
-  // Keep the extra communities out of ordinary search and ranking plan captures.
-  runAiUsageTotalsScenarios,
-  runPostImageWriteScenarios,
-  runConversationMessageCapacityScenario,
-  runNotificationInboxCapacityScenario,
-  runMarkNotificationInboxCapacityScenario,
-  runTopicClaimCapacityScenarios,
-  runRssFeedCrawlCapacityScenario,
-  runAdminReviewAndGuestReadScenarios,
-  runMessageNotificationWriteCapacity,
-  runRelatedPostUrlCapacityScenario,
-  runHackerNewsPostFlagPages,
-  runAccountMessagingScenarios,
-  runRssIngestCapacityScenario,
-  runRssHardDeleteSourceCapacityScenario,
-  runAccountListCapacityScenarios,
-  runRssWriteCapacityScenarios,
-  runAccountHistoryScenarios,
-  runUserListCapacityScenario,
-  runTopicAliasCapacityScenario,
-  runTopicHostnameCapacityScenario,
-  runTopHashtagCapacityScenario,
-  runTopicChildCapacityScenario,
-  runUrlEmbedCapacityScenario,
-  runReviewRatingWriteCapacity,
-  runDataPointTopicInsertCapacity,
-  runDataPointTopicReplaceCapacity,
-  // The retained form corpus changes question statistics. Analyze it after ordinary plans.
-  runApplicationQuestions,
-  runCopyrightAiRunRetentionCapacityScenario,
-  runCopyrightExecutionRetentionScenarios,
-  runCopyrightUnlinkedEmailRetentionScenario,
-  runModerationAppealListCapacity,
-  runApiKeyExpiryCapacityScenarios,
+  ...AFTER_MEMBERSHIPS_RUNNERS,
+  ...AFTER_COMMUNITIES_RUNNERS,
+  ...AFTER_NOTIFICATIONS_RUNNERS,
+  ...AFTER_ACCOUNTS_RSS_RUNNERS,
+  ...AFTER_TOPICS_RUNNERS,
+  ...AFTER_RETENTION_RUNNERS,
 ]
 
 /**
