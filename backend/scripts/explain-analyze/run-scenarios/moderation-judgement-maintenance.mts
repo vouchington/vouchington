@@ -8,6 +8,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
+import { registerModerationJudgementBackfillPlan } from './moderation-judgement-backfill-plan.mts'
 
 // Defaults from moderation-reports/work-limits.mts.
 const DISPATCH = 200
@@ -158,24 +159,7 @@ async function captureBackfill(
     entityType: 'user',
     triggeringReportId,
   })).toSorted((a, b) => a.entityId.localeCompare(b.entityId))
-  const { rows } = await write<{ reports: number; posts: number; non_post: number }>(
-    `/* boundModerationJudgementBackfillPlan */
-    SELECT count(*)::int AS reports, count(DISTINCT post_id)::int AS posts,
-           (count(*) FILTER (WHERE post_id IS NULL))::int AS non_post FROM moderation_reports`,
-  )
-  const corpus = rows[0]!
-  registerScenarioContract(scenario, {
-    crossPartition: {
-      posts: 'The backfill streams reported targets across all creation months.',
-      rss_feed_items: 'The backfill includes reported targets in every retention month.',
-    },
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'moderation_reports', max: corpus.reports },
-      { kind: 'maxProcessedRows', relation: 'posts', max: corpus.posts },
-      { kind: 'usesIndexes', indexes: ['idx_moderation_reports__post_id_id'] },
-      { kind: 'maxInputRows', nodeType: 'Sort', max: corpus.non_post },
-    ],
-  })
+  await registerModerationJudgementBackfillPlan(scenario)
   const owned = new Set(targetIds)
   await runAndCapture(
     scenario,
