@@ -158,16 +158,10 @@ async function captureBackfill(
     entityType: 'user',
     triggeringReportId,
   })).toSorted((a, b) => a.entityId.localeCompare(b.entityId))
-  const { rows } = await write<{
-    reports: number
-    reported_posts: number
-    non_post_reports: number
-  }>(
+  const { rows } = await write<{ reports: number; posts: number; non_post: number }>(
     `/* boundModerationJudgementBackfillPlan */
-    SELECT count(*)::int AS reports,
-           count(DISTINCT post_id)::int AS reported_posts,
-           (count(*) FILTER (WHERE post_id IS NULL))::int AS non_post_reports
-    FROM moderation_reports`,
+    SELECT count(*)::int AS reports, count(DISTINCT post_id)::int AS posts,
+           (count(*) FILTER (WHERE post_id IS NULL))::int AS non_post FROM moderation_reports`,
   )
   const corpus = rows[0]!
   registerScenarioContract(scenario, {
@@ -177,9 +171,9 @@ async function captureBackfill(
     },
     expectations: [
       { kind: 'maxProcessedRows', relation: 'moderation_reports', max: corpus.reports },
-      { kind: 'maxProcessedRows', relation: 'posts', max: corpus.reported_posts },
+      { kind: 'maxProcessedRows', relation: 'posts', max: corpus.posts },
       { kind: 'usesIndexes', indexes: ['idx_moderation_reports__post_id_id'] },
-      { kind: 'maxInputRows', nodeType: 'Sort', max: corpus.non_post_reports },
+      { kind: 'maxInputRows', nodeType: 'Sort', max: corpus.non_post },
     ],
   })
   const owned = new Set(targetIds)
