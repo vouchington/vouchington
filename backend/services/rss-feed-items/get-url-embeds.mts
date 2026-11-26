@@ -16,31 +16,7 @@ export async function getUrlEmbedsByUrlIds(
   if (urlIds.length === 0) return {}
   const { rows } = await read(
     sql`/* getUrlEmbedsByUrlIds */
-    WITH item AS (
-      SELECT DISTINCT ON (rfi.url_id)
-        rfi.id AS rss_feed_item_id, rfi.url_id,
-        rfi.media_type::text AS media_type, rfi.video_id, rfi.video_platform,
-        rfi.enclosure_url, enclosure_media_type.mime_type AS enclosure_type, rfi.duration_seconds, rfi.thumbnail_url,
-        NULLIF(TRIM(rfi.data->>'player_url'), '') AS rss_player_url, NULLIF(TRIM(rfi.data->>'title'), '') AS item_title
-      -- no-mistakes-disable-next-line postgres-required-predicates: RSS item URL can change on upsert, so an item may predate its current url_id
-      FROM rss_feed_items rfi
-      LEFT JOIN media_types enclosure_media_type ON enclosure_media_type.id = rfi.enclosure_media_type_id
-      WHERE rfi.url_id = ANY(${urlIds})
-        AND rfi.deleted_at IS NULL
-      ORDER BY rfi.url_id, rfi.id DESC
-    ),
-    show_context AS (
-      SELECT DISTINCT ON (rfis.rss_feed_item_id)
-        rfis.rss_feed_item_id,
-        rf.id AS show_id, rf.title AS show_title,
-        t.slug AS show_topic_slug, t.topic_type AS show_topic_type
-      FROM item i
-      JOIN rss_feed_item_sources rfis ON rfis.rss_feed_item_id = i.rss_feed_item_id
-      JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id AND rf.deleted_at IS NULL
-      JOIN topics t ON t.id = rf.topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
-      ORDER BY rfis.rss_feed_item_id, rf.id ASC
-    ),
-    canonical_urls AS (
+    WITH canonical_urls AS (
       SELECT u.id AS origin_url_id, canonical.id AS canonical_id, canonical.url
       FROM urls u
       JOIN urls canonical ON canonical.id = COALESCE(u.canonical_url_id, u.id)
@@ -183,8 +159,32 @@ export async function getUrlEmbedsByUrlIds(
       sc.show_id, sc.show_title, sc.show_topic_slug, sc.show_topic_type
     FROM urls u
     LEFT JOIN canonical_urls cu ON cu.origin_url_id = u.id
-    LEFT JOIN item i ON i.url_id = u.id
-    LEFT JOIN show_context sc ON sc.rss_feed_item_id = i.rss_feed_item_id
+    LEFT JOIN LATERAL (
+      SELECT
+        rfi.id AS rss_feed_item_id,
+        rfi.media_type::text AS media_type, rfi.video_id, rfi.video_platform,
+        rfi.enclosure_url, enclosure_media_type.mime_type AS enclosure_type,
+        rfi.duration_seconds, rfi.thumbnail_url,
+        NULLIF(TRIM(rfi.data->>'player_url'), '') AS rss_player_url,
+        NULLIF(TRIM(rfi.data->>'title'), '') AS item_title
+      -- no-mistakes-disable-next-line postgres-required-predicates: RSS item URL can change on upsert, so an item may predate its current url_id
+      FROM rss_feed_items rfi
+      LEFT JOIN media_types enclosure_media_type ON enclosure_media_type.id = rfi.enclosure_media_type_id
+      WHERE rfi.url_id = u.id AND rfi.deleted_at IS NULL
+      ORDER BY rfi.id DESC
+      LIMIT 1
+    ) i ON true
+    LEFT JOIN LATERAL (
+      SELECT
+        rf.id AS show_id, rf.title AS show_title,
+        t.slug AS show_topic_slug, t.topic_type AS show_topic_type
+      FROM rss_feed_item_sources rfis
+      JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id AND rf.deleted_at IS NULL
+      JOIN topics t ON t.id = rf.topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
+      WHERE rfis.rss_feed_item_id = i.rss_feed_item_id
+      ORDER BY rf.id ASC
+      LIMIT 1
+    ) sc ON true
     LEFT JOIN crawl c ON c.origin_url_id = u.id
     LEFT JOIN embed_crawl ec ON ec.origin_url_id = u.id
     WHERE u.id = ANY(${urlIds})

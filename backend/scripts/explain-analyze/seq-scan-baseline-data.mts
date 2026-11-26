@@ -40,10 +40,4 @@ export const BASELINE_FINGERPRINTS = [
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
   'topic-search-text|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
-  // Paired CI 45645552593 scans RSS feeds and topics during embed hydration.
-  // https://github.com/vouchington/vouchington/issues/6398
-  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_custom_plan|force_custom_plan:rss_feeds',
-  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_custom_plan|force_custom_plan:topics',
-  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_generic_plan|force_generic_plan:rss_feeds',
-  'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_generic_plan|force_generic_plan:topics',
 ] as const

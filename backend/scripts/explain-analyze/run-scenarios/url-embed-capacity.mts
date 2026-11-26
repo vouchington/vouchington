@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { paginationMaxima } from '@services/pagination/config'
 import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embeds'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -54,18 +54,15 @@ export async function runUrlEmbedCapacityScenario(): Promise<void> {
       crawls: 'The latest eligible crawl for an origin URL may be in any arrival-time partition.',
     },
     expectations: [
-      // Paired captures scan RSS items, source associations, feeds and topics.
+      // Each requested URL selects one current item, then one eligible show per selected item.
+      // Keyed probes keep work proportional to the 60 RSS-backed URLs, not corpus size.
       // https://github.com/vouchington/vouchington/issues/6398
-      { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: 36_689 },
-      { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: 75_433 },
-      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 2_578 },
-      { kind: 'maxProcessedRows', relation: 'topics', max: 15_070 },
+      { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: rssCount },
+      { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: rssCount },
+      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: rssCount },
+      { kind: 'maxProcessedRows', relation: 'topics', max: rssCount },
     ],
   })
-  // Earlier seed updates leave rss_feeds between 155 and 198 pages depending on when autovacuum
-  // ran, which flips the generic plan between a hash join over a sequential scan and index probes.
-  // Rewriting the heap makes its sequential-scan cost the same on every run.
-  await write('/* compactUrlEmbedFeeds */ VACUUM (FULL, ANALYZE) rss_feeds')
   await runAndCapture(
     scenario,
     async () => {
