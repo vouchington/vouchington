@@ -7,6 +7,9 @@ export const BASELINE_FINGERPRINTS = [
   'community-pending-reports-cap-created_at_desc|0|listCommunityPendingModerationReports:force_custom_plan|force_custom_plan:community_post_reviews',
   'community-pending-reports-cap-severity|0|listCommunityPendingModerationReports:force_custom_plan|force_custom_plan:community_post_reviews',
   'community-pending-reports-cap-severity|2|listCommunityPendingModerationReports:force_custom_plan|force_custom_plan:community_post_reviews',
+  // The merged queue on main scans reviews in both branches before the page sort. Tighten in #6390.
+  'community-moderation-queue-merged-first|0|searchCommunityModerationQueue:force_custom_plan|force_custom_plan:community_post_reviews',
+  'community-moderation-queue-merged-continuation|0|searchCommunityModerationQueue:force_custom_plan|force_custom_plan:community_post_reviews',
   // Engagement recipients are globally ranked by claimed-at fairness across eligible users.
   // Paired CI 42086515835 also selected these custom scans after the prompt fixture grew users.
   'engagement-follow-news-sources|0|getFollowNewsSourcesRecipients:force_custom_plan|force_custom_plan:relation__user__follow__rss_feed',
