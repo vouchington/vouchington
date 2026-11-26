@@ -103,6 +103,8 @@
     "copyright-claimant-misuse-near-oldest-window",
     "copyright-claimant-misuse-purge-page",
     "copyright-expired-guest-capabilities-at-cap",
+    "copyright-staff-case-queue-first",
+    "copyright-staff-case-queue-continuation",
     "media-delivery-replay-first",
     "media-delivery-replay-continuation",
     "media-delivery-replay-scoped",
