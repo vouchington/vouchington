@@ -18,7 +18,9 @@ export async function getCommunitySavedReplies(
   if (options?.after) {
     query.append(sql` AND (order_index, id) > (${options.after.ranking}, ${options.after.id})`)
   }
-  query.append(sql` ORDER BY order_index ASC, id ASC LIMIT ${limit + 1}`)
+  // Live ranks are unique per community. Keep the limit as an initplan so custom plans
+  // keep the ordered index walk for communities with enough replies to fill a page.
+  query.append(sql` ORDER BY order_index ASC LIMIT (SELECT ${limit + 1}::bigint)`)
   const { rows } = await read<CommunitySavedReply>(query)
   return rows
 }
