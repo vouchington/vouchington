@@ -128,4 +128,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-unlinked-email-recommendation-retention-at-cap',
   'topic-merge-alias-snapshot-tail-at-cap',
   'copyright-staff-email-queue-at-cap',
+  'copyright-dsa-recovery-first-page',
+  'copyright-dsa-recovery-continuation',
 ] as const

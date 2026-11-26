@@ -11,6 +11,7 @@ import { runCopyrightFormReviewRecoveryScenarios } from './run-scenarios/copyrig
 import { runCopyrightTrustedFlaggerCapacityScenarios } from './run-scenarios/copyright-trusted-flaggers.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runPostCommunityHydrationCapacityScenario } from './run-scenarios/post-community-hydration-capacity.mts'
+import { runCopyrightDsaRecoveryCapacityScenarios } from './run-scenarios/copyright-dsa-recovery.mts'
 
 export const RECOVERY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
@@ -29,4 +30,6 @@ export const RECOVERY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // segment, so they stay in it, ahead of the hot publication fixtures.
   runFkActorIndexScenarios,
   runPostCommunityHydrationCapacityScenario,
+  // The immutable submission ledger stays in the last fixture of main-2.
+  runCopyrightDsaRecoveryCapacityScenarios,
 ]

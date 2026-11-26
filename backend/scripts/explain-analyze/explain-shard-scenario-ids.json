@@ -317,6 +317,8 @@
     "fk-actor-images-deleted-by-no-match",
     "fk-actor-agent-moderations-deleted-by-no-match",
     "fk-actor-moderation-cases-resolved-by-no-match",
+    "copyright-dsa-recovery-first-page",
+    "copyright-dsa-recovery-continuation",
     "post-communities-batch-at-cap"
   ],
   "main-3": [
