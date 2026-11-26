@@ -7,6 +7,7 @@ import { runApiKeyExpiryCapacityScenarios } from './run-scenarios/api-key-expiry
 import { runModerationJudgementMaintenanceScenarios } from './run-scenarios/moderation-judgement-maintenance.mts'
 import { runModerationDigestPageScenarios } from './run-scenarios/moderation-digest-pages.mts'
 import { runModerationTransparencyListCapacity } from './run-scenarios/moderation-transparency-list-capacity.mts'
+import { runPostEmbeddingBanEvasionRecovery } from './run-scenarios/post-embedding-ban-evasion-recovery.mts'
 
 export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
@@ -15,6 +16,7 @@ export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightAiRunRetentionCapacityScenario,
   runModerationJudgementMaintenanceScenarios,
   runModerationDigestPageScenarios,
+  runPostEmbeddingBanEvasionRecovery,
   runCopyrightExecutionRetentionScenarios,
   runCopyrightUnlinkedEmailRetentionScenario,
   runModerationAppealListCapacity,
