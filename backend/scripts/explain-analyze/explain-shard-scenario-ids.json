@@ -390,7 +390,10 @@
     "hacker-news-retention-deletes-at-cap",
     "retention-expired-oauth-authorizations",
     "retention-retained-user-identity-roots",
-    "retention-retained-user-relation-identities"
+    "retention-retained-user-relation-identities",
+    "oauth-facebook-friend-resolution-at-connect-cap",
+    "oauth-github-friend-resolution-at-connect-cap",
+    "oauth-x-friend-resolution-at-connect-cap"
   ],
   "main-4": [
     "notification-unread-summary-at-cap",

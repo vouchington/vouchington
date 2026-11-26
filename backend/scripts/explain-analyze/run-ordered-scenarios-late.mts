@@ -30,6 +30,7 @@ import { runCopyrightStuckRunCapacityScenarios } from './run-scenarios/copyright
 import { runCopyrightGuestRetentionScenario } from './run-scenarios/copyright-guest-retention.mts'
 import { runClaimantMisuseWindowScenarios } from './run-scenarios/claimant-misuse-windows.mts'
 import { runCopyrightStatementFactsScenarios } from './run-scenarios/copyright-statement-facts.mts'
+import { runOAuthFriendResolutionCapacityScenarios } from './run-scenarios/oauth-friend-resolution-capacity.mts'
 import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-reconciliation.mts'
 import { runCommunityRoundTripScenarios } from './run-scenarios/community-round-trips.mts'
 import { runSessionLimitScenarios } from './run-scenarios/session-limits.mts'
@@ -88,6 +89,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runTopicAliasCategoryWorkScenarios,
   runHackerNewsFilterScenarios,
   runRetentionStagePageScenarios,
+  runOAuthFriendResolutionCapacityScenarios,
   runEmbeddingReconciliationScenarios,
   runStripeEventRecoveryScenario,
   runMembershipRenewalSelectionScenario,
