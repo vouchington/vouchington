@@ -74,6 +74,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'account-oauth-grants-at-cap',
   'rss-ingest-identities-at-cap',
   'rss-ingest-source-associations-at-cap',
+  'rss-story-projection-restart-at-fetch-cap',
+  'rss-story-projection-source-refresh-at-fetch-cap',
   'rss-item-category-hashtag-aliases-at-cap',
   'rss-item-category-insert-at-cap',
   'rss-item-category-update-at-cap',
