@@ -72,7 +72,9 @@ async function cleanupHackerNewsReferenceBatch(
       )
       DELETE FROM url_hacker_news_stories AS stories USING candidates
       WHERE stories.url_id = candidates.url_id
-        AND stories.hacker_news_item_id = candidates.hacker_news_item_id`,
+        AND stories.hacker_news_item_id = candidates.hacker_news_item_id
+        -- Give the target scan the same URL bound as the candidate scan.
+        AND stories.url_id = ANY($1::uuid[])`,
     [ids, batchSize * hackerNewsReferenceMaxValues.stories_per_url],
   )
   await query(
