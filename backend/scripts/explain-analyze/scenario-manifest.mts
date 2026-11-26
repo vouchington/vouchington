@@ -132,4 +132,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-dsa-recovery-continuation',
   'copyright-receipt-review-retirement-first-page',
   'copyright-receipt-review-retirement-continuation',
+  'copyright-blocked-restore-intents-at-cap',
 ] as const
