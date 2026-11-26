@@ -11,4 +11,5 @@ export const MEMBERSHIP_SCENARIO_IDS = [
   ...MEMBERSHIP_EXPIRY_SCENARIO_IDS,
   'membership-outstanding-grants-at-cap',
   'membership-active-catalog-near-cap',
+  'membership-pending-state-at-default',
 ] as const
