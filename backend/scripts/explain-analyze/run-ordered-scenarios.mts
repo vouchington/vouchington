@@ -4,6 +4,7 @@ import { runAccountHistoryScenarios } from './run-scenarios/account-history-page
 import { runAccountMessagingScenarios } from './run-scenarios/account-messaging-pages.mts'
 import { runConversationListCapacityScenario } from './run-scenarios/conversation-list-capacity.mts'
 import { runAccountListCapacityScenarios } from './run-scenarios/account-lists-at-cap.mts'
+import { runCommunityMemberMetricPages } from './run-scenarios/community-member-metric-pages.mts'
 import { runCommunitySearchCapacityScenario } from './run-scenarios/community-search-capacity.mts'
 import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/community-membership-read-capacity.mts'
 import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
@@ -127,6 +128,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runMembershipOrphanedQueuedGrantScenarios,
   runConversationListCapacityScenario,
   runCommunitySearchCapacityScenario,
+  runCommunityMemberMetricPages,
   runCommunityMembershipReadCapacityScenarios,
   runModerationReportListCapacity,
   // These fixtures change crawler-table statistics; keep them after every existing plan.
