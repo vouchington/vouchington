@@ -390,7 +390,9 @@
     "hacker-news-retention-deletes-at-cap",
     "retention-expired-oauth-authorizations",
     "retention-retained-user-identity-roots",
-    "retention-retained-user-relation-identities"
+    "retention-retained-user-relation-identities",
+    "hacker-news-post-card-sidecars-at-cap",
+    "hacker-news-rss-card-sidecars-at-cap"
   ],
   "main-4": [
     "notification-unread-summary-at-cap",
