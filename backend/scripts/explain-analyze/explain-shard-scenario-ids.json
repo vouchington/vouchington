@@ -664,6 +664,7 @@
     "post-data-point-topics-insert-at-cap",
     "post-data-point-topics-replace-at-cap",
     "community-application-questions-write-at-cap",
-    "copyright-ai-run-retention-at-cap"
+    "copyright-ai-run-retention-at-cap",
+    "post-embedding-ban-evasion-recovery-at-cap"
   ]
 }

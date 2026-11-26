@@ -25,6 +25,7 @@ import {
 } from './seed-data/dispatch-work-plans.mts'
 import { runAnalyze } from './seed-data/maintenance.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
+import { runPostEmbeddingBanEvasionRecovery } from './run-scenarios/post-embedding-ban-evasion-recovery.mts'
 import { runConversationMessageCapacityScenario } from './run-scenarios/conversation-message-capacity.mts'
 import {
   runMarkNotificationInboxCapacityScenario,
@@ -152,6 +153,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
+  runPostEmbeddingBanEvasionRecovery,
 ]
 
 /**

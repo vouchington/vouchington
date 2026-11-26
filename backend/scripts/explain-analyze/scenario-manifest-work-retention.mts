@@ -13,6 +13,7 @@ import { HOUSEHOLD_LIMIT_SCENARIO_IDS } from './household-limit-scenario-ids.mts
 export const RETENTION_WORK_SCENARIOS = [
   ...EXISTENCE_FILTER_SCENARIO_IDS,
   ...MODERATION_RERUN_SCENARIO_IDS,
+  'post-embedding-ban-evasion-recovery-at-cap',
   'ai-usage-month-attached',
   'ai-usage-tier-existing',
   'crawler-refresh-existing-stale',
