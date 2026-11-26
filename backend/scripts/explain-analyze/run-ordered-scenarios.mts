@@ -12,6 +12,7 @@ import { runMembershipOrphanedQueuedGrantScenarios } from './run-scenarios/membe
 import { runPostImageWriteScenarios } from './run-scenarios/post-image-writes.mts'
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
 import { runAiUsageLookupScenarios } from './run-scenarios/ai-usage-lookups.mts'
+import { runMembershipReadCapacityScenarios } from './run-scenarios/membership-read-capacity.mts'
 import { runMembershipScenarios } from './run-scenarios/memberships.mts'
 import { runAiUsageTotalsScenarios } from './run-scenarios/ai-usage-totals.mts'
 import { continueAfterFailure as runStep } from './scenario-failures.mts'
@@ -152,6 +153,8 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
+  // The grant ledger fixture is immutable. Seed it after the other membership plans.
+  runMembershipReadCapacityScenarios,
 ]
 
 /**
