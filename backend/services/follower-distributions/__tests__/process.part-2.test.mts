@@ -19,17 +19,42 @@ import {
   softDeleteRssFeedItemsForTest,
   softDeleteUser,
 } from '@voucha/test-helpers'
+import { commitRelationWriteDuringCompetingMutationForTest } from '@voucha/test-helpers/relation-write-interleaving'
+import { getFollowerDistributionCursorForTest } from '@voucha/test-helpers/sql-follower-distribution'
 import {
   sendPostToFollowers,
   sendRssFeedItemToFollowers,
   sharePostWithFollowers,
   shareRssFeedItemWithFollowers,
 } from '../create.mts'
-import { processFollowerDistributionChunk } from '../process.mts'
+import {
+  advanceFollowerDistributionChunkCursor,
+  processFollowerDistributionChunk,
+} from '../process.mts'
 
 import { assertDistributablePost, getPostRouteSlug, type DistributionPost } from '../shared.mts'
 
 describe('processFollowerDistributionChunk', () => {
+  it('keeps the cursor unchanged when a concurrent failure ends the distribution first', async () => {
+    const sender = await createTestUser()
+    const creator = await createTestUser()
+    const recipient = await createTestUser()
+    await followUser(recipient, sender)
+    const post = await createTestPost({ user: creator, privacy: 'public' })
+    const { distribution_id: id } = await sharePostWithFollowers(sender, post.id)
+
+    await commitRelationWriteDuringCompetingMutationForTest(
+      query => markFollowerDistributionFailedForTest(id, { query }),
+      'advanceFollowerDistributionChunkCursor',
+      () => advanceFollowerDistributionChunkCursor(id, recipient.id, true),
+    )
+
+    await expect(getFollowerDistributionCursorForTest(id)).resolves.toBeNull()
+    await expect(getFollowerDistributionFailureForTest(id)).resolves.toMatchObject({
+      failed: true,
+    })
+  })
+
   it('marks a distribution failed when the post is no longer distributable', async () => {
     const sender = await createTestUser()
     const creator = await createTestUser()

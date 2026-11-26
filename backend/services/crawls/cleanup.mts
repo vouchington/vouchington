@@ -21,6 +21,7 @@ export async function deleteOldInvalidCrawls(
         AND (${options.ids ?? null}::uuid[] IS NULL OR id = ANY(${options.ids ?? null}::uuid[]))
         AND (network_error IS NOT NULL OR completed_at IS NULL)
       ORDER BY id LIMIT ${batchSize}
+      -- lock-reason: prevents: overlapping scheduled and on-demand cleanup pages waiting on the same old crawls; writer: deleteOldInvalidCrawls
       FOR UPDATE SKIP LOCKED
     )
     DELETE FROM crawls crawl USING candidates

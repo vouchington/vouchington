@@ -9,6 +9,10 @@ import {
   insertTestTopic,
   softDeleteTopic,
 } from '@voucha/test-helpers'
+import {
+  commitTestCuratedAsideSoftDeleteDuringReorder,
+  getTestCuratedAsideItemState,
+} from '@voucha/test-helpers/entities/curated-aside-items'
 import type { PrivateUser } from '@services/users/types'
 import { updateRssFeedById } from '@services/rss-feeds/update'
 import { listCuratedItems } from './list.mts'
@@ -274,6 +278,19 @@ describe('curated-aside-items service', () => {
     )
     expect(items[0].entity_id).toBe(topicId2)
     expect(items[1].entity_id).toBe(topicId1)
+  })
+
+  it('does not reorder a curated item deleted by a competing writer', async () => {
+    const { admin, topicId } = await createAdminAndTopic()
+    const item = await createCuratedItem(admin, 'topic', topicId, 27000)
+    await commitTestCuratedAsideSoftDeleteDuringReorder(item.id, () =>
+      reorderCuratedItems(admin, 'topic', [item.id]),
+    )
+
+    expect(await getTestCuratedAsideItemState(item.id)).toMatchObject({
+      position: 27000,
+      deleted_at: expect.any(Date),
+    })
   })
 
   it('reorderCuratedItems throws 403 for non-admin', async () => {

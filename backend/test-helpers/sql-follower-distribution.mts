@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function getFollowerDistributionCursorForTest(
@@ -51,13 +51,19 @@ export async function getFollowerDistributionFailureForTest(
   return rows[0]
 }
 
-export async function markFollowerDistributionFailedForTest(distributionId: string): Promise<void> {
-  await write(sql`/* markFollowerDistributionFailedForTest */
+export async function markFollowerDistributionFailedForTest(
+  distributionId: string,
+  options: QueryOptions = {},
+): Promise<void> {
+  await write(
+    sql`/* markFollowerDistributionFailedForTest */
     UPDATE follower_distributions
     SET failed_at = CURRENT_TIMESTAMP,
       completed_at = NULL
     WHERE id = ${distributionId}
-  `)
+  `,
+    options,
+  )
 }
 
 export async function markUserFollowDeletedBeforeNowForTest(params: {
