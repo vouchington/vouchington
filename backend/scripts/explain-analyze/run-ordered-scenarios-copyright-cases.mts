@@ -5,6 +5,7 @@ import { runCopyrightCasePurgeScenarios } from './run-scenarios/copyright-case-p
 import { runCopyrightStuckRunCapacityScenarios } from './run-scenarios/copyright-stuck-runs.mts'
 import { runClaimantMisuseWindowScenarios } from './run-scenarios/claimant-misuse-windows.mts'
 import { runCopyrightGuestRetentionScenario } from './run-scenarios/copyright-guest-retention.mts'
+import { runCopyrightStaffEmailQueueScenario } from './run-scenarios/copyright-staff-email-queue.mts'
 
 export const COPYRIGHT_CASES_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runClassifierHumanVoteComparisonScenarios,
@@ -12,6 +13,7 @@ export const COPYRIGHT_CASES_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightDeliveryBatchScenarios,
   runCopyrightCasePurgeScenarios,
   runCopyrightStuckRunCapacityScenarios,
+  runCopyrightStaffEmailQueueScenario,
   runClaimantMisuseWindowScenarios,
   runCopyrightGuestRetentionScenario,
 ]

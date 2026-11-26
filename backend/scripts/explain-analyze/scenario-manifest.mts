@@ -127,4 +127,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-merge-alias-move-tail-at-cap',
   'copyright-unlinked-email-recommendation-retention-at-cap',
   'topic-merge-alias-snapshot-tail-at-cap',
+  'copyright-staff-email-queue-at-cap',
 ] as const
