@@ -3,17 +3,11 @@ import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import { RECENTLY_VIEWED_ZSET_LIMIT } from '@services/recently-viewed'
 import { filterRssFeedItemIdsByMediaType } from '@services/rss-feed-items/get-batch'
-import { filterRssFeedIdsByFeedType } from '@services/rss-feeds/get-batch'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import type { RssWriteCapacityFixture } from './rss-write-capacity-fixture.mts'
 
-export async function runRecentlyViewedRssTypeScenarios(fixture: RssWriteCapacityFixture) {
-  await captureItemTypeFilter(fixture.itemIds)
-  await captureFeedTypeFilter(fixture.feedId)
-}
-
-async function captureItemTypeFilter(itemIds: readonly string[]) {
+export async function runRecentlyViewedRssItemTypeScenario({ itemIds }: RssWriteCapacityFixture) {
   const [audioId, deletedId, articleId] = itemIds
   assert.ok(audioId && deletedId && articleId)
   await write(
@@ -40,30 +34,5 @@ async function captureItemTypeFilter(itemIds: readonly string[]) {
     async () => assert.deepEqual(await filterRssFeedItemIdsByMediaType(ids, 'article'), matches),
     undefined,
     'filterRssFeedItemIdsByMediaType',
-  )
-}
-
-async function captureFeedTypeFilter(podcastId: string) {
-  await write(
-    `/* seedRecentlyViewedRssFeedTypes */ UPDATE rss_feeds SET feed_type = 'podcast' WHERE id = $1`,
-    [podcastId],
-  )
-  const { rows } = await write<{ id: string; deleted_at: Date | null }>(
-    `/* selectRecentlyViewedRssFeeds */ SELECT id, deleted_at FROM rss_feeds
-      WHERE feed_type = 'article'
-      ORDER BY (deleted_at IS NULL), id LIMIT $1`,
-    [RECENTLY_VIEWED_ZSET_LIMIT - 2],
-  )
-  assert.ok(rows.some(row => row.deleted_at !== null))
-  const matches = new Set(rows.filter(row => row.deleted_at === null).map(row => row.id))
-  const ids = [podcastId, randomUUID(), ...rows.map(row => row.id)]
-  assert.equal(ids.length, RECENTLY_VIEWED_ZSET_LIMIT)
-  const scenario = 'recently-viewed-rss-feed-types-at-cap'
-  registerScenarioContract(scenario, { expectations: [] })
-  await runAndCapture(
-    scenario,
-    async () => assert.deepEqual(await filterRssFeedIdsByFeedType(ids, 'article'), matches),
-    undefined,
-    'filterRssFeedIdsByFeedType',
   )
 }

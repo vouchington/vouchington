@@ -7,7 +7,7 @@ import { runAndCapture } from '../run-support.mts'
 import { contentHash } from '../seed-data/common.mts'
 import { runRssItemCategoryWriteScenarios } from './rss-write-capacity-item-categories.mts'
 import { runRssItemCategoryClearScenario } from './rss-item-category-clear.mts'
-import { runRecentlyViewedRssTypeScenarios } from './recently-viewed-rss-types.mts'
+import { runRecentlyViewedRssItemTypeScenario } from './recently-viewed-rss-types.mts'
 import { runRssStoryProjectionRefreshScenario } from './rss-story-projection-refresh.mts'
 import { runRssCategorySnapshotWriteScenario } from './rss-category-snapshot-write.mts'
 import { runRssCategorySnapshotSourcePages } from './rss-category-snapshot-source-pages.mts'
@@ -35,10 +35,10 @@ export async function runRssWriteCapacityScenarios(): Promise<void> {
   }
 }
 
-export async function runRssFeedFilterAndSourcePageScenarios(): Promise<void> {
+export async function runRssItemFilterAndSourcePageScenarios(): Promise<void> {
   const fixture = await seedRssWriteCapacity()
   try {
-    await runRecentlyViewedRssTypeScenarios(fixture)
+    await runRecentlyViewedRssItemTypeScenario(fixture)
     await runRssCategorySnapshotSourcePages(fixture)
   } finally {
     await cleanupRssWriteCapacity(fixture)
