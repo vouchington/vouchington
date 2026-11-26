@@ -90,13 +90,8 @@ export async function runAccountListCapacityScenarios(): Promise<void> {
     await captureEmailAddresses(fixture.ownerId, fixture.emailIds)
     registerScenarioContract('account-api-keys-at-cap', {
       expectations: [
-        // The custom plan scans and sorts the owner history. https://github.com/vouchington/vouchington/issues/6388
-        { kind: 'maxProcessedRows', relation: 'api_keys', max: ACCOUNT_HISTORY },
-        {
-          kind: 'usesIndexes',
-          indexes: ['idx_api_keys__user_id', 'idx_api_keys__user_id__foreign_key', 'api_keys_pkey'],
-          anyOf: true,
-        },
+        { kind: 'maxProcessedRows', relation: 'api_keys', max: ROUTE_PAGE_SIZE + 1 },
+        { kind: 'usesIndexes', indexes: ['idx_api_keys__user_id'], noSort: true },
       ],
     })
     await captureUuidPages(
