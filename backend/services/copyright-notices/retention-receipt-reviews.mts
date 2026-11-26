@@ -75,6 +75,7 @@ async function sweepReceiptReviewPage(
       review_retirement_check_at = CASE WHEN eligible.may_retire THEN '-infinity'::timestamptz
         ELSE CURRENT_TIMESTAMP + interval '1 day' END
     FROM eligible WHERE receipt.id = eligible.id
+      AND receipt.id = ANY(${ids}::uuid[])
     RETURNING eligible.may_retire AS retired`)
   await transaction.commit()
   return { scanned: candidates.length, retired: rows.filter(row => row.retired).length }

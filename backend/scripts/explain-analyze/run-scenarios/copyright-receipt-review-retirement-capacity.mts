@@ -66,14 +66,14 @@ async function capturePage(
         captureIndex: 1,
         max: 375,
       },
-      // Main's custom update scans the receipt corpus. Tighten after #6567.
+      // The gate counts both primary-key reads and the UPDATE output.
       {
         kind: 'maxProcessedRows',
         relation: 'copyright_notice_email_intake_receipts',
         captureIndex: 2,
-        max: 26_934,
+        max: 3 * pageSize,
       },
-      // This limits calls, not the work inside each call. See #6567 and #6568.
+      // This limits calls, not the work inside each call. See #6568.
       {
         kind: 'maxFunctionCalls',
         function: 'fn_copyright_receipt_review_retirement_eligible',

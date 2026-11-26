@@ -157,6 +157,11 @@ describe('standalone copyright receipt review expiry', () => {
       reviewerId: reviewer.id,
       reviewedAt: oldReview,
     })
+    const nextReviewedAt = new Date(oldReview.getTime() + 86_400_000)
+    const next = await seedCopyrightReceiptReview({
+      reviewerId: reviewer.id,
+      reviewedAt: nextReviewedAt,
+    })
     const result = await sweepCopyrightReceiptReviews({
       now: retirementCutoff,
       batchSize: 1,
@@ -165,6 +170,26 @@ describe('standalone copyright receipt review expiry', () => {
     expect(result.retired).toBe(1)
     expect(await readCopyrightReceiptReview(receipt.id)).toMatchObject({
       amazon_ses_message_id: receipt.sesMessageId,
+      review_decision: null,
+      reviewed_by_id: null,
+      reviewed_at: null,
+      review_rationale_ciphertext: null,
+    })
+    expect(await readCopyrightReceiptReview(next.id)).toMatchObject({
+      review_decision: 'rejected',
+      reviewed_by_id: reviewer.id,
+      reviewed_at: nextReviewedAt,
+      review_rationale_ciphertext: 'v1:test-rationale',
+    })
+    expect(await peekCopyrightReceiptReviewRetirementCandidate(retirementCutoff)).toBe(next.id)
+    const continuation = await sweepCopyrightReceiptReviews({
+      now: retirementCutoff,
+      batchSize: 1,
+      maxBatches: 1,
+    })
+    expect(continuation.retired).toBe(1)
+    expect(await readCopyrightReceiptReview(next.id)).toMatchObject({
+      amazon_ses_message_id: next.sesMessageId,
       review_decision: null,
       reviewed_by_id: null,
       reviewed_at: null,
