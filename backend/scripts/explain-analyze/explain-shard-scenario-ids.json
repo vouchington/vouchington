@@ -659,6 +659,7 @@
     "post-review-ratings-write-at-cap",
     "post-data-point-topics-insert-at-cap",
     "post-data-point-topics-replace-at-cap",
-    "community-application-questions-write-at-cap"
+    "community-application-questions-write-at-cap",
+    "copyright-unlinked-email-intake-attachment-retention-at-cap"
   ]
 }

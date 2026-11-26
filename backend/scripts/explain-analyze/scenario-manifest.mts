@@ -49,4 +49,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'top-hashtags-at-cap',
   'topic-children-at-cap',
   'url-embeds-at-post-page-cap',
+  'copyright-unlinked-email-intake-attachment-retention-at-cap',
 ] as const
