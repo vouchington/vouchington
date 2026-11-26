@@ -14,17 +14,23 @@ import {
   raceImportRetentionPageWithParentPurge,
 } from '@voucha/test-helpers/import-retention-races'
 import { finishTestPostgresActionWithoutWaiting } from '@voucha/test-helpers/postgres-lock-skip'
-import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
+import {
+  createExactRetentionWindow,
+  createIsolatedRetentionWindow,
+} from '@voucha/test-helpers/retention-window'
 import { cleanupCompletedImportBatches } from '../cleanup-import-batches.mts'
+
+/** Fixtures that must stay in sweep order sit a millisecond apart inside the exact window. */
+const plusMs = (date: Date, ms: number) => new Date(date.getTime() + ms)
 
 describe('completed import retention', () => {
   it.each(['admin', 'rss'] as const)(
     'deletes %s children in capped pages before its completed batch',
     async family => {
-      const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+      const { aged, now, retentionDays, lowerBoundDate } = createExactRetentionWindow(90)
       const user = await createTestUser()
-      const batchId = await createCompletedImportRetentionFixture(family, user.id, at(100))
-      const options = () => ({ now, lowerBoundDate, batchSize: 1, maxBatches: 1 })
+      const batchId = await createCompletedImportRetentionFixture(family, user.id, aged)
+      const options = () => ({ now, retentionDays, lowerBoundDate, batchSize: 1, maxBatches: 1 })
       const expected =
         family === 'admin'
           ? [
@@ -57,12 +63,13 @@ describe('completed import retention', () => {
   it.each(['admin', 'rss'] as const)(
     'preserves recent and unfinished %s batches while retiring an old one',
     async family => {
-      const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+      const { aged, now, retentionDays, lowerBoundDate } = createExactRetentionWindow(90)
       const user = await createTestUser()
-      const old = await createCompletedImportRetentionFixture(family, user.id, at(100))
-      const recent = await createCompletedImportRetentionFixture(family, user.id, at(20))
+      const old = await createCompletedImportRetentionFixture(family, user.id, aged)
+      const recentAt = new Date(aged.getTime() + 70 * 24 * 60 * 60 * 1_000)
+      const recent = await createCompletedImportRetentionFixture(family, user.id, recentAt)
       const unfinished = await createIncompleteImportRetentionBatch(family, user.id)
-      const options = { now, lowerBoundDate, batchSize: 2, maxBatches: 5 }
+      const options = { now, retentionDays, lowerBoundDate, batchSize: 2, maxBatches: 5 }
       await cleanupCompletedImportBatches(family, options)
       expect((await countImportRetentionRows(family, old)).batches).toBe(0)
       expect((await countImportRetentionRows(family, recent)).batches).toBe(1)
@@ -94,11 +101,11 @@ describe('completed import retention', () => {
   })
 
   it('makes progress on the next completed batch while the oldest parent is locked', async () => {
-    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const { aged, now, retentionDays, lowerBoundDate } = createExactRetentionWindow(90, 2)
     const user = await createTestUser()
-    const locked = await createCompletedImportRetentionFixture('admin', user.id, at(100))
-    const available = await createCompletedImportRetentionFixture('admin', user.id, at(99))
-    const options = { now, lowerBoundDate, batchSize: 2, maxBatches: 1 }
+    const locked = await createCompletedImportRetentionFixture('admin', user.id, aged)
+    const available = await createCompletedImportRetentionFixture('admin', user.id, plusMs(aged, 1))
+    const options = { now, retentionDays, lowerBoundDate, batchSize: 2, maxBatches: 1 }
     await using holder = await beginTransaction()
     await lockTestCompletedAdminImportBatch(holder, locked)
 
@@ -126,11 +133,11 @@ describe('completed import retention', () => {
   })
 
   it('drains a resumed child page before a concurrent parent purge finishes', async () => {
-    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const { aged, now, retentionDays, lowerBoundDate } = createExactRetentionWindow(90, 2)
     const user = await createTestUser()
-    const current = await createCompletedImportRetentionFixture('admin', user.id, at(100))
-    const next = await createCompletedImportRetentionFixture('admin', user.id, at(99))
-    const options = { now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    const current = await createCompletedImportRetentionFixture('admin', user.id, aged)
+    const next = await createCompletedImportRetentionFixture('admin', user.id, plusMs(aged, 1))
+    const options = { now, retentionDays, lowerBoundDate, batchSize: 1, maxBatches: 1 }
     expect(await cleanupCompletedImportBatches('admin', options)).toMatchObject({
       deleted: 1,
       continuation: { batchId: current, phase: 'rows' },
@@ -159,17 +166,17 @@ describe('completed import retention', () => {
   })
 
   it('re-reads the import cursor after its current batch is deleted concurrently', async () => {
-    const { now, at, lowerBoundDate } = createIsolatedRetentionWindow()
+    const { aged, now, retentionDays, lowerBoundDate } = createExactRetentionWindow(90, 2)
     const user = await createTestUser()
-    const deletedBatch = await createCompletedImportRetentionFixture('admin', user.id, at(100))
-    const options = { now, lowerBoundDate, batchSize: 1, maxBatches: 1 }
+    const deletedBatch = await createCompletedImportRetentionFixture('admin', user.id, aged)
+    const options = { now, retentionDays, lowerBoundDate, batchSize: 1, maxBatches: 1 }
     await expect(
       cleanupCompletedImportBatches('admin', { ...options, batchSize: 2 }),
     ).resolves.toMatchObject({
       deleted: 2,
       continuation: { batchId: deletedBatch, phase: 'batch' },
     })
-    const nextBatch = await createCompletedImportRetentionFixture('admin', user.id, at(99))
+    const nextBatch = await createCompletedImportRetentionFixture('admin', user.id, plusMs(aged, 1))
 
     const page = await raceImportRetentionCursorWithDeletedCurrentBatch(deletedBatch, options)
 
