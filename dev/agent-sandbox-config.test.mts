@@ -250,11 +250,15 @@ describe('Codex project rules', () => {
   })
 })
 
-describe('Claude pnpm exec allows name workspace-installed tools', () => {
-  it('does not allow `pnpm exec selene`, which is a mise-pinned binary', () => {
-    // .mise.toml pins selene and `pnpm run selene` invokes it directly. It is not a package
-    // dependency, so `pnpm exec selene` cannot resolve and the entry would name nothing.
-    expect(claudeSettings.permissions.allow).not.toContain('Bash(pnpm exec selene *)')
+describe('Claude pnpm exec allows name installed binaries', () => {
+  it('names a binary the root package installs for every specific `pnpm exec <tool>` allow', () => {
+    // `pnpm exec` runs from the repository root and resolves only node_modules/.bin there. A
+    // mise-pinned binary such as selene is not installed by a dependency, so its entry names nothing.
+    const missing = claudeSettings.permissions.allow.flatMap(entry => {
+      const tool = /^Bash\(pnpm exec ([^\s*)]+)(?: \*)?\)$/u.exec(entry)?.[1]
+      return tool && !repoPathExists(`node_modules/.bin/${tool}`) ? [entry] : []
+    })
+    expect(missing).toEqual([])
   })
 })
 
