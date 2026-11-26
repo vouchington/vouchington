@@ -95,28 +95,21 @@ export function reportTargetAvailableSql() {
   END`
 }
 
-export function communityPostApprovalPredicateSql(postAlias: 'target_post' | 'root_post') {
-  return sql``.append(`cpr_vis.community_id = ${postAlias}.community_id
-    AND cpr_vis.post_id = ${postAlias}.id
-    AND cpr_vis.approved_at IS NOT NULL
-    AND cpr_vis.rejected_at IS NULL
-    AND cpr_vis.unpublished_at IS NULL`)
+type PostAlias = 'target_post' | 'root_post'
+
+export function communityPostApprovalPredicateSql(a: PostAlias) {
+  return sql``.append(
+    `cpr_vis.community_id = ${a}.community_id AND cpr_vis.post_id = ${a}.id AND cpr_vis.approved_at IS NOT NULL AND cpr_vis.rejected_at IS NULL AND cpr_vis.unpublished_at IS NULL`,
+  )
 }
 
-export function communityPostNotApprovedSql(
-  postAlias: 'target_post' | 'root_post',
-  useKeyedProbe = false,
-) {
-  const review = sql``
-    .append(`SELECT 1 FROM community_post_reviews cpr_vis WHERE `)
-    .append(communityPostApprovalPredicateSql(postAlias))
-  const missing = useKeyedProbe
-    ? sql`(`.append(review).append(sql` LIMIT 1) IS NULL`)
-    : sql`NOT EXISTS (`.append(review).append(sql`)`)
+export function communityPostNotApprovedSql(a: PostAlias, useKeyedProbe = false) {
+  const [open, close] = useKeyedProbe ? ['(', ' LIMIT 1) IS NULL'] : ['NOT EXISTS (', ')']
+  const from = 'SELECT 1 FROM community_post_reviews cpr_vis WHERE '
   return sql``
-    .append(`(${postAlias}.community_id IS NOT NULL AND `)
-    .append(missing)
-    .append(sql`)`)
+    .append(`(${a}.community_id IS NOT NULL AND ${open}${from}`)
+    .append(communityPostApprovalPredicateSql(a))
+    .append(`${close})`)
 }
 
 /**
