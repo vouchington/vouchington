@@ -29,24 +29,25 @@ export async function runRssItemFeedHydrationCapacityScenario(): Promise<void> {
   const ids = [...firstHalf, missingId, ...secondHalf]
   const {
     rows: [corpus],
-  } = await read<{ feeds: number; items: number; sources: number; guidPrefix: number }>(sql`
+  } = await read<{ feeds: number; items: number; sources: number; guids: number }>(sql`
     /* countExplainRssFeedHydrationCorpus */
     SELECT (SELECT count(*)::int FROM rss_feeds) AS feeds,
       (SELECT count(*)::int FROM rss_feed_items) AS items,
       (SELECT count(*)::int FROM rss_feed_item_sources) AS sources,
-      (SELECT count(*)::int FROM rss_feed_item_guids WHERE id <= ${selected.toSorted().at(-1)!}) AS "guidPrefix"`)
+      (SELECT count(*)::int FROM rss_feed_item_guids) AS guids`)
   assert.ok(corpus)
   registerScenarioContract(scenario, {
     seededRows: {
       rss_feeds: corpus.feeds,
       rss_feed_items: corpus.items,
+      rss_feed_item_guids: corpus.guids,
       rss_feed_item_sources: corpus.sources,
     },
     crossPartition: { rss_feed_items: 'Feed hydration IDs can be spread across item partitions.' },
     expectations: [
       { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: inputCount },
-      // Custom can walk the GUID prefix plus one lookahead. https://github.com/vouchington/vouchington/issues/6615
-      { kind: 'maxProcessedRows', relation: 'rss_feed_item_guids', max: corpus.guidPrefix + 1 },
+      // The hosted custom plan scans the whole GUID table. https://github.com/vouchington/vouchington/issues/6615
+      { kind: 'maxProcessedRows', relation: 'rss_feed_item_guids', max: corpus.guids },
     ],
   })
   await runAndCapture(
