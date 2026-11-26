@@ -20,13 +20,22 @@ export const INELIGIBLE_COLLECTION_PAGE_TOPIC_IDS = Array.from({ length: 400 }, 
   seedUuid(index, 'b7'),
 )
 
+const postIds = Array.from({ length: INELIGIBLE_COLLECTION_PAGE_COUNT }, (_, index) =>
+  seedUuid(POST_INDEX_BASE + index, '05'),
+)
+const hiddenRun = INELIGIBLE_COLLECTION_PAGE_LIMIT + 1
+const isLive = (index: number) =>
+  index >= hiddenRun && index < INELIGIBLE_COLLECTION_PAGE_COUNT - hiddenRun
+
+export const expectedSavedPosts = postIds
+  .map((id, index) => ({
+    timestamp: (RELATION_BASE_MS + (index + 1) * INELIGIBLE_COLLECTION_ITEM_SPACING_MS) * 1000,
+    id,
+  }))
+  .filter((_, index) => isLive(index))
+  .toReversed()
+
 export async function seedIneligibleCollectionPages(): Promise<void> {
-  const postIds = Array.from({ length: INELIGIBLE_COLLECTION_PAGE_COUNT }, (_, index) =>
-    seedUuid(POST_INDEX_BASE + index, '05'),
-  )
-  const hiddenRun = INELIGIBLE_COLLECTION_PAGE_LIMIT + 1
-  const isLive = (index: number) =>
-    index >= hiddenRun && index < INELIGIBLE_COLLECTION_PAGE_COUNT - hiddenRun
   const livePostIds = postIds.filter((_, index) => isLive(index))
   const highestRankedHiddenPostIds = postIds.slice(-hiddenRun)
   const hostnameIds = Array.from({ length: INELIGIBLE_COLLECTION_PAGE_COUNT }, (_, index) =>
