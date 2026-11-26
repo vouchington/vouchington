@@ -54,4 +54,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-children-at-cap',
   'url-embeds-at-post-page-cap',
   'copyright-ai-run-retention-at-cap',
+  'rss-unmapped-categories-at-cap',
+  'rss-latest-successful-crawl-at-cap',
+  'rss-hacker-news-url-flag-page-at-cap',
+  'rss-hacker-news-repair-flag-page-at-cap',
 ] as const

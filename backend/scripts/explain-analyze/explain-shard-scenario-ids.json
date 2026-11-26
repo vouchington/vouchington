@@ -664,6 +664,10 @@
     "post-data-point-topics-insert-at-cap",
     "post-data-point-topics-replace-at-cap",
     "community-application-questions-write-at-cap",
-    "copyright-ai-run-retention-at-cap"
+    "copyright-ai-run-retention-at-cap",
+    "rss-unmapped-categories-at-cap",
+    "rss-latest-successful-crawl-at-cap",
+    "rss-hacker-news-url-flag-page-at-cap",
+    "rss-hacker-news-repair-flag-page-at-cap"
   ]
 }
