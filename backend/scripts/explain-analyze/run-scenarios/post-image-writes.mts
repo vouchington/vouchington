@@ -58,7 +58,7 @@ async function runCreateImages() {
   assert.ok(unrelated.length > 0, 'Expected the seeded image corpus')
   registerScenarioContract(scenario, {
     allowEmptyResult: true,
-    expectations: [{ kind: 'maxFunctionScanRows', max: pageSize }],
+    expectations: [{ kind: 'maxInputRows', nodeType: 'Function Scan', max: pageSize }],
   })
   await runAndCapture(
     scenario,
@@ -155,7 +155,7 @@ async function runPlacementWrite({ id, statement }: (typeof placementWrites)[num
   let created: ReturnType<typeof assertPostImagePlacementChange> = []
   registerScenarioContract(id, {
     allowEmptyResult: true,
-    expectations: [{ kind: 'maxFunctionScanRows', max: placementWriteSize }],
+    expectations: [{ kind: 'maxInputRows', nodeType: 'Function Scan', max: placementWriteSize }],
   })
   await runAndCapture(
     id,
