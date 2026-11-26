@@ -30,6 +30,14 @@ export async function runRssWriteCapacityScenarios(): Promise<void> {
     await runRssItemCategoryClearScenario(fixture)
     await runRssFeedCategoryWriteScenario(fixture)
     await runRssListabilityScenario(fixture)
+  } finally {
+    await cleanupRssWriteCapacity(fixture)
+  }
+}
+
+export async function runRssFeedFilterAndSourcePageScenarios(): Promise<void> {
+  const fixture = await seedRssWriteCapacity()
+  try {
     await runRecentlyViewedRssTypeScenarios(fixture)
     await runRssCategorySnapshotSourcePages(fixture)
   } finally {

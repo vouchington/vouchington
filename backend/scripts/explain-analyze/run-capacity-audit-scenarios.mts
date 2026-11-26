@@ -12,6 +12,8 @@ import { runNotificationRssHydrationCapacity } from './run-scenarios/notificatio
 import { runRssMappedTopicCapacity } from './run-scenarios/rss-mapped-topic-capacity.mts'
 import { runRssSourcePublicationBackfillCapacity } from './run-scenarios/rss-source-publication-backfill-capacity.mts'
 import { runTopicMergeAliasCapacityScenarios } from './run-scenarios/topic-merge-alias-capacity.mts'
+import { runRssHardDeleteCrawlCapacityScenario } from './run-scenarios/rss-hard-delete-crawl-capacity.mts'
+import { runRssFeedFilterAndSourcePageScenarios } from './run-scenarios/rss-write-capacity.mts'
 
 export const CAPACITY_AUDIT_RUNNERS = [
   runRssUnmappedCategoryCapacityScenario,
@@ -28,4 +30,7 @@ export const CAPACITY_AUDIT_RUNNERS = [
   runRssSourcePublicationBackfillCapacity,
   runNotificationRssHydrationCapacity,
   runRssMappedTopicCapacity,
+  // These fixtures write rss_feeds, so run them after the existing hydration captures.
+  runRssHardDeleteCrawlCapacityScenario,
+  runRssFeedFilterAndSourcePageScenarios,
 ] as const

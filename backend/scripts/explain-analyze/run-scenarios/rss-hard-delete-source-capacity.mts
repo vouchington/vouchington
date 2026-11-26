@@ -8,7 +8,6 @@ import { hardDeleteRssFeedSourcePage } from '@services/rss-feeds/hard-delete-sou
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
-import { runRssHardDeleteCrawlCapacityScenario } from './rss-hard-delete-crawl-capacity.mts'
 import {
   cleanupRssHardDeleteSourceCapacity,
   restoreRssHardDeleteSourceCapacity,
@@ -98,7 +97,6 @@ export async function runRssHardDeleteSourceCapacityScenario(): Promise<void> {
     restoreWorkLimit()
     await cleanupRssHardDeleteSourceCapacity(fixture)
   }
-  await runRssHardDeleteCrawlCapacityScenario()
 }
 
 async function remainingSourceIds(feedId: string): Promise<string[]> {
