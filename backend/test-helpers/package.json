@@ -77,7 +77,7 @@
     "@vouchington/uuid-v7": "^0.0.0",
     "@vouchington/worker-runtime": "^0.3.2",
     "glide-mq": "^0.20.0",
-    "jose": "^6.2.17",
+    "jose": "^6.2.18",
     "no-mistakes": "^0.109.121",
     "openai": "^7.60.0",
     "otpauth": "^9.6.0",

@@ -1329,8 +1329,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       jose:
-        specifier: ^6.2.17
-        version: 6.2.17
+        specifier: ^6.2.18
+        version: 6.2.18
       otpauth:
         specifier: ^9.6.0
         version: 9.6.0
@@ -7871,8 +7871,8 @@ importers:
         specifier: ^0.0.3
         version: 0.0.3
       jose:
-        specifier: ^6.2.17
-        version: 6.2.17
+        specifier: ^6.2.18
+        version: 6.2.18
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -13109,8 +13109,8 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       jose:
-        specifier: ^6.2.17
-        version: 6.2.17
+        specifier: ^6.2.18
+        version: 6.2.18
       no-mistakes:
         specifier: ^0.109.121
         version: 0.109.121(vitest@5.1.1)
@@ -15762,8 +15762,8 @@ importers:
         specifier: ^0.13.0
         version: 0.13.0
       jose:
-        specifier: ^6.2.17
-        version: 6.2.17
+        specifier: ^6.2.18
+        version: 6.2.18
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -22782,8 +22782,8 @@ packages:
   jose@5.10.0:
     resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
 
-  jose@6.2.17:
-    resolution: {integrity: sha512-wOuK9V1yujQFH5S0ZWmLcDZN7+IKh9bUCC2ZPCf2HDlol3WWHy+PPyNjEI75FXRLMp3vDKQcupP59xhVU95hcg==}
+  jose@6.2.18:
+    resolution: {integrity: sha512-doV4thUwgkrycJH4yLeqwTGIIZphHl+pk7CPReuMIhYhncmgzdko85MaCG4YQFTxqMFr1/oEH32tZuKKovcDEg==}
 
   js-tokens@10.0.0:
     resolution: {integrity: sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q==}
@@ -26669,7 +26669,7 @@ snapshots:
       express: 5.3.0(supports-color@10.2.2)
       express-rate-limit: 8.7.0(express@5.3.0(supports-color@10.2.2))(supports-color@10.2.2)
       hono: 4.13.18
-      jose: 6.2.17
+      jose: 6.2.18
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
@@ -30169,7 +30169,7 @@ snapshots:
   '@vouchington/session-jwt@0.0.3':
     dependencies:
       '@vouchington/uuid-v7': 0.0.0
-      jose: 6.2.17
+      jose: 6.2.18
 
   '@vouchington/stripe@0.2.1(stripe@23.1.0(@types/node@26.6.6))':
     dependencies:
@@ -31839,7 +31839,7 @@ snapshots:
 
   jose@5.10.0: {}
 
-  jose@6.2.17: {}
+  jose@6.2.18: {}
 
   js-tokens@10.0.0: {}
 
