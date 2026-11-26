@@ -1,5 +1,7 @@
 {
-  "main": ["top-url-insert-batch"],
+  "main": [
+    "top-url-insert-batch"
+  ],
   "main-2": [
     "post-moderation-retention-idle-keepers",
     "post-moderation-version-retention-page",
@@ -689,6 +691,7 @@
     "topic-claims-for-topic-at-live-cap",
     "topic-claims-for-user-at-live-cap",
     "rss-feed-crawls-at-page-cap",
+    "community-active-restrictions-at-cap",
     "search-posts-for-admin-review-at-cap",
     "search-copyright-association-at-hard-cap",
     "list-copyright-guest-capabilities-at-cap",

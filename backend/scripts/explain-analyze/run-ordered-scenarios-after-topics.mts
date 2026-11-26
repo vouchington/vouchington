@@ -11,6 +11,7 @@ import {
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,
 } from './run-scenarios/post-topic-write-capacity.mts'
+import { runCommunityActiveRestrictionCapacity } from './run-scenarios/community-active-restrictions-at-cap.mts'
 
 export const AFTER_TOPICS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runUserListCapacityScenario,
@@ -18,6 +19,7 @@ export const AFTER_TOPICS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runTopicHostnameCapacityScenario,
   runTopHashtagCapacityScenario,
   runTopicChildCapacityScenario,
+  runCommunityActiveRestrictionCapacity,
   runUrlEmbedCapacityScenario,
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
