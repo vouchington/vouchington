@@ -1,4 +1,5 @@
 import { runMessageNotificationWriteCapacity } from './run-scenarios/message-notification-write-capacity.mts'
+import { runModerationTransparencyListCapacity } from './run-scenarios/moderation-transparency-list-capacity.mts'
 import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
 import { runAccountHistoryScenarios } from './run-scenarios/account-history-pages.mts'
 import { runAccountMessagingScenarios } from './run-scenarios/account-messaging-pages.mts'
@@ -151,6 +152,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runDataPointTopicReplaceCapacity,
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
+  runModerationTransparencyListCapacity,
   runCopyrightAiRunRetentionCapacityScenario,
 ]
 

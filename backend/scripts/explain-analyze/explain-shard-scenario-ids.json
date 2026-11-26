@@ -398,6 +398,8 @@
     "chat-conversation-index-writes",
     "community-search-at-cap",
     "community-membership-cache-user-at-cap",
+    "moderation-transparency-global-all-time-at-cap",
+    "moderation-transparency-community-all-time-at-cap",
     "my-community-memberships-at-cap",
     "search-community-members-at-cap",
     "list-user-member-communities-at-cap",
