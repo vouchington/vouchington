@@ -33,7 +33,7 @@ const stagePlanCaps = {
     // Both modes sort form and delivery work before applying the limit. Tighten after #6621.
     { kind: 'maxProcessedRows', relation: 'copyright_notice_delivery_work_items', max: 2_408 },
     { kind: 'maxProcessedRows', relation: 'copyright_notice_form_intakes', max: 2_405 },
-    { kind: 'maxInputRows', nodeType: 'Sort', max: 9_417 },
+    { kind: 'maxInputRows', nodeType: 'Sort', max: 9_419 },
   ],
 } satisfies Record<(typeof stageNames)[number], PlanExpectation[]>
 

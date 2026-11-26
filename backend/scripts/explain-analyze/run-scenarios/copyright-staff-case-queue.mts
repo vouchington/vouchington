@@ -57,8 +57,12 @@ export async function runCopyrightStaffCaseQueueScenarios(): Promise<void> {
         },
         expectations: [
           { kind: 'queryBinds', token: 'LIMIT' },
-          // The prepared main-2 and focused corpora produce different wide shapes. See #6616.
-          { kind: 'maxProcessedRows', relation: 'copyright_notice_submissions', max: 83_386 },
+          // The later main-2 fixture includes recovery history on the continuation. See #6616.
+          {
+            kind: 'maxProcessedRows',
+            relation: 'copyright_notice_submissions',
+            max: index === 0 ? 83_386 : 96_390,
+          },
           { kind: 'maxProcessedRows', relation: 'copyright_notice_deadlines', max: 2_406 },
           { kind: 'maxInputRows', nodeType: 'Sort', max: 11_011 },
         ],
