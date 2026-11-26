@@ -38,6 +38,7 @@ export const POSTS_AND_FEEDS_SCENARIOS = [
   'recommended-topics-long-vote-history',
   'report-judgement-contexts-batch',
   'review-succession-candidates',
+  'post-created-recovery-related-urls-at-cap',
   'remote-follower-inbox-late-cursor',
   'rss-feed-item-feed',
   'rss-feed-item-feed-after',

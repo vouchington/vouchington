@@ -9,6 +9,7 @@ import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/com
 import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
 import { runMembershipOrphanedQueuedGrantScenarios } from './run-scenarios/membership-orphaned-queued-grants.mts'
+import { runPostCreatedRecoveryCapacity } from './run-scenarios/post-created-recovery-capacity.mts'
 import { runPostImageWriteScenarios } from './run-scenarios/post-image-writes.mts'
 import { runCategoryProjectionScenarios } from './run-scenarios/category-projection.mts'
 import { runAiUsageLookupScenarios } from './run-scenarios/ai-usage-lookups.mts'
@@ -126,6 +127,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // Keep the extra communities out of ordinary search and ranking plan captures.
   runAiUsageTotalsScenarios,
   runPostImageWriteScenarios,
+  runPostCreatedRecoveryCapacity,
   runConversationMessageCapacityScenario,
   runNotificationInboxCapacityScenario,
   runMarkNotificationInboxCapacityScenario,
