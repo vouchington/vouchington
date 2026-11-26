@@ -30,6 +30,7 @@ import {
   runMarkNotificationInboxCapacityScenario,
   runNotificationInboxCapacityScenario,
 } from './run-scenarios/notification-inbox-capacity.mts'
+import { runWebPushSubscriptionCapacityScenario } from './run-scenarios/web-push-subscription-capacity.mts'
 import { runTopicClaimCapacityScenarios } from './run-scenarios/topic-claim-capacity.mts'
 import { runRssFeedCrawlCapacityScenario } from './run-scenarios/rss-feed-crawl-capacity.mts'
 import { runAdminReviewAndGuestReadScenarios } from './run-scenarios/admin-review-and-guest-reads.mts'
@@ -129,6 +130,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runConversationMessageCapacityScenario,
   runNotificationInboxCapacityScenario,
   runMarkNotificationInboxCapacityScenario,
+  runWebPushSubscriptionCapacityScenario,
   runTopicClaimCapacityScenarios,
   runRssFeedCrawlCapacityScenario,
   runAdminReviewAndGuestReadScenarios,

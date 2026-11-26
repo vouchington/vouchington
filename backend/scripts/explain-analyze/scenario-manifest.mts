@@ -15,6 +15,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'conversation-messages-at-cap',
   'notifications-inbox-at-cap',
   'notifications-mark-all-read-at-cap',
+  'web-push-subscriptions-at-cap',
   'topic-claims-for-topic-at-live-cap',
   'topic-claims-for-user-at-live-cap',
   'rss-feed-crawls-at-page-cap',
