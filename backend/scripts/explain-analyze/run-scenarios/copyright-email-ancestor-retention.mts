@@ -56,13 +56,10 @@ export async function runCopyrightEmailAncestorRetentionScenarios(): Promise<voi
         { kind: 'maxProcessedRows', relation: ancestorEdgeTable, max: pageSize + 1 },
         { kind: 'maxProcessedRows', relation: ancestorEdgeTable, max: 1, captureIndex: 2 },
         { kind: 'maxProcessedRows', relation: ancestorEdgeTable, max: 1, captureIndex: 3 },
-        // The ancestor-direction delete can read all notice links. The fixture may share
-        // its shard with earlier link seeds, so count one pass over the actual corpus.
-        // https://github.com/vouchington/vouchington/issues/6535
         {
           kind: 'maxProcessedRows',
           relation: 'copyright_notice_email_intake_notice_links',
-          max: mode.direction === 'reply' ? pageSize : fixture.linkCount,
+          max: pageSize,
           captureIndex: 1,
         },
       ],

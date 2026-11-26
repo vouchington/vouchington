@@ -146,8 +146,10 @@ export async function deleteUnlinkedAncestorEdgePage(
         DELETE FROM copyright_notice_email_message_ancestors edge
         WHERE edge.ancestor_message_intake_receipt_id = ${intakeId}
           AND edge.reply_message_intake_receipt_id = ANY(${neighbors}::uuid[])
-          AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
-            WHERE link.copyright_notice_email_intake_id = edge.reply_message_intake_receipt_id)`)
+          AND (
+            SELECT true FROM copyright_notice_email_intake_notice_links link
+            WHERE link.copyright_notice_email_intake_id = edge.reply_message_intake_receipt_id
+          ) IS NULL`)
     }
   }
   return {
