@@ -42,6 +42,8 @@ import {
   runModerationTransparencyReleaseScenario,
 } from './run-scenarios/agent-moderation-retention.mts'
 
+import { runPostElectionReadCapacityScenario } from './run-scenarios/post-election-read-capacity.mts'
+
 export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightAcceptedPageScenarios,
   runSitemapPageScenarios,
@@ -78,6 +80,7 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runPostModerationHistoryPageScenarios,
   runHotPathLoaderScenarios,
   runPublicRssPostSnapshotScenarios,
+  runPostElectionReadCapacityScenario,
   // Hidden-feed story search leaves 240 story_posts rows. Profile collection pages join
   // that table, and the generic plan sorts once those rows exist.
   runStorySearchScenarios,

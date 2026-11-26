@@ -6,6 +6,7 @@ export const POSTS_AND_FEEDS_SCENARIOS = [
   'post-by-slug',
   'post-communities-batch',
   'post-elections-batch',
+  'post-elections-batch-at-cap',
   'post-facets',
   'post-facets-text',
   ...POST_FEED_SCENARIO_IDS,
