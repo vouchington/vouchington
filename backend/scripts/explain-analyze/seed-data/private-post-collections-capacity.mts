@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { assertWhitelistedSqlIdentifier, beginTransaction, write } from '@data-stores/psql'
 import { POST_LIST_TABLES } from '@services/users/profile-collection-tables'
-import type { PrivateUser } from '@services/users/types'
+import { seedUser } from '../run-support.mts'
 
 export const COLLECTION_TYPES = ['hidden', 'following', 'subscribed'] as const
 
@@ -22,11 +22,7 @@ export async function seedPrivatePostCollectionsCapacity() {
     [usernamePrefix, OTHER_USERS],
   )
   const userIds = users.toSorted((a, b) => a.username.localeCompare(b.username)).map(row => row.id)
-  const viewer = {
-    __entity_type: 'user',
-    id: userIds[0]!,
-    roles: [],
-  } as PrivateUser
+  const viewer = { ...seedUser, id: userIds[0]!, username: `${usernamePrefix}-0` }
 
   const { rows: posts } = await query<{ id: string; title: string }>(
     `/* seedPrivatePostCollectionsPosts */
