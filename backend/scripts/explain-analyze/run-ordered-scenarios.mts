@@ -25,6 +25,7 @@ import {
 } from './seed-data/dispatch-work-plans.mts'
 import { runAnalyze } from './seed-data/maintenance.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
+import { runModerationReportListCapacity } from './run-scenarios/moderation-report-list-capacity.mts'
 import { runConversationMessageCapacityScenario } from './run-scenarios/conversation-message-capacity.mts'
 import {
   runMarkNotificationInboxCapacityScenario,
@@ -127,6 +128,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runConversationListCapacityScenario,
   runCommunitySearchCapacityScenario,
   runCommunityMembershipReadCapacityScenarios,
+  runModerationReportListCapacity,
   // These fixtures change crawler-table statistics; keep them after every existing plan.
   runAggregateExistenceScenarios,
   // Keep the extra communities out of ordinary search and ranking plan captures.
