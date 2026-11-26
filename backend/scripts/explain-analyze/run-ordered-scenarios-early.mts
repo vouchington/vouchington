@@ -14,6 +14,7 @@ import { runHotPathLoaderScenarios } from './run-scenarios/hot-path-loaders.mts'
 import { runPublicRssPostSnapshotScenarios } from './run-scenarios/public-rss-post-snapshots.mts'
 import { runStorySearchScenarios } from './run-scenarios/story-search.mts'
 import { runMembershipWorkSelectionScenarios } from './run-scenarios/membership-work-selection.mts'
+import { runFeedSharerHydrationCapacityScenario } from './run-scenarios/feed-sharer-hydration-capacity.mts'
 import { runEngagementEmailRecipientScenarios } from './run-scenarios/engagement-email-recipients.mts'
 import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts'
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
@@ -83,6 +84,7 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runStorySearchScenarios,
   runSharedLoaderScenarios,
   runMembershipWorkSelectionScenarios,
+  runFeedSharerHydrationCapacityScenario,
   runEngagementEmailRecipientScenarios,
   runRemoteFollowerScenarios,
   runReviewSuccessionScenarios,

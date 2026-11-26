@@ -81,6 +81,7 @@ export const CORE_SCENARIOS = [
   'rss-public-post-snapshots-continuation',
   'rss-public-post-snapshots-absent',
   'feed-shared-by-users-batch',
+  'feed-shared-by-users-batch-at-cap',
   'follow-context-votes',
   ...RELATION_READ_BATCH_SCENARIO_IDS,
   'relatable-post-access-batch',

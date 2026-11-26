@@ -46,6 +46,7 @@
     "delegated-post-access-batch",
     "membership-grant-expiry-candidates",
     "membership-pause-collection-due",
+    "feed-shared-by-users-batch-at-cap",
     "engagement-follow-topics",
     "engagement-post-referral-link",
     "engagement-follow-news-sources",
