@@ -77,6 +77,7 @@ export const CORE_SCENARIOS = [
   'deleted-conversation-message-retention-at-cap',
   'deleted-conversation-participant-retention-at-cap',
   'feed-posts-batch',
+  'feed-posts-batch-at-cap',
   'rss-public-post-snapshots-first',
   'rss-public-post-snapshots-continuation',
   'rss-public-post-snapshots-absent',

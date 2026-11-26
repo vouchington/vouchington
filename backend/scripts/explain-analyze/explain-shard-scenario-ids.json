@@ -255,6 +255,7 @@
     "moderation-report-detail-rss_feed_item-judgement",
     "moderation-report-detail-missing-report",
     "moderation-report-detail-no-judgement",
+    "feed-posts-batch-at-cap",
     "mcp-admission-user",
     "rss-feed-state-changes",
     "vote-weight-age-milestones",

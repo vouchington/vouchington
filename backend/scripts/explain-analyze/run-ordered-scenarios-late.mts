@@ -1,5 +1,6 @@
 import { runReferralValidationPages } from './run-scenarios/referral-program-validation-pages.mts'
 import { runModerationReportDetailScenarios } from './run-scenarios/moderation-report-detail.mts'
+import { runFeedPostHydrationCapacityScenario } from './run-scenarios/feed-post-hydration-capacity.mts'
 import { runMcpAdmissionScenario } from './run-scenarios/mcp-admission.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runHackerNewsFilterScenarios } from './run-scenarios/hacker-news-filter.mts'
@@ -70,6 +71,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runDispatchWorkPlanScenarios,
   runModerationReportContextScenarios,
   runModerationReportDetailScenarios,
+  runFeedPostHydrationCapacityScenario,
   runMcpAdmissionScenario,
   runRssFeedStateChangeScenarios,
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
