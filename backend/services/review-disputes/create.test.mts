@@ -6,13 +6,16 @@ import {
   insertTestPostReview,
   updateTestPostReviewRating,
 } from '@voucha/test-helpers'
+import { markTestPostDeletedBy } from '@voucha/test-helpers/entities/posts-deletion'
+import { withReviewDisputeReadInterleavingForTest } from '@voucha/test-helpers/review-dispute-filing-transaction'
 import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
 import { revokeTopicClaim } from '@services/topic-claims/revoke'
 import { createReviewDispute } from './create.mts'
+import { dismissPendingDisputesForDeletedReview } from './dismiss-deleted.mts'
 import { parseCreateReviewDisputeInput } from './parse.mts'
-import { getReviewDisputeById } from './get.mts'
+import { getReviewDisputeById, listReviewDisputes } from './get.mts'
 
 async function makeVerifiedClaimant(topicId: string, staffId: string) {
   const claimant = await createTestUser()
@@ -152,6 +155,35 @@ describe('createReviewDispute', () => {
       claim_text: 'Trying to dispute a non-review.',
     })
     await expect(createReviewDispute(claimant, input)).rejects.toMatchObject({ status: 422 })
+  })
+
+  it('rejects a filing when the review is deleted after the initial read', async () => {
+    const { claimant } = await makeVerifiedClaimant(topicId, staff.id)
+    const dedicatedPostId = await makeReviewPost(reviewer.id, topicId)
+    const input = parseCreateReviewDisputeInput({
+      post_id: dedicatedPostId,
+      reason: 'other',
+      claim_text: 'The review changed during filing.',
+    })
+
+    await withReviewDisputeReadInterleavingForTest(
+      async query => {
+        await expect(createReviewDispute(claimant, input, { query })).rejects.toMatchObject({
+          status: 410,
+        })
+      },
+      async () => {
+        await markTestPostDeletedBy(dedicatedPostId, reviewer.id)
+        await dismissPendingDisputesForDeletedReview(dedicatedPostId)
+      },
+    )
+
+    const { disputes } = await listReviewDisputes({
+      status: 'pending',
+      disputantUserId: claimant.id,
+      limit: 1,
+    })
+    expect(disputes).toEqual([])
   })
 
   it('uses the specified topic_id for multi-topic reviews', async () => {
