@@ -12,14 +12,18 @@ import {
   insertTestReleasedModerationTransparencyRollupRow,
 } from '@voucha/test-helpers'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
+import {
+  createTestClearancePartitionFeedbackRace,
+  getTestClearancePartitionState,
+  readTestClearanceFeedbackIds,
+  recordFeedbackDuringClearancePartitionCreation,
+} from '@voucha/test-helpers/clearance-partition-feedback-race'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
-import { beginTransaction, write } from '../setup.mts'
+import { beginTransaction } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
-import {
-  createPostClearancePartitions,
-  retireMonthlyPartitionCandidate,
-} from './monthly-partitions.mts'
+import { createPostClearancePartitions } from './create-post-clearance-partitions.mts'
+import { retireMonthlyPartitionCandidate } from './monthly-partitions.mts'
 import { getMonthlyPartitionUpperBound } from './partition-drop-guard.mts'
 
 type PartitionDropOutcome = Awaited<ReturnType<typeof retireMonthlyPartitionCandidate>>
@@ -84,6 +88,18 @@ const CATEGORY = 'post_clearance_reject'
 /** Public release refuses a cohort below this count, so the fixture must cross it. */
 const PUBLIC_RELEASE_COUNT = 20
 
+describe('createPostClearancePartitions', () => {
+  it('commits clearance partition creation alongside moderation training feedback', async () => {
+    const fixture = await createTestClearancePartitionFeedbackRace()
+    const ids = await recordFeedbackDuringClearancePartitionCreation(fixture, () =>
+      createPostClearancePartitions({ pastMonths: 0, futureMonths: 0 }, fixture.occurredAt),
+    )
+
+    expect(await getTestClearancePartitionState(fixture.partition)).toBe('attached')
+    expect((await readTestClearanceFeedbackIds(ids)).toSorted()).toEqual(ids.toSorted())
+  })
+})
+
 describe('guardAndRetireMonthlyPartition', () => {
   it('keeps a released moderation transparency cohort when its clearance month is dropped', async () => {
     const reservation = await acquireTestModerationTransparencyDateReservation()
@@ -93,11 +109,9 @@ describe('guardAndRetireMonthlyPartition', () => {
     const month = occurredAt.getUTCMonth() + 1
     const partition = buildMonthlyPartitionName(TABLE, year, month)
     // One owned child. A catalog sweep at this reference date would also retire live months.
-    await createPostClearancePartitions(
-      write,
-      [{ table: TABLE, pastMonths: 0, futureMonths: 0 }],
-      occurredAt,
-    )
+    const partitionConfig = { pastMonths: 0, futureMonths: 0 }
+    await createPostClearancePartitions(partitionConfig, occurredAt)
+    await createPostClearancePartitions(partitionConfig, occurredAt)
 
     const author = await createTestUser()
     const postId = await insertTestPost({
@@ -138,8 +152,9 @@ describe('guardAndRetireMonthlyPartition', () => {
       Date.UTC(upperBound.getUTCFullYear(), upperBound.getUTCMonth() + minimumMonths, 15),
     )
     // The hook waits for the production locks, so the path's NOWAIT locks are already held.
-    // Posts comes before the other reference tables: waiting on the policy list order
-    // deadlocks with a writer that already holds posts and then touches feedbacks.
+    // Waiting for several shared tables while holding the first deadlocks with any writer that
+    // enters them in the other order, and no order suits every writer. The vitest project that
+    // owns this file runs it after the parallel projects finish, so no writer is active.
     const outcome = await retireOwnedClearancePartition(partition, upperBound, referenceDate)
     expect(outcome).toEqual({ table: TABLE, partition, outcome: 'dropped' })
 
@@ -153,8 +168,7 @@ function retireOwnedClearancePartition(
   referenceDate: Date,
 ): Promise<PartitionDropOutcome> {
   const referenceTables = PARTITION_DROP_POLICIES[TABLE]?.retirementReferenceTables ?? []
-  // A publication writer holds posts, then inserts feedback. Lock posts first so this
-  // wait does not hold feedbacks while that writer still needs them.
+  // Lock order is irrelevant while the file runs alone; posts first keeps the order stable.
   const orderedReferences = [
     ...referenceTables.filter(table => table === 'posts'),
     ...referenceTables.filter(table => table !== 'posts'),

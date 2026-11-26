@@ -14,12 +14,11 @@ export async function upsertUserFinancialProfile(
 ): Promise<UserFinancialProfile> {
   await using transactionQuery = await beginTransaction()
   const ownerResult = await transactionQuery<{ individual_id: string }>(
-    sql`/* upsertUserFinancialProfile:lockOwner */
+    sql`/* upsertUserFinancialProfile:getOwner */
         SELECT i.id AS individual_id
         FROM users u
         JOIN individuals i ON i.id = u.individual_id
         WHERE u.id = ${userId}
-        FOR UPDATE OF i
       `,
   )
   const individualId = ownerResult.rows[0]?.individual_id
@@ -31,7 +30,6 @@ export async function upsertUserFinancialProfile(
       SELECT currency_code
       FROM individual_financial_profiles ifp
       WHERE individual_id = ${individualId}
-      FOR UPDATE
     `)
   const existingCurrency = existingResult.rows[0]?.currency_code
   if (input.currency !== undefined && existingCurrency && input.currency !== existingCurrency) {
@@ -106,6 +104,11 @@ export async function upsertUserFinancialProfile(
     if (index > 0) statement.append(sql`, `)
     statement.append(update)
   }
+  if (input.currency !== undefined || moneyCurrencies.length > 0) {
+    // The row may have gained or changed its currency after the validation read.
+    statement.append(sql`
+      WHERE individual_financial_profiles.currency_code = ${existingCurrency ?? currency}`)
+  }
   statement.append(sql`
     RETURNING
       individual_id,
@@ -131,7 +134,13 @@ export async function upsertUserFinancialProfile(
     }
     throw err
   }
-  const result = toUserFinancialProfile(rows[0]!)
+  const row = rows[0]
+  assert(
+    row,
+    409,
+    'Financial profile currency changed concurrently. Reload the profile and try again.',
+  )
+  const result = toUserFinancialProfile(row)
   await transactionQuery.commit()
   return result
 }

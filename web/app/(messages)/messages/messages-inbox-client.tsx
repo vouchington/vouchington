@@ -92,16 +92,6 @@ export function MessagesInboxClient({
     }
   }
 
-  if (conversations.length === 0) {
-    return (
-      <div className='rounded-lg border bg-card p-12 text-center'>
-        <p className='text-muted-foreground'>
-          {t('extracted.messages.messagesInboxClient.noMessagesYet_f0d5968f')}
-        </p>
-      </div>
-    )
-  }
-
   return (
     <InfiniteScroll
       hasNextPage={hasMore}
@@ -111,6 +101,14 @@ export function MessagesInboxClient({
       fetchError={fetchError}
       clearError={() => setFetchError(null)}
       resetKey={refreshGeneration}
+      itemCount={conversations.length}
+      emptyState={
+        <div className='rounded-lg border bg-card p-12 text-center'>
+          <p className='text-muted-foreground'>
+            {t('extracted.messages.messagesInboxClient.noMessagesYet_f0d5968f')}
+          </p>
+        </div>
+      }
     >
       <div className='divide-y rounded-lg border bg-card'>
         {conversations.map(conversation => (

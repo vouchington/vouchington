@@ -1,13 +1,11 @@
 import type { OwnedTransaction } from '@data-stores/psql'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import sql from 'sql-template-strings'
 import { createStory } from '../create.mts'
 import { recordStoryPostPublicationChanges } from '../publication-change.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { deriveNewStoryMetadata } from './metadata.mts'
 
-/** A live RSS item read under its row lock, so what is checked here cannot change before commit. */
-type LockedClusterItem = {
+type ClusterItem = {
   id: string
   story_id: string | null
   story_locked_at: Date | null
@@ -21,39 +19,22 @@ export type StoryClusteringEffects =
   | { kind: 'joined'; storyId: string }
   | { kind: 'created'; storyId: string }
 
-export async function lockClusterItem(
+export async function readClusterItem(
   query: OwnedTransaction,
   rssFeedItemId: string,
-): Promise<LockedClusterItem | null> {
-  const { rows } = await query<LockedClusterItem>(
-    sql`/* lockStoryClusteringItem */
+): Promise<ClusterItem | null> {
+  const { rows } = await query<ClusterItem>(
+    sql`/* readStoryClusteringItem */
     SELECT id, story_id, story_locked_at, published_at, data->>'title' AS title
     FROM rss_feed_items
-    WHERE id = ${rssFeedItemId} AND deleted_at IS NULL
-    FOR UPDATE`,
+    WHERE id = ${rssFeedItemId} AND deleted_at IS NULL`,
   )
   return rows[0] ?? null
 }
 
 /** An item that can still be moved into a story: not in one, and not locked out by an admin. */
-export function isClusterable(item: LockedClusterItem): boolean {
+export function isClusterable(item: ClusterItem): boolean {
   return item.story_id === null && item.story_locked_at === null
-}
-
-async function assignItemsToStory(
-  query: OwnedTransaction,
-  storyId: string,
-  itemIds: readonly string[],
-): Promise<number> {
-  const { rows } = await query(
-    sql`/* assignStoryClusteringItems */
-    UPDATE rss_feed_items
-    SET story_id = ${storyId}
-    WHERE id = ANY(${[...itemIds]}::uuid[])
-      AND deleted_at IS NULL AND story_id IS NULL AND story_locked_at IS NULL
-    RETURNING id`,
-  )
-  return rows.length
 }
 
 /**
@@ -65,45 +46,62 @@ async function refreshClusteredStory(query: OwnedTransaction, storyId: string): 
   await recordStoryPostPublicationChanges(query, storyId, result?.impactedTopicIds)
 }
 
-/** Adds the locked, clusterable item to a story that is still live once its lifecycle is locked. */
+/** Adds an eligible item to a story that is live at the membership write's snapshot. */
 export async function joinExistingStory(
   query: OwnedTransaction,
   itemId: string,
   storyId: string,
+  inputSha256: Buffer,
+  candidateId?: string,
 ): Promise<StoryClusteringEffects> {
-  await lockStoryLifecycles(query, [storyId])
-  const { rows } = await query(
-    sql`/* joinStoryClusteringStory */ SELECT id FROM stories WHERE id = ${storyId} AND deleted_at IS NULL`,
-  )
-  if (rows.length === 0) return { kind: 'skipped', reason: 'story_unavailable' }
-  await assignItemsToStory(query, storyId, [itemId])
+  const assigned = await query(sql`/* assignStoryClusteringItem */
+    UPDATE rss_feed_items
+    SET story_id = ${storyId}
+    WHERE id = ${itemId} AND deleted_at IS NULL AND story_id IS NULL AND story_locked_at IS NULL
+      AND bedrock_nova_multimodal_v1_content_sha256 = ${inputSha256}
+      AND EXISTS (
+        SELECT 1 FROM stories WHERE id = ${storyId} AND deleted_at IS NULL
+      )
+      AND (
+        ${candidateId ?? null}::uuid IS NULL OR EXISTS (
+          SELECT 1 FROM rss_feed_items candidate
+          WHERE candidate.id = ${candidateId ?? null}::uuid
+            AND candidate.story_id = ${storyId}
+            AND candidate.deleted_at IS NULL AND candidate.story_locked_at IS NULL
+        )
+      )`)
+  if (assigned.rowCount !== 1) {
+    const { rows } = await query(sql`/* joinStoryClusteringStory */
+      SELECT id FROM stories WHERE id = ${storyId} AND deleted_at IS NULL`)
+    if (rows.length === 0) return { kind: 'skipped', reason: 'story_unavailable' }
+    return { kind: 'skipped', reason: candidateId ? 'candidate_unavailable' : 'item_unavailable' }
+  }
   await refreshClusteredStory(query, storyId)
   return { kind: 'joined', storyId }
 }
 
-/** A new story with its lifecycle lock held, so no other transaction can touch it before the members land. */
-async function createLockedStory(
-  query: OwnedTransaction,
-  metadata: ReturnType<typeof deriveNewStoryMetadata>,
-) {
-  const story = await createStory(metadata, { query })
-  await lockStoryLifecycles(query, [story.id])
-  return story
-}
-
-/** Founds a story from two locked, clusterable items; both must land in it or neither does. */
+/** Founds a story from two clusterable items; both must land in it or neither does. */
 export async function createStoryFromPair(
   query: OwnedTransaction,
-  incoming: LockedClusterItem,
-  selected: LockedClusterItem,
+  incoming: ClusterItem,
+  selected: ClusterItem,
+  inputSha256: Buffer,
 ): Promise<StoryClusteringEffects> {
   const metadata = deriveNewStoryMetadata({
     incomingPublishedAt: incoming.published_at,
     selectedItem: selected,
   })
-  const story = await createLockedStory(query, metadata)
-  const assigned = await assignItemsToStory(query, story.id, [incoming.id, selected.id])
-  if (assigned !== 2) throw new Error('Story clustering could not assign both founding members')
+  const story = await createStory(metadata, { query })
+  const assigned = await query(sql`/* assignStoryClusteringPair */
+    UPDATE rss_feed_items
+    SET story_id = ${story.id}
+    WHERE id = ANY(${[incoming.id, selected.id]}::uuid[])
+      AND deleted_at IS NULL AND story_id IS NULL AND story_locked_at IS NULL
+      AND (id <> ${incoming.id} OR bedrock_nova_multimodal_v1_content_sha256 = ${inputSha256})
+      AND EXISTS (SELECT 1 FROM stories WHERE id = ${story.id} AND deleted_at IS NULL)
+  `)
+  if (assigned.rowCount !== 2)
+    throw new Error('Story clustering could not assign both founding members')
   await refreshClusteredStory(query, story.id)
   return { kind: 'created', storyId: story.id }
 }

@@ -1,9 +1,6 @@
 import { createHash } from 'node:crypto'
 
-import {
-  getFilesFromFolder,
-  readMigrationFile,
-} from '../../backend/data-stores/psql/migration-runner/files.mts'
+import { getFilesFromFolder, readMigrationFile } from '@vouchington/postgres'
 
 type LedgerMigration = {
   checksum: string

@@ -82,7 +82,7 @@ it('owns its private cache', () => { ${failure === 'test' || failure === 'test-a
 `,
   )
   let exitCode = 0
-  let output = ''
+  let output: string
   try {
     const result = await execFileAsync(
       process.execPath,

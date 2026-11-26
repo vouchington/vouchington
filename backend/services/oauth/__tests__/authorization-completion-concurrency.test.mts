@@ -1,7 +1,9 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { getActiveTestUserSessions } from '@voucha/test-helpers'
 import { getTestOAuthAuthorization } from '@voucha/test-helpers/entities/oauth-authorizations'
+import { getTestOAuthAccountRaw } from '@voucha/test-helpers/entities/oauth-account-raw'
+import { interceptPostgresTransactionsForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { completeOAuthAuthorization } from '../authorization-completion.mts'
 import {
   createOAuthAccount,
@@ -64,5 +66,64 @@ describe('OAuth authorization completion concurrency', () => {
       result_device_id: first.deviceToken.payload.did,
       result_session_id: first.sessionToken.payload.sid,
     })
+  })
+
+  it('returns a conflict when writer admission misses but the authorization is still ready', async () => {
+    const cleanup = registerCleanup()
+    const deviceId = randomUUID()
+    const sessionId = randomUUID()
+    const completionToken = randomBytes(32).toString('base64url')
+    const account = await createOAuthAccount('github', cleanup)
+    const flowId = await insertCompletionReadyAuthorization(
+      {
+        accountId: account.provider_user_id,
+        provider: 'github',
+        deviceId,
+        sessionId,
+        completionToken,
+        purpose: 'authenticate',
+        callbackMode: 'web',
+      },
+      cleanup,
+    )
+    const readState = () =>
+      Promise.all([
+        getTestOAuthAuthorization(flowId),
+        getTestOAuthAccountRaw('github', account.provider_user_id),
+      ])
+    const before = await readState()
+    expect(before[0]?.status).toBe('completion_ready')
+    expect(before[1]?.user_id).toBeNull()
+    // Exercise the defensive branch without inventing a production transition back to ready.
+    onTestFinished(
+      interceptPostgresTransactionsForTest(
+        transaction =>
+          new Proxy(transaction, {
+            async apply(target, receiver, args: Parameters<typeof transaction>) {
+              const result = await Reflect.apply(target, receiver, args)
+              const [statement, values] = args
+              if (
+                typeof statement === 'string' &&
+                statement.includes('/* getAuthorizationForCompletion */') &&
+                values?.includes(flowId)
+              )
+                return { ...result, rows: [], rowCount: 0 }
+              return result
+            },
+          }),
+        true,
+      ),
+    )
+
+    await expect(
+      completeOAuthAuthorization({
+        flowId,
+        completionToken,
+        completionTokenSource: 'cookie',
+        deviceId,
+        sessionId,
+      }),
+    ).rejects.toMatchObject({ status: 409, message: 'OAuth authorization could not be completed' })
+    expect(await readState()).toEqual(before)
   })
 })

@@ -123,9 +123,6 @@
         "tests/**/*.spec.mts",
         "credentialed/**/*.spec.mts",
         "helpers/**/*.test.mts",
-        // Compiler-only contracts are checked by playwright/tsconfig.json, never a runtime runner.
-        "test-helpers/public-test-type-contract.mts",
-        "test-helpers/public-test-negative-type-contract.mts",
         "../playwright.credentialed.config.mts",
         // Passed as a CLI path by dev/localization/local-smoke.mts, not imported.
         "localization-tmux.config.mts",
@@ -140,6 +137,8 @@
       "entry": ["**/*.mts"],
       "ignoreIssues": {
         "migrations/0000-00-00-0-finite-values.mts": ["exports"],
+        // Dev-only consumers: the query-capture helpers in backend/test-helpers and the EXPLAIN scripts.
+        "query-capture.mts": ["exports"],
       },
     },
     "ci": {
@@ -319,6 +318,7 @@
         "storybook/mocks/get-translations.ts",
         "storybook/mocks/languages.ts",
         "storybook/mocks/load-server-messages.ts",
+        "storybook/mocks/use-login-turnstile.ts",
         "storybook/mocks/upgrade-membership-aside.tsx",
         // Invoked as Node CLI entrypoints by the local and image smoke shell programs.
         "test-helpers/compile-localization-smoke-catalog.mts",

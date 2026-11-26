@@ -16,21 +16,11 @@ export async function expireElapsedMembershipPage(
 ): Promise<number> {
   // A queued grant can become live after each expiry, so normalize one projection at a time.
   const { rows } = await query(sql`/* expireElapsedMemberships */
-    WITH candidates AS (
-      SELECT membership.id FROM memberships membership
-      JOIN membership_sources source ON source.id = membership.membership_source_id
-      WHERE source.source_kind = 'admin_grant' AND membership.user_id = ${userId}
-        AND membership.projection_ended_at IS NULL AND membership.cancelled_at IS NULL
-        AND membership.expired_at IS NULL AND membership.expires_at IS NOT NULL
-        AND membership.expires_at <= COALESCE(${options.expiresThrough ?? null}::timestamptz, CURRENT_TIMESTAMP)
-      ORDER BY membership.expires_at, membership.id LIMIT 1 FOR UPDATE OF membership
-    )
     UPDATE memberships membership
     SET expired_at = membership.expires_at, cancelled_at = NULL, past_due_at = NULL,
       paused_at = NULL, should_cancel_at_period_end = false
     FROM membership_sources source
-    WHERE membership.id IN (SELECT id FROM candidates)
-      AND source.id = membership.membership_source_id AND source.source_kind = 'admin_grant'
+    WHERE source.id = membership.membership_source_id AND source.source_kind = 'admin_grant'
       AND membership.user_id = ${userId} AND membership.projection_ended_at IS NULL
       AND membership.cancelled_at IS NULL AND membership.expired_at IS NULL
       AND membership.expires_at IS NOT NULL

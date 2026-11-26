@@ -1,14 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import { afterAll, afterEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, describe, expect, it, onTestFinished } from 'vitest'
 import { closeAndUnregisterGlideMQInstance, createWorker } from '@data-stores/valkey-glide-mq'
 import { createTestUser } from '@voucha/test-helpers'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
-import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
+import {
+  SES_INBOUND_PROCESS_JOB,
+  SES_INBOUND_RECONCILE_JOB,
+} from '@queues/background/enqueues/ses-inbound-jobs'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { background } from '@queues/background/queues'
 import { retryManagedQueueDomainFailedJobs } from './domains.mts'
-
-// Mirrors the retry bound in domains.mts: one request replays at most this many failed jobs.
-const RETRY_FAILED_LIMIT = 100
+import { queueMonitoringWorkConfig } from './work-limits.mts'
 
 // A worker that fails every job it is given, so the jobs below stay failed until retried.
 const worker = createWorker(BACKGROUND_QUEUE_NAME, async () => {
@@ -16,15 +18,17 @@ const worker = createWorker(BACKGROUND_QUEUE_NAME, async () => {
 })
 const failedJobIds: string[] = []
 
-async function failProcessJob(): Promise<void> {
+async function seedFailedJob(
+  definition: typeof SES_INBOUND_PROCESS_JOB | typeof SES_INBOUND_RECONCILE_JOB,
+): Promise<void> {
   const jobId = `ses-domain-retry-${randomUUID()}`
   failedJobIds.push(jobId)
   await expect(
     background.add(
-      SES_INBOUND_PROCESS_JOB.name,
+      definition.name,
       {},
       {
-        ...SES_INBOUND_PROCESS_JOB.options,
+        ...definition.options,
         jobId,
         attempts: 1,
         removeOnFail: 1_000,
@@ -44,21 +48,26 @@ describe('retrying the failed jobs of a background domain', () => {
 
   it('replays a failed job of the domain and counts it as retried', async () => {
     const admin = await createTestUser({ administrator: true })
-    await failProcessJob()
+    await seedFailedJob(SES_INBOUND_PROCESS_JOB)
 
     const result = await retryManagedQueueDomainFailedJobs(admin, 'background', 'ses-inbound')
 
     expect(result).toEqual({ success: true, retried: 1 })
   })
 
-  it('stops searching once one request has replayed the retry limit', async () => {
+  it('shares the configured retry budget across different job names', async () => {
     const admin = await createTestUser({ administrator: true })
-    await Promise.all(Array.from({ length: RETRY_FAILED_LIMIT + 1 }, failProcessJob))
+    await Promise.all([
+      seedFailedJob(SES_INBOUND_PROCESS_JOB),
+      seedFailedJob(SES_INBOUND_RECONCILE_JOB),
+    ])
+    await queueMonitoringWorkConfig.waitForInitialization()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(queueMonitoringWorkConfig, { retry_failed_limit: 1 }),
+    )
 
     const result = await retryManagedQueueDomainFailedJobs(admin, 'background', 'ses-inbound')
 
-    // The in-memory test queue ignores the search `limit`, so the exact cap is not observable here;
-    // the request still replays at least the limit and returns after the first job name met it.
-    expect(result.retried).toBeGreaterThanOrEqual(RETRY_FAILED_LIMIT)
+    expect(result).toEqual({ success: true, retried: 1 })
   })
 })

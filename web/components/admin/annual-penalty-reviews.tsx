@@ -85,7 +85,7 @@ function AnnualPenaltyReviewsInner<P extends DuePenalty>({
           {t('extracted.flags.integrityPenalties.resultUncertain_e24ec07b')}
         </p>
       ) : null}
-      {!loading && !error && due.length === 0 ? (
+      {!loading && !error && due.length === 0 && !nextCursor ? (
         <p className='mt-3 text-sm text-muted-foreground'>{t('moderation.penaltyReviews.empty')}</p>
       ) : null}
       {due.length > 0 ? (

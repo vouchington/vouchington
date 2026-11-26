@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as http from '@modules/utils/http'
 // Import order matters here -- see the comment in undici-mock.mts.
 import { createCaptchaUndiciMock, mockFetch } from '@voucha/test-helpers/captcha/undici-mock'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
@@ -34,6 +35,7 @@ function recommendationBody(random: string): Record<string, unknown> {
 describe('POST /api/v1/posts topic recommendation CAPTCHA', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(http, 'getExternalFetch').mockReturnValue(mockFetch)
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
     mockFetch.mockResolvedValue(
       new UndiciResponse(JSON.stringify({ success: true, hostname: 'localhost', action: 'test' })),

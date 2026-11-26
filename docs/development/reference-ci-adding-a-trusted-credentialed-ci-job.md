@@ -2,7 +2,7 @@
 
 [Back to CI Reference](ci.md)
 
-These are the predictable failure modes when wiring a new job that needs real cloud credentials (AWS OIDC role, external API keys).
+Credential scoping (job-level secrets gated on `trusted-secret-context`) is in the `github-actions-authoring` skill. These are the predictable failure modes when wiring a new job that needs real cloud credentials (AWS OIDC role, external API keys).
 
 Before renaming a repo variable, secret, workflow input, or package-boundary token, run
 `./dev/audit-rename OLD_NAME NEW_NAME` and review the grouped old-name and new-name matches across
@@ -25,15 +25,6 @@ The `refine-runtime-web` step (`id: refine-runtime-web`) applies additional nega
 
 **Contrast — the PR Docker filters fail open at the root dependency boundary:** storybook takes only the lockfile from the root, but `build-backend-infra` and `build-web-infra` include root `package.json`, `pnpm-lock.yaml`, and `pnpm-workspace.yaml` alongside the per-workspace `package.json` manifests that each image's Dockerfile copies. The lockfile is monorepo-wide, so any dependency change (a web-only bump, a `cloudflare-worker`/`lambdas`/dev-tooling bump, or a change scoped to the opposite image) builds both PR images. That cost is accepted because a transitive-only dependency update can change either image without touching an in-subgraph manifest, and the root boundary gives both images pre-merge build, smoke, and scan validation. A per-workspace manifest on its own still selects only the image that copies it. The `area-ci-triggers.part-4.test.mts` test enforces the root-boundary matches, the per-workspace matches, and the cross-image misses.
 
-### 3. Role-assumption env and secrets at job level
-
-AWS OIDC role assumption and external API key secrets must be declared at **job level** (not step
-level), and gated on `trusted-secret-context`, so untrusted pull requests never receive them.
-
-### 4. CORS origin exactness
-
-CORS `Access-Control-Allow-Origin` entries require the exact scheme + host + port. `http://localhost:8787` and `https://localhost:8787` are different origins. Locally wrangler dev defaults to HTTP; use `http://` in test CORS configs.
-
-### 5. A live-provider job is informational
+### 3. A live-provider job is informational
 
 A job whose tests call a live provider or real cloud resources (`test-backend-credentialed` and `test-playwright-credentialed` are the models; a paid provider belongs in `tests-backend-live-providers.yml` instead, which runs only on dispatch and nightly) must not gate the area. Leave it out of the area gate's `needs:` and `results`, like `codecov`; keep it out of `coverage` and `codecov` `needs:` and never publish its LCOV, so the patch-coverage gate reads only deterministic suites. `area-workflows.test.mts` lists the report-only suites per area, `tests-backend-credentialed.test.mts` pins the backend wiring, and `tests-playwright-credentialed.report-only.test.mts` pins the web wiring. Add the check to `ignoreChecks` in `.pr-shepherdrc.yml` and end the job with a step that adds a warning annotation and a job summary when the test step failed (a per-PR job; a dispatch- and nightly-only job relies on its red status). A rerun of a non-gating job gains nothing. Gate the same behavior with recorded-response fixtures ([live-provider smoke checks](tests.md#live-provider-smoke-checks)). Do not add `continue-on-error` to the test step: the failed job staying red is what keeps the check and the Nightly alert visible.

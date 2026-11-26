@@ -1,4 +1,5 @@
 import { assertBackendSessionJwtConfiguration } from '@services/jwt-session/configuration'
+import { isTurnstileTestSecretKey } from '@services/captcha/secret-keys'
 import { describe, expect, it } from 'vitest'
 import {
   shouldRejectSkipCaptchaVerification,
@@ -6,7 +7,8 @@ import {
   shouldRejectTurnstileTestSecret,
 } from './boot-guards.mts'
 
-const TEST_SECRET_KEYS = ['test-always-pass', 'test-always-fail', 'test-token-already-spent']
+// Cloudflare's always-pass test secret.
+const ALWAYS_PASS_TEST_SECRET = '1x0000000000000000000000000000000AA'
 
 describe('shouldRejectTurnstileTestSecret', () => {
   it('rejects a test secret on staging — NODE_ENV=production alone must not be required', () => {
@@ -14,16 +16,20 @@ describe('shouldRejectTurnstileTestSecret', () => {
     // every task, staging included, so a guard gated on NODE_ENV=production would have silently
     // let staging boot with a Turnstile test secret. ENVIRONMENT=staging must be sufficient.
     expect(
-      shouldRejectTurnstileTestSecret('test-always-pass', TEST_SECRET_KEYS, {
+      shouldRejectTurnstileTestSecret(ALWAYS_PASS_TEST_SECRET, isTurnstileTestSecretKey, {
         ENVIRONMENT: 'staging',
         NODE_ENV: 'production',
       }),
     ).toBe(true)
   })
 
-  it('rejects a test secret on production', () => {
+  it.each([
+    ALWAYS_PASS_TEST_SECRET,
+    '2x0000000000000000000000000000000AA',
+    '3x0000000000000000000000000000000AA',
+  ])('rejects the Cloudflare test secret %s on production', secret => {
     expect(
-      shouldRejectTurnstileTestSecret('test-always-pass', TEST_SECRET_KEYS, {
+      shouldRejectTurnstileTestSecret(secret, isTurnstileTestSecretKey, {
         ENVIRONMENT: 'production',
         NODE_ENV: 'production',
       }),
@@ -32,13 +38,13 @@ describe('shouldRejectTurnstileTestSecret', () => {
 
   it('allows a real secret on staging and production', () => {
     expect(
-      shouldRejectTurnstileTestSecret('a-real-secret-key', TEST_SECRET_KEYS, {
+      shouldRejectTurnstileTestSecret('a-real-secret-key', isTurnstileTestSecretKey, {
         ENVIRONMENT: 'staging',
         NODE_ENV: 'production',
       }),
     ).toBe(false)
     expect(
-      shouldRejectTurnstileTestSecret('a-real-secret-key', TEST_SECRET_KEYS, {
+      shouldRejectTurnstileTestSecret('a-real-secret-key', isTurnstileTestSecretKey, {
         ENVIRONMENT: 'production',
         NODE_ENV: 'production',
       }),
@@ -47,11 +53,13 @@ describe('shouldRejectTurnstileTestSecret', () => {
 
   it('allows a test secret outside a deployed environment (dev/test)', () => {
     expect(
-      shouldRejectTurnstileTestSecret('test-always-pass', TEST_SECRET_KEYS, {
+      shouldRejectTurnstileTestSecret(ALWAYS_PASS_TEST_SECRET, isTurnstileTestSecretKey, {
         NODE_ENV: 'test',
       }),
     ).toBe(false)
-    expect(shouldRejectTurnstileTestSecret('test-always-pass', TEST_SECRET_KEYS, {})).toBe(false)
+    expect(
+      shouldRejectTurnstileTestSecret(ALWAYS_PASS_TEST_SECRET, isTurnstileTestSecretKey, {}),
+    ).toBe(false)
   })
 })
 

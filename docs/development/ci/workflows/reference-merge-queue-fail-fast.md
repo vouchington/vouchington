@@ -39,8 +39,9 @@ The test enumerates the cancelling jobs from each gate's dependencies. The exclu
 
 - **Informational jobs** (coverage upload, credentialed suites). A failure keeps its own check red
   but must not eject an entry.
-- **Change detection and static checks.** Every suite waits on them, so a failure skips the rest and
-  the run ends at once.
+- **Change detection and static checks.** In most areas every suite waits on them, so a failure
+  skips the rest and the run ends at once. Backend static runs in parallel with its suites, so
+  `static-backend` has its own cancel job.
 - **Pull-request-only jobs.** They never run in the merge queue.
 - **Single-scan areas.** A gate waiting on one job has nothing to shorten.
 

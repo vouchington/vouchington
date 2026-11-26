@@ -1,9 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getPendingCopyrightStaffCases } from '../../../services/copyright-notices/read-models-staff-case.mts'
-import { claimCopyrightFormScreening } from '../../../services/copyright-notices/form-screening-executions.mts'
-import { getTestPostgresBackendProcessId } from '../../postgres-lock-wait.mts'
-import { createTestPostgresMultiWait } from '../../postgres-multi-client-lock-observer.mts'
 
 export async function eraseTestCopyrightFormRequester(intakeId: string): Promise<void> {
   await write(sql`/* eraseTestCopyrightFormRequester */
@@ -60,61 +57,4 @@ export async function getTestExpiredCopyrightScreeningClaimTime(intakeId: string
     ORDER BY attempt_number DESC LIMIT 1
   `)
   return rows[0]!.cutoff
-}
-
-/** Retains actual form authority until PostgreSQL confirms admission is waiting behind it. */
-export async function startTestCopyrightScreeningBeforeAdmission<T>(
-  intakeId: string,
-  admit: () => Promise<T>,
-): Promise<T> {
-  await using transaction = await beginTransaction()
-  await transaction(sql`/* startTestCopyrightScreeningBeforeAdmission:holdAttempt */
-    SELECT id FROM copyright_notice_form_screening_attempts
-    WHERE copyright_notice_form_intake_id = ${intakeId}
-    ORDER BY attempt_number DESC LIMIT 1 FOR UPDATE
-  `)
-  const pid = await getTestPostgresBackendProcessId(transaction)
-  let released: Promise<void> | undefined
-  const releaseHolder = () => (released ??= Promise.resolve(transaction[Symbol.asyncDispose]()))
-  await using waits = await createTestPostgresMultiWait()
-  const screening = await waits.start(
-    {
-      holderProcessId: pid,
-      pool: 'write',
-      lock: { kind: 'transaction' },
-      queryMarker: 'claimCopyrightFormScreening:current',
-      releaseHolder,
-    },
-    () =>
-      claimCopyrightFormScreening(intakeId)
-        .then(value => ({ value, error: null }))
-        .catch((err: unknown) => ({ value: null, error: err })),
-  )
-  await screening.waitForLock()
-  const admission = await waits.start(
-    {
-      holderProcessId: await screening.waiterProcessId(),
-      pool: 'write',
-      lock: { kind: 'advisory', key: `copyright-form-review:${intakeId}` },
-      queryMarker: 'lockAssessmentForm:fence',
-      releaseHolder,
-    },
-    () =>
-      admit()
-        .then(value => ({ value, error: null }))
-        .catch((err: unknown) => ({ value: null, error: err })),
-  )
-  await admission.waitForLock()
-  await transaction.commit()
-  const [screeningResult, result] = await Promise.all([screening.operation, admission.operation])
-  if (screeningResult.error)
-    throw screeningResult.error instanceof Error
-      ? screeningResult.error
-      : new Error('Copyright screening operation failed', { cause: screeningResult.error })
-  if (!screeningResult.value) throw new Error('Copyright screening retry was not claimed')
-  if (result.error)
-    throw result.error instanceof Error
-      ? result.error
-      : new Error('Copyright screening admission failed', { cause: result.error })
-  return result.value as T
 }

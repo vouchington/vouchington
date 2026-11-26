@@ -1,5 +1,5 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 import { getResampleRelations } from './seq-scan-baseline.mts'
 
 function result(name: string, plans: readonly Record<string, unknown>[]): ExplainResult {

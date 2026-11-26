@@ -92,7 +92,7 @@ export async function processImageRequest(
   try {
     transformed = await dependencies.transformImage(originBody, {
       width,
-      height: requestParams.height,
+      ...(requestParams.height === undefined ? {} : { height: requestParams.height }),
       quality,
       lossless: requestParams.lossless,
       progressive: requestParams.progressive,

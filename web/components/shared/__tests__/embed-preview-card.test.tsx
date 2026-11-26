@@ -60,11 +60,11 @@ describe('EmbedPreviewCard content language', () => {
     )
 
     const title = screen.getByText('Article')
-    expect(title).not.toHaveAttribute('lang')
+    expect(title).toHaveAttribute('lang', '')
     expect(title).toHaveAttribute('dir', 'auto')
   })
 
-  it('omits lang when the page language tag is not a supported content language', () => {
+  it('sets an empty lang when the page language tag is not a supported content language', () => {
     render(
       <EmbedPreviewCard
         preview={preview({ title: 'Article', description: null, provider: null, sourceUrl: null })}
@@ -73,7 +73,7 @@ describe('EmbedPreviewCard content language', () => {
     )
 
     const title = screen.getByText('Article')
-    expect(title).not.toHaveAttribute('lang')
+    expect(title).toHaveAttribute('lang', '')
     expect(title).toHaveAttribute('dir', 'auto')
   })
 })

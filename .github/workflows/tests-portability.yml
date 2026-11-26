@@ -35,7 +35,7 @@ jobs:
           fetch-depth: 1
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -57,7 +57,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: portability-linux
       - name: Upload full portability-linux LCOV to GitHub (attempt 2)
@@ -65,7 +65,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-2.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: portability-linux
           name-suffix: -retry

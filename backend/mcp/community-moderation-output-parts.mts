@@ -1,5 +1,5 @@
 import { componentSchema } from './route-response-schema.mts'
-import type { ToolOutputSchema } from '@services/openai-agents/tool-types'
+import type { ToolOutputSchema } from '@vouchington/mcp-server/types'
 
 export type Schema = Record<string, unknown>
 export const text: Schema = { type: 'string' }

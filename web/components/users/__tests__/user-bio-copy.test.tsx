@@ -34,7 +34,7 @@ describe('UserBioCopy', () => {
     expect(bio).toHaveTextContent('Bonjour')
   })
 
-  it('leaves an unknown detected language unmarked', () => {
+  it('marks an unknown detected language with an empty lang', () => {
     const { container } = render(
       <UserBioCopy
         html='<p>Hello</p>'
@@ -42,7 +42,7 @@ describe('UserBioCopy', () => {
       />,
     )
 
-    expect(container.querySelector('[lang]')).toBeNull()
+    expect(container.querySelector('[lang]')).toHaveAttribute('lang', '')
     expect(container.querySelector('[dir]')).toHaveAttribute('dir', 'auto')
   })
 

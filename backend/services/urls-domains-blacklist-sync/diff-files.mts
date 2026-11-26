@@ -4,7 +4,7 @@ import { rm, stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { Readable } from 'node:stream'
 import { finished, pipeline } from 'node:stream/promises'
-import { runCommand } from '@modules/child-process'
+import { runCommand } from '@vouchington/server-utils/child-process'
 import { createEmptyFeedError, readNormalizedDomains } from './sync-utils.mts'
 
 const SORT_BIN = '/usr/bin/sort'

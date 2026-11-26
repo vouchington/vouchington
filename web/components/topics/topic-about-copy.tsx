@@ -20,7 +20,7 @@ export function TopicAboutCopy({ markdown, detectedLanguage, className }: TopicA
   return (
     <p
       className={className}
-      lang={language}
+      lang={language ?? ''}
       dir={getContentLanguageDir(language)}
     >
       {markdown.slice(0, TOPIC_ABOUT_EXCERPT_LENGTH)}

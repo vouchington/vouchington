@@ -4,14 +4,8 @@ import type { RecommendedTopicsSearchOptions, RecommendedTopicResult } from './t
 import type { PageInfo } from '@voucha/types/pagination'
 import { read } from '@data-stores/psql'
 
-import {
-  encodeCursor,
-  decodeUuidCursor,
-  isScoreCursor,
-  isNameCursor,
-  type ScoreCursor,
-  type NameCursor,
-} from '@modules/pagination'
+import { encodeCursor, decodeUuidCursor, isScoreCursor, isNameCursor } from '@modules/pagination'
+import type { NameCursor, ScoreCursor } from '@vouchington/pagination'
 import { buildRecommendationQuery } from './query-builder.mts'
 
 type RecommendedTopicRow = {

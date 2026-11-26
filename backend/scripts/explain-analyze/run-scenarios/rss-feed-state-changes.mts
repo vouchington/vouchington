@@ -7,7 +7,7 @@ import { runAndCapture, seedUser } from '../run-support.mts'
 
 const administrator = { ...seedUser, roles: ['administrator'] } as PrivateUser
 
-// Enablement and discoverability change together: one read locks both latest decisions and one
+// Enablement and discoverability change together: one read fetches both latest decisions and one
 // insert appends both. Only the read has a plan worth gating, since the insert returns no rows.
 // The transaction is never committed, so the seeded feed keeps its state.
 export async function runRssFeedStateChangeScenarios(): Promise<void> {
@@ -21,7 +21,7 @@ export async function runRssFeedStateChangeScenarios(): Promise<void> {
       {
         kind: 'usesIndexes',
         indexes: ['idx_rss_feed_setting_changes__feed_type_id'],
-        queryContains: 'lockLatestRssFeedStates',
+        queryContains: 'readLatestRssFeedStates',
       },
       { kind: 'maxProcessedRows', relation: 'rss_feed_setting_changes', max: 3 },
     ],
@@ -42,6 +42,6 @@ export async function runRssFeedStateChangeScenarios(): Promise<void> {
       assert.equal(result, 'updated', 'Both seeded decisions must differ from the request')
     },
     undefined,
-    'lockLatestRssFeedStates',
+    'readLatestRssFeedStates',
   )
 }

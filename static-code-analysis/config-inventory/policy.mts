@@ -99,6 +99,7 @@ export async function checkConfigInventoryPolicy(
 
   const readDoc = options.readCanonicalDoc ?? (path => readFile(path, 'utf8'))
   for (const file of DOC_CROSS_LINKS) {
+    // oxlint-disable-next-line no-await-in-loop -- doc errors are appended in DOC_CROSS_LINKS order
     const content = await readCrossLinkedDoc(ctx, file, errors, readDoc)
     if (content !== null && !CONFIG_INVENTORY_LINK_RE.test(content)) {
       errors.push(`${file} must mention ./dev/config-inventory`)

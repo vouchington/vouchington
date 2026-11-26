@@ -35,7 +35,7 @@ export function CommunityAboutCopy({
   return (
     <p
       className={className}
-      lang={language}
+      lang={language ?? ''}
       dir={getContentLanguageDir(language)}
     >
       {markdown}

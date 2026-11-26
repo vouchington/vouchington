@@ -9,7 +9,7 @@ export const getResolvedUiLocale = cache(async () => {
   // Mirrors getCurrentUser()'s cookies() fallback: outside a real Next.js request (e.g. a
   // Server Component rendered directly in a unit test without the request-store machinery),
   // headers() throws. Treat that the same as "no Accept-Language available".
-  let acceptLanguage: string | null = null
+  let acceptLanguage: string | null
   try {
     const headersList = await headers()
     acceptLanguage = headersList.get('accept-language')

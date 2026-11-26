@@ -143,6 +143,9 @@
     "no-mistakes/react-no-use-promise-resolve": "error",
     "no-mistakes/react-no-iife-in-jsx": "error",
     "react-doctor/advanced-event-handler-refs": "error",
+    "react-doctor/no-unsafe-json-parse": "error",
+    "react-doctor/no-impure-state-updater": "error",
+    "react-doctor/no-set-state-after-await-in-effect": "error",
     "react-doctor/effect-needs-cleanup": "error",
     "react-doctor/nextjs-no-client-fetch-for-server-data": "error",
     "react-doctor/nextjs-no-client-side-redirect": "error",
@@ -176,7 +179,6 @@
     "react-doctor/no-mutable-in-deps": "error",
     "react-doctor/prefer-use-sync-external-store": "error",
     "react-doctor/prefer-useReducer": "error",
-    "react-doctor/rerender-dependencies": "error",
     "react-doctor/no-default-props": "error",
     "react-doctor/no-generic-handler-names": "error",
     "react-doctor/no-react-dom-deprecated-apis": "error",
@@ -198,7 +200,6 @@
     "react-doctor/server-sequential-independent-await": "off",
     "react-doctor/client-passive-event-listeners": "error",
     "react-doctor/no-flush-sync": "error",
-    "react-doctor/rendering-hoist-jsx": "error",
     "react-doctor/rendering-hydration-no-flicker": "error",
     "react-doctor/rendering-script-defer-async": "error",
     "react-doctor/rendering-svg-precision": "error",
@@ -206,7 +207,6 @@
     "react-doctor/rerender-derived-state-from-hook": "error",
     "react-doctor/rerender-functional-setstate": "error",
     "react-doctor/rerender-memo-before-early-return": "error",
-    "react-doctor/rerender-memo-with-default-value": "error",
     "react-doctor/rerender-transitions-scroll": "error",
     "react-doctor/design-no-vague-button-label": "error",
     "react-doctor/no-disabled-zoom": "error",
@@ -226,7 +226,6 @@
         "**/*-tests/**"
       ],
       "rules": {
-        "react-doctor/design-no-vague-button-label": "off",
         "react-doctor/no-dynamic-import-path": "off"
       }
     }

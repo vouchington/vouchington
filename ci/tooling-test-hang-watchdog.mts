@@ -1,4 +1,4 @@
-import { formatTeardownOverrunDiagnostics } from '../test-helpers/vitest-teardown-overrun-diagnostics.mts'
+import { formatTeardownOverrunDiagnostics } from 'vouchington-tooling/vitest-diagnostics'
 
 /** Root vitest.config.mts teardownTimeout. */
 export const TOOLING_TEARDOWN_TIMEOUT_MS = 20_000

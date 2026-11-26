@@ -1,3 +1,11 @@
+import {
+  failCopyrightWriteWithUnrelatedConflict,
+  readClaimantCopyrightNoticeIds,
+} from '@voucha/test-helpers/data-stores/psql/copyright-write-conflicts'
+import { afterPostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
+import { COPYRIGHT_SUBMISSION_IN_PROGRESS } from '@modules/on-error/error-codes'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
 import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
@@ -19,47 +27,84 @@ import { claimCopyrightFormScreening } from './form-screening-executions.mts'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
+async function createFormInput(user: Awaited<ReturnType<typeof createTestUser>>, poster = user) {
+  const postId = await insertTestPost({
+    title: `copyright ${crypto.randomUUID()}`,
+    slug: `copyright-${crypto.randomUUID()}`,
+    createdById: poster.id,
+    markdown: 'image',
+  })
+  const imageId = await insertTestImage(poster.id)
+  await insertTestPostImage({ postId, imageId })
+  return {
+    currentUser: user,
+    requesterIdentity: `user:${user.id}`,
+    idempotencyKey: crypto.randomUUID(),
+    request: {
+      jurisdiction: 'us_dmca' as const,
+      claimantDisplayName: 'Claimant',
+      claimantContact: 'claimant@example.test',
+      claimantEmail: 'claimant@example.test',
+      workDescription: 'My photograph',
+      goodFaithBelief: true,
+      accuracyAuthorityUnderPenaltyOfPerjury: true,
+      electronicSignature: 'Claimant',
+      claimantTargets: [
+        {
+          surfaceKind: 'post-image' as const,
+          postId,
+          imageId,
+          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+        },
+      ],
+    },
+  }
+}
+
+async function createCounterNoticeFixture() {
+  const poster = await createTestUser()
+  const claimant = await createTestUser()
+  const notice = await createCopyrightFormIntake(await createFormInput(claimant, poster))
+  const noticeId = notice.intake.copyright_notice_id
+  // Resolve the durable target ID rather than trusting a form-provided location.
+  const targetId = await readCopyrightNoticeTargetId(noticeId)
+  const input = {
+    name: 'Poster',
+    address: '1 Main Street',
+    telephone: '555-0100',
+    consentToFederalJurisdiction: true,
+    consentToServiceOfProcess: true,
+    goodFaithMisidentificationUnderPenaltyOfPerjury: true,
+    electronicSignature: 'Poster',
+    targetIds: [targetId],
+  }
+  const key = crypto.randomUUID()
+  const submit = () => createCopyrightCounterNotice(poster, noticeId, key, input)
+  return { poster, noticeId, targetId, submit }
+}
+
 describe('copyright form intakes', () => {
-  it('atomically replays an unchanged idempotency key without another legal case', async () => {
+  it('conflicts with a concurrent intake and replays the committed legal case', async () => {
     const user = await createTestUser()
-    const postId = await insertTestPost({
-      title: `copyright ${crypto.randomUUID()}`,
-      slug: `copyright-${crypto.randomUUID()}`,
-      createdById: user.id,
-      markdown: 'image',
-    })
-    const imageId = await insertTestImage(user.id)
-    await insertTestPostImage({ postId, imageId })
-    const input = {
-      currentUser: user,
-      requesterIdentity: `user:${user.id}`,
-      idempotencyKey: crypto.randomUUID(),
-      request: {
-        jurisdiction: 'us_dmca' as const,
-        claimantDisplayName: 'Claimant',
-        claimantContact: 'claimant@example.test',
-        claimantEmail: 'claimant@example.test',
-        workDescription: 'My photograph',
-        goodFaithBelief: true,
-        accuracyAuthorityUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        claimantTargets: [
-          {
-            surfaceKind: 'post-image' as const,
-            postId,
-            imageId,
-            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-          },
-        ],
+    const input = await createFormInput(user)
+    const restore = afterPostgresTransactionQueryForTest(
+      'createCopyrightFormIntake:findDuplicate',
+      values => values.includes(input.idempotencyKey),
+      async () => {
+        expect(await createCopyrightFormIntake(input)).toMatchObject({ isDuplicate: false })
       },
+    )
+    try {
+      await expect(createCopyrightFormIntake(input)).rejects.toMatchObject({
+        status: 409,
+        code: COPYRIGHT_SUBMISSION_IN_PROGRESS,
+        cause: { code: '23505' },
+      })
+    } finally {
+      restore()
     }
-    const first = await createCopyrightFormIntake(input)
     const replay = await createCopyrightFormIntake(input)
-    expect(first.isDuplicate).toBe(false)
-    expect(replay).toMatchObject({
-      isDuplicate: true,
-      intake: { id: first.intake.id, copyright_notice_id: first.intake.copyright_notice_id },
-    })
+    expect(replay.isDuplicate).toBe(true)
     await expect(
       createCopyrightFormIntake({
         ...input,
@@ -69,7 +114,7 @@ describe('copyright form intakes', () => {
     ).rejects.toMatchObject({ status: 422 })
 
     const screening = {
-      intakeId: first.intake.id,
+      intakeId: replay.intake.id,
       inputSha256: Buffer.alloc(32, 12),
       recommendation: 'not_obviously_invalid' as const,
       rationale: 'The structured form has no obvious spam markers.',
@@ -78,7 +123,46 @@ describe('copyright form intakes', () => {
       model: 'test-model',
     }
     await appendTestCopyrightFormScreening(screening)
-    await expect(claimCopyrightFormScreening(first.intake.id)).resolves.toBeNull()
+    await expect(claimCopyrightFormScreening(replay.intake.id)).resolves.toBeNull()
+  })
+
+  it('propagates an unrelated unique violation and rolls back the form intake', async () => {
+    const claimant = await createTestUser()
+    const input = await createFormInput(claimant)
+    const restore = failCopyrightWriteWithUnrelatedConflict(
+      '/* createCopyrightFormIntake */',
+      input.idempotencyKey,
+      claimant.id,
+    )
+    try {
+      await expect(createCopyrightFormIntake(input)).rejects.toMatchObject({
+        code: '23505',
+        constraint: 'retained_user_identities_pkey',
+      })
+    } finally {
+      restore()
+    }
+    await expect(readClaimantCopyrightNoticeIds(claimant.id)).resolves.toEqual([])
+  })
+
+  it('propagates an unrelated unique violation and rolls back the counter notice', async () => {
+    const { poster, noticeId, submit } = await createCounterNoticeFixture()
+    const before = await getCopyrightNoticePrivateAggregate(noticeId)
+    const restore = failCopyrightWriteWithUnrelatedConflict(
+      '/* createCopyrightSubmission:scopeAndReceipt */',
+      noticeId,
+      poster.id,
+    )
+    try {
+      await expect(submit()).rejects.toMatchObject({
+        code: '23505',
+        constraint: 'retained_user_identities_pkey',
+      })
+    } finally {
+      restore()
+    }
+    await expect(getCopyrightNoticePrivateAggregate(noticeId)).resolves.toEqual(before)
+    await expect(submit()).resolves.toMatchObject({ isDuplicate: false })
   })
 
   it('treats an unknown screening submission as an inert queue replay', async () => {
@@ -88,73 +172,55 @@ describe('copyright form intakes', () => {
   })
 
   it('records a CAPTCHA-gated caller’s statutory counter-notice scope idempotently', async () => {
-    const poster = await createTestUser()
-    const claimant = await createTestUser()
-    const postId = await insertTestPost({
-      title: `copyright counter ${crypto.randomUUID()}`,
-      slug: `copyright-counter-${crypto.randomUUID()}`,
-      createdById: poster.id,
-      markdown: 'image',
-    })
-    const imageId = await insertTestImage(poster.id)
-    await insertTestPostImage({ postId, imageId })
-    const notice = await createCopyrightFormIntake({
-      currentUser: claimant,
-      requesterIdentity: `user:${claimant.id}`,
-      idempotencyKey: crypto.randomUUID(),
-      request: {
-        jurisdiction: 'us_dmca',
-        claimantDisplayName: 'Claimant',
-        claimantContact: 'claimant@example.test',
-        claimantEmail: 'claimant@example.test',
-        workDescription: 'My photograph',
-        goodFaithBelief: true,
-        accuracyAuthorityUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        claimantTargets: [
-          {
-            surfaceKind: 'post-image' as const,
-            postId,
-            imageId,
-            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-          },
-        ],
+    const { poster, noticeId, targetId, submit } = await createCounterNoticeFixture()
+    const firstInserted = Promise.withResolvers<number>()
+    const releaseFirst = Promise.withResolvers<void>()
+    const restore = afterPostgresTransactionQueryForTest(
+      'createCopyrightSubmission:scopeAndReceipt',
+      values => values.includes(noticeId),
+      async transaction => {
+        firstInserted.resolve(await getTestPostgresBackendProcessId(transaction))
+        await releaseFirst.promise
       },
-    })
-    // Resolve the durable target ID rather than trusting a form-provided location.
-    const targetId = await readCopyrightNoticeTargetId(notice.intake.copyright_notice_id)
-    const input = {
-      name: 'Poster',
-      address: '1 Main Street',
-      telephone: '555-0100',
-      consentToFederalJurisdiction: true,
-      consentToServiceOfProcess: true,
-      goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-      electronicSignature: 'Poster',
-      targetIds: [targetId],
+    )
+    const first = submit()
+    void first.catch(firstInserted.reject)
+    let replay: Awaited<ReturnType<typeof submit>>
+    try {
+      const holderProcessId = await firstInserted.promise
+      replay = await withTestOwnedPostgresWait(
+        {
+          holderProcessId,
+          pool: 'write',
+          lock: { kind: 'transaction' },
+          queryMarker: 'lockCopyrightNoticeForLegalWrite',
+          releaseHolder: async () => releaseFirst.resolve(),
+        },
+        async waitForLock => {
+          const second = submit()
+          await waitForLock(second)
+          releaseFirst.resolve()
+          return second
+        },
+      )
+    } finally {
+      releaseFirst.resolve()
+      await Promise.allSettled([first])
+      restore()
     }
-    const key = crypto.randomUUID()
-    const first = await createCopyrightCounterNotice(
-      poster,
-      notice.intake.copyright_notice_id,
-      key,
-      input,
-    )
-    const replay = await createCopyrightCounterNotice(
-      poster,
-      notice.intake.copyright_notice_id,
-      key,
-      input,
-    )
-    expect(first.isDuplicate).toBe(false)
-    expect(replay).toMatchObject({ isDuplicate: true, submission: { id: first.submission.id } })
+    const original = await first
+    expect(original.isDuplicate).toBe(false)
+    expect(replay.isDuplicate).toBe(true)
+    expect(replay.submission.id).toBe(original.submission.id)
+    const afterRetry = await getCopyrightNoticePrivateAggregate(noticeId)
+    expect(
+      afterRetry?.submissions.filter(submission => submission.kind === 'counter_notice'),
+    ).toEqual([expect.objectContaining({ id: replay.submission.id })])
 
-    const appeal = await createCopyrightAppeal(
-      poster,
-      notice.intake.copyright_notice_id,
-      crypto.randomUUID(),
-      { reason: 'The reported image is my original work.', targetIds: [targetId] },
-    )
+    const appeal = await createCopyrightAppeal(poster, noticeId, crypto.randomUUID(), {
+      reason: 'The reported image is my original work.',
+      targetIds: [targetId],
+    })
     await expect(readTestPendingCopyrightAgentDispatches(appeal.submission.id)).resolves.toEqual([
       { kind: 'appeal', submissionId: appeal.submission.id },
     ])
@@ -166,7 +232,7 @@ describe('copyright form intakes', () => {
       recommendation: 'uncertain',
       rationale: 'Needs a moderator review.',
     })
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
     expect(aggregate?.appealRecommendations).toEqual([
       expect.objectContaining({
         copyright_notice_submission_id: appeal.submission.id,

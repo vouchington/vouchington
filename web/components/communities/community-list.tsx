@@ -33,19 +33,13 @@ export function CommunityList({
 
   const allResults = mergePageResultsById(pages)
   const allCommunities = mergeRecords(pages, page => page.communities)
+  const visibleCommunities = allResults.flatMap(result => {
+    const community = allCommunities[result.id]
+    return community ? [community] : []
+  })
   const allMetrics = mergeRecords(pages, page => page.community_metrics ?? {})
   const allMemberships = mergeRecords(pages, page => page.community_memberships ?? {})
   const allPendingIds = new Set(pages.flatMap(page => page.pending_application_community_ids ?? []))
-
-  if (allResults.length === 0) {
-    return (
-      <EmptyState
-        icon='search'
-        title={t('extracted.communities.communityList.noCommunitiesFound_1875e081')}
-        description={t('extracted.communities.communityList.checkBackLaterOrTryAdjusting_e1730dbd')}
-      />
-    )
-  }
 
   const canLoadMore = hasNextPage && !!nextPageEndpoint
 
@@ -58,22 +52,27 @@ export function CommunityList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      itemCount={visibleCommunities.length}
+      emptyState={
+        <EmptyState
+          icon='search'
+          title={t('extracted.communities.communityList.noCommunitiesFound_1875e081')}
+          description={t(
+            'extracted.communities.communityList.checkBackLaterOrTryAdjusting_e1730dbd',
+          )}
+        />
+      }
     >
       <div className='space-y-3'>
-        {allResults.map(result => {
-          const community = allCommunities[result.id]
-          if (!community) return null
-
-          return (
-            <CommunityCard
-              key={community.id}
-              community={community}
-              metrics={allMetrics[community.id]}
-              membership={allMemberships[community.id]}
-              hasPendingApplication={allPendingIds.has(community.id)}
-            />
-          )
-        })}
+        {visibleCommunities.map(community => (
+          <CommunityCard
+            key={community.id}
+            community={community}
+            metrics={allMetrics[community.id]}
+            membership={allMemberships[community.id]}
+            hasPendingApplication={allPendingIds.has(community.id)}
+          />
+        ))}
       </div>
     </InfiniteScroll>
   )

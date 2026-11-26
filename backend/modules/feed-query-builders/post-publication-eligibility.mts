@@ -18,6 +18,7 @@ export type DirectPostEligibilityOptions = {
 export type PublicPostEligibilityOptions = {
   includeArchivedCommunities?: boolean
   includeRegisteredAudience?: boolean
+  reuseCandidateAuthorCheck?: boolean
 }
 
 export type ViewerPostDiscoveryEligibilityOptions = {
@@ -79,14 +80,21 @@ function buildAnonymousPostEligibilityFilter(
   assertSafeSqlAlias(rootAlias)
 
   const statement = sql`(`
-    .append(buildNonDeletedClause(candidateAlias, rootAlias))
+    .append(buildNonDeletedClause(candidateAlias, rootAlias, options?.reuseCandidateAuthorCheck))
     .append(sql` AND `)
     .append(`${candidateAlias}.approved_at IS NOT NULL`)
     .append(sql` AND `)
     .append(`${rootAlias}.approved_at IS NOT NULL`)
   statement
     .append(sql` AND `)
-    .append(buildDiscoveryStateClause(candidateAlias, rootAlias, requireUnarchived))
+    .append(
+      buildDiscoveryStateClause(
+        candidateAlias,
+        rootAlias,
+        requireUnarchived,
+        options?.reuseCandidateAuthorCheck,
+      ),
+    )
     .append(sql` AND `)
     .append(`${rootAlias}.privacy = 'public'`)
     .append(sql` AND `)

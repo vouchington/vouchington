@@ -53,7 +53,6 @@ export async function runUploadCleanupScenarios(): Promise<void> {
           },
         ],
       })
-      // no-mistakes-disable-next-line query-reached-per-item: fixed phase and cursor shapes require independent production query captures and plan gates
       await runAndCapture(
         scenario,
         async () => {

@@ -49,7 +49,7 @@ export async function softDeleteChildrenForUser(
         WHERE user_id = ${userId}
           AND parent_link_id IS NOT NULL
           AND deleted_at IS NULL
-          AND id IN (
+          AND id = ANY(ARRAY(
           SELECT id FROM user_referral_program_links
           WHERE user_id = ${userId}
             AND parent_link_id IS NOT NULL
@@ -57,7 +57,7 @@ export async function softDeleteChildrenForUser(
           ORDER BY referral_program_topic_id, url_id
           LIMIT ${batchSize}
           FOR UPDATE
-        )
+        ))
       `,
       options,
     )

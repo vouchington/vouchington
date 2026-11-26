@@ -1,6 +1,4 @@
 import { beginTransaction, write } from '@data-stores/psql'
-import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
-import { lockBidirectionalRelationPairs } from '../services/entity-relations/bidirectional-pair-lock.mts'
 
 /** Hold only authorization/reference contexts, never the relation pair the callback writes. */
 export async function withHeldRelationReadContextForTest<T>(
@@ -23,36 +21,5 @@ export async function makeRelationParticipantPrivateForTest(postId: string): Pro
     `/* makeRelationParticipantPrivateForTest */
     UPDATE posts SET privacy = 'private', broadcast = 'followers' WHERE id = $1::uuid`,
     [postId],
-  )
-}
-
-/** Wait on the relation pair being written, then commit privacy before its plain guard recheck. */
-export async function withRelationPairPrivacyChangeForTest<T>(
-  subjectId: string,
-  objectId: string,
-  start: () => Promise<T>,
-): Promise<T> {
-  const relationTable = 'relation__post__related__post'
-  const ids = [subjectId, objectId].toSorted()
-  await using holder = await beginTransaction()
-  await lockBidirectionalRelationPairs(holder, relationTable, subjectId, [objectId])
-  const { rows } = await holder<{ pid: number }>(
-    '/* relationPairHolderPid */ SELECT pg_backend_pid() AS pid',
-  )
-  return await withTestOwnedPostgresWait(
-    {
-      holderProcessId: rows[0]!.pid,
-      pool: 'write',
-      lock: { kind: 'advisory', key: `${relationTable}:${ids[0]}:${ids[1]}` },
-      queryMarker: 'lockBidirectionalRelationPairs',
-      releaseHolder: () => holder[Symbol.asyncDispose](),
-    },
-    async waitForLock => {
-      const action = start()
-      await waitForLock(action)
-      await makeRelationParticipantPrivateForTest(subjectId)
-      await holder.commit()
-      return action
-    },
   )
 }

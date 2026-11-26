@@ -50,15 +50,25 @@ export async function readTestCopyrightLeaseExpiry(intentId: string): Promise<Da
   return rows[0].lease_expires_at
 }
 
+// Epoch microseconds as bigint: text timestamptz drops trailing zeros, so strings do not order.
 export async function readTestCopyrightGuestEventClocks(noticeId: string) {
   const { rows } = await read<{
     last_lifecycle_activity_at: string | null
     last_legal_activity_at: string
     updated_at: string
   }>(sql`/* readTestCopyrightGuestEventClocks */
-    SELECT last_lifecycle_activity_at::text, last_legal_activity_at::text, updated_at::text
+    SELECT
+      (EXTRACT(EPOCH FROM last_lifecycle_activity_at) * 1000000)::bigint::text AS last_lifecycle_activity_at,
+      (EXTRACT(EPOCH FROM last_legal_activity_at) * 1000000)::bigint::text AS last_legal_activity_at,
+      (EXTRACT(EPOCH FROM updated_at) * 1000000)::bigint::text AS updated_at
     FROM copyright_notices WHERE id = ${noticeId}
   `)
-  if (!rows[0]) throw new Error('Owned notice disappeared')
-  return rows[0]
+  const row = rows[0]
+  if (!row) throw new Error('Owned notice disappeared')
+  return {
+    last_lifecycle_activity_at:
+      row.last_lifecycle_activity_at === null ? null : BigInt(row.last_lifecycle_activity_at),
+    last_legal_activity_at: BigInt(row.last_legal_activity_at),
+    updated_at: BigInt(row.updated_at),
+  }
 }

@@ -28,7 +28,7 @@ function suspendedClaimantPendingRestrictionSql(): SQLStatement {
       AND restriction.is_authorizing_assessment_automated`)
 }
 
-/** Candidate selection is not authority: each notice is rechecked under its suspension and locks. */
+/** Candidate selection is not authority: the reversal checks whether the suspension is still active. */
 export function searchSuspendedClaimantAutomaticRestrictionNoticeIds(
   options: CopyrightSweepPageOptions = {},
 ): Promise<CopyrightSweepIdPage> {
@@ -57,16 +57,19 @@ export async function liftSuspendedClaimantAutomaticRestrictions(
   reversedAt = new Date(),
 ): Promise<void> {
   await using transaction = await beginTransaction()
-  // The shared lock keeps the suspension in force until this reversal commits.
-  const { rows } = await transaction<{ submission_id: string; suspended_by_id: string }>(
+  const { rows } = await transaction<{
+    submission_id: string
+    suspension_id: string
+    suspended_by_id: string
+  }>(
     sql`/* liftSuspendedClaimantAutomaticRestrictions:find */
-      SELECT assessment.copyright_notice_submission_id AS submission_id, suspension.suspended_by_id `
+      SELECT assessment.copyright_notice_submission_id AS submission_id,
+        suspension.id AS suspension_id, suspension.suspended_by_id `
       .append(suspendedClaimantPendingRestrictionSql())
       .append(
         sql`
       AND notice.id = ${noticeId}
-    ORDER BY suspension.id, assessment.id LIMIT 1
-    FOR SHARE OF suspension`,
+    ORDER BY suspension.id, assessment.id LIMIT 1`,
       ),
   )
   const found = rows[0]
@@ -77,6 +80,7 @@ export async function liftSuspendedClaimantAutomaticRestrictions(
       noticeId,
       submissionId: found.submission_id,
       moderatorId: found.suspended_by_id,
+      claimantSuspensionId: found.suspension_id,
       reviewedAt: reversedAt,
     },
   )

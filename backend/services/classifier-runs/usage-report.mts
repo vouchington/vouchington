@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import sql from 'sql-template-strings'
 import { assertClassifierUsageWindow, readClassifierRunUsage } from './usage-report-runs.mts'
 import {
@@ -66,8 +66,8 @@ async function readClassifierRequestCounts(
     FROM classifier_run_requests request
     -- no-mistakes-disable-next-line postgres-bounded-statements -- each windowed request joins one classifier by primary key to include its slug in exact totals
     JOIN classifiers classifier ON classifier.id = request.classifier_id
-    WHERE request.id >= ${timestampToUuidv7LowerBound(window.from.getTime())}
-      AND request.id < ${timestampToUuidv7LowerBound(window.to.getTime())}
+    WHERE request.id >= ${getMinUuidv7ForDate(window.from)}
+      AND request.id < ${getMinUuidv7ForDate(window.to)}
     GROUP BY classifier.slug
   `)
   return Object.fromEntries(rows.map(row => [row.classifier, row.total]))

@@ -54,8 +54,7 @@ describe('fixture validation with explicit response contracts', () => {
   })
 
   it('still rejects a missing fixture response contract', () => {
-    const contracts = { ...manifest.backendResponseContracts }
-    delete contracts[Object.keys(contracts)[0]!]
+    const contracts = Object.fromEntries(Object.entries(manifest.backendResponseContracts).slice(1))
     expect(() => buildApiFixtureManifest(contracts)).toThrow(/Fixture contract validation failed/)
   })
 
@@ -70,10 +69,10 @@ describe('fixture validation with explicit response contracts', () => {
   })
 
   it('does not substitute another response variant for a missing fixture variant', () => {
-    const contracts = { ...manifest.backendResponseContracts }
-    const key = Object.keys(contracts).find(candidate => candidate.includes('#'))!
-    contracts[`${key.slice(0, key.indexOf('#'))}#not-the-requested-variant`] = contracts[key]!
-    delete contracts[key]
+    const all = manifest.backendResponseContracts
+    const key = Object.keys(all).find(candidate => candidate.includes('#'))!
+    const contracts = Object.fromEntries(Object.entries(all).filter(([name]) => name !== key))
+    contracts[`${key.slice(0, key.indexOf('#'))}#not-the-requested-variant`] = all[key]!
     expect(() => buildApiFixtureManifest(contracts)).toThrow(/Fixture contract validation failed/)
   })
 

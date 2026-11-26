@@ -1,38 +1,56 @@
 import { gracefulShutdownPeriodSeconds } from '@voucha/config'
-import onError, { flushSentry } from '@modules/on-error'
+import { flushSentry } from '@modules/on-error'
+import { reportShutdownError } from './report-shutdown-error.mts'
 import {
-  createDataStoreShutdownRegistry,
-  type ConnectionShutdown,
-  type DataStoreShutdownDeps as GracefulShutdownDeps,
-} from './data-store-shutdown-registry.mts'
+  createGracefulShutdown,
+  createShutdownRegistry,
+  shutdownForOneOffCommand,
+} from '@vouchington/server-utils/graceful-shutdown'
 
-const callbacks: (() => Promise<void>)[] = []
-const drainCallbacks: (() => Promise<void>)[] = []
-let shuttingDown = false
+const gracePeriodMs = gracefulShutdownPeriodSeconds * 1000
+
+function log(...args: unknown[]) {
+  if (process.env.NODE_ENV === 'test') return
+  console.log(...args)
+}
+
+function logError(...args: unknown[]) {
+  console.error(...args)
+}
 
 // Registered by @data-stores/psql and @data-stores/valkey at their own module load time (mirrors
 // the addGracefulShutdownCallback self-registration pattern used elsewhere, e.g.
 // @data-stores/analytics's graceful-shutdown.mts). This package must not import those data stores
 // directly — doing so previously created a workspace dependency cycle
 // (graceful-shutdown -> psql/valkey -> ... -> analytics -> graceful-shutdown).
-const dataStoreShutdownRegistry = createDataStoreShutdownRegistry(log)
+const dataStores = createShutdownRegistry({ log })
 
-export function registerGracefulShutdownValkey(shutdown: ConnectionShutdown): void {
-  dataStoreShutdownRegistry.registerGracefulShutdownValkey(shutdown)
+export async function gracefulShutdown(): Promise<void> {
+  const errors = await dataStores.close()
+  for (const error of errors) reportShutdownError(error)
 }
 
-export function registerGracefulShutdownPSQL(shutdown: ConnectionShutdown): void {
-  dataStoreShutdownRegistry.registerGracefulShutdownPSQL(shutdown)
+const runner = createGracefulShutdown({
+  gracePeriodMs,
+  onError: reportShutdownError,
+  closeResources: gracefulShutdown,
+  flush: () => flushSentry(2000),
+  log,
+  logError,
+  // Skipped under test so Vitest forks never schedule a process.exit fallback.
+  forceExit: process.env.NODE_ENV !== 'test',
+})
+
+export const addGracefulShutdownCallback = runner.addCallback
+export const addGracefulShutdownDrainCallback = runner.addDrainCallback
+export const onGracefulShutdown = runner.shutdown
+
+export function registerGracefulShutdownValkey(shutdown: () => Promise<void>): void {
+  dataStores.register('Valkey', shutdown)
 }
 
-type OneOffShutdownDeps = Omit<GracefulShutdownDeps, 'logger'>
-
-export function addGracefulShutdownCallback(callback: () => Promise<void>): number {
-  return callbacks.push(callback)
-}
-
-export function addGracefulShutdownDrainCallback(callback: () => Promise<void>): number {
-  return drainCallbacks.push(callback)
+export function registerGracefulShutdownPSQL(shutdown: () => Promise<void>): void {
+  dataStores.register('PostgreSQL', shutdown)
 }
 
 const SIGNAL_LISTENERS_REGISTERED = Symbol.for('voucha.graceful-shutdown.signal-listeners')
@@ -40,104 +58,32 @@ const globalRef = globalThis as Record<symbol, boolean>
 // Guard against re-registration under `vi.resetModules()` so tests don't accumulate
 // listeners past Node's defaultMaxListeners. Tests must invoke `onGracefulShutdown()`
 // directly — emitting real SIGTERM/SIGINT would hit the first-imported closure, whose
-// `callbacks`/`drainCallbacks` arrays diverge from later re-imports.
+// callback arrays diverge from later re-imports.
 //
 // Skipped entirely under NODE_ENV === 'test': registering a SIGTERM/SIGINT listener here
 // removes Node's default terminate-on-signal behavior, so every backend Vitest fork ignored
 // Vitest's own SIGTERM at pool-teardown time and was force-killed with SIGKILL ~500ms later
-// (Vitest's SIGKILL_TIMEOUT) — destroying whatever stderr was buffered at the time. Tests never
-// send a real SIGTERM/SIGINT to exercise this path (see the comment above), so forks keep
-// Node's default terminate-on-SIGTERM and this fires only in real deployed processes.
+// (Vitest's SIGKILL_TIMEOUT) — destroying whatever stderr was buffered at the time.
 if (process.env.NODE_ENV !== 'test' && !globalRef[SIGNAL_LISTENERS_REGISTERED]) {
   globalRef[SIGNAL_LISTENERS_REGISTERED] = true
-  process.on('SIGTERM', onGracefulShutdown)
-  process.on('SIGINT', onGracefulShutdown)
+  runner.installSignalHandlers()
 }
 
-function log(...args: unknown[]) {
-  if (process.env.NODE_ENV === 'test') return
-  console.log(...args)
-}
-
-export async function onGracefulShutdown(signal: string, deps: GracefulShutdownDeps = {}) {
-  if (shuttingDown) return
-  shuttingDown = true
-
-  log(`Graceful Shutdown: received ${signal} signal, shutting down...`)
-
-  // Track whether all cleanup completed so the force-exit timer uses the right code.
-  let gracefulShutdownSucceeded = false
-
-  // Fallback: if any handle (e.g., a NAPI threadsafe function from @glidemq/speedkey) keeps
-  // the event loop alive after cleanup, exit after the grace period. Unref'd so it never
-  // fires if the process exits naturally. Exit code 0 when shutdown succeeded, 1 when timed out.
-  if (process.env.NODE_ENV !== 'test') {
-    setTimeout(() => {
-      if (!gracefulShutdownSucceeded) {
-        console.error('Graceful Shutdown: could not close connections in time, forcing exit...')
-      }
-      process.exit(gracefulShutdownSucceeded ? 0 : 1)
-    }, gracefulShutdownPeriodSeconds * 1000).unref()
-  }
-
-  await Promise.all(
-    callbacks.map((callback: () => Promise<void>) =>
-      // Wrapping `callback` in Promise.resolve().then(...) is deliberate, not an anti-pattern: it
-      // guarantees .catch(onError) also catches a *synchronous* throw from `callback`, which a
-      // bare `callback().catch(onError)` would not (the throw happens before .catch is reached).
-      // oxlint-disable-next-line promise/no-callback-in-promise
-      Promise.resolve().then(callback).catch(onError),
-    ),
-  )
-
-  log('Graceful Shutdown: all callbacks completed.')
-
-  await Promise.all(
-    drainCallbacks.map((callback: () => Promise<void>) =>
-      // Wrapping `callback` in Promise.resolve().then(...) is deliberate, not an anti-pattern: it
-      // guarantees .catch(onError) also catches a *synchronous* throw from `callback`, which a
-      // bare `callback().catch(onError)` would not (the throw happens before .catch is reached).
-      // oxlint-disable-next-line promise/no-callback-in-promise
-      Promise.resolve().then(callback).catch(onError),
-    ),
-  )
-
-  log('Graceful Shutdown: drain phase completed.')
-
-  await gracefulShutdown(deps)
-
-  await flushSentry(2000)
-
-  log('Graceful Shutdown: all connections closed.')
-
-  // Mark success so the force-exit timer uses exit code 0 if it fires.
-  // The timer fires only if NAPI handles (e.g., @glidemq/speedkey threadsafe functions)
-  // keep the event loop alive after all JavaScript connections have been closed.
-  gracefulShutdownSucceeded = true
-}
-
-export async function gracefulShutdown(deps: GracefulShutdownDeps = {}): Promise<void> {
-  const errors = await dataStoreShutdownRegistry.close(deps)
-  for (const error of errors) onError(error)
-}
-
-export async function shutdownDataStoresForOneOffCommand(
-  deps: OneOffShutdownDeps = {},
+// One-off commands that own their pools (benchmarks, fixture preparation) close those instead of
+// whatever the data-store modules registered.
+export function shutdownDataStoresForOneOffCommand(
+  overrides: {
+    onGracefulShutdownValkey?: () => Promise<void>
+    onGracefulShutdownPSQL?: () => Promise<void>
+  } = {},
 ): Promise<void> {
-  const forceExitTimer = setTimeout(() => {
-    console.error('One-off shutdown: process did not terminate in time, forcing exit...')
-    process.exit(1)
-  }, gracefulShutdownPeriodSeconds * 1000)
-
-  try {
-    const errors = await dataStoreShutdownRegistry.close({ ...deps, logger: () => {} })
-    if (errors.length > 0) {
-      throw new AggregateError(errors, 'One-off data-store shutdown failed')
-    }
-  } finally {
-    // Keep the timer referenced while cleanup is pending so a stuck close cannot leave the
-    // command unresolved indefinitely. Once cleanup settles, only a leaked native handle should
-    // keep the process alive long enough for the fallback to fire.
-    forceExitTimer.unref()
+  const shutdowns = {
+    ...(overrides.onGracefulShutdownValkey && { Valkey: overrides.onGracefulShutdownValkey }),
+    ...(overrides.onGracefulShutdownPSQL && { PostgreSQL: overrides.onGracefulShutdownPSQL }),
   }
+  return shutdownForOneOffCommand({
+    gracePeriodMs,
+    logError,
+    close: () => dataStores.close({ shutdowns, log: () => {} }),
+  })
 }

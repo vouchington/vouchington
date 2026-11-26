@@ -1,7 +1,7 @@
 id: backend-no-direct-child-process
 language: Tsx
 severity: error
-message: Backend runtime code runs child processes only through @modules/child-process.
+message: Backend runtime code runs child processes only through @vouchington/server-utils/child-process.
 files:
   - backend/services/**/*.mts
   - backend/services/**/*.cts
@@ -19,7 +19,6 @@ files:
   - backend/entrypoints/**/*.cts
   - backend/entrypoints/**/*.ts
 ignores:
-  - backend/modules/child-process/**/*
   - '**/*.test.mts'
   - '**/*.test.ts'
   - '**/__tests__/**'
@@ -70,15 +69,8 @@ examples:
     file: 'backend/queues/example/index.mts'
   - code: |
       import { spawn } from 'node:child_process'
-      export function run() {
-        return spawn
-      }
     isValid: true
-    file: 'backend/modules/child-process/run-command.mts'
-  - code: |
-      import { spawn } from 'node:child_process'
-    isValid: true
-    file: 'backend/modules/child-process/run-command.test.mts'
+    file: 'backend/modules/utils/http.test.mts'
   - code: |
       import { execFile } from 'node:child_process'
     isValid: true

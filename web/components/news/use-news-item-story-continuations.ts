@@ -47,13 +47,13 @@ export function useNewsItemStoryContinuations({
     latestStoryState.current = storyState
   }, [selections, storyState])
 
-  async function refreshStoryPages(
+  function fetchRefreshedPages(
     storyId: string,
     selection: FirstStorySelection,
     pageCount: number,
     scope: typeof requestScope,
   ) {
-    const refreshedPages = await refreshStoryMemberPages(
+    return refreshStoryMemberPages(
       storyId,
       selection,
       pageCount,
@@ -61,26 +61,33 @@ export function useNewsItemStoryContinuations({
         requestScopeRef.current === scope &&
         latestSelections.current.get(storyId)?.primaryId === selection.primaryId,
     )
-    if (refreshedPages) {
-      scope.pendingRefresh.delete(storyId)
-      setStoryState(previous =>
-        updateStory(previous, scope, storyId, selection.primaryId, {
-          pages: refreshedPages,
-          loading: false,
-          error: false,
-        }),
-      )
-    }
+  }
+
+  function patchStory(
+    storyId: string,
+    selection: FirstStorySelection,
+    scope: typeof requestScope,
+    patch: Parameters<typeof updateStory>[4],
+  ) {
+    setStoryState(previous => updateStory(previous, scope, storyId, selection.primaryId, patch))
+  }
+
+  function applyRefreshedPages(
+    storyId: string,
+    selection: FirstStorySelection,
+    pages: Awaited<ReturnType<typeof fetchRefreshedPages>>,
+    scope: typeof requestScope,
+  ) {
+    if (!pages) return
+    scope.pendingRefresh.delete(storyId)
+    patchStory(storyId, selection, scope, { pages, loading: false, error: false })
   }
 
   function markFailed(storyId: string, selection: FirstStorySelection, scope: typeof requestScope) {
     if (requestScopeRef.current !== scope) return
-    setStoryState(previous =>
-      updateStory(previous, scope, storyId, selection.primaryId, { loading: false, error: true }),
-    )
+    patchStory(storyId, selection, scope, { loading: false, error: true })
   }
 
-  /* oxlint-disable react-you-might-not-need-an-effect/no-event-handler -- synchronize external story pages when the server acknowledges changed reference visibility */
   useEffect(() => {
     if (generation === 0) return
     const storiesToRefresh = Object.entries(currentStoryState.byStory).filter(
@@ -88,8 +95,10 @@ export function useNewsItemStoryContinuations({
         selections.get(storyId)?.primaryId === state.primaryId &&
         (state.pages.length > 0 || state.loading),
     )
+    let cancelled = false
     void (async () => {
       for (const [storyId] of storiesToRefresh) {
+        if (cancelled) return
         if (requestScopeRef.current !== requestScope) return
         if (requestScope.active.has(storyId)) continue
         const selection = selections.get(storyId)
@@ -100,27 +109,25 @@ export function useNewsItemStoryContinuations({
         requestScope.active.add(storyId)
         const pageCount = Math.max(1, state.pages.length)
         requestScope.pendingRefresh.set(storyId, { primaryId: selection.primaryId, pageCount })
-        setStoryState(previous =>
-          updateStory(previous, requestScope, storyId, selection.primaryId, {
-            loading: true,
-            error: false,
-          }),
-        )
+        patchStory(storyId, selection, requestScope, { loading: true, error: false })
         try {
           // oxlint-disable-next-line no-await-in-loop -- serialize retained stories to bound refresh concurrency
-          await refreshStoryPages(storyId, selection, pageCount, requestScope)
+          const pages = await fetchRefreshedPages(storyId, selection, pageCount, requestScope)
+          if (cancelled) return
+          applyRefreshedPages(storyId, selection, pages, requestScope)
         } catch {
-          markFailed(storyId, selection, requestScope)
+          if (!cancelled) markFailed(storyId, selection, requestScope)
         } finally {
           requestScope.active.delete(storyId)
         }
       }
     })()
+    return () => {
+      cancelled = true
+    }
     // The generation owns this refresh; selection/state are snapshots of the current story scope.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generation, requestScope])
-
-  /* oxlint-enable react-you-might-not-need-an-effect/no-event-handler */
 
   async function loadStoryMore(storyId: string) {
     const selection = selections.get(storyId)
@@ -131,14 +138,15 @@ export function useNewsItemStoryContinuations({
     requestScope.active.add(storyId)
     const pendingRefresh = requestScope.pendingRefresh.get(storyId)
     if (state?.error && pendingRefresh?.primaryId === selection.primaryId) {
-      setStoryState(previous =>
-        updateStory(previous, requestScope, storyId, selection.primaryId, {
-          loading: true,
-          error: false,
-        }),
-      )
+      patchStory(storyId, selection, requestScope, { loading: true, error: false })
       try {
-        await refreshStoryPages(storyId, selection, pendingRefresh.pageCount, requestScope)
+        const pages = await fetchRefreshedPages(
+          storyId,
+          selection,
+          pendingRefresh.pageCount,
+          requestScope,
+        )
+        applyRefreshedPages(storyId, selection, pages, requestScope)
       } catch {
         markFailed(storyId, selection, requestScope)
       } finally {
@@ -151,12 +159,7 @@ export function useNewsItemStoryContinuations({
       requestScope.active.delete(storyId)
       return
     }
-    setStoryState(previous =>
-      updateStory(previous, requestScope, storyId, selection.primaryId, {
-        loading: true,
-        error: false,
-      }),
-    )
+    patchStory(storyId, selection, requestScope, { loading: true, error: false })
     try {
       const response = await getStoryMemberPage(storyId, {
         after: pageInfo.end_cursor,

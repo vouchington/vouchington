@@ -3,7 +3,7 @@
   "crossFormats": "typescript,tsx",
   "failOnEmpty": true,
   "similarity": 0.85,
-  "minLines": 50,
+  "minLines": 45,
   "exitCode": 1,
   "deadCode": {
     "categories": [
@@ -56,7 +56,8 @@
       "web/test-helpers/vitest.setup.storybook-browser-guard.mts",
       "dev/sandbox-command-audit/rules.mts",
       "dev/launch-services.mts",
-      "scripts/admin/import-rss-feeds.mts"
+      "scripts/admin/import-rss-feeds.mts",
+      "backend/services/data-retention/cleanup-payment-reversal-case-children.mts"
     ]
   },
   "ignore": [
@@ -64,6 +65,11 @@
     "**/fixtures/**",
     "**/route-selectors.generated.mts",
     "**/bank-account-fields.tsx",
-    "**/credit-card-fields.tsx"
+    "**/credit-card-fields.tsx",
+    "**/backend/data-stores/psql/config-driven/0635-00-05-seed-story-clustering-classifier.mts",
+    "**/backend/services/data-retention/cleanup-payment-reversal-cases.mts",
+    "**/backend/services/individuals-households/individuals/rewards-program-point-valuations-list.mts",
+    "**/backend/services/vote-integrity/get-flags.mts",
+    "**/web/components/my/rewards-program-statuses-manager/status-list.tsx"
   ]
 }

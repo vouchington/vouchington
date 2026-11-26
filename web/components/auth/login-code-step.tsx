@@ -20,6 +20,7 @@ interface LoginCodeStepProps {
   onBack: () => void
   onCodeChange: (value: string) => void
   onResendCode: () => Promise<void>
+  resendSecondsLeft: number
   onSubmit: (e: SyntheticEvent) => Promise<void>
   turnstileReady: boolean
 }
@@ -32,6 +33,7 @@ export function LoginCodeStep({
   onBack,
   onCodeChange,
   onResendCode,
+  resendSecondsLeft,
   onSubmit,
   turnstileReady,
 }: LoginCodeStepProps) {
@@ -121,10 +123,12 @@ export function LoginCodeStep({
           variant='link'
           size='sm'
           className='h-auto p-0 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground'
-          disabled={loading || !turnstileReady}
+          disabled={loading || !turnstileReady || resendSecondsLeft > 0}
           onClick={onResendCode}
         >
-          {t('extracted.auth.loginCodeStep.resendCode_b9745740')}
+          {resendSecondsLeft > 0
+            ? t('extracted.emailCodeResend.resendIn', { seconds: resendSecondsLeft })
+            : t('extracted.auth.loginCodeStep.resendCode_b9745740')}
         </Button>
       </p>
     </form>

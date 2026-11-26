@@ -45,7 +45,7 @@ describe('ContentEditor preview language', () => {
 
     const preview = container.querySelector('.prose')
     expect(preview).not.toBeNull()
-    expect(preview).not.toHaveAttribute('lang')
+    expect(preview).toHaveAttribute('lang', '')
     expect(preview).toHaveAttribute('dir', 'auto')
   })
 })

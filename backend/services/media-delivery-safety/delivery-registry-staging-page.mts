@@ -1,6 +1,6 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbCursorScope, sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
@@ -28,7 +28,7 @@ export async function stageImagePlacementDeliveryRecordPage(
       ? sharedDbIdsScope(input.imageIds)
       : sharedDbCursorScope(input.after?.placement_id),
   )
-  const upperId = timestampToUuidv7LowerBound(new Date(scanBefore).getTime() + 1)
+  const upperId = getMinUuidv7ForDate(new Date(new Date(scanBefore).getTime() + 1))
   const imageIds = input.imageIds ? [...input.imageIds] : undefined
   const after = input.after
   const lowerId = after?.placement_id ?? '00000000-0000-0000-0000-000000000000'

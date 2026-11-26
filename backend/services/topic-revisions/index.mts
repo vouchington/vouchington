@@ -53,13 +53,7 @@ export async function createTopicRevision(
     rows: [row],
   } = await write<TopicRevision>(
     sql`/* createTopicRevision */
-    WITH topic_write_lock AS MATERIALIZED (
-      SELECT id
-      -- no-mistakes-disable-next-line postgres-required-predicates: history records may describe a deleted topic; this lock does not authorize a topic mutation.
-      FROM topics
-      WHERE id = ${topicId} AND merged_into_topic_id IS NULL
-      FOR UPDATE
-    ), inserted_revision AS (
+    WITH inserted_revision AS (
       INSERT INTO topic_revisions (
         topic_id,
         revision_type,
@@ -67,7 +61,7 @@ export async function createTopicRevision(
         changes
       )
       SELECT
-        topic_write_lock.id,
+        topics.id,
         ${revisionType}::revision_types,
         ${revisedById},
         jsonb_build_object('revised_by_roles', COALESCE(
@@ -79,7 +73,9 @@ export async function createTopicRevision(
           ),
           ARRAY[]::TEXT[]
         ), 'changes', ${JSON.stringify(changes)}::jsonb)
-      FROM topic_write_lock
+      -- no-mistakes-disable-next-line postgres-required-predicates: history records may describe a deleted topic.
+      FROM topics
+      WHERE id = ${topicId} AND merged_into_topic_id IS NULL
       RETURNING id, topic_id, revision_type, revised_by_id, changes, created_at
     ), content_attribution AS (
       UPDATE topics
@@ -87,6 +83,7 @@ export async function createTopicRevision(
           content_updated_by_id = inserted_revision.revised_by_id
       FROM inserted_revision
       WHERE topics.id = inserted_revision.topic_id
+        AND topics.merged_into_topic_id IS NULL
         AND inserted_revision.revision_type IN ('create', 'update')
         AND (inserted_revision.changes->'changes') ?| ARRAY['name', 'markdown']
         AND (inserted_revision.changes->'revised_by_roles') @> '["administrator"]'::jsonb

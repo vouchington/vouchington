@@ -54,19 +54,6 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
 
   const openApplication = applications.find(application => application.id === openApplicationId)
 
-  if (applications.length === 0 && !hasNextPage) {
-    return (
-      <EmptyState
-        icon='inbox'
-        title={t('extracted.communities.applicationReview.noApplicationsToReview_9bb6376c')}
-        description={t(
-          'extracted.communities.applicationReview.pendingMemberApplicationsWillShow_3fa568b1',
-        )}
-        className='rounded-md border bg-card p-4'
-      />
-    )
-  }
-
   async function handleApprove(applicationId: string) {
     setError(null)
     setLoading(applicationId)
@@ -118,6 +105,17 @@ export function ApplicationReview({ data, communitySlug }: ApplicationReviewProp
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
+        itemCount={applications.length}
+        emptyState={
+          <EmptyState
+            icon='inbox'
+            title={t('extracted.communities.applicationReview.noApplicationsToReview_9bb6376c')}
+            description={t(
+              'extracted.communities.applicationReview.pendingMemberApplicationsWillShow_3fa568b1',
+            )}
+            className='rounded-md border bg-card p-4'
+          />
+        }
       >
         <div className='space-y-4'>
           {applications.map(application => (

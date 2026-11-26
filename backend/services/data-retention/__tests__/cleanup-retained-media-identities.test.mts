@@ -9,6 +9,11 @@ import {
   pinTestRetainedMediaIdentity,
   seedTestRetainedMediaOrphan,
 } from '@voucha/test-helpers'
+import {
+  pinTestRetainedImageRoot,
+  pinTestRetainedMediaBinding,
+} from '@voucha/test-helpers/entities/retained-media'
+import { finishTestPostgresActionWithoutWaiting } from '@voucha/test-helpers/postgres-lock-skip'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createTestDeliverySurface } from '@voucha/test-helpers/media-delivery-surface'
 import {
@@ -102,6 +107,31 @@ describe('retained media identity cleanup', () => {
     expect(await hasTestRetainedImageIdentity(tuple.imageId)).toBe(true)
   })
 
+  it.each(['image root', 'placement binding'] as const)(
+    'preserves a binding when only its %s is pinned',
+    async pinned => {
+      const held = { placementId: v7(), imageId: v7(), bindingFamily: 'post' as const }
+      const orphan = { placementId: v7(), imageId: v7(), bindingFamily: 'post' as const }
+      await seedTestRetainedMediaOrphan(held)
+      await seedTestRetainedMediaOrphan(orphan)
+      await using holder = await beginTransaction()
+      if (pinned === 'image root') await pinTestRetainedImageRoot(holder, held.imageId)
+      else await pinTestRetainedMediaBinding(holder, held.placementId)
+
+      expect(
+        await finishTestPostgresActionWithoutWaiting(
+          holder,
+          'deleteUnreferencedRetainedMediaBindings',
+          () => cleanupRetainedMediaBindings(2, [held.placementId, orphan.placementId]),
+        ),
+      ).toEqual({ scanned: 2, deleted: 1, hasMore: false })
+      expect(await hasTestRetainedMediaBinding(held.placementId)).toBe(true)
+      expect(await hasTestRetainedMediaBinding(orphan.placementId)).toBe(false)
+      await drainRetainedMediaCleanup([held, orphan])
+      expect(await hasTestRetainedMediaBinding(held.placementId)).toBe(false)
+    },
+  )
+
   it('preserves a live placement and a locked identity while reclaiming unrelated orphans', async () => {
     const live = await createTestDeliverySurface()
     const held = { placementId: v7(), imageId: v7(), bindingFamily: 'post' as const }
@@ -112,13 +142,14 @@ describe('retained media identity cleanup', () => {
     await seedTestRetainedMediaOrphan(unselected)
     await using pin = await beginTransaction()
     await pinTestRetainedMediaIdentity(pin, held.imageId, held.placementId)
-    await drainRetainedMediaCleanup([live.tuple, held, orphan])
+    await finishTestPostgresActionWithoutWaiting(pin, 'Retained', () =>
+      drainRetainedMediaCleanup([live.tuple, held, orphan]),
+    )
     expect(await hasTestRetainedMediaBinding(live.tuple.placementId)).toBe(true)
     expect(await hasTestRetainedMediaBinding(held.placementId)).toBe(true)
     expect(await hasTestRetainedImageIdentity(held.imageId)).toBe(true)
     expect(await hasTestRetainedMediaBinding(orphan.placementId)).toBe(false)
     expect(await hasTestRetainedMediaBinding(unselected.placementId)).toBe(true)
-    await pin.commit()
     await drainRetainedMediaCleanup([live.tuple, held, orphan])
     expect(await hasTestRetainedMediaBinding(held.placementId)).toBe(false)
     expect(await hasTestRetainedImageIdentity(held.imageId)).toBe(false)

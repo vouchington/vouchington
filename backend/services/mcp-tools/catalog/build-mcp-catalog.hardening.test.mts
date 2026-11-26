@@ -23,9 +23,30 @@ const names = [
 ]
 // Pin the exact-grant listing including explicit message and household grants.
 const PLUS_WITHOUT_MODERATION_DIGEST =
-  'ae29467571140c261955223c20e10270a34a0b62efaf43361a75d2f6188468d1'
-const PRE_MESSAGE_DIGEST = 'd62e03b806e8cd0e84df72b1aab74f53251639985df77d37f2f5791a7c75a515'
-const UMBRELLA_ONLY_DIGEST = '46dbec7a743e74aa553b3d06474b0d161c4d513664fc5527a66ccccfcd2d8941'
+  '98b103553cccc3bb6f9174fe2f8b9326c0403e4c111cdf6f4351b7bcda2d1089'
+const PRE_MESSAGE_DIGEST = 'f80ab568017862c7904a39cb104ab6ec727ca408a59a11dc9b57ea3911484658'
+const UMBRELLA_ONLY_DIGEST = 'ef40b11207c24c8545fbd6cd1831a862e5ec9063771c55ebc86ff54a5ba08fe3'
+// Released native MCP bridges (.NET MemberMcpInputSchema, Swift NativeChatMCPInputSchema) reject
+// the whole catalog when an array has `uniqueItems: true` and `maxItems` above this bound.
+const NATIVE_UNIQUE_ITEMS_MAX_ITEMS = 256
+const findOversizedUniqueArrays = (node: unknown, path: string): string[] => {
+  if (Array.isArray(node))
+    return node.flatMap((child, i) => findOversizedUniqueArrays(child, `${path}[${i}]`))
+  if (typeof node !== 'object' || node === null) return []
+  const record = node as Record<string, unknown>
+  const own =
+    record.uniqueItems === true &&
+    typeof record.maxItems === 'number' &&
+    record.maxItems > NATIVE_UNIQUE_ITEMS_MAX_ITEMS
+      ? [`${path} maxItems=${record.maxItems}`]
+      : []
+  return [
+    ...own,
+    ...Object.entries(record).flatMap(([key, child]) =>
+      findOversizedUniqueArrays(child, `${path}.${key}`),
+    ),
+  ]
+}
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
 describe('community moderation exact-grant catalog boundaries', () => {
@@ -99,5 +120,19 @@ describe('community moderation exact-grant catalog boundaries', () => {
     const caller = { ...plus, roles: ['administrator'], membership_plan: 'pro' as const }
     const tools = listMcpToolsForUser(caller, allScopes, ADMIN_MCP_SERVER_CONFIG, true)
     expect(tools.some(tool => names.includes(tool.name))).toBe(false)
+  })
+
+  it('keeps uniqueItems arrays within the bound released native clients accept', () => {
+    const caller = {
+      ...plus,
+      membership_plan: 'pro' as const,
+      roles: [...new Set(ALL_TOOLS.flatMap(tool => Object.keys(tool.roles ?? {})))],
+    }
+    const offenders = [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG].flatMap(config =>
+      listMcpToolsForUser(caller, allScopes, config, true).flatMap(tool =>
+        findOversizedUniqueArrays(tool.inputSchema, tool.name),
+      ),
+    )
+    expect(offenders).toEqual([])
   })
 })

@@ -62,7 +62,7 @@ async function runCopyrightCaseChildPage(
     // no-mistakes-disable-next-line query-reached-per-item: path depth is a fixed schema-derived maximum of five, and each ancestor lookup is indexed LIMIT 1.
     const { rows } = await query<Record<string, string | number>>( // oxlint-disable-line no-await-in-loop -- each indexed ancestor key supplies the next bounded path lookup.
       `/* selectCopyrightCasePurgeAncestor */ SELECT ${selected} FROM ${identifier(edge[0])} child
-       WHERE ${where}${after.clause} ORDER BY ${order} LIMIT 1 FOR UPDATE OF child NOWAIT`,
+       WHERE ${where}${after.clause} ORDER BY ${order} LIMIT 1`,
       [...values, ...after.values],
     )
     if (!rows[0]) {

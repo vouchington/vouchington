@@ -35,18 +35,6 @@ vi.mock(import('@/lib/api/client/bookmarks'), () => ({
   bookmarkEntity: vi.fn<VitestLooseMock>(),
 }))
 
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-}))
-vi.mock(import('@/components/users/user-list'), () => ({
-  UserListItem: ({ user, actions }: { user: { username?: string }; actions?: ReactNode }) => (
-    <div>
-      <span>{user.username}</span>
-      {actions}
-    </div>
-  ),
-}))
-
 vi.mock(import('@/components/shared/paginated-list-footer'), () => ({
   PaginatedListFooter: () => null,
 }))

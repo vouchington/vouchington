@@ -31,8 +31,8 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.4.1",
-    "@vouchington/postgres": "^0.6.1",
-    "@vouchington/utils": "^0.12.0",
+    "@vouchington/postgres": "^0.6.2",
+    "@vouchington/utils": "^0.13.0",
     "p-map": "^7.1.1",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.15.0"
@@ -41,6 +41,7 @@
     "@data-stores/valkey-core": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
+    "@vouchington/uuid-v7": "^0.0.0",
     "glide-mq": "^0.20.0"
   }
 }

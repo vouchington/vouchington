@@ -10,6 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTopicAliases, createUnlinkedTopicAlias } from './aliases.mts'
 import { createTopic } from './create.mts'
+import { getTopicByAny } from './get.mts'
 import { getTopicIdByAnyCached } from '@services/entity-cache/lookups'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { ValkeyBloomFilter } from '@data-stores/valkey'
@@ -124,6 +125,32 @@ describe('createTopic hashtag alias source', () => {
     await expect(readTestContentProvenance('topics', topic.id)).resolves.toEqual({
       createdVia: 'system',
       oauthClientId: null,
+    })
+  })
+  it('creates a new topic when a deleted alias owner has a different canonical slug', async () => {
+    const suffix = crypto.randomUUID()
+    const user = await createTestUser({ administrator: true })
+    const deletedSlug = `deleted-owner-${suffix}`
+    const deletedId = await insertTestTopic({
+      name: `Deleted owner ${suffix}`,
+      slug: deletedSlug,
+      createdById: user.id,
+    })
+    const newSlug = `replacement-${suffix}`
+    const [alias] = await createTopicAliases(deletedId, newSlug)
+    await softDeleteTopic(deletedId, user.id)
+
+    const topic = await createTopic(
+      user,
+      { createdVia: 'mcp', oauthClientId: null },
+      { name: `Replacement ${suffix}`, slug: newSlug, source_topic_alias_id: alias!.id },
+    )
+
+    expect(topic.id).not.toBe(deletedId)
+    expect(topic.aliases).toContain(newSlug)
+    await expect(getTopicByAny(deletedSlug)).resolves.toBeNull()
+    await expect(readTestContentProvenance('topics', topic.id)).resolves.toMatchObject({
+      createdVia: 'mcp',
     })
   })
 })

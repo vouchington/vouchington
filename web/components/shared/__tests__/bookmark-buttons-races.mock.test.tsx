@@ -14,7 +14,6 @@ vi.mock(
   import('@/lib/api/rate-limit-error'),
   () =>
     ({
-      isRateLimitError: () => false,
       getRateLimitMessage: () => '',
     }) as unknown as typeof import('@/lib/api/rate-limit-error'),
 )

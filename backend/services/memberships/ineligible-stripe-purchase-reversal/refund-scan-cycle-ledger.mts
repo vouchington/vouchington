@@ -1,4 +1,5 @@
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor, write } from '@data-stores/psql'
+import assert from 'node:assert/strict'
 import sql from 'sql-template-strings'
 import type { StripeRefundScanTarget } from './refund-scan-target.mts'
 
@@ -23,43 +24,65 @@ export type StripeRefundScanCycle = {
 export async function getOrCreateStripeRefundScanCycle(
   reversalCaseId: string,
 ): Promise<StripeRefundScanCycle> {
-  await using transaction = await beginTransaction()
-  await transaction(sql`/* getOrCreateStripeRefundScanCycle:insert */
+  const current = (await readCycle(reversalCaseId)) ?? (await createCycle(reversalCaseId))
+  if (current.completedAt === null) return { generation: current.generation, reversalCaseId }
+
+  const rotated = await rotateCompletedCycle(reversalCaseId, current.generation)
+  if (rotated !== null) return { generation: rotated, reversalCaseId }
+
+  const winner = await readCycle(reversalCaseId)
+  const advanced = winner && winner.generation > current.generation
+  assert(advanced, 'Could not rotate Stripe refund scan cycle')
+  return { generation: winner.generation, reversalCaseId }
+}
+
+async function createCycle(reversalCaseId: string) {
+  const { rowCount, rows } = await write<{
+    generation: string
+  }>(sql`/* getOrCreateStripeRefundScanCycle:insert */
     INSERT INTO membership_ineligible_purchase_reversal_refund_scan_cycles (
       membership_ineligible_purchase_reversal_case_id
     ) VALUES (${reversalCaseId}) ON CONFLICT DO NOTHING
+    RETURNING generation::TEXT AS generation
   `)
-  const { rows } = await transaction<{ completedAt: Date | null; generation: string }>(
-    sql`/* getOrCreateStripeRefundScanCycle:lock */
+  if (rowCount === 1) return { completedAt: null, generation: parseGeneration(rows[0]?.generation) }
+  const winner = await readCycle(reversalCaseId)
+  assert(winner, 'Could not create Stripe refund scan cycle')
+  return winner
+}
+
+async function rotateCompletedCycle(reversalCaseId: string, generation: number) {
+  const { rowCount, rows } = await write<{
+    generation: string
+  }>(sql`/* getOrCreateStripeRefundScanCycle:rotate */
+    UPDATE membership_ineligible_purchase_reversal_refund_scan_cycles
+    SET generation = generation + 1, completed_at = NULL
+    WHERE membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
+      AND generation = ${generation} AND completed_at IS NOT NULL
+    RETURNING generation::TEXT AS generation
+  `)
+  return rowCount === 1 ? parseGeneration(rows[0]?.generation) : null
+}
+
+async function readCycle(reversalCaseId: string) {
+  const { rows } = await write<{ completedAt: Date | null; generation: string }>(
+    sql`/* getOrCreateStripeRefundScanCycle:read */
       SELECT generation::TEXT AS generation, completed_at AS "completedAt"
       FROM membership_ineligible_purchase_reversal_refund_scan_cycles
       WHERE membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
-      FOR UPDATE
     `,
   )
   const current = rows[0]
-  if (!current) throw new Error('Could not create Stripe refund scan cycle')
-  const generation = Number(current.generation)
+  return (
+    current && { completedAt: current.completedAt, generation: parseGeneration(current.generation) }
+  )
+}
+
+function parseGeneration(value: string | undefined): number {
+  const generation = Number(value)
   if (!Number.isSafeInteger(generation) || generation < 1)
     throw new Error('Persisted Stripe refund scan cycle generation is invalid')
-  if (!current.completedAt) {
-    await transaction.commit()
-    return { generation, reversalCaseId }
-  }
-  const { rows: rotated } = await transaction<{ generation: string }>(
-    sql`/* getOrCreateStripeRefundScanCycle:rotate */
-      UPDATE membership_ineligible_purchase_reversal_refund_scan_cycles
-      SET generation = generation + 1, completed_at = NULL
-      WHERE membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
-        AND generation = ${generation} AND completed_at IS NOT NULL
-      RETURNING generation::TEXT AS generation
-    `,
-  )
-  const nextGeneration = Number(rotated[0]?.generation)
-  if (!Number.isSafeInteger(nextGeneration) || nextGeneration < 1)
-    throw new Error('Could not rotate Stripe refund scan cycle')
-  await transaction.commit()
-  return { generation: nextGeneration, reversalCaseId }
+  return generation
 }
 
 export async function completeStripeRefundScanCycle(cycle: StripeRefundScanCycle): Promise<void> {
@@ -85,7 +108,6 @@ export async function completeStripeRefundScanCycle(cycle: StripeRefundScanCycle
       SELECT generation::TEXT AS generation, completed_at AS "completedAt"
       FROM membership_ineligible_purchase_reversal_refund_scan_cycles
       WHERE membership_ineligible_purchase_reversal_case_id = ${cycle.reversalCaseId}
-      FOR UPDATE
     `)
     const current = currentRows[0]
     if (current?.generation !== String(cycle.generation) || current.completedAt === null)
@@ -104,20 +126,19 @@ export async function getOrCreateStripeRefundScan(
     await transaction.commit()
     return scan
   }
-  const { rows } = await transaction<{ id: string }>(sql`/* getOrCreateStripeRefundScan:cycle */
-    SELECT membership_ineligible_purchase_reversal_case_id AS id
-    FROM membership_ineligible_purchase_reversal_refund_scan_cycles
-    WHERE membership_ineligible_purchase_reversal_case_id = ${cycle.reversalCaseId}
-      AND generation = ${cycle.generation} AND completed_at IS NULL FOR UPDATE
-  `)
-  if (!rows[0]) throw new Error('Stripe refund scan cycle is no longer active')
-  await transaction(sql`/* getOrCreateStripeRefundScan:upsert */
+  // The cycle is checked unlocked, inside the upsert. A cycle may complete while this
+  // late scan is registered; this worker still verifies the scan before any refund.
+  const { rows } = await transaction<{ id: string }>(sql`/* getOrCreateStripeRefundScan:upsert */
     INSERT INTO membership_ineligible_purchase_reversal_refund_scans (
       membership_ineligible_purchase_reversal_case_id, invoice_id, currency_code,
       charge_id, payment_intent_id, registered_cycle_generation
-    ) VALUES (
-      ${cycle.reversalCaseId}, ${target.invoiceId}, ${target.currency},
-      ${target.chargeId}, ${target.paymentIntentId}, ${cycle.generation}
+    ) SELECT ${cycle.reversalCaseId}::UUID, ${target.invoiceId}::TEXT,
+      ${target.currency}::currency_codes, ${target.chargeId}::TEXT,
+      ${target.paymentIntentId}::TEXT, ${cycle.generation}::BIGINT
+    WHERE EXISTS (
+      SELECT 1 FROM membership_ineligible_purchase_reversal_refund_scan_cycles
+      WHERE membership_ineligible_purchase_reversal_case_id = ${cycle.reversalCaseId}
+        AND generation = ${cycle.generation} AND completed_at IS NULL
     ) ON CONFLICT (membership_ineligible_purchase_reversal_case_id, invoice_id, currency_code,
       charge_id, payment_intent_id) DO UPDATE
     SET registered_cycle_generation = EXCLUDED.registered_cycle_generation,
@@ -131,13 +152,15 @@ export async function getOrCreateStripeRefundScan(
       reached_end_at = CASE WHEN membership_ineligible_purchase_reversal_refund_scans.nonterminal_refund_seen_at IS NOT NULL THEN NULL ELSE membership_ineligible_purchase_reversal_refund_scans.reached_end_at END,
       nonterminal_refund_seen_at = CASE WHEN membership_ineligible_purchase_reversal_refund_scans.nonterminal_refund_seen_at IS NOT NULL THEN NULL ELSE membership_ineligible_purchase_reversal_refund_scans.nonterminal_refund_seen_at END,
       completed_at = CASE WHEN membership_ineligible_purchase_reversal_refund_scans.nonterminal_refund_seen_at IS NOT NULL THEN NULL ELSE membership_ineligible_purchase_reversal_refund_scans.completed_at END
+    RETURNING id
   `)
+  if (!rows[0]) throw new Error('Stripe refund scan cycle is no longer active')
   const registered = await getStripeRefundScanLocked(cycle.reversalCaseId, target, transaction)
   if (!registered) throw new Error('Could not create Stripe refund scan')
   await transaction.commit()
   return registered
 }
-
+// lock-reason: prevents: applying refund history against scan progress changed by a competing page; writer: applyStripeRefundScanPage
 export async function getStripeRefundScanLocked(
   reversalCaseId: string,
   target: StripeRefundScanTarget,

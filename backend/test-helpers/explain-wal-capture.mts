@@ -1,4 +1,5 @@
-import { explainAnalyze, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
+import { explainAnalyze } from './explain-analyze.mts'
 import { coldWalPageAddress, selectSealedUsers, type LocatedUser } from './explain-wal-pages.mts'
 
 // Fullness is the page hole, not a live-row count. A dirty users page can be
@@ -118,6 +119,16 @@ export async function createExplainWalCaptureFixture(scenarioId: string) {
   // still consume an FPI when checksums or wal_log_hints are enabled; this is
   // a shared database fixture, not an exclusion lock against maintenance.
   const userIds = await reserveColdWalUsers(ids)
+  // Every EXPLAIN rolls back, leaving aborted xmax values on the owned rows. The first read after
+  // that sets hint bits, and with checksums (the PostgreSQL 18 default) that write is WAL-logged
+  // with a full-page image. Read the rows before each checkpoint so a concurrent test's scan of
+  // users cannot take those images between the checkpoint and the measured UPDATE.
+  const settleHints = async () => {
+    await write(
+      '/* walConditionTestSettleHints */ SELECT id FROM users WHERE id = ANY($1::uuid[])',
+      [userIds],
+    )
+  }
   const input = {
     name: 'wal-condition-test',
     text: `/* walConditionTest */ UPDATE users SET markdown = $2
@@ -126,12 +137,14 @@ export async function createExplainWalCaptureFixture(scenarioId: string) {
     scenarioId,
     captureIndex: 0,
     localSettings: { application_name: 'wal-condition-test' },
+    beforeExplain: settleHints,
   }
   return {
     input,
     rowCount: userIds.length,
     ownedPageCount: userIds.length,
     async captureCold() {
+      await settleHints()
       await write('/* walConditionTestCheckpoint */ CHECKPOINT')
       return explainAnalyze(input.name, input.text, input.values, {
         localSettings: input.localSettings,

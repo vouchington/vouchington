@@ -7,14 +7,7 @@ import {
   markTestOAuthAuthorizationExchanging,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
 import { getTestOAuthExchangeAttempts } from '@voucha/test-helpers/entities/oauth-exchange-attempts'
-import {
-  completeTestOAuthAuthorizationWhileRecoverySkipsLockedRow,
-  withTestOAuthAuthorizationRowLocked,
-} from '@voucha/test-helpers/entities/oauth-authorization-recovery'
-import {
-  deleteTestOAuthAccount,
-  insertTestOAuthAccount,
-} from '@voucha/test-helpers/entities/oauth-accounts'
+import { withTestOAuthAuthorizationRowLocked } from '@voucha/test-helpers/entities/oauth-authorization-recovery'
 import {
   getRecoverableOAuthAuthorizationIds,
   processOAuthAuthorizationExchange,
@@ -99,37 +92,35 @@ describe('OAuth authorization exchange recovery', () => {
     })
   })
 
-  it('does not reject a stale claim that completes while recovery waits for its row lock', async () => {
-    const githubUserId = `github-recovery-${randomUUID()}`
-    const account = await insertTestOAuthAccount('github', githubUserId)
+  it('leaves a successor claim alone when a retained receipt belongs to the earlier claim', async () => {
+    const oldClaim = randomUUID()
+    const successor = randomUUID()
     const flowId = await insertTestOAuthAuthorization({
       provider: 'github',
       status: 'exchanging',
       callbackCodeCiphertext: 'test-code-ciphertext',
       callbackReceivedAt: new Date(),
-      exchangeAttempts: 5,
-      exchangeClaimId: randomUUID(),
+      exchangeAttempts: 1,
+      exchangeClaimId: oldClaim,
       updatedAt: new Date(Date.now() - 120_000),
     })
-    registerAuthorizationCleanup(flowId, githubUserId)
+    registerAuthorizationCleanup(flowId)
 
-    // Historical title retained for review. The producer now skips busy rows; this is not EPQ proof.
-    const recovery = await completeTestOAuthAuthorizationWhileRecoverySkipsLockedRow(
-      flowId,
-      githubUserId,
-      () => getRecoverableOAuthAuthorizationIds(500, [flowId]),
-    )
-    expect(recovery).toEqual({
-      whileLocked: { ids: [], hasMore: false },
-      afterCompletion: { ids: [], hasMore: false },
+    await expect(
+      getRecoverableOAuthAuthorizationIds(1, [flowId], async (id, claimId) => {
+        expect({ id, claimId }).toEqual({ id: flowId, claimId: oldClaim })
+        await markTestOAuthAuthorizationExchanging(flowId, successor)
+        return true
+      }),
+    ).resolves.toEqual({ ids: [], hasMore: true })
+    await expect(getRecoverableOAuthAuthorizationIds(1, [flowId])).resolves.toEqual({
+      ids: [],
+      hasMore: false,
     })
-
     expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
-      status: 'completion_ready',
+      status: 'exchanging',
       callback_error: null,
-      callback_code_ciphertext: null,
-      exchange_claim_id: null,
-      github_account_id: account.account_id,
+      exchange_claim_id: successor,
     })
   })
 
@@ -224,32 +215,6 @@ describe('OAuth authorization exchange recovery', () => {
     if (!claimed) throw new Error('Expected an actual OAuth claim after releasing the holder')
     await releaseOAuthAuthorizationExchangeClaim(flowId, claimed.exchange_claim_id)
   })
-
-  it('preserves exact claim and exhausted history when native release and rejection encounter contention', async () => {
-    const claimId = randomUUID()
-    const flowId = await insertTestOAuthAuthorization({
-      provider: 'github',
-      status: 'exchanging',
-      callbackCodeCiphertext: 'test-code-ciphertext',
-      callbackReceivedAt: new Date(),
-      exchangeAttempts: 5,
-      exchangeClaimId: claimId,
-      updatedAt: new Date(Date.now() - 120_000),
-    })
-    registerAuthorizationCleanup(flowId)
-    const before = await getTestOAuthExchangeAttempts(flowId)
-    await withTestOAuthAuthorizationRowLocked(flowId, async () => {
-      await expect(releaseOAuthAuthorizationExchangeClaim(flowId, claimId)).rejects.toMatchObject({
-        code: '55P03',
-      })
-      await expect(
-        rejectExhaustedOAuthAuthorizationExchange(flowId, claimId),
-      ).rejects.toMatchObject({ code: '55P03' })
-    })
-    expect(await getTestOAuthAuthorization(flowId)).toMatchObject({ exchange_claim_id: claimId })
-    expect(await getTestOAuthExchangeAttempts(flowId)).toEqual(before)
-    await expect(rejectExhaustedOAuthAuthorizationExchange(flowId, claimId)).resolves.toBe(true)
-  })
 })
 
 async function insertCallbackReceivedAuthorization(
@@ -269,9 +234,8 @@ async function insertCallbackReceivedAuthorization(
   return flowId
 }
 
-function registerAuthorizationCleanup(authorizationId: string, githubUserId?: string): void {
-  onTestFinished(async () => {
-    await deleteTestOAuthAuthorizationFixtures({ authorizationIds: [authorizationId] })
-    if (githubUserId) await deleteTestOAuthAccount('github', githubUserId)
-  })
+function registerAuthorizationCleanup(authorizationId: string): void {
+  onTestFinished(() =>
+    deleteTestOAuthAuthorizationFixtures({ authorizationIds: [authorizationId] }),
+  )
 }

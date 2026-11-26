@@ -42,12 +42,19 @@ export async function syncPostImagePlacements(
   // Only same-transaction callers that checked these exact requested images may skip admission.
   if (!options.capacityChecked)
     await assertPostImagePlacementCapacity(postId, distinctImageIds, query)
-  await query(sql`/* syncPostImagePlacements:lockExisting */
+  await query(sql`/* syncPostImagePlacements:lockChangedPlacements */
     SELECT placement.id
     FROM image_placements image_placement
     JOIN media_placements placement ON placement.id = image_placement.placement_id
     WHERE image_placement.post_id = ${postId}
+      AND (
+        (image_placement.image_id = ANY(${distinctImageIds}::uuid[])
+          AND placement.retired_at IS NOT NULL)
+        OR (image_placement.image_id <> ALL(${distinctImageIds}::uuid[])
+          AND placement.retirement_reason IS DISTINCT FROM 'owner_removed')
+      )
     ORDER BY placement.id
+    -- lock-reason: prevents: retiring and reviving overlapping placements in different row orders; writer: image placement synchronization and retirement.
     FOR UPDATE OF placement
   `)
   await query(sql`/* syncPostImagePlacements:retireAbsent */
@@ -95,10 +102,8 @@ export async function syncPostImagePlacements(
         ORDER BY requested.image_id
       `)
       const placementIds = allocated.map(binding => binding.placement_id)
-      const { rowCount: imageCount } = await query(sql`/* syncPostImagePlacements:pinImages */
-        SELECT id FROM retained_image_identities
-        WHERE id = ANY(${missingImageIds}::uuid[])
-        ORDER BY id FOR KEY SHARE
+      const { rowCount: imageCount } = await query(sql`/* syncPostImagePlacements:verifyImages */
+        SELECT id FROM retained_image_identities WHERE id = ANY(${missingImageIds}::uuid[])
       `)
       if (imageCount !== missing.length) {
         throw new Error('Missing retained image identity for placement')
@@ -111,15 +116,15 @@ export async function syncPostImagePlacements(
         ORDER BY requested.placement_id
         ON CONFLICT (placement_id) DO NOTHING
       `)
-      const { rowCount: bindingCount } = await query(sql`/* syncPostImagePlacements:pinBindings */
+      const { rowCount: bindingCount } =
+        await query(sql`/* syncPostImagePlacements:verifyBindings */
         SELECT binding.placement_id
         FROM UNNEST(${placementIds}::uuid[], ${missingImageIds}::uuid[])
-          WITH ORDINALITY AS requested(placement_id, image_id, position)
+          AS requested(placement_id, image_id)
         JOIN retained_image_placement_bindings binding
           ON binding.placement_id = requested.placement_id
           AND binding.image_id = requested.image_id
           AND binding.binding_family = 'post'
-        ORDER BY requested.position FOR KEY SHARE OF binding
       `)
       /* v8 ignore next -- defensive: fresh database UUIDv7 placement IDs cannot be controlled by post input. */
       if (bindingCount !== missing.length) {

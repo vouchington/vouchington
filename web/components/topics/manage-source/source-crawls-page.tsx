@@ -33,14 +33,6 @@ export function SourceCrawlsPage({ data, rssFeedId, topic }: SourceCrawlsPagePro
   const crawls = mergePageResultsById(pages)
   const crawlDetailBase = createTopicPathname(topic, '/crawls/')
 
-  if (crawls.length === 0) {
-    return (
-      <p className='text-sm text-muted-foreground'>
-        {t('extracted.manageSource.crawlHistorySection.noCrawlsYet_12d0f59a')}
-      </p>
-    )
-  }
-
   return (
     <InfiniteScroll
       hasNextPage={hasNextPage}
@@ -50,6 +42,12 @@ export function SourceCrawlsPage({ data, rssFeedId, topic }: SourceCrawlsPagePro
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      itemCount={crawls.length}
+      emptyState={
+        <p className='text-sm text-muted-foreground'>
+          {t('extracted.manageSource.crawlHistorySection.noCrawlsYet_12d0f59a')}
+        </p>
+      }
     >
       <div className='overflow-hidden bg-card shadow-sm dark:shadow-none sm:rounded-lg'>
         <table

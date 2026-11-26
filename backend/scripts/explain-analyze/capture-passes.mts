@@ -1,20 +1,18 @@
-import { createHash } from 'node:crypto'
-import { writeFileSync } from 'node:fs'
 import {
-  explainAnalyze,
-  write,
   type ExplainPlanCacheMode,
   type ExplainResult,
-} from '@data-stores/psql'
-import { assertRequiredPlanShape } from './plan-gates.mts'
-import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
-import { getScenarioContract } from './plan-expectations.mts'
-import { getLargeTableSeqScanRelations } from './plan-warnings.mts'
-import {
   getExplainResultIdentity,
-  getResampleRelations,
-  SEQ_SCAN_BASELINE,
-} from './seq-scan-baseline.mts'
+  getLargeTableSeqScanRelations,
+  hasLaunchedParallelWorkers,
+} from '@vouchington/explain-plan'
+import { createHash } from 'node:crypto'
+import { writeFileSync } from 'node:fs'
+import { write } from '@data-stores/psql'
+import { explainAnalyze } from '@voucha/test-helpers/explain-analyze'
+import { assertRequiredPlanShape } from './plan-gates.mts'
+import { getScenarioContract } from './plan-expectations.mts'
+import { PLAN_ANALYSIS_OPTIONS } from './plan-analysis-options.mts'
+import { getResampleRelations, SEQ_SCAN_BASELINE } from './seq-scan-baseline.mts'
 import { costWithoutSeqScan, forcedSeqScan, type ProbedExplainResult } from './seq-scan-ties.mts'
 
 export type BeforeExplain = (input: {
@@ -49,7 +47,7 @@ const resample = { statements: 0, milliseconds: 0 }
 // flip across databases. Price the same statement without sequential scans, plan only, so the
 // gate can tell a near-tie from a missing index (see seq-scan-ties.mts).
 async function probeSeqScanAlternative(input: Capture, result: ProbedExplainResult) {
-  const scannedRelations = getLargeTableSeqScanRelations(result)
+  const scannedRelations = getLargeTableSeqScanRelations(result, PLAN_ANALYSIS_OPTIONS)
   await probeBaselinedScans(input, result, scannedRelations)
   if (scannedRelations.length === 0) return
   const probe = await explainAnalyze(input.name, input.text, input.values, {
@@ -115,11 +113,17 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
     )
   }
   if (contract.walCaptureCondition === 'cold') {
+    // Run the preparation before the checkpoint. The previous capture's rolled-back statement
+    // leaves hint-bit work on the pages it touched; if that work runs after the checkpoint,
+    // any concurrent reader on the shared database can consume the first-change full-page
+    // images (checksums log hint bits) before the measured statement does.
+    await input.beforeExplain?.(input)
     // Include full-page images from the first changes to pages after a checkpoint in the measured
     // capture. Repeat for every mode/pass so the WAL gate sees the cold condition each time.
     await write('/* explainWalCaptureCheckpoint */ CHECKPOINT')
+  } else {
+    await input.beforeExplain?.(input)
   }
-  await input.beforeExplain?.(input)
   const result = await explainAnalyze(input.name, input.text, input.values, {
     localSettings: input.localSettings,
     setupSql: input.setupSql,
@@ -151,7 +155,7 @@ export async function captureScenarioTwice(
   const firstResults: ExplainResult[] = []
   const secondResults: ExplainResult[] = []
   for (const input of inputs) {
-    const result = await capturePlan(input, 1) // no-mistakes-disable-line query-reached-per-item: each captured fixture statement needs its own serial transaction-local EXPLAIN plan
+    const result = await capturePlan(input, 1)
     collectFirst(result)
     firstResults.push(result)
     console.log(
@@ -172,7 +176,7 @@ export async function captureScenarioTwice(
   }
 
   for (const input of inputs) {
-    const result = await capturePlan(input, 2) // no-mistakes-disable-line query-reached-per-item: repeat the same bounded scenario/mode plan on its transaction client for stability comparison
+    const result = await capturePlan(input, 2)
     repeatedResults.push(result)
     secondResults.push(result)
     assertRequiredPlanShape(result)

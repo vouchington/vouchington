@@ -17,6 +17,7 @@ export async function lockCopyrightActionGenerationForWrite(
 ): Promise<LockedCopyrightGeneration> {
   await query(sql`/* lockCopyrightActionGenerationForWrite */
     SELECT copyright_notice_id FROM copyright_notice_thread_blocker_generations
+    -- lock-reason: prevents: a generation update deadlocking with a competing child write; writer: restriction and action-delivery writes that bump the generation through triggers
     WHERE copyright_notice_id = ${noticeId} FOR UPDATE
   `)
   return { noticeId } as LockedCopyrightGeneration

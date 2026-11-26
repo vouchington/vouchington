@@ -19,7 +19,7 @@ All error responses (from backend and CF Worker) follow this JSON shape:
 - `code` is optional. Web app branches on `code` (when present) or `status` (always). Never on `message`.
 - `request_id` enables admin debugging without leaking internals.
 
-`@vouchington/utils/api-errors` owns the envelope shape. The API app supplies its environment
+`@vouchington/server-utils/api-errors` owns the envelope shape. The API app supplies its environment
 exposure policy and request ID, then serializes the result through its HTTP context.
 
 For generated API request validation, the canonical ordering and carrier guidance lives in

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { markPostForReview, updateAdminReviewQueuePost } from '@/lib/api/client'
@@ -16,9 +16,11 @@ export function AdminReviewQueueClient({ initialData }: { initialData: AdminRevi
   const cooldown = useExposureCooldown()
   const [posts, setPosts] = useState(initialData.results)
   const [actionPostId, setActionPostId] = useState<string | null>(null)
-  useEffect(() => {
-    queueMicrotask(() => setPosts(initialData.results))
-  }, [initialData.results])
+  const [syncedResults, setSyncedResults] = useState(initialData.results)
+  if (syncedResults !== initialData.results) {
+    setSyncedResults(initialData.results)
+    setPosts(initialData.results)
+  }
 
   const reviewCount = posts.length
   const flaggedCount = posts.filter(

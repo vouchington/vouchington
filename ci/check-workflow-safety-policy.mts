@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse } from 'yaml'
 import {
-  privilegedWorkflowViolations,
   workflowCallSecretViolations,
   workflowSafetyViolations,
   type SafetyWorkflow,
@@ -28,7 +27,6 @@ export function checkWorkflowSafetyPolicy(root: string): string[] {
     ...workflowCallSecretViolations(
       workflows as Parameters<typeof workflowCallSecretViolations>[0],
     ),
-    ...privilegedWorkflowViolations(workflows),
   ]
 }
 

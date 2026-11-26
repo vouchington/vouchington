@@ -1,5 +1,5 @@
 import * as analytics from '@services/analytics'
-import { loadRecordedResponse } from '@voucha/test-helpers/provider-replay'
+import { loadRecordedResponse } from '@voucha/test-helpers/recorded-response'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
@@ -14,7 +14,7 @@ import { createBedrockEmbedding } from './request.mts'
 // the documented Nova response body (https://docs.aws.amazon.com/nova/latest/userguide/embeddings-schema.html),
 // with the vector cut to 8 values: nothing here depends on its length.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('@voucha/test-helpers/provider-replay')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay()
 })
 
@@ -22,7 +22,7 @@ vi.mock<typeof import('@aws-sdk/client-bedrock-runtime')>(
   import('@aws-sdk/client-bedrock-runtime'),
   async importOriginal => {
     const actual = await importOriginal()
-    const { replayAwsClient } = await import('@voucha/test-helpers/aws-replay-request-handler')
+    const { replayAwsClient } = await import('vouchington-tooling/provider-replay')
     return { ...actual, BedrockRuntimeClient: replayAwsClient(actual.BedrockRuntimeClient, replay) }
   },
 )

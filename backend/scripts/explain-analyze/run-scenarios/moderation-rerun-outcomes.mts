@@ -13,6 +13,7 @@ import { runAppealScenarios } from './moderation-rerun-appeals.mts'
 import { runModerationRerunRetentionScenarios } from './moderation-rerun-retention.mts'
 import { runReviewDisputeRetentionScenario } from './review-dispute-retention.mts'
 import { runStuckAppealExpiryScenario } from './moderation-rerun-stuck-expiry.mts'
+import { runStuckReportExpiryScenario } from './moderation-rerun-stuck-report-expiry.mts'
 import { registerModerationRerunScenario as register } from './moderation-rerun-contract.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -119,7 +120,6 @@ export async function runModerationRerunOutcomeScenarios(): Promise<void> {
       reportRunIds.push(...batchRunIds)
       const scenarioId = `report-rerun-failed-batch-${batchSize}` as const
       register(scenarioId, batchSize * 2)
-      // no-mistakes-disable-next-line query-reached-per-item: two fixed batch sizes require separate serialized custom/generic plan captures.
       await runAndCapture(
         scenarioId,
         async () => {
@@ -153,6 +153,7 @@ export async function runModerationRerunOutcomeScenarios(): Promise<void> {
     await runModerationRerunRetentionScenarios(reportId, appealId)
     await runReviewDisputeRetentionScenario()
     await runStuckAppealExpiryScenario(appealId)
+    await runStuckReportExpiryScenario(reportId)
   } finally {
     await cleanupModerationRerunOutcomes(appealId, reportRunIds)
   }

@@ -3,7 +3,7 @@ import { getPublicUserByIdOrSlug } from '@services/users'
 import { userReferenceSchema } from './entity-reference-schema.mts'
 import type { BasicUser } from '@services/users/types'
 import { toMcpUser, mcpUserSchema, USER_NOT_FOUND, type McpUser } from './mcp-user-output.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 
 type ToolArgs = {
   user_id: string
@@ -29,7 +29,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['users:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/users/:idOrSlug' }],
-    outputSchema: foundOrNotFoundSchema({ user: mcpUserSchema() }),
+    outputSchema: outcomeSchema('success', { user: mcpUserSchema() }),
   },
   function:
     (_currentUser: BasicUser) =>

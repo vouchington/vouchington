@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import {
+  validatePrBody,
+  validatePrBodyWithIssueReferences,
+} from 'vouchington-tooling/pr-description'
 
 import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
-import { validatePrBody, validatePrBodyWithIssueReferences } from '../validate.mts'
+import { VOUCHA_PR_BODY_POLICY } from '../policy.mts'
 
 const VALID_SCHEDULED_NO_SOURCE_BODY = `## Summary
 
@@ -21,9 +25,11 @@ ${VALID_PROVENANCE_BLOCK}
 
 `
 
-describe('scheduled no-source PR validation', () => {
+describe('Voucha scheduled no-source policy', () => {
   it('accepts the exact scheduled no-source representation', () => {
-    expect(validatePrBody(VALID_SCHEDULED_NO_SOURCE_BODY)).toEqual({
+    expect(
+      validatePrBody(VALID_SCHEDULED_NO_SOURCE_BODY, { policy: VOUCHA_PR_BODY_POLICY }),
+    ).toEqual({
       advisories: [],
       errors: [],
       ok: true,
@@ -40,53 +46,9 @@ describe('scheduled no-source PR validation', () => {
       'Workspace setup: GitHub Actions scheduled prompt',
     ],
   ])('rejects scheduled no-source bodies with a %s', (_name, search, replacement) => {
-    const result = validatePrBody(VALID_SCHEDULED_NO_SOURCE_BODY.replace(search, replacement))
-    expect(result.ok).toBe(false)
-    expect(result.errors).toContainEqual(expect.stringContaining('closing keyword'))
-  })
-
-  it('rejects a scheduled no-source marker outside the Related issues section', () => {
-    const body = VALID_SCHEDULED_NO_SOURCE_BODY.replace(
-      '<!-- related-issues-validation: no-source-scheduled-prompt -->',
-      '',
-    ).replace(
-      'Scheduled maintenance.',
-      `Scheduled maintenance.
-<!-- related-issues-validation: no-source-scheduled-prompt -->`,
-    )
-    const result = validatePrBody(body)
-    expect(result.ok).toBe(false)
-    expect(result.errors).toContainEqual(expect.stringContaining('closing keyword'))
-  })
-
-  it('rejects a scheduled no-source representation inside fenced examples', () => {
-    const body = `## Related issues
-
-\`\`\`md
-No source issue; scheduled prompt run.
-<!-- related-issues-validation: no-source-scheduled-prompt -->
-\`\`\`
-
-\`\`\`text
-Workspace setup: Triage loop scheduled prompt
-\`\`\`
-`
-    const result = validatePrBody(body)
-    expect(result.ok).toBe(false)
-    expect(result.errors).toContainEqual(expect.stringContaining('closing keyword'))
-  })
-
-  it('rejects a fenced block between the visible line and marker', () => {
-    const body = VALID_SCHEDULED_NO_SOURCE_BODY.replace(
-      `No source issue; scheduled prompt run.
-<!-- related-issues-validation: no-source-scheduled-prompt -->`,
-      `No source issue; scheduled prompt run.
-\`\`\`md
-example
-\`\`\`
-<!-- related-issues-validation: no-source-scheduled-prompt -->`,
-    )
-    const result = validatePrBody(body)
+    const result = validatePrBody(VALID_SCHEDULED_NO_SOURCE_BODY.replace(search, replacement), {
+      policy: VOUCHA_PR_BODY_POLICY,
+    })
     expect(result.ok).toBe(false)
     expect(result.errors).toContainEqual(expect.stringContaining('closing keyword'))
   })
@@ -97,27 +59,8 @@ example
       async () => {
         throw new Error('scheduled no-source bodies must not resolve issues')
       },
+      { policy: VOUCHA_PR_BODY_POLICY },
     )
     expect(result.ok).toBe(true)
-  })
-
-  it('still rejects an invalid closing reference in a scheduled no-source body', async () => {
-    const body = VALID_SCHEDULED_NO_SOURCE_BODY.replace(
-      'No source issue; scheduled prompt run.',
-      'No source issue; scheduled prompt run.\nCloses #123',
-    )
-    const result = await validatePrBodyWithIssueReferences(body, async ref => ({
-      issue: {
-        body: '',
-        isPullRequest: false,
-        number: ref.number,
-        state: 'closed',
-        title: 'Closed issue',
-        url: 'https://github.com/owner/repo/issues/123',
-      },
-      ok: true,
-    }))
-    expect(result.ok).toBe(false)
-    expect(result.errors.join('\n')).toContain('#123 is CLOSED: Closed issue')
   })
 })

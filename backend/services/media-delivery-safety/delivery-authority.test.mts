@@ -222,7 +222,7 @@ describe('delivery authority and durable denial repair', () => {
       insertTestImage(fixture.userId),
     ])
     const edge = enableEdge()
-    let intermediateId = ''
+    let intermediateId: string
     {
       await using transaction = await beginTransaction()
       const b = await syncImageSurfacePlacement(

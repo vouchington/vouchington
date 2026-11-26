@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { SchemaSnapshot, SchemaTableSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
+import { checkRelationalStorage } from 'vouchington-tooling/relational-storage'
 
+import { RELATIONAL_STORAGE_CATALOG } from './relational-storage-catalog.mts'
 import {
   ALLOWED_AUDIT_SNAPSHOT_ID,
-  ALLOWED_NONRELATION_UUID,
   ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
-} from './relational-storage-catalog.mts'
-import { checkRelationalStorage } from './relational-storage-guard.mts'
+} from './relational-storage-reviewed-ids.mts'
+import { SCHEMA_SNAPSHOT_PATH } from './schema-snapshot-loader.mts'
 import { emptySchemaSnapshot, plainSnapshotTable } from './schema-snapshot-test-fixtures.mts'
 
 function column(type: string) {
@@ -40,7 +41,16 @@ function snapshot(tableName: string, columns: Record<string, ReturnType<typeof c
   return emptySchemaSnapshot({ [tableName]: table }) as SchemaSnapshot
 }
 
-const noFreshness = { enforceCatalogFreshness: false }
+const noFreshness = {
+  snapshotPath: SCHEMA_SNAPSHOT_PATH,
+  catalog: RELATIONAL_STORAGE_CATALOG,
+  enforceCatalogFreshness: false,
+}
+
+const withFreshness = {
+  snapshotPath: SCHEMA_SNAPSHOT_PATH,
+  catalog: RELATIONAL_STORAGE_CATALOG,
+}
 
 describe('reviewed token and audit snapshot identifiers', () => {
   it('keeps AI usage deletion cursors without FKs while rejecting the same names elsewhere', () => {
@@ -119,12 +129,6 @@ describe('reviewed token and audit snapshot identifiers', () => {
         noFreshness,
       ),
     ).toEqual([])
-  })
-
-  it('accepts report judgement run_id as a foreign-key relationship', () => {
-    const value = snapshot('moderation_report_judgements', { run_id: column('uuid') })
-    value.tables.moderation_report_judgements!.foreignKeys.run_id_fk = foreignKey('run_id')
-    expect(checkRelationalStorage(value, noFreshness)).toEqual([])
   })
 
   it('reviews exact columns only, so the same names on a new table are still rejected', () => {
@@ -221,7 +225,7 @@ describe('reviewed token and audit snapshot identifiers', () => {
       checkRelationalStorage(snapshot('new_records', { [name]: column('uuid') }), noFreshness),
     ).toEqual([expect.stringContaining(`new_records.${name}: UUID reference`)])
     value.tables[table]!.foreignKeys[`${name}_fk`] = foreignKey(name)
-    expect(checkRelationalStorage(value)).toEqual(
+    expect(checkRelationalStorage(value, withFreshness)).toEqual(
       expect.arrayContaining([
         expect.stringContaining(`${table}.${name}: stale ${label} catalog entry; remove it`),
       ]),
@@ -237,7 +241,9 @@ describe('reviewed token and audit snapshot identifiers', () => {
     expect(entries.filter(([, reason]) => reason.trim().length === 0).map(([key]) => key)).toEqual(
       [],
     )
-    expect(keys.filter(key => ALLOWED_NONRELATION_UUID.has(key))).toEqual([])
+    expect(
+      keys.filter(key => RELATIONAL_STORAGE_CATALOG.allowedNonrelationUuids?.has(key)),
+    ).toEqual([])
     expect(tokens.filter(key => audits.includes(key))).toEqual([])
   })
 })

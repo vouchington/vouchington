@@ -152,7 +152,6 @@ export async function runPostDiscoverySearchScenarios(): Promise<void> {
     const leaves = leavesByIndex.get(indexName)
     if (!leaves) throw new Error(`${indexName} was not loaded before discovery registration`)
     registerNamedPostIndexExpectations(id, leaves)
-    // no-mistakes-disable-next-line query-reached-per-item: each fixed global/type case needs its own production query plan.
     await runCaptured(id, options)
   }
 

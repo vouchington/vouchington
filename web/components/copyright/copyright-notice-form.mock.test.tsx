@@ -208,6 +208,20 @@ describe('CopyrightNoticeForm', () => {
     expect(mockCreateNotice).toHaveBeenCalledOnce()
   })
 
+  it('shows catalog retry instructions while the same notice is still being processed', async () => {
+    mockCreateNotice.mockRejectedValue(
+      new ApiError('Concurrent submission conflict', 409, {
+        code: 'copyright_submission_in_progress',
+      }),
+    )
+    await submitFilledNotice()
+    await waitFor(() => {
+      expect(toastMock.error).toHaveBeenCalledWith(
+        'Your submission is still being processed. Try again in a moment.',
+      )
+    })
+  })
+
   it('shows catalog copy when the notice names more items than the cap allows', async () => {
     mockCreateNotice.mockRejectedValue(
       new ApiError('Copyright notice target limit reached', 422, {

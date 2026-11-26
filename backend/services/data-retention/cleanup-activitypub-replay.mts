@@ -56,17 +56,12 @@ export async function cleanupActivityPubReplayPage(
      INSERT INTO activitypub_replay_rejection_floors DEFAULT VALUES
      ON CONFLICT (is_singleton) DO NOTHING`,
   )
-  await query(
-    `/* lockActivityPubReplayRejectionFloorForCleanup */
-     SELECT is_singleton FROM activitypub_replay_rejection_floors FOR UPDATE`,
-  )
   // The inbox UUIDv7 primary key supplies the oldest eligible rows.
   const { rows } = await query<Key>(
-    `/* no-mistakes: deadlock-safe -- the floor row is locked first, then one ordered indexed ledger page; waiting preserves contiguous floor advancement. */
-       /* listActivityPubReplayRetentionCandidates */
+    `/* listActivityPubReplayRetentionCandidates */
        SELECT received_at::text AS at, id FROM activitypub_inbox_activities
        WHERE id < $1::uuid
-       ORDER BY id LIMIT $2 FOR UPDATE`,
+       ORDER BY id LIMIT $2`,
     [ageBound, options.batchSize + 1],
   )
   const page = rows.slice(0, options.batchSize)
@@ -79,7 +74,7 @@ export async function cleanupActivityPubReplayPage(
        RETURNING received_at::text AS at, id`,
     [page.map(item => item.id), ageBound],
   )
-  // Admission holds a share lock on the same floor row. Deletion and floor advance commit together.
+  // Deletion and floor advance commit together.
   await advanceReplayRejectionFloor(query, removed.rows)
   const hasMore = rows.length > options.batchSize
   return {

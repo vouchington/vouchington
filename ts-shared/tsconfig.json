@@ -10,6 +10,7 @@
     "rootDir": "./",
     "strict": true,
     "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

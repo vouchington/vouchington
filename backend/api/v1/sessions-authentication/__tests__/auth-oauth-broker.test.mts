@@ -214,12 +214,14 @@ describe('OAuth broker routes', () => {
       .send({})
       .expect(200)
 
-    const acknowledgement = await request
-      .post(`/api/v1/auth/oauth/authorizations/${flowId}/complete`)
-      .set('Cookie', `${request.authCookie}; oauth_completion=${flowId}.${completionToken}`)
-      .send({ acknowledge: true })
-      .expect(204)
-
+    const acknowledge = () =>
+      request
+        .post(`/api/v1/auth/oauth/authorizations/${flowId}/complete`)
+        .set('Cookie', `${request.authCookie}; oauth_completion=${flowId}.${completionToken}`)
+        .send({ acknowledge: true })
+    const acknowledgements = await Promise.all([acknowledge(), acknowledge()])
+    expect(acknowledgements.map(ack => ack.status)).toEqual(expect.arrayContaining([204, 401]))
+    const acknowledgement = acknowledgements.find(ack => ack.status === 204)!
     expect(acknowledgement.headers['set-cookie']).toEqual(
       expect.arrayContaining([
         expect.stringMatching(new RegExp(`oauth_completion=;.*Max-Age=0.*${flowId}`)),

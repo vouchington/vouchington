@@ -1,11 +1,13 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import { seedUuid, seedUuidAtTimestamp } from './common.mts'
+import { runInParallelTransactions } from './parallel-fixture-load.mts'
 
 export interface CommentRow {
   id: string
   parentId: string | null
   rootId: string | null
-  monthIndex?: number
+  /** The monthly leaf the row's id falls in; rows of one leaf load in order on one connection. */
+  monthIndex: number
   approved?: boolean
 }
 
@@ -13,6 +15,7 @@ export async function insertCommentRows(
   query: Awaited<ReturnType<typeof beginTransaction>>,
   rows: readonly CommentRow[],
   hash: Buffer,
+  instant: string,
 ): Promise<void> {
   for (let offset = 0; offset < rows.length; offset += 5_000) {
     const batch = rows.slice(offset, offset + 5_000)
@@ -20,21 +23,35 @@ export async function insertCommentRows(
     const parentIds = batch.map(row => row.parentId)
     const rootIds = batch.map(row => row.rootId)
     const approved = batch.map(row => row.approved ?? true)
-    // no-mistakes-disable-next-line query-reached-per-item: each chunk is a bounded set-based seed insert
     await query(
       `/* seedCommentDescendantPartition:posts */ INSERT INTO posts (
          id, created_via, post_type, markdown, parent_post_id, root_post_id,
          created_by_id, approved_at, bedrock_nova_multimodal_v1_content_sha256,
-         llm_moderation_content_sha256
+         llm_moderation_content_sha256, updated_at
        )
        SELECT input.id, 'system', CASE WHEN input.parent_id IS NULL THEN 'discussion'::post_types ELSE 'comment'::post_types END,
          'seeded partitioned comment', input.parent_id, input.root_id, $5::uuid,
-         CASE WHEN input.approved THEN now() ELSE NULL END, $6, $6
+         CASE WHEN input.approved THEN $7::timestamptz ELSE NULL END, $6, $6, $7::timestamptz
        FROM UNNEST($1::uuid[], $2::uuid[], $3::uuid[], $4::boolean[]) AS input(id, parent_id, root_id, approved)
        ON CONFLICT DO NOTHING`,
-      [ids, parentIds, rootIds, approved, seedUuid(0, '01'), hash],
+      [ids, parentIds, rootIds, approved, seedUuid(0, '01'), hash, instant],
     )
   }
+}
+
+/**
+ * Insert rows with one connection per monthly leaf, committed before the next call so later
+ * levels see their parents. A leaf's rows keep their input order, as in a serial load.
+ */
+export async function loadCommentRows(
+  rows: readonly CommentRow[],
+  hash: Buffer,
+  instant: string,
+): Promise<void> {
+  const byMonth = Map.groupBy(rows, row => row.monthIndex)
+  await runInParallelTransactions([...byMonth.values()], (query, monthRows) =>
+    insertCommentRows(query, monthRows, hash, instant),
+  )
 }
 
 export function partitionName(monthStart: number): string {
@@ -49,7 +66,6 @@ export async function createCommentPartitions(
   for (const month of months) {
     const from = seedUuidAtTimestamp(month, 0)
     const to = seedUuidAtTimestamp(addUtcMonths(month, 1), 0)
-    // no-mistakes-disable-next-line query-reached-per-item: create the fixed 24 monthly partitions in the isolated EXPLAIN database
     await query(
       `/* seedCommentDescendantPartition:partition */ CREATE TABLE IF NOT EXISTS ${partitionName(month)} PARTITION OF posts
        FOR VALUES FROM ('${from}'::uuid) TO ('${to}'::uuid)`,

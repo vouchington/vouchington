@@ -8,7 +8,7 @@ import { sharedDbCursorScope, sharedDbIdsScope } from '@vouchington/postgres/que
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { MEDIA_DELIVERY_MAX_ATTEMPTS, mediaDeliveryClaimable } from './delivery-registry-policy.mts'
 
 /** The primary database owns exact cutoff precision and read-after-write visibility. */
@@ -26,6 +26,7 @@ export async function failExpiredExhaustedMediaDeliveryRegistryRecords(
 ): Promise<number> {
   if (recordIds?.length === 0) return 0
   await using transaction = await beginTransaction()
+  // lock-reason: prevents: recording a duplicate failure or replacing a completed publication with an expired-lease failure; writer: another expired-lease scan or the active edge publisher.
   const { rows: candidates } = await transaction<{
     media_delivery_registry_record_id: string
   }>(sql`/* failExpiredExhaustedMediaDeliveryRegistryRecords:lock */
@@ -80,7 +81,7 @@ export async function listRecoverableMediaDeliveryRegistryIds(input: {
   const statement = sql`/* listRecoverableMediaDeliveryRegistryIds */
     SELECT work.media_delivery_registry_record_id FROM media_delivery_registry_projection_work_items work
     JOIN media_delivery_registry_records record ON record.id = work.media_delivery_registry_record_id
-    WHERE work.media_delivery_registry_record_id < ${timestampToUuidv7LowerBound(new Date(input.scanBefore).getTime() + 1)}::uuid
+    WHERE work.media_delivery_registry_record_id < ${getMinUuidv7ForDate(new Date(new Date(input.scanBefore).getTime() + 1))}::uuid
       AND (${recordIds}::uuid[] IS NULL OR work.media_delivery_registry_record_id = ANY(${recordIds}::uuid[]))
       AND (${after}::uuid IS NULL OR work.media_delivery_registry_record_id > ${after}) AND `
   statement.append(mediaDeliveryClaimable(input.scanBefore))

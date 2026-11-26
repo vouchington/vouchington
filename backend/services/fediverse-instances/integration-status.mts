@@ -52,8 +52,7 @@ export async function setIntegrationStatusAsAdmin(
         FROM fediverse_instance_integration_changes
         WHERE topic_id = $1
         ORDER BY id DESC
-        LIMIT 1
-        FOR UPDATE`,
+        LIMIT 1`,
       [input.topicId],
     )
     const latest = rows[0] as { integration_status: FediverseIntegrationStatus } | undefined

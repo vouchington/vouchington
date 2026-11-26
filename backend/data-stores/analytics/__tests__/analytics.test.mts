@@ -1,24 +1,29 @@
-import { describe, it, expect, beforeAll } from 'vitest'
-
-import path from 'node:path'
-
-import os from 'node:os'
-
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import fs from 'node:fs'
-
-import { getPartitionPath, flush, writeRecord } from '../backend-local.mts'
-
-import { query } from '../query.mts'
-
-import type { CrawlerRequestRecord, WebClickRecord, WebPageViewRecord } from '../tables.mts'
+import os from 'node:os'
+import path from 'node:path'
+import * as onErrorModule from '@modules/on-error'
+import { flush, writeRecord } from '../backend-local.mts'
+import type { CrawlerRequestRecord } from '../tables.mts'
 
 describe('analytics', () => {
+  const originalLocalDir = process.env.ANALYTICS_LOCAL_DIR
+  const originalBackend = process.env.ANALYTICS_BACKEND
   // Point the local backend at a temp directory unique to this test run
   const testDir = path.join(os.tmpdir(), `analytics-test-${crypto.randomUUID()}`)
 
   beforeAll(() => {
     process.env.ANALYTICS_LOCAL_DIR = testDir
     process.env.ANALYTICS_BACKEND = 'local'
+  })
+
+  afterAll(async () => {
+    await flush()
+    if (originalLocalDir === undefined) delete process.env.ANALYTICS_LOCAL_DIR
+    else process.env.ANALYTICS_LOCAL_DIR = originalLocalDir
+    if (originalBackend === undefined) delete process.env.ANALYTICS_BACKEND
+    else process.env.ANALYTICS_BACKEND = originalBackend
+    await fs.promises.rm(testDir, { recursive: true, force: true })
   })
 
   describe('backend-local', () => {
@@ -42,14 +47,15 @@ describe('analytics', () => {
       writeRecord('crawler_requests', record)
       await flush()
 
-      const filePath = getPartitionPath('crawler_requests', eventDate)
+      const filePath = path.join(testDir, 'crawler_requests', `${eventDate}.jsonl`)
       expect(fs.existsSync(filePath)).toBe(true)
 
       const content = fs.readFileSync(filePath, 'utf8').trim()
-      const parsed = JSON.parse(content.split('\n')[0])
+      const parsed = JSON.parse(content.split('\n')[0]!)
       expect(parsed.event_id).toBe(eventId)
       expect(parsed.domain).toBe('example.com')
       expect(parsed.success).toBe(true)
+      expect(parsed.table).toBeUndefined()
     })
 
     it('writes records to different partition files on different dates', async () => {
@@ -79,8 +85,8 @@ describe('analytics', () => {
       })
       await flush()
 
-      const file16 = getPartitionPath('crawler_requests', '2024-06-16')
-      const file17 = getPartitionPath('crawler_requests', '2024-06-17')
+      const file16 = path.join(testDir, 'crawler_requests', '2024-06-16.jsonl')
+      const file17 = path.join(testDir, 'crawler_requests', '2024-06-17.jsonl')
       expect(fs.existsSync(file16)).toBe(true)
       expect(fs.existsSync(file17)).toBe(true)
 
@@ -97,72 +103,89 @@ describe('analytics', () => {
       expect(content17.some((r: { event_id: string }) => r.event_id === id2)).toBe(true)
     })
 
-    it('flush is idempotent — second flush emits no duplicate rows', async () => {
-      const id = crypto.randomUUID()
+    it('routes writes to updated ANALYTICS_LOCAL_DIR and flushes all active directories', async () => {
+      const altDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'analytics-alt-'))
+      const firstId = crypto.randomUUID()
+      const secondId = crypto.randomUUID()
       const eventDate = '2024-06-18'
 
-      writeRecord('crawler_requests', {
-        event_id: id,
-        event_date: eventDate,
-        event_time: new Date('2024-06-18T00:00:00Z'),
-        env: 'test',
-        event_type: 'request',
-        crawler_type: 'html',
-        domain: 'idempotent.example.com',
-        success: true,
-        duration_ms: 10,
-      })
-      await flush()
-      await flush() // second flush should be a no-op
+      try {
+        writeRecord('crawler_requests', {
+          event_id: firstId,
+          event_date: eventDate,
+          event_time: new Date('2024-06-18T00:00:00Z'),
+          env: 'test',
+          event_type: 'request',
+          crawler_type: 'html',
+          domain: 'first.example.com',
+          success: true,
+          duration_ms: 10,
+        })
 
-      const filePath = getPartitionPath('crawler_requests', eventDate)
-      const lines = fs.readFileSync(filePath, 'utf8').split('\n').filter(Boolean)
-      const matching = lines.filter(l => JSON.parse(l).event_id === id)
-      expect(matching).toHaveLength(1)
+        process.env.ANALYTICS_LOCAL_DIR = altDir
+        writeRecord('crawler_requests', {
+          event_id: secondId,
+          event_date: eventDate,
+          event_time: new Date('2024-06-18T00:01:00Z'),
+          env: 'test',
+          event_type: 'request',
+          crawler_type: 'html',
+          domain: 'second.example.com',
+          success: true,
+          duration_ms: 12,
+        })
+
+        await flush()
+
+        const firstFile = path.join(testDir, 'crawler_requests', `${eventDate}.jsonl`)
+        const secondFile = path.join(altDir, 'crawler_requests', `${eventDate}.jsonl`)
+        expect(fs.readFileSync(firstFile, 'utf8')).toContain(`"event_id":"${firstId}"`)
+        expect(fs.readFileSync(secondFile, 'utf8')).toContain(`"event_id":"${secondId}"`)
+      } finally {
+        process.env.ANALYTICS_LOCAL_DIR = testDir
+        await fs.promises.rm(altDir, { recursive: true, force: true })
+      }
     })
 
-    it('appends multiple records across multiple flush calls', async () => {
-      const id1 = crypto.randomUUID()
-      const id2 = crypto.randomUUID()
-      const eventDate = '2024-06-19'
+    it('reports background flush errors to onError and rejects explicit flush errors', async () => {
+      const blockingFile = path.join(testDir, 'blocking-file')
+      await fs.promises.mkdir(testDir, { recursive: true })
+      await fs.promises.writeFile(blockingFile, 'not a directory')
 
-      writeRecord('crawler_requests', {
-        event_id: id1,
-        event_date: eventDate,
-        event_time: new Date('2024-06-19T01:00:00Z'),
+      const reported = Promise.withResolvers<Error>()
+      const onErrorSpy = vi.spyOn(onErrorModule, 'default').mockImplementation(err => {
+        reported.resolve(err)
+      })
+      const sampleRecord: CrawlerRequestRecord = {
+        event_id: crypto.randomUUID(),
+        event_date: '2024-06-19',
+        event_time: new Date('2024-06-19T00:00:00Z'),
         env: 'test',
         event_type: 'request',
         crawler_type: 'html',
-        domain: 'append-test.example.com',
+        domain: 'error.example.com',
         success: true,
         duration_ms: 5,
-      })
-      await flush()
+      }
 
-      writeRecord('crawler_requests', {
-        event_id: id2,
-        event_date: eventDate,
-        event_time: new Date('2024-06-19T02:00:00Z'),
-        env: 'test',
-        event_type: 'request',
-        crawler_type: 'html',
-        domain: 'append-test.example.com',
-        success: false,
-        duration_ms: 8,
-      })
-      await flush()
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      try {
+        process.env.ANALYTICS_LOCAL_DIR = blockingFile
+        writeRecord('crawler_requests', sampleRecord)
 
-      const filePath = getPartitionPath('crawler_requests', eventDate)
-      const lines = fs.readFileSync(filePath, 'utf8').split('\n').filter(Boolean)
-      const ids = lines.map(l => JSON.parse(l).event_id)
-      expect(ids).toContain(id1)
-      expect(ids).toContain(id2)
+        vi.advanceTimersByTime(1_000)
+        const error = await reported.promise
+        expect(error).toBeInstanceOf(Error)
+
+        writeRecord('crawler_requests', sampleRecord)
+        await expect(flush()).rejects.toThrow(/EEXIST|ENOTDIR/)
+      } finally {
+        vi.useRealTimers()
+        onErrorSpy.mockRestore()
+        process.env.ANALYTICS_LOCAL_DIR = testDir
+        await flush()
+        await fs.promises.rm(blockingFile, { force: true })
+      }
     })
   })
-  // keep generated shard bindings live for typecheck
-  const keepWebClickRecord: WebClickRecord | null = null
-  void (0 as unknown as typeof keepWebClickRecord)
-  const keepWebPageViewRecord: WebPageViewRecord | null = null
-  void (0 as unknown as typeof keepWebPageViewRecord)
-  void (0 as unknown as typeof query)
 })

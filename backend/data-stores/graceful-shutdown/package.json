@@ -24,9 +24,10 @@
   "scripts": {},
   "dependencies": {
     "@modules/on-error": "workspace:^",
-    "@voucha/config": "workspace:^"
+    "@voucha/config": "workspace:^",
+    "@vouchington/server-utils": "^0.1.0"
   },
   "devDependencies": {
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }

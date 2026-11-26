@@ -1,97 +1,31 @@
 import path from 'node:path'
+import {
+  readMigrationFile,
+  runConfigDriven as runPlatformConfigDriven,
+  type RunConfigDrivenOptions as PlatformRunConfigDrivenOptions,
+} from '@vouchington/postgres'
+import onError from '@modules/on-error'
+import { beginTransaction } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { readCanonicalConfigDrivenGenerator } from './config-driven-generators.mts'
-import { runConfigDrivenStatementsInTransaction } from './config-driven-statements.mts'
-import { getFilesFromFolder, readMigrationFile } from './files.mts'
-import { silentMigrationLogger, type MigrationLogger } from './migration-logger.mts'
-
-export { type MigrationLogger } from './migration-logger.mts'
-
-const postgresDeadlockSqlstate = '40P01'
-const postgresLockTimeoutSqlstate = '55P03'
-const configDrivenMaxAttempts = 3
-const configDrivenRetryDelayMs = 1000
-const configDrivenLockTimeoutMs = 5_000
 
 export interface RunConfigDrivenOptions {
   folder?: string
-  logger?: MigrationLogger
+  logger?: PlatformRunConfigDrivenOptions['logger']
   writer?: QueryExecutor
-  lockTimeoutMs?: number
-  waitForRetry?: (attempt: number) => Promise<void>
 }
 
 export async function runConfigDriven(rootDir: string, options: RunConfigDrivenOptions = {}) {
-  const logger = options.logger ?? silentMigrationLogger
-  const configDrivenFolder = options.folder ?? path.resolve(rootDir, 'config-driven')
-  const lockTimeoutMs = options.lockTimeoutMs ?? configDrivenLockTimeoutMs
-  const waitForRetry = options.waitForRetry ?? waitForConfigDrivenRetry
-  const configDriven = getFilesFromFolder(configDrivenFolder)
+  const folder = options.folder ?? path.resolve(rootDir, 'config-driven')
   const isCanonicalFolder =
-    path.resolve(configDrivenFolder) === path.resolve(import.meta.dirname, '../config-driven')
-
-  async function runConfigDrivenAt(index: number): Promise<void> {
-    const file = configDriven[index]
-    if (!file) return
-
-    const string =
+    path.resolve(folder) === path.resolve(import.meta.dirname, '../config-driven')
+  await runPlatformConfigDriven(folder, {
+    target: options.writer ? { writer: options.writer } : { beginTransaction },
+    reportError: onError,
+    readFile: (readFolder, file) =>
       isCanonicalFolder && file.endsWith('.mts')
-        ? await readCanonicalConfigDrivenGenerator(file)
-        : await readMigrationFile(configDrivenFolder, file)
-    await runConfigDrivenFile(file, string, logger, options.writer, lockTimeoutMs, waitForRetry)
-
-    await runConfigDrivenAt(index + 1)
-  }
-
-  await runConfigDrivenAt(0)
-}
-
-async function runConfigDrivenFile(
-  file: string,
-  sql: string,
-  logger: MigrationLogger,
-  writer: QueryExecutor | undefined,
-  lockTimeoutMs: number,
-  waitForRetry: (attempt: number) => Promise<void>,
-  attempt = 1,
-): Promise<void> {
-  // Retries replay the whole config-driven file, which is safe only for the idempotent
-  // seed/function SQL enforced by no-mistakes postgres-idempotent-insert.
-  try {
-    await runConfigDrivenStatementsInTransaction(sql, writer, lockTimeoutMs)
-    logger.log('Config-driven migration %s complete!', file)
-  } catch (err) {
-    if (isRetryableConfigDrivenPostgresError(err) && attempt < configDrivenMaxAttempts) {
-      logger.log(
-        'Config-driven migration %s hit PostgreSQL lock contention (%s); retrying attempt %d of %d.',
-        file,
-        err.code,
-        attempt + 1,
-        configDrivenMaxAttempts,
-      )
-      await waitForRetry(attempt)
-      await runConfigDrivenFile(file, sql, logger, writer, lockTimeoutMs, waitForRetry, attempt + 1)
-      return
-    }
-
-    logger.error('ERROR: running config-driven migration %s failed!', file)
-    logger.error(sql)
-    logger.error('ERROR: running config-driven migration %s failed after SQL dump!', file)
-    throw err
-  }
-}
-
-function isRetryableConfigDrivenPostgresError(err: unknown): err is { code: string } {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err.code === postgresDeadlockSqlstate || err.code === postgresLockTimeoutSqlstate)
-  )
-}
-
-async function waitForConfigDrivenRetry(attempt: number) {
-  await new Promise(resolve => {
-    setTimeout(resolve, Math.min(configDrivenRetryDelayMs * (attempt + Math.random()), 5_000))
+        ? readCanonicalConfigDrivenGenerator(file)
+        : readMigrationFile(readFolder, file),
+    ...(options.logger && { logger: options.logger }),
   })
 }

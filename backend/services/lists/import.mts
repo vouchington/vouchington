@@ -4,9 +4,11 @@ import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import type { EntityRelationViewer } from '@services/entity-relations/viewer'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { ManageableList } from './manage.mts'
-import { getCommunityListFeedLimit, getListImportLimit } from './import-config.mts'
-
-const IMPORT_FEED_ITEM_LIMIT = 20
+import {
+  getCommunityListFeedLimit,
+  getListImportLimit,
+  getListImportFeedItemLimit,
+} from './import-config.mts'
 
 export function importCommunityListPostsSourceSql(
   targetListId: string,
@@ -125,7 +127,7 @@ export async function importCommunityList(
     ${importCommunityListFeedItemsSourceSql}
     ON CONFLICT (user_list_id, rss_feed_item_id) WHERE removed_at IS NULL
     DO NOTHING`,
-    [targetListId, communityId, IMPORT_FEED_ITEM_LIMIT, limit, getCommunityListFeedLimit()],
+    [targetListId, communityId, getListImportFeedItemLimit(), limit, getCommunityListFeedLimit()],
   )
 
   const imported = { posts: postsCount ?? 0, items: itemsCount ?? 0 }

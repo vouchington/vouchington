@@ -1,5 +1,5 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 import { getTopicsWorkLimit } from '@services/topics/work-limits'
 import { buildTopicViewerDiscussionInputs } from '@services/topics/metrics-viewer-discussions'
 import { assertTopicViewerInputsAreBounded } from './topic-viewer-bounded-inputs.mts'
@@ -263,7 +263,8 @@ describe('bounded viewer input plans', () => {
       'requires measured %s on the underlying scan',
       field => {
         const result = fixture()
-        delete (prefix(result).Plans as Node[])[0]![field]
+        const plans = prefix(result).Plans as Node[]
+        plans[0] = Object.fromEntries(Object.entries(plans[0]!).filter(([key]) => key !== field))
         expect(() => assertTopicViewerInputsAreBounded(result)).toThrow('must bound raw reads')
       },
     )

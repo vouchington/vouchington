@@ -66,7 +66,12 @@ function renderReview(submit?: SubmitReview, initialPage = complaintPage) {
     <CopyrightStaffTerritorialComplaintList
       item={item}
       initialPage={initialPage}
-      onReview={submit ?? (action => void action())}
+      onReview={
+        submit ??
+        (action => {
+          void action()
+        })
+      }
       pending={false}
     />,
   )
@@ -101,7 +106,9 @@ describe('CopyrightStaffTerritorialComplaintList', () => {
 
   it('keeps the rationale in the form after a failed request', async () => {
     mockDecide.mockRejectedValueOnce(new Error('Request failed'))
-    renderReview(action => void action().catch(() => undefined))
+    renderReview(action => {
+      void action().catch(() => undefined)
+    })
     const rationale = screen.getByLabelText('Rationale for the complainant')
     fireEvent.change(rationale, {
       target: { value: 'Keep the restriction with this explanation.' },

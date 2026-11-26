@@ -88,7 +88,7 @@ export function NewsItemCardMedia({
               <p
                 className='line-clamp-3 flex-1 text-sm text-muted-foreground'
                 data-pw='news-item-excerpt'
-                lang={contentLanguage}
+                lang={contentLanguage ?? ''}
                 dir={getContentLanguageDir(contentLanguage)}
               >
                 {excerpt}

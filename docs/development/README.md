@@ -121,8 +121,6 @@ binary.
 - [E2E and Visual](reference-tests-e2e-and-visual.md)
 - [Local Web Validation Recovery](reference-tests-local-web-validation-recovery.md)
 - [Schema Checks](reference-tests-schema-checks.md)
-- [Storybook A11y Exceptions](reference-tests-storybook-a11y-exceptions.md)
-- [Test Value and Safe Reduction](reference-tests-value-and-reduction.md)
 - [Vitest Mock Typing](reference-tests-vitest-mock-typing.md)
 - [Vitest Projects](reference-tests-vitest-projects.md)
 - [Queue testing boundaries](testing/backend/glide-mq-testing.md)

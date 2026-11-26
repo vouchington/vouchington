@@ -2,6 +2,7 @@ import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { withCleanUser } from '../../helpers/auth.mts'
+import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 test.describe('My Profile', () => {
   test.use({ storageState: AUTH_STATE })
@@ -28,7 +29,7 @@ test.describe('My Profile', () => {
     await page.getByTestId('profile-save-button').click()
 
     await expect(page.locator('[data-sonner-toast][data-type="error"]')).toBeVisible({
-      timeout: 5000,
+      timeout: SHORT_WAIT_TIMEOUT_MS,
     })
   })
 

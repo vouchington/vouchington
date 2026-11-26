@@ -1,5 +1,6 @@
 'use client'
 
+import { pageHasContinuation } from '@vouchington/api-client'
 import { useState, useTransition } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
@@ -85,22 +86,28 @@ export function CopyrightStaffQueue({
       }
     })
   }
-  if (notices.length === 0 && !hasNextPage)
-    return <p className='text-muted-foreground'>No copyright cases need review.</p>
+  const canContinue = pageHasContinuation({ has_next_page: hasNextPage, end_cursor: endCursor })
+  const showReviewControls = notices.length > 0 || canContinue
   return (
     <div className='space-y-5'>
-      {refreshTimedOut && (
-        <output className='block text-sm text-muted-foreground'>
-          The AI guidance is taking longer than expected. Refresh this page to check again.
-        </output>
+      {showReviewControls && (
+        <>
+          {refreshTimedOut && (
+            <output className='block text-sm text-muted-foreground'>
+              The AI guidance is taking longer than expected. Refresh this page to check again.
+            </output>
+          )}
+          <Textarea
+            aria-label='Review rationale'
+            placeholder='State the basis for this decision.'
+            value={rationale}
+            onChange={event => setRationale(event.target.value)}
+          />
+          <p className='text-sm text-muted-foreground'>
+            A rationale is required for every decision.
+          </p>
+        </>
       )}
-      <Textarea
-        aria-label='Review rationale'
-        placeholder='State the basis for this decision.'
-        value={rationale}
-        onChange={event => setRationale(event.target.value)}
-      />
-      <p className='text-sm text-muted-foreground'>A rationale is required for every decision.</p>
       <InfiniteScroll
         hasNextPage={hasNextPage}
         endCursor={endCursor}
@@ -109,6 +116,8 @@ export function CopyrightStaffQueue({
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
+        itemCount={notices.length}
+        emptyState={<p className='text-muted-foreground'>No copyright cases need review.</p>}
       >
         {notices.map(notice => (
           <CopyrightStaffCase

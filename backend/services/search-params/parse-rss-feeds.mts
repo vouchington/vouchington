@@ -1,3 +1,4 @@
+import { searchParamsMaxValues } from './config.mts'
 import { parseBooleanish } from '@ts-shared/utils/query'
 import {
   defineQueryContract,
@@ -11,11 +12,7 @@ import {
 import type { ResolvedSearchParams } from './types.mts'
 import { getTopicIdByAnyCached, getTopicIdsByAnyCachedBatch } from '@services/entity-cache'
 import { extractIdentifier, extractIdentifiers, checkShouldReturnEmpty } from './resolve.mts'
-import {
-  resolveHashtagTopicSearch,
-  validateTopicSearchTerms,
-  MAX_TOPIC_SEARCH_TERMS,
-} from './hashtag-topic-search.mts'
+import { resolveHashtagTopicSearch, validateTopicSearchTerms } from './hashtag-topic-search.mts'
 import { prepareQueryForValidation } from './prepare-query.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import {
@@ -68,7 +65,11 @@ export function prepareRssFeedsSearchParams(query: Record<string, unknown>) {
     validationQuery: prepareQueryForValidation(query, rssFeedsQueryContract.queryContract),
     feedType: query.feed_type,
     topicIdentifier: extractIdentifier(query, 'topic'),
-    topicIdentifiers: extractIdentifiers(query, ['topics'], MAX_TOPIC_SEARCH_TERMS),
+    topicIdentifiers: extractIdentifiers(
+      query,
+      ['topics'],
+      searchParamsMaxValues.max_topic_search_terms,
+    ),
     publisherTypeIdentifier: extractIdentifier(query, 'publisher_type'),
     publisherTypeIdentifiers: extractIdentifiers(query, ['publisher_types'], 10),
     categoryIdentifier: extractIdentifier(query, 'category'),

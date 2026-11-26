@@ -35,8 +35,8 @@ export function ListItemsAccumulator({ activeTab, initialData, listId, mediaType
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
-    >
-      {items.length === 0 ? (
+      itemCount={items.length}
+      emptyState={
         <p
           className='text-muted-foreground'
           data-pw='list-empty'
@@ -45,21 +45,21 @@ export function ListItemsAccumulator({ activeTab, initialData, listId, mediaType
             ? t('extracted.id.page.thisListIsEmpty_7c8d9e0f')
             : t('extracted.id.page.noActivetabItemsYet_1a2b3c4d', { activeTab })}
         </p>
-      ) : (
-        <ul
-          className='space-y-2'
-          data-pw='list-items'
-        >
-          {items.map(item => (
-            <li
-              key={item.id}
-              data-pw='list-item'
-            >
-              <ListItemRow item={item} />
-            </li>
-          ))}
-        </ul>
-      )}
+      }
+    >
+      <ul
+        className='space-y-2'
+        data-pw='list-items'
+      >
+        {items.map(item => (
+          <li
+            key={item.id}
+            data-pw='list-item'
+          >
+            <ListItemRow item={item} />
+          </li>
+        ))}
+      </ul>
     </InfiniteScroll>
   )
 }

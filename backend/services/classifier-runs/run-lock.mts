@@ -42,26 +42,15 @@ export type LockedClassifierRun<C> = {
 }
 
 /**
- * Locks the classifier actor, the subject and the run in that order, then re-resolves the
- * configuration. Null means the run no longer matches current content or configuration and must
- * not produce effects; a mismatch between the durable run and its target is a defect and throws.
+ * Checks the current subject and actor, locks the run, and re-resolves the configuration.
+ * Null means the run is no longer current and must not produce effects. A mismatch between
+ * the durable run and its target is a defect and throws.
  */
 export async function lockClassifierRun<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
   query: OwnedTransaction,
   target: ClassifierRunTarget,
 ): Promise<LockedClassifierRun<C> | null> {
-  // The actor identity is immutable. Read it without a row lock, then re-check the durable
-  // identity under the run lock below; never wait for an actor while holding a subject or run.
-  const { rows: actors } = await query<{ shared_actor_user_id: string }>(sql`
-    /* readClassifierRunActor */
-    SELECT shared_actor_user_id FROM classifier_runs WHERE id = ${target.runId}
-  `)
-  const actor = actors[0]
-  if (!actor) return null
-  await query(sql`/* lockClassifierRunActor */
-    SELECT fn_lock_active_user_for_mutation(${actor.shared_actor_user_id}::uuid)
-  `)
   const current = await adapter.lockCurrent(query, target.subject)
   if (!current?.inputSha256.equals(target.inputSha256)) return null
   const { rows } = await query<ClassifierRunRow>(sql`/* lockClassifierRun */
@@ -76,7 +65,9 @@ export async function lockClassifierRun<C, L, E>(
         ELSE NULL END AS retry_after_seconds
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
+    JOIN users actor ON actor.id = run.shared_actor_user_id AND actor.deleted_at IS NULL
     WHERE run.id = ${target.runId}
+    -- lock-reason: prevents: a lease or terminal state change between authorization and committing run outcomes or effects; writer: claimClassifierRun, abandonClassifierRunSweeps, markSuperseded, and completeClassifierRun
     FOR UPDATE OF run
   `)
   const row = rows[0]

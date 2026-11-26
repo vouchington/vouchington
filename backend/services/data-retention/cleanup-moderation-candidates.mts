@@ -14,6 +14,7 @@ export async function getModerationCleanupCandidates(
   let rows: { id: string }[]
   switch (kind) {
     case 'reports':
+      // lock-reason: prevents: cascading a newly admitted judgement run or clearing a new judgement’s report link; writers: createReportJudgementRun (moderation_report_judgement_runs), insertReportJudgement (moderation_report_judgements).
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:reports */
         SELECT id FROM moderation_reports WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
@@ -21,61 +22,64 @@ export async function getModerationCleanupCandidates(
     case 'cases':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:cases */
         SELECT id FROM moderation_cases WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'appeals':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:appeals */
         SELECT id FROM moderation_appeals WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'disputes':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:disputes */
         SELECT id FROM review_disputes WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'actions':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:actions */
         SELECT id FROM moderator_actions WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'training_feedbacks':
       ;({ rows } = await query<{
         id: string
       }>(sql`/* moderationCleanupCandidates:trainingFeedbacks */
         SELECT id FROM moderation_training_feedbacks WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'judgements':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:judgements */
         SELECT id FROM moderation_report_judgements WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'integrity_flags':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:integrityFlags */
         SELECT id FROM report_integrity_flags WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'report_penalties':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:reportPenalties */
         SELECT id FROM report_abuse_penalties WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'vote_penalties':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:votePenalties */
         SELECT id FROM vote_weight_penalties WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'warnings':
+      // lock-reason: prevents: deleting a warning with a newly filed appeal or notification; writers: insertModerationAppeal (moderation_appeals), createUserWarningNotification (notifications).
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:warnings */
         SELECT id FROM user_warnings WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
     case 'suspensions':
+      // lock-reason: prevents: deleting a suspension with a newly filed appeal; writer: insertModerationAppeal writes moderation_appeals.
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:suspensions */
         SELECT id FROM user_suspensions WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
       break
     case 'bans':
+      // lock-reason: prevents: erasing a newly filed ban appeal or clearing a notification reference; writers: insertModerationAppeal (moderation_appeals), createCommunityBanNotification (notifications).
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:bans */
         SELECT id FROM community_bans WHERE id > ${after} AND id < ${upperId}
         ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
@@ -83,12 +87,12 @@ export async function getModerationCleanupCandidates(
     case 'notes':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:notes */
         SELECT id FROM user_moderator_notes WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
     case 'applications':
       ;({ rows } = await query<{ id: string }>(sql`/* moderationCleanupCandidates:applications */
         SELECT id FROM community_applications WHERE id > ${after} AND id < ${upperId}
-        ORDER BY id LIMIT ${limit} FOR UPDATE SKIP LOCKED`))
+        ORDER BY id LIMIT ${limit}`))
       break
   }
   return rows.map(row => row.id)

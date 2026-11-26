@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/comments": "workspace:^",
@@ -34,8 +35,9 @@
     "@ts-shared/data-points": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@vouchington/pagination": "^0.0.4",
-    "http-errors": "^2.0.1"
+    "@vouchington/pagination": "^0.0.5",
+    "http-errors": "^2.0.1",
+    "valkyries": "^0.15.0"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

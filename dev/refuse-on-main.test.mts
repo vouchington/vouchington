@@ -82,24 +82,17 @@ describe('refuse-on-main', () => {
   printf 'cwd:%s' "$(pwd -P)"
   `
 
-    const env: Record<string, string> = {}
-    for (const [k, v] of Object.entries(process.env)) {
-      if (v !== undefined) env[k] = v
-    }
-    if (forceMainReset) {
-      env.FORCE_MAIN_RESET = '1'
-    } else {
-      delete env.FORCE_MAIN_RESET
-    }
     // The suite may itself run inside Claude Code; each case opts in to the agent-shell marker.
-    delete env.CLAUDECODE
-    if (processTmpdir !== undefined) {
-      env.TMPDIR = processTmpdir
+    const merged: Record<string, string | undefined> = {
+      ...process.env,
+      FORCE_MAIN_RESET: forceMainReset ? '1' : undefined,
+      CLAUDECODE: undefined,
+      ...(processTmpdir === undefined ? {} : { TMPDIR: processTmpdir }),
+      ...extraEnv,
     }
-    for (const [key, value] of Object.entries(extraEnv)) {
-      if (value === undefined) delete env[key]
-      else env[key] = value
-    }
+    const env = Object.fromEntries(
+      Object.entries(merged).filter((entry): entry is [string, string] => entry[1] !== undefined),
+    )
 
     const result = await runSourcedBash(helperPath, script, [explicitRepoRoot ? gitToplevel : ''], {
       cwd,

@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 1
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 3
         with:
           deadline-seconds: '150'
@@ -62,5 +62,5 @@ jobs:
           name: image-resize-lambda-${{ github.run_id }}-${{ github.run_attempt }}
           path: delivery/image-resize.zip
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
           overwrite: true

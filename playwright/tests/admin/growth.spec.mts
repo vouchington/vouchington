@@ -19,15 +19,15 @@ test.describe('Growth Dashboard', () => {
       .filter({ has: page.getByRole('heading', { level: 2 }).filter({ hasText: 'Key Metrics' }) })
     await expect(kpiSection).toBeVisible()
     const cards = kpiSection.getByTestId('kpi-card')
-    await expect(cards).toContainText(['Total Users', 'MRR'], { timeout: 10_000 })
+    await expect(cards).toContainText(['Total Users', 'MRR'])
   })
 
   test('date range filter changes URL', async ({ page }) => {
     await waitForBelowFoldHydration(page)
-    const combobox = page.locator('[role="combobox"]').first()
+    const combobox = page.getByRole('combobox').first()
     await expect(combobox).toBeVisible()
     await combobox.press(' ')
-    const option = page.locator('[role="option"]').filter({ hasText: 'Last 7 days' })
+    const option = page.getByRole('option').filter({ hasText: 'Last 7 days' })
     await option.click()
     await expect(page).toHaveURL(/range=7d/)
   })

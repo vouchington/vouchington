@@ -27,11 +27,11 @@ Enforced rules name their check; the check owns the detail. Judgment calls stay 
 
 ### Judgment
 
-- **Runner demand** — name the hosted label a new or changed job draws from, prefer the smallest that fits, and justify extra fan-out. Choose `ubuntu-slim` for `gh api`, prompt rendering, and aggregator jobs (no Docker, no `services:`, no Node/pnpm/backend setup); `ubuntu-latest` for Docker, `services:`, or Node/pnpm/backend setup; `ubuntu-24.04-arm` for native ARM64 work matching production (image builds, native-binary smoke tests) and every job sharing a restored web build. Update `.github/runner-policy.json` when runner placement changes. Run `node ci/check-live-workflow-topology.mts` after runner or timeout changes; `pnpm run no-mistakes` alone does not check it.
+Generic rules (smallest runner, independent deploys, `/bin/bash` 3.2 portability, immutable-SHA policy binding): load `github-actions-authoring`; porting a guard's fixture corpus: `static-analysis-checklist`.
+
+- **Runner demand** — `ubuntu-slim` for `gh api`, prompt rendering, and aggregator jobs; `ubuntu-latest` for Docker, `services:`, or Node/pnpm/backend setup; `ubuntu-24.04-arm` for native ARM64 work matching production and every job sharing a restored web build. Update `.github/runner-policy.json` when runner placement changes. Run `node ci/check-live-workflow-topology.mts` after runner or timeout changes; `pnpm run no-mistakes` alone does not check it.
 - **Host ports** — let Docker allocate a host port unless a workflow must coordinate one. In that case use the published vouchington-tooling allocator immediately before binding; a caller that can choose a new port may reallocate once on `EADDRINUSE`.
-- **Deploys stay decoupled** — no cross-workflow deploy-order wait or poll; only api and workers share a deploy unit. Application-owned schema follows [One current contract](../../AGENTS.md), not expand/contract. See [deploy decoupling](../overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
-- **Script portability** — CI is Linux, but scripts shared with local development must also run on the macOS system `/bin/bash`.
-- **Security-guard migrations** — before replacing or deleting a security guard, port its old fixture corpus to the replacement and pass it first. Bind policy to immutable SHAs and confirm which inputs an untrusted PR cannot rewrite.
+- **Deploys** — only api and workers share a deploy unit. Application-owned schema follows [One current contract](../../AGENTS.md), not expand/contract. See [deploy decoupling](../overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
 - **Verify** — run `pnpm exec vitest run --project github-actions` for every workflow or composite action change.
 
 ## See Also

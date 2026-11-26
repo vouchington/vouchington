@@ -20,9 +20,6 @@ export function CopyrightEmailReviewQueueList({
   setError: (value: string | null) => void
   setSuccess: (value: string | null) => void
 }) {
-  if (queue.items.length === 0 && !queue.hasNextPage) {
-    return <p className='text-muted-foreground'>No copyright emails need review.</p>
-  }
   const handleLoadMore = queue.loadMore
   return (
     <InfiniteScroll
@@ -33,6 +30,8 @@ export function CopyrightEmailReviewQueueList({
       fetchError={queue.fetchError}
       clearError={queue.clearError}
       resetKey={queue.resetKey}
+      itemCount={queue.items.length}
+      emptyState={<p className='text-muted-foreground'>No copyright emails need review.</p>}
     >
       <ul className='space-y-1'>
         {queue.items.map(item => (

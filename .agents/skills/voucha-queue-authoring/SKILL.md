@@ -5,56 +5,89 @@ description: Voucha GlideMQ queue conventions - packages, payloads, enqueues, wo
 
 # Voucha Queue Authoring
 
-Follow [`docs/checklists/backend-queues.md`](../../../docs/checklists/backend-queues.md).
+Load `glide-mq` and `queue-rules` first; they own the generic rules (priority kinds, shared
+queues, ordering lanes, payload safety, replay, job IDs, backlog guards, schedulers, flows,
+backfills, transition matrix). This skill holds Voucha's package, registry, and policy facts.
 
-1. Before adding a queue, merging queues, or waiting on another job, apply
-   [queue boundaries](../../../docs/checklists/backend-queues.md#queue-boundaries).
-2. Keep enqueue configuration and payload types in the queue package, processor orchestration in the
-   worker package, and business logic and durable idempotency in services.
-3. For a fan-out, use the [paged-dispatcher helper](../../../backend/data-stores/valkey-glide-mq/paged-dispatcher.mts);
-   follow the [checklist](../../../docs/checklists/backend-queues.md#queue-boundaries).
-4. Start from durable source-of-truth state, pass minimal identifiers, mark jobs `sensitive: true`
-   when payloads contain secrets or personal data, make every retry safe, and await or explicitly
-   mark every fan-out edge.
-   Prevent double requests cheaply: re-read the entity's state in PostgreSQL when the job starts,
-   use stable job or deduplication IDs, and pass provider idempotency keys. Billing, telemetry,
-   and analytics are reporting only: record them, but never read them at runtime to decide, gate,
-   or deduplicate work, and never add a reservation key or receipt ledger for paid calls. See the
-   [double-request rules](../../../docs/checklists/backend-queues.md#queue-boundaries).
-5. Apply the canonical job options, deduplication, backfill, scheduler/admin-trigger, and
-   data-driven worker-placement requirements from the checklist. Scheduler templates take no
-   `delay`, `deduplication`, `parent`, or `jobId`, and backlog guards count `delayed` jobs too.
-   Each continuation step needs a new job or deduplication ID. Scheduled jobs need no overlap
-   handling of their own; follow the [queue checklist](../../../docs/checklists/backend-queues.md#queue-boundaries).
-6. Give every shared-queue job a domain-prefixed `ordering` key. Its `concurrency` is a global
-   cap across workers, read from DynamicConfig; it is not a split of `workerConcurrency`. Put
-   floodable families in their own lane and dispatchers in a lane separate from tasks, because
-   groups release jobs FIFO, not by priority. A delayed job keeps its slot, so a cap that must
-   survive deferral is a lease, not more concurrency; see the checklist.
-7. Test service behavior with real PostgreSQL, Valkey, and GlideMQ boundaries; do not mock internal
-   queues, workers, services, or data stores.
-8. Update the domain README and queue inventory with the implementation.
-9. For effectful worker/RPC or financial (Stripe) operations, fill in the
-   [durable transition matrix](../../../docs/checklists/reference-backend-queues-durable-transition-matrix.md).
+## Placement
 
-## Vouchington additions
+- Queue configuration, payload types, enqueue APIs, and scheduler registration live in
+  [`backend/queues/<domain>/`](../../../backend/queues/) and never import workers. Registrations
+  and thin processors live in [`backend/workers/<domain>/`](../../../backend/workers/). Fetching,
+  authorization, durable writes, business logic, and durable idempotency live in services.
+- Worker placement is data-driven in
+  [`worker-queue-policy.json`](../../../backend/modules/worker-queue-inventory/worker-queue-policy.json).
+- Update the domain queue/worker README, the
+  [queue inventory](../../../docs/overview/architecture/queues/README.md), and, when applicable,
+  the replayability matrix, scheduled/backfill registries, and placement policy.
+- A queue contract change resets staging: Voucha is unlaunched, so no drain, compatibility path,
+  or migration for old jobs.
 
+## Priorities, lanes, and the shared queue
+
+- Task jobs use the queue's default priority; dispatchers, cleanup, recovery, and backfills use
+  the dispatcher tier so they run behind the tasks they create.
+- Register a domain in the [background queue](../../../docs/overview/architecture/queues/README.md)
+  registry rather than adding a queue. Pause, retry, and stats are per domain, and pausing is a
+  domain-control database field, not `Queue.pause()`
+  ([#2855](https://github.com/vouchington/vouchington/issues/2855)).
+- Never throw `RateLimitError` or call `worker.rateLimit()` from a shared worker; defer with
+  `job.rateLimitGroup` or `job.moveToDelayed`. Classify external 429 and `Retry-After` through
+  `@modules/queue-errors`.
+- Every shared-queue job sets a domain-prefixed `ordering` key. Its `concurrency` is a global cap
+  read from DynamicConfig, never derived from `workerConcurrency`.
+- A cap that must survive deferral is a token-owned Valkey lease released before `moveToDelayed`
+  ([#3598](https://github.com/vouchington/vouchington/issues/3598)).
+- Latency-critical person-watched work (login emails, upload finalization) gets its own queue.
+
+## Fan-out and schedules
+
+- Use the [paged-dispatcher helper](../../../backend/data-stores/valkey-glide-mq/paged-dispatcher.mts)
+  with DynamicConfig page, queue-depth, and backoff limits; dispatchers retry indefinitely and
+  keep state in job data, not PostgreSQL. The depth threshold is a soft admission limit that
+  includes dispatcher jobs; a threshold below an unread control backlog blocks admission until an
+  operator raises it. Record ownership of row-admission fences before bulk enqueue and clean them
+  in bounded batches after the page receipt is durable. To re-admit a retained terminal row, WATCH
+  its job hash on a dedicated connection and remove it with GlideMQ's native function in the same
+  transaction.
+- Define every scheduled job through `@modules/scheduled-job-manifest` (scheduler ID, repeat rule,
+  template, environment gate, typed operator surface). Build template options with
+  `toSchedulerTemplateOptions`. Keep `schedules.mts` with an empty `jobs` array and its
+  `SCHEDULE_DEFINITIONS` entry when the last job is removed. Never call `removeJobScheduler`
+  outside the manifest helper.
+- Register every replayable queue in `BACKFILL_REGISTRY` and record exclusions and replay
+  contracts in [`JOB-REPLAYABILITY.md`](../../../docs/requirements/platform/JOB-REPLAYABILITY.md).
 - Terminal recovery paths follow
   [job replayability](../../../docs/requirements/platform/JOB-REPLAYABILITY.md#rules-for-new-jobs).
+- MUST NOT run several sweeps, stages, or phases in one job; give each its own job name, cursor,
+  cap, retry policy, and failure boundary. Never share a mutable budget, tally, error list, or
+  cursor map across stages; bound load through the queue's ordering lane and concurrency.
+
+## Double requests, billing, and mail
+
+- Re-read the entity's state in the PostgreSQL primary when the job starts, use stable job or
+  deduplication IDs, and pass provider idempotency keys. Write the result and the state marking it
+  done in one transaction.
+- Billing, telemetry, and analytics are reporting only: record them as each request happens, but
+  never read them at runtime to decide, gate, or deduplicate work, and never add a reservation key,
+  receipt ledger, or "may have been billed" state for paid calls.
 - Post-commit admission settles the API response, not worker completion. Canonical post
   create/update and URL-created service call sites await the queue-owned `BestEffort` admission
   facade after their mutation commits; topic creation's post-commit finalizer awaits its
-  topic-created admission. They keep the committed mutation and report an enqueue failure once,
-  never turning it into a failed response.
+  topic-created admission. They keep the committed mutation and report an enqueue failure once.
+- Moderation summaries are marked after local send checks and before SES. A failed preference or
+  suppression lookup retries without a mark; a definitive sending-rate rejection clears the mark;
+  an unknown send outcome keeps it. A lost summary is accepted if execution stops or the mark
+  acknowledgement is lost. Keep the queued period's timezone in the job.
 
-- MUST NOT run several sweeps, stages, or phases in one job. Give each its own job name, cursor
-  in job data, per-run cap, retry policy, and failure boundary. Enqueue a later sequential phase
-  after commit, only when the earlier walk has finished.
-- MUST NOT share a mutable budget, tally, error list, or cursor map across stages. Bound total
-  load through the queue's ordering lane and concurrency.
+## Tests and transition matrices
 
-For sweep and phase details, read the canonical public
+- Test service behavior with real PostgreSQL, Valkey, and GlideMQ; never mock internal queues,
+  workers, services, or data stores. Find an enqueued job with `searchJobs` or by id, not
+  `getJobs('waiting')`; see [GlideMQ testing](../../../docs/development/testing/backend/glide-mq-testing.md).
+- Effectful worker/RPC operations ship a filled-in transition matrix in their owning README
+  (`glide-mq` skill, references/transition-matrix.md). Financial (Stripe) operations also fill
+  in the [financial variant](../../../docs/checklists/reference-financial-stripe-variant.md).
+
+For sweeps and cleanup jobs, apply the
 [bounded-iteration skill](https://github.com/jonathanong/harness-plugins/blob/main/skills/bounded-iteration/SKILL.md).
-
-Load the installed `glide-mq` skill only when generic GlideMQ API detail is needed; repository
-ownership, replayability, and validation policy remain authoritative here.

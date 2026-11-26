@@ -14,7 +14,7 @@ import type { HouseholdRow } from './types.mts'
  * Insert an owned household, or refuse when the capped count already sees the cap.
  * Owned-household and member caps are best effort. Count with `LIMIT cap + 1`, then write.
  * A real race may admit one more than the cap.
- * See docs/development/postgresql/reference-transactions.md#lock-scope.
+ * See the vouchington-postgres skill (lock scope).
  */
 export async function insertOwnedHousehold(
   userId: string,

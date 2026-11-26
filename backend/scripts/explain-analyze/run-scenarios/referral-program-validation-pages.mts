@@ -110,7 +110,6 @@ export async function runReferralValidationPages(): Promise<void> {
         referral_program_link_validation_rule_sets: VALIDATION_COUNT,
       },
     })
-    // no-mistakes-disable-next-line query-reached-per-item: three fixed pagination cases capture separate plans.
     await runAndCapture(
       scenario.id,
       async () => {

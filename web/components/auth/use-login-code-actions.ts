@@ -4,10 +4,15 @@ import { useRef } from 'react'
 import { loginWithEmailAddress, sendEmailLoginToken } from '@/lib/api/client'
 import { ApiError } from '@vouchington/api-client'
 import { toast } from 'sonner'
+import type { useResendCooldown } from '@/hooks/use-resend-cooldown'
+import { isEmailCodeRecentlySentError } from '@/lib/api/rate-limit-error'
+import onError, { onSuccess } from '@/lib/on-error'
+import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface UseLoginCodeActionsParams {
   capturedHpPhone: string
   capturedHpWebsite: string
+  cooldown: ReturnType<typeof useResendCooldown>
   email: string
   handleLoginSuccess: () => void
   handleTurnstileReset: () => void
@@ -21,6 +26,7 @@ interface UseLoginCodeActionsParams {
 export function useLoginCodeActions({
   capturedHpPhone,
   capturedHpWebsite,
+  cooldown,
   email,
   handleLoginSuccess,
   handleTurnstileReset,
@@ -30,7 +36,9 @@ export function useLoginCodeActions({
   turnstileToken,
   uiLocale,
 }: UseLoginCodeActionsParams) {
+  const t = useTranslations()
   const submitting = useRef(false)
+  const resendInFlight = useRef(false)
 
   const submitCode = async (value: string) => {
     submitting.current = true
@@ -67,10 +75,11 @@ export function useLoginCodeActions({
   }
 
   const handleResendCode = async () => {
-    if (!turnstileToken) return
+    if (!turnstileToken || resendInFlight.current || cooldown.secondsLeft > 0) return
+    resendInFlight.current = true
     setLoading(true)
     try {
-      await sendEmailLoginToken(
+      const result = await sendEmailLoginToken(
         email,
         turnstileToken,
         {
@@ -79,15 +88,23 @@ export function useLoginCodeActions({
         },
         uiLocale,
       )
+      cooldown.startFromResponse(result)
       toast.info(`Verification code resent to ${email}`)
       handleTurnstileReset()
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? ((err.data as { message?: string })?.message ?? err.message)
-          : 'Failed to resend verification code'
-      toast.error(message)
+      cooldown.startFromError(err)
+      if (isEmailCodeRecentlySentError(err)) {
+        onSuccess(t('extracted.emailCodeResend.recentlySent'))
+      } else {
+        onError(err, {
+          fallback: t('extracted.auth.loginForm.failedToSendVerificationCode_6401f8f4'),
+          tags: { form: 'auth-login' },
+        })
+      }
+      // The CAPTCHA token is single use and was verified before the limiter, so spend it here too.
+      handleTurnstileReset()
     } finally {
+      resendInFlight.current = false
       setLoading(false)
     }
   }

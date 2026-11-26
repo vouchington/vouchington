@@ -4,11 +4,10 @@ import {
   navigateTo,
   randomSuffix,
   requireTestValue,
+  resetAnonymousBrowserStateBeforeNavigation,
   waitForBelowFoldHydration,
 } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-
-import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
 
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
 
@@ -221,7 +220,7 @@ test.describe('News Page', () => {
           [...element.attributes].some(attr => /^on/i.test(attr.name)) ? [element.outerHTML] : [],
         ),
       )
-    expect(elementsWithInlineHandlers).toEqual([])
+    expect(elementsWithInlineHandlers).toStrictEqual([])
 
     const unsafeLinkHrefs = await contentArea.locator('a[href]').evaluateAll(links =>
       // Only flag hrefs that have a URL scheme that isn't in the safe list.
@@ -233,7 +232,7 @@ test.describe('News Page', () => {
           : []
       }),
     )
-    expect(unsafeLinkHrefs).toEqual([])
+    expect(unsafeLinkHrefs).toStrictEqual([])
   })
 
   test('/news modal title is a clickable link to original article', async ({ page }) => {

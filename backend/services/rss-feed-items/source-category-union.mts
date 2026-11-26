@@ -1,6 +1,6 @@
 import { write } from '@data-stores/psql'
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
-import { normalizeRssFeedItemCategories } from './processing-limits.mts'
+import { analyzeRssFeedItemCategories, RSS_FEED_ITEM_MAX_CATEGORIES } from './processing-limits.mts'
 
 /** Inspect one source page, including removed feeds so rejection cannot extend the scan. */
 export async function getRssFeedItemCategorySnapshotPage(
@@ -36,7 +36,11 @@ export async function getRssFeedItemCategorySnapshotPage(
     [categories],
   )
   return {
-    categories: normalizeRssFeedItemCategories(sorted.rows.map(row => row.category_text)),
+    // A later page can use a higher admission limit than this page.
+    categories: analyzeRssFeedItemCategories(
+      sorted.rows.map(row => row.category_text),
+      RSS_FEED_ITEM_MAX_CATEGORIES,
+    ).categories,
     afterFeedId: rows.length > limit ? page.at(-1)!.rss_feed_id : null,
   }
 }

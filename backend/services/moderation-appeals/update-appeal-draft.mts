@@ -1,5 +1,5 @@
 import type { ModerationAppealResponse } from './types.mts'
-import { write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { ModerationAppeal } from './config.mts'
@@ -9,17 +9,6 @@ export interface UpdateAppealDraftInput {
   publicResponse?: string
   internalNotes?: string
 }
-
-type UpdatedAppealDraft = Pick<
-  ModerationAppeal,
-  | 'id'
-  | 'drafted_at'
-  | 'edited_at'
-  | 'approved_at'
-  | 'sent_at'
-  | 'resolved_at'
-  | 'resolution_action'
->
 
 export async function updateModerationAppealDraft(
   staffUserId: string,
@@ -32,53 +21,43 @@ export async function updateModerationAppealDraft(
     'At least one of public_response or internal_notes is required',
   )
   const now = new Date()
-  const { rows } = await write<UpdatedAppealDraft>(sql`/* updateModerationAppealDraft */
-    WITH lifecycle_change_id AS (
-      SELECT uuidv7() AS id
-    ),
-    previous AS MATERIALIZED (
-      SELECT id, public_response, internal_notes FROM moderation_appeals
-      WHERE id = ${appealId} AND sent_at IS NULL AND resolved_at IS NULL
-      FOR UPDATE
-    ),
-    updated AS (
-      UPDATE moderation_appeals
-      SET public_response = COALESCE(${input.publicResponse ?? null}, public_response),
-          internal_notes = COALESCE(${input.internalNotes ?? null}, internal_notes),
-          edited_at = ${now},
-          edited_by_id = ${staffUserId},
-          approved_at = NULL,
-          approved_by_id = NULL,
-          latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id)
-      WHERE id = (SELECT id FROM previous)
-        AND sent_at IS NULL
-        AND resolved_at IS NULL
-      RETURNING
-        id, drafted_at, edited_at, approved_at, sent_at, resolved_at, resolution_action
-    ),
-    inserted_change AS (
+  await using query = await beginTransaction()
+  // Leave the text unchanged in this write so RETURNING reports the values the edit will replace.
+  const { rows } = await query<Pick<ModerationAppeal, 'public_response' | 'internal_notes'>>(sql`
+    /* updateModerationAppealDraft */
+    UPDATE moderation_appeals
+    SET edited_at = ${now},
+        edited_by_id = ${staffUserId},
+        approved_at = NULL,
+        approved_by_id = NULL
+    WHERE id = ${appealId} AND sent_at IS NULL AND resolved_at IS NULL
+    RETURNING public_response, internal_notes
+  `)
+  const before = rows[0]
+  assert(before, 404, 'Appeal not found or already sent')
+  const after = {
+    public_response: input.publicResponse ?? before.public_response,
+    internal_notes: input.internalNotes ?? before.internal_notes,
+  }
+
+  const { rowCount } = await query(sql`/* updateModerationAppealDraft.applyText */
+    WITH inserted_change AS (
       INSERT INTO moderation_appeal_lifecycle_changes (
-        id,
         moderation_appeal_id,
         change_type,
         changed_by_id,
         metadata
       )
-      SELECT
-        lifecycle_change_id.id,
-        updated.id,
-        'edit',
-        ${staffUserId},
-        jsonb_build_object(
-          'before', jsonb_build_object('public_response', previous.public_response, 'internal_notes', previous.internal_notes),
-          'after', jsonb_build_object('public_response', COALESCE(${input.publicResponse ?? null}, previous.public_response), 'internal_notes', COALESCE(${input.internalNotes ?? null}, previous.internal_notes))
-        )
-      FROM updated
-      CROSS JOIN lifecycle_change_id
-      JOIN previous ON previous.id = updated.id
+      VALUES (${appealId}, 'edit', ${staffUserId}, ${JSON.stringify({ before, after })}::jsonb)
+      RETURNING id
     )
-    SELECT * FROM updated
+    UPDATE moderation_appeals
+    SET public_response = ${after.public_response},
+        internal_notes = ${after.internal_notes},
+        latest_lifecycle_change_id = (SELECT id FROM inserted_change)
+    WHERE id = ${appealId} AND sent_at IS NULL AND resolved_at IS NULL
   `)
-  assert(rows[0], 404, 'Appeal not found or already sent')
-  return getModerationAppealAfterMutation(appealId)
+  assert(rowCount === 1, 404, 'Appeal not found or already sent')
+  await query.commit()
+  return await getModerationAppealAfterMutation(appealId)
 }

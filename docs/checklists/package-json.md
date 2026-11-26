@@ -1,12 +1,10 @@
 # package.json Checklist
 
-Use this checklist when adding a dependency, editing a workspace `package.json`, or creating a new backend service.
+Vouchington-specific `package.json` facts; generic dependency and lockfile rules are in the `package-json-checklist` skill. Use this page when adding a dependency, editing a workspace `package.json`, or creating a new backend service.
 
 ## Checklist
 
-- **Use `pnpm`** — never `npm install` or `npm add`. Use `pnpm add`, `pnpm install`, `pnpm remove`.
-- **Always use latest stable / LTS** when adding a new dependency. Check with `npm view <pkg> version` or `npm view <pkg> dist-tags`. Prefer LTS over latest when available.
-- **Commit the lockfile** — include the `pnpm-lock.yaml` diff in the same commit when the `package.json` edit changes dependency specifiers or other resolution inputs the lockfile records. Leave the lockfile untouched when the edit only changes fields it does not record (`version`, `scripts`, `description`, `license`). Version-only root bumps are the documented case in [CI job conditions](../development/reference-ci-ci-job-conditions.md).
+- **Lockfile** — version-only root bumps leave `pnpm-lock.yaml` untouched; see [CI job conditions](../development/reference-ci-ci-job-conditions.md).
 - **Do not patch dependencies** — `.patch` and `.diff` files plus pnpm `patchedDependencies` and `allowUnusedPatches` are forbidden. Fix the underlying problem upstream, or file and link a Vouchington issue labeled `dependencies`.
 - **Run package policy** — after any `package.json` change, run `pnpm run syncpack:lint && pnpm run no-mistakes`; auto-fix Syncpack with `pnpm run syncpack:fix`. `no-mistakes` owns manifest field shape, validation dependencies, exact nested workspace coverage (`package-json-nested-workspace-coverage`), workspace-package cycles, registry-only dependencies, workspace membership, and the pnpm overrides ban.
 - **`backend/package.json`'s local `workspaces` array** — kept in sync with the `backend/*` subset of root `pnpm-workspace.yaml` by the `backend/package.json workspaces match pnpm-workspace.yaml` `finite-set-consistency` rule in [`.no-mistakes/rules/policies.yml`](../../.no-mistakes/rules/policies.yml). That local array is read separately by `backend/Dockerfile`'s deploy stages; a missed entry passes install/lint/typecheck/test and only fails at image boot.

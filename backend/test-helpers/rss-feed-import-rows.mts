@@ -145,3 +145,28 @@ export async function getRssFeedUrlForTest(rssFeedId: string): Promise<string | 
     WHERE rf.id = ${rssFeedId}`)
   return rows[0]?.url ?? null
 }
+
+export async function completeRssFeedImportBatchForTest(
+  query: TransactionQuery,
+  batchId: string,
+): Promise<void> {
+  await query(sql`/* completeRssFeedImportBatchForTest */
+    UPDATE user_rss_feed_import_batches
+    SET completed_at = CURRENT_TIMESTAMP WHERE id = ${batchId}
+  `)
+}
+
+export async function insertPendingRssFeedImportDiscoveryForTest(
+  rowId: string,
+  discoveryUrlId: string,
+): Promise<void> {
+  await write(sql`/* insertPendingRssFeedImportDiscoveryForTest */
+    INSERT INTO user_rss_feed_import_row_discoveries (
+      import_row_id, batch_id, discovery_url_id, generation
+    )
+    SELECT import_row.id, import_row.batch_id, ${discoveryUrlId}, ${randomUUID()}
+    FROM user_rss_feed_import_rows import_row
+    WHERE import_row.id = ${rowId} AND import_row.completed_at IS NULL
+      AND import_row.failed_at IS NULL
+  `)
+}

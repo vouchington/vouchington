@@ -107,9 +107,4 @@ export async function attachHostnameBlockToAncestorCleanup(
       )
     `)
   }
-  await query(sql`/* attachHostnameBlockToAncestorCleanup:count */
-    UPDATE url_hostname_blocks
-    SET relation_cleanup_blocked_hostname_count = relation_cleanup_blocked_hostname_count + 1
-    WHERE id = ${input.rootBlockId} AND relation_cleanup_completed_at IS NULL
-  `)
 }

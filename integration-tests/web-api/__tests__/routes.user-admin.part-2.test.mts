@@ -6,12 +6,8 @@ import { installUserAdminRouteHarness } from '../../test-helpers/user-admin-rout
 
 const integrationClientReads = createIntegrationClientReads(clientRoutes.clientApi)
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('routes — user and admin', () => {
-  const harness = installUserAdminRouteHarness(unset)
+  const harness = installUserAdminRouteHarness()
 
   describe('web client API user routes', () => {
     it('getFriendRecommendations resolves', async () => {

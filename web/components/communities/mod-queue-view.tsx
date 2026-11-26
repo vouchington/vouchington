@@ -12,6 +12,7 @@ import { MODERATION_QUEUE_SHORTCUTS } from '@/lib/keyboard-shortcuts'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ModQueueTabs } from './mod-queue-tabs'
 import type { ModQueueTab } from './mod-queue-state'
+import { pageHasContinuation } from '@vouchington/api-client'
 import type { ModQueueData } from './use-mod-queue-data'
 import type { ModQueueItemActions } from './use-mod-queue-item-actions'
 import type { ModQueueSelection } from './use-mod-queue-selection'
@@ -60,8 +61,13 @@ export function ModQueueView({
   if (
     queue.posts.length === 0 &&
     queue.reports.length === 0 &&
-    !queue.hasNextPage &&
-    !queue.reportPagination.hasNextPage
+    !queue.fetchError &&
+    !queue.reportPagination.fetchError &&
+    !pageHasContinuation({ has_next_page: queue.hasNextPage, end_cursor: queue.endCursor }) &&
+    !pageHasContinuation({
+      has_next_page: queue.reportPagination.hasNextPage,
+      end_cursor: queue.reportPagination.endCursor,
+    })
   ) {
     return (
       <div
@@ -74,6 +80,11 @@ export function ModQueueView({
       </div>
     )
   }
+
+  const reportsTab = activeTab === 'reports'
+  const reportItemCount = reportsTab
+    ? queue.pendingReports.length
+    : queue.escalatedReports.length + queue.escalatedPosts.length
 
   return (
     <ExposureCooldownGate cooldown={cooldown}>
@@ -119,6 +130,24 @@ export function ModQueueView({
             fetchError={queue.reportPagination.fetchError}
             clearError={queue.reportPagination.clearError}
             resetKey={queue.reportPagination.resetKey}
+            itemCount={reportItemCount}
+            emptyState={
+              reportsTab ? (
+                <p
+                  className='py-6 text-center text-sm text-muted-foreground'
+                  data-pw='mod-queue-reports-empty'
+                >
+                  {t('extracted.communities.modQueue.noPendingReports_36379210')}
+                </p>
+              ) : (
+                <p
+                  className='py-6 text-center text-sm text-muted-foreground'
+                  data-pw='mod-queue-escalated-empty'
+                >
+                  {t('extracted.communities.modQueue.noEscalatedItems_3305d869')}
+                </p>
+              )
+            }
           >
             {null}
           </InfiniteScroll>

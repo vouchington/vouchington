@@ -41,7 +41,7 @@ jobs:
 
   # Report Bun compatibility separately while Node remains the production runtime.
   typecheck-bun:
-    needs: [changes, static-backend]
+    needs: [changes]
     if: needs.changes.outputs.area-backend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 8
@@ -62,7 +62,7 @@ jobs:
           persist-credentials: false
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -71,14 +71,16 @@ jobs:
         timeout-minutes: 5
 
   prepare-postgres:
-    needs: [static-backend]
+    needs: [changes]
+    if: needs.changes.outputs.area-backend == 'true'
     uses: ./.github/workflows/prepare-postgres.yml
     permissions:
       actions: read
       contents: read
 
   test-backend-modules:
-    needs: [static-backend]
+    needs: [changes]
+    if: needs.changes.outputs.area-backend == 'true'
     uses: ./.github/workflows/tests-backend-modules.yml
     with:
       publish_coverage: true
@@ -87,7 +89,7 @@ jobs:
       contents: read
 
   test-backend-unit:
-    needs: [static-backend, prepare-postgres]
+    needs: [prepare-postgres]
     uses: ./.github/workflows/tests-backend-unit.yml
     with:
       publish_coverage: true
@@ -102,7 +104,7 @@ jobs:
   # this job publishes no LCOV. A failure keeps this check red, and keeps
   # the Nightly run red, without blocking a pull request or a merge group.
   test-backend-credentialed:
-    needs: [changes, static-backend, prepare-postgres]
+    needs: [changes, prepare-postgres]
     if: needs.changes.outputs.trusted-secret-context == 'true'
     uses: ./.github/workflows/tests-backend-credentialed.yml
     with:
@@ -116,7 +118,7 @@ jobs:
       id-token: write
 
   test-postgres-schema:
-    needs: [static-backend, prepare-postgres]
+    needs: [prepare-postgres]
     uses: ./.github/workflows/tests-postgres-schema.yml
     with:
       prepared_database: true
@@ -126,7 +128,7 @@ jobs:
       contents: read
 
   backend-smoke:
-    needs: [changes, static-backend, prepare-postgres]
+    needs: [changes, prepare-postgres]
     uses: ./.github/workflows/checks-backend-smoke.yml
     with:
       prepared_database: true
@@ -136,7 +138,7 @@ jobs:
       contents: read
 
   test-explain-analyze:
-    needs: [static-backend, prepare-postgres]
+    needs: [prepare-postgres]
     uses: ./.github/workflows/explain-analyze.yml
     with:
       prepared_database: true
@@ -262,7 +264,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 1
         with:
           results: >-
@@ -272,6 +274,25 @@ jobs:
   # fails on that job now instead of after the slowest suite. These jobs check out nothing and run no
   # repository code, so the `actions: write` token never meets pull-request-controlled content. See
   # docs/development/ci/workflows/reference-merge-queue-fail-fast.md.
+
+  cancel-static-backend:
+    needs: [static-backend]
+    if: ${{ failure() && needs.static-backend.result == 'failure' && github.event_name == 'merge_group' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel the merge-group run so the queue ejects this entry now
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          output=$(gh api --method POST "repos/$GH_REPO/actions/runs/$RUN_ID/cancel" 2>&1) && exit 0
+          [[ "$output" == *"HTTP 409"* ]] && echo "::warning::Run $RUN_ID already finished: $output" && exit 0
+          echo "$output" >&2; exit 1
 
   cancel-prepare-postgres:
     needs: [prepare-postgres]

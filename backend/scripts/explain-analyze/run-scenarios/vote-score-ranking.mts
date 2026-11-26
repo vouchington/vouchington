@@ -180,7 +180,6 @@ async function captureScenarios(scenarios: readonly RankingScenario[]): Promise<
       expectations: scenario.expectations,
       seededRows: scenario.seededRows,
     })
-    // no-mistakes-disable-next-line query-reached-per-item: fixed plan scenarios need separate serialized captures and contracts.
     await runAndCapture(scenario.id, scenario.run, undefined, scenario.queryName)
   }
 }

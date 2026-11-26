@@ -1,29 +1,31 @@
 import { processDiffCommand, runGh } from 'vouchington-tooling/gh-cli'
 import { fetchIssueProjectMemberships } from 'vouchington-tooling/github-projects'
 import { findHandRolledStackBaseBlock } from 'vouchington-tooling/command-policy'
+import {
+  createAppRouterPathParser,
+  createClosingIssueReferenceResolver,
+  createGhPackageJsonReader,
+  createIssueClosureResolver,
+  createMilestoneAuditor,
+  createSupersessionAuditor,
+  currentRepo,
+  formatReferencedIssueSummary,
+  parseGitHubIssueApiResponse,
+  parsePullRequestIdentity,
+  parsePullRequestRefOids,
+  readPullRequestPatch,
+  validatePrBody,
+  validatePrBodyWithIssueReferences,
+  type IssueReferenceValidationOptions,
+} from 'vouchington-tooling/pr-description'
 
 import { stackPolicy } from './stack-policy.mts'
 import { checkLargeDiff, type LargeDiffOptions } from './large-diff.mts'
 import { noSourceIssueErrors, type NoSourceIssue } from './no-source.mts'
-import { parseGitHubIssueApiResponse } from '../pr-description/closing-refs.mts'
-import { formatReferencedIssueSummary } from '../pr-description/referenced-issue-summary.mts'
-import { createMilestoneAuditor } from '../pr-description/milestone-audit.mts'
-import { createGhPackageJsonReader } from '../pr-description/package-json-source.mts'
+import { VOUCHA_PR_BODY_POLICY } from '../pr-description/policy.mts'
 import { createProjectAuditor } from '../pr-description/project-audit.mts'
-import { readPullRequestPatch } from '../pr-description/pull-request-patch.mts'
-import {
-  createClosingIssueReferenceResolver,
-  createIssueClosureResolver,
-  currentRepo,
-  parsePullRequestIdentity,
-} from '../pr-description/related-issues.mts'
-import { createSupersessionAuditor } from '../pr-description/supersession.mts'
-import { parsePullRequestRefOids } from '../pr-description/supersession-hints.mts'
-import {
-  validatePrBody,
-  validatePrBodyWithIssueReferences,
-  type IssueReferenceValidationOptions,
-} from '../pr-description/validate.mts'
+
+const parseRouteFromPath = createAppRouterPathParser('web/app')
 
 export type PullRequestPolicyInput = {
   title: string
@@ -75,10 +77,13 @@ export async function validatePullRequest(
     ...noSourceIssueErrors(input.noSourceIssue),
   ]
   // Content-policy failures need no GitHub call, so report them before touching gh.
-  const content = validatePrBody(input.body, { automationContext })
+  const content = validatePrBody(input.body, { automationContext, policy: VOUCHA_PR_BODY_POLICY })
   if (!content.ok) return { errors: [...content.errors, ...baseErrors] }
   const warnings: string[] = []
-  const options: IssueReferenceValidationOptions = { automationContext }
+  const options: IssueReferenceValidationOptions = {
+    automationContext,
+    policy: VOUCHA_PR_BODY_POLICY,
+  }
   const sizeErrors: string[] = []
   if (input.pr === undefined) {
     const size = await checkLargeDiff(input.base, input.body, largeDiff)
@@ -103,6 +108,7 @@ export async function validatePullRequest(
       onBlock => processDiffCommand({ executable: 'gh', args: ['pr', 'diff', pr] }, onBlock),
       runGh,
       target,
+      { parseRouteFromPath },
     )
     if (patch.source === 'files-api')
       warnings.push(

@@ -1,4 +1,4 @@
-import type { CanonicalMarkdownComposition } from './canonical-markdown-children.mts'
+import type { CanonicalMarkdownComposition } from 'vouchington-tooling/markdown-canonical-children'
 
 export type ClientParityMatrixInput = string | CanonicalMarkdownComposition
 

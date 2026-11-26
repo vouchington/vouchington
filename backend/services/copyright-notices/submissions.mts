@@ -12,6 +12,7 @@ import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
 import type { CopyrightNoticeSubmissionRecord } from './types.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { throwCopyrightSubmissionRequestConflict } from './submission-request-conflict.mts'
 
 export type CopyrightAppealInput = {
   reason: string
@@ -88,11 +89,7 @@ async function createAuthenticatedCopyrightSubmission(
   const canonicalIdempotencyKey = idempotencyKey.toLowerCase()
   const idempotencyKeySha256 = createHash('sha256').update(canonicalIdempotencyKey).digest()
   await using transaction = await beginTransaction()
-  await transaction(sql`/* createCopyrightSubmission:idempotencyLock */
-    SELECT pg_advisory_xact_lock(
-      hashtextextended(${`copyright-submission:${currentUser.id}:${canonicalIdempotencyKey}`}, 0)
-    )
-  `)
+  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
   const { rows: existingRows } = await transaction<
     CopyrightNoticeSubmissionRecord & {
       request_sha256: Buffer
@@ -105,7 +102,6 @@ async function createAuthenticatedCopyrightSubmission(
     JOIN copyright_notice_submissions submission ON submission.id = request.copyright_notice_submission_id
     WHERE request.requester_user_id = ${currentUser.id}
       AND request.idempotency_key_sha256 = ${idempotencyKeySha256}
-    FOR UPDATE OF request
   `)
   const existing = existingRows[0]
   if (existing) {
@@ -117,7 +113,6 @@ async function createAuthenticatedCopyrightSubmission(
     await transaction.commit()
     return { submission: existing, isDuplicate: true }
   }
-  const lockedNotice = await lockCopyrightNoticeForLegalWrite(transaction, noticeId)
   assert(lockedNotice, 404, 'Copyright notice not found')
   assert(lockedNotice.jurisdiction === 'us_dmca', 422, 'Use the territorial complaint process')
   const ownershipStatement = sql`/* createCopyrightSubmission:posterTargets */
@@ -168,7 +163,12 @@ async function createAuthenticatedCopyrightSubmission(
     INSERT INTO copyright_notice_lifecycle_changes (
       copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id
     ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
-  `)
+  `).catch((err: unknown) =>
+    throwCopyrightSubmissionRequestConflict(
+      err,
+      'uq_copyright_submission_requests__requester__key_digest',
+    ),
+  )
   await advanceCopyrightLastLegalActivityAt(transaction, lockedNotice)
   await createCopyrightDeliveryIntent(
     {

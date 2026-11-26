@@ -5,9 +5,11 @@ import path from 'node:path'
 import { flush } from '@data-stores/analytics/backend-local'
 import { query } from '@data-stores/analytics/query'
 import {
+  changeTestBackoffDuringReset,
   expireTestHostnameNetworkBackoff,
   getTestHostnameNetworkBackoff,
 } from '@voucha/test-helpers/entities/url-hostname-network-backoff'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import {
   CrawlerInvalidContentTypeError,
   CrawlerNetworkError,
@@ -92,6 +94,25 @@ describe('network-backoff', () => {
     expect(row.consecutive_network_failures).toBe(NETWORK_BACKOFF_FAILURE_THRESHOLD - 1)
   })
 
+  it('leaves a healthy hostname untouched without a reset transaction', async () => {
+    const { id } = await makeHostname()
+    const before = await getTestHostnameNetworkBackoff(id)
+    expect(before?.updated_at).toBeInstanceOf(Date)
+    const restore = beforePostgresTransactionQueryForTest(
+      'resetHostnameFailures',
+      values => values.includes(id),
+      async () => {
+        throw new Error('Healthy hostname reset entered a transaction')
+      },
+    )
+    try {
+      await resetHostnameFailures(id, { crawlerType: 'html', includeDns: true })
+    } finally {
+      restore()
+    }
+    await expect(getTestHostnameNetworkBackoff(id)).resolves.toEqual(before)
+  })
+
   it('ignores failures from in-flight jobs while the backoff is open', async () => {
     const { id } = await makeHostname()
     await failTimes(id, NETWORK_BACKOFF_FAILURE_THRESHOLD)
@@ -165,6 +186,37 @@ describe('network-backoff', () => {
       ['network_backoff_closed', 'true'],
     ])
     expect(Number(events[1]!.retry_after_ms)).toBe(EXPECTED_BACKOFF_DURATIONS_MS[0])
+  })
+
+  it('reports the backoff step actually closed after a concurrent advance', async () => {
+    const { id, hostname } = await makeHostname()
+    await failTimes(id, NETWORK_BACKOFF_FAILURE_THRESHOLD)
+
+    await changeTestBackoffDuringReset(id, 2, () =>
+      resetHostnameFailures(id, { crawlerType: 'html', includeDns: false }),
+    )
+
+    expect((await getTestHostnameNetworkBackoff(id))?.network_backoff_step).toBe(0)
+    const events = await backoffEvents(hostname)
+    expect(events.map(event => [event.event_type, Number(event.retry_after_ms)])).toEqual([
+      ['network_backoff_opened', EXPECTED_BACKOFF_DURATIONS_MS[0]],
+      ['network_backoff_closed', EXPECTED_BACKOFF_DURATIONS_MS[1]],
+    ])
+  })
+
+  it('closes a backoff opened while the counter reset waits', async () => {
+    const { id, hostname } = await makeHostname()
+    await failTimes(id, NETWORK_BACKOFF_FAILURE_THRESHOLD - 1)
+
+    await changeTestBackoffDuringReset(id, 1, () =>
+      resetHostnameFailures(id, { crawlerType: 'html', includeDns: true }),
+    )
+
+    expect((await getTestHostnameNetworkBackoff(id))?.network_backoff_step).toBe(0)
+    const events = await backoffEvents(hostname)
+    expect(events.map(event => [event.event_type, Number(event.retry_after_ms)])).toEqual([
+      ['network_backoff_closed', EXPECTED_BACKOFF_DURATIONS_MS[0]],
+    ])
   })
 
   it('resets the DNS counter only for a successful crawl or fetch', async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { interceptPostgresTransactionQueriesForTest } from '@voucha/test-helpers/injected-transaction-queries'
 import {
   eraseTestSuspendingAdministrator,
   readTestClaimantMisuseSummary,
@@ -105,15 +106,30 @@ describe('lifting a suspended claimant automatic restrictions', () => {
     })
   })
 
-  it('leaves the restriction alone once the suspension is lifted', async () => {
-    const { claimant, noticeId } = await automaticallyRestrictedNotice()
+  it('keeps the restriction when the suspension is lifted before the reversal write', async () => {
+    const { claimant, noticeId, restriction } = await automaticallyRestrictedNotice()
     const admin = await suspendClaimant(claimant.id)
-    await unsuspendUser(admin, claimant.id)
+    const restore = interceptPostgresTransactionQueriesForTest(
+      (statement, values) =>
+        statement.includes('reviewCopyrightFormIntake:reverseAutomatedRestrictions') &&
+        values.includes(noticeId),
+      async () => {
+        restore()
+        await unsuspendUser(admin, claimant.id)
+      },
+    )
+    try {
+      await liftSuspendedClaimantAutomaticRestrictions(noticeId)
+    } finally {
+      restore()
+    }
 
     await expect(listedBySweep(noticeId)).resolves.toEqual([])
-    await liftSuspendedClaimantAutomaticRestrictions(noticeId)
-
     await expect(readRestriction(noticeId)).resolves.toMatchObject({ human_review_action: null })
+    await expect(readTestClaimantSuspensionReversal(restriction.id)).resolves.toEqual({
+      recorded: false,
+      restoreIntents: 0,
+    })
   })
 
   it('keeps a restriction a moderator already confirmed', async () => {

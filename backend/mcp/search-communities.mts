@@ -1,7 +1,8 @@
+import { searchParamsMaxValues } from '@services/search-params/config'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
-import { validateTopicSearchTerms, MAX_TOPIC_SEARCH_TERMS } from '@services/search-params'
+import { validateTopicSearchTerms } from '@services/search-params'
 import {
   COMMUNITY_SORT_MODES,
   resolveCommunityHashtagQuery,
@@ -23,7 +24,7 @@ import {
   type InvalidCursorResult,
   type SearchPageInfo,
 } from './paged-search.mts'
-import { closedObject, foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 // The sorts GET /api/v1/communities accepts.
@@ -67,7 +68,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         list_type: { type: 'string', enum: ['follow', 'mute'] },
         topic: {
           type: 'array',
-          maxItems: MAX_TOPIC_SEARCH_TERMS,
+          maxItems: searchParamsMaxValues.max_topic_search_terms,
           items: topicReferenceSchema,
           description:
             'All selected topics must match. At most five topic and hashtag terms combined.',
@@ -82,8 +83,8 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['communities:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/communities' }],
-    outputSchema: foundOrNotFoundSchema({
-      results: { type: 'array', items: closedObject(mcpCommunityEntryProperties()) },
+    outputSchema: outcomeSchema('success', {
+      results: { type: 'array', items: objectSchema(mcpCommunityEntryProperties()) },
       page_info: communityPageInfoSchema(),
     }),
   },

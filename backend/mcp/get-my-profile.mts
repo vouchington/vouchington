@@ -1,6 +1,6 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@vouchington/mcp-server/types'
 import {
   getOrCreateIndividual,
   getIndividualCards,

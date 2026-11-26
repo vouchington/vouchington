@@ -1,6 +1,7 @@
 import { Response as UndiciResponse } from 'undici'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createProviderReplay, loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { createProviderReplay } from 'vouchington-tooling/provider-replay'
+import { loadRecordedResponse } from '../../test-helpers/recorded-response.mts'
 import {
   createStructuredDecisionClient,
   type StructuredDecisionAttemptHooks,

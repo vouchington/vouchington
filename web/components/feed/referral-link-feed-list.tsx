@@ -43,25 +43,6 @@ export function ReferralLinkFeedList({
         )}
       />
     )
-  const content =
-    allResults.length === 0 ? (
-      canLoadMore ? null : (
-        emptyContent
-      )
-    ) : (
-      <div className='space-y-4'>
-        {allResults.map(item => (
-          <ReferralLinkFeedCard
-            key={item.id}
-            item={item}
-            user={allUsers[item.user_id]}
-          />
-        ))}
-      </div>
-    )
-
-  if (allResults.length === 0 && !canLoadMore && fetchError === null) return content
-
   return (
     <InfiniteScroll
       hasNextPage={canLoadMore}
@@ -71,8 +52,18 @@ export function ReferralLinkFeedList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      itemCount={allResults.length}
+      emptyState={emptyContent}
     >
-      {content}
+      <div className='space-y-4'>
+        {allResults.map(item => (
+          <ReferralLinkFeedCard
+            key={item.id}
+            item={item}
+            user={allUsers[item.user_id]}
+          />
+        ))}
+      </div>
     </InfiniteScroll>
   )
 }

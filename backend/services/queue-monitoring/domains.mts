@@ -31,8 +31,8 @@ import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanAccessQueueStats } from './authorization.mts'
 import { countDomainJobs, readSharedStates, type DomainStateCounts } from './domain-stats.mts'
+import { getQueueMonitoringRetryFailedLimit } from './work-limits.mts'
 
-const RETRY_FAILED_LIMIT = 100
 const DOMAIN_SCAN_CONCURRENCY = 4
 const MAX_REASON_LENGTH = 500
 
@@ -44,7 +44,6 @@ export type ManagedQueueDomain = DomainStateCounts & {
   reason: string | null
 }
 
-/** True for a queue whose work is split into operator-controlled domains. */
 export function queueHasDomains(queueName: string): boolean {
   return queueName === BACKGROUND_QUEUE_NAME || queueName === BACKGROUND_CPU_QUEUE_NAME
 }
@@ -125,17 +124,18 @@ export async function retryManagedQueueDomainFailedJobs(
 }
 
 async function collectFailedJobs(queue: Queue, names: readonly string[]) {
+  const retryLimit = getQueueMonitoringRetryFailedLimit()
   const failed: Awaited<ReturnType<Queue['searchJobs']>> = []
   for (const name of names) {
     // oxlint-disable-next-line no-await-in-loop -- each search spends part of one retry budget
     const jobs = await queue.searchJobs({
       state: 'failed',
       name,
-      limit: RETRY_FAILED_LIMIT - failed.length,
+      limit: retryLimit - failed.length,
       excludeData: true,
     })
     failed.push(...jobs)
-    if (failed.length >= RETRY_FAILED_LIMIT) break
+    if (failed.length >= retryLimit) break
   }
   return failed
 }

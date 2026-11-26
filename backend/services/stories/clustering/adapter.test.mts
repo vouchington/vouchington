@@ -1,4 +1,4 @@
-import { reserveReciprocalStoryRuns } from '@voucha/test-helpers/story-clustering-lock-order'
+import { reserveReciprocalStoryRuns } from '@voucha/test-helpers/story-clustering-reciprocal-runs'
 import type { QueryExecutor } from '@data-stores/psql'
 import { listPendingClassifierRunRequests, reserveClassifierRun } from '@services/classifier-runs'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
@@ -206,8 +206,8 @@ describe('story clustering run configuration (real PG)', () => {
   })
 })
 
-describe('story clustering dispatcher lock order (real PG)', () => {
-  it('reserves reciprocal standalone candidates concurrently without a lock cycle', async () => {
+describe('concurrent story clustering reservations (real PG)', () => {
+  it('reserves both runs with their reciprocal standalone candidates', async () => {
     const { results, candidates, itemIds } = await reserveReciprocalStoryRuns()
     expect(results.map(result => result.kind)).toEqual(['reserved', 'reserved'])
     expect(candidates).toEqual([[{ rssFeedItemId: itemIds[1] }], [{ rssFeedItemId: itemIds[0] }]])

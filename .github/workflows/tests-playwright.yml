@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -134,7 +134,7 @@ jobs:
         timeout-minutes: 1
         run: echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"
       # Covers browser-cache restore plus two 2-minute install attempts.
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 5
       - name: Create cloudflare worker dev vars
         timeout-minutes: 1
@@ -158,8 +158,8 @@ jobs:
       - name: Run Playwright tests
         id: run-playwright
         # PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-total.mts) sizes shards to about
-        # 300s of average test time (about 350s for the heaviest); this ceiling adds a slow-runner
-        # tail on top of it. Assertion failures still fail the step.
+        # 200s of average test time (about 285s for the heaviest, including server startup); this
+        # ceiling leaves about 40% for a slow-runner tail. Assertion failures still fail the step.
         # run-bounded kills the process group one minute under this ceiling. Neither fired when
         # shards 5 and 8 hung until the job cap with their logs dropped (runs 37726973537 and
         # 40397368974), so the background sampler logs memory and the largest processes.
@@ -195,7 +195,7 @@ jobs:
             ${{ runner.temp }}/otel-output
             ${{ runner.temp }}/playwright-web-server-logs
           include-hidden-files: true
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Upload JUnit test results
         # Retain passing test counts for no-skip evidence as well as failures and retries.
@@ -207,7 +207,7 @@ jobs:
           overwrite: true
           name: playwright-junit-shard-${{ matrix.shard }}
           path: test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Upload Playwright test-results (traces, screenshots, videos)
         if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
@@ -218,7 +218,7 @@ jobs:
           overwrite: true
           name: playwright-test-results-shard-${{ matrix.shard }}
           path: test-results/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Upload wrangler logs
         if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
@@ -229,7 +229,7 @@ jobs:
           overwrite: true
           name: wrangler-logs-${{ matrix.shard }}
           path: ${{ runner.temp }}/wrangler-logs/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Upload web and backend server logs
         if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
@@ -240,7 +240,7 @@ jobs:
           overwrite: true
           name: playwright-server-logs-shard-${{ matrix.shard }}
           path: ${{ runner.temp }}/playwright-web-server-logs/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - if: failure()
         uses: ./.github/actions/valkey-logs

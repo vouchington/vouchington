@@ -154,6 +154,7 @@ export async function disconnectBlueskyAccountAndCleanupFollows(
   dependencies?: { query?: TransactionQuery },
 ): Promise<void> {
   await runWithTransaction(dependencies?.query, async query => {
+    // lock-reason: prevents: writing disconnect work while account erasure drains Bluesky credentials; writer: account deletion.
     await query(
       '/* requestBlueskyDisconnect:lockUser */ SELECT fn_lock_active_user_for_mutation($1)',
       [userId],

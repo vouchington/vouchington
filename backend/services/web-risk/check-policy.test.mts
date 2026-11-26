@@ -1,4 +1,3 @@
-import { Response as UndiciResponse } from 'undici'
 import { describe, expect, it, vi } from 'vitest'
 import * as domains from '@services/urls-domains-blacklist/domains'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
@@ -72,7 +71,7 @@ describe('Google Web Risk hostname policy and provider gate', () => {
   it('charges the limiter once for an uncached URL and not again after the clean verdict is cached', () =>
     withGoogleWebRiskTest(async context => {
       const url = `https://charge-once-${crypto.randomUUID()}.test/page`
-      context.fetchSpy.mockResolvedValueOnce(UndiciResponse.json({}))
+      context.fetchSpy.mockResolvedValueOnce(Response.json({}))
 
       await context.fixture.check(url)
       await context.fixture.check(url)

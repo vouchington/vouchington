@@ -1,8 +1,4 @@
-import { ApiError } from '@vouchington/api-client'
-
-export function isRateLimitError(error: unknown): error is ApiError {
-  return error instanceof ApiError && error.status === 429
-}
+import { type ApiError, isRateLimitError } from '@vouchington/api-client'
 
 export function getRateLimitMessage(error: ApiError): string {
   const data = error.data as Record<string, unknown> | null | undefined
@@ -12,4 +8,9 @@ export function getRateLimitMessage(error: ApiError): string {
     return `Too many requests. Please wait ${retryAfter} ${unit} and try again.`
   }
   return 'Too many requests. Please try again later.'
+}
+
+/** The server already sent a code inside the minimum interval, so one is waiting in the inbox. */
+export function isEmailCodeRecentlySentError(error: unknown): error is ApiError {
+  return isRateLimitError(error) && error.code === 'email_code_recently_sent'
 }

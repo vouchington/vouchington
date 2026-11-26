@@ -1,3 +1,4 @@
+import { getTopicSearchTermLimit } from './config.mts'
 import { createSearchCache } from '@services/entity-cache/search-cache'
 import { read } from '@data-stores/psql'
 import { maskHashtagBearingUrls } from '@modules/utils'
@@ -6,7 +7,6 @@ import { parseStringArray } from '@ts-shared/utils/query'
 import createHttpError from 'http-errors'
 
 const MAX_HASHTAG_TOPIC_MENTIONS = 10
-export const MAX_TOPIC_SEARCH_TERMS = 5
 
 export type HashtagSearchFilter =
   | { kind: 'linked_topic'; topicId: string }
@@ -50,17 +50,16 @@ export function validateTopicSearchTerms(
   query: Record<string, unknown>,
   fields: readonly string[],
   includeHashtags = false,
+  limit = getTopicSearchTermLimit(),
 ): void {
   const hashtagCount =
     includeHashtags && typeof query.q === 'string' ? findSearchHashtags(query.q).length : 0
-  if (hashtagCount > MAX_TOPIC_SEARCH_TERMS)
-    assertHashtagCount(hashtagCount, MAX_TOPIC_SEARCH_TERMS, 400)
+  if (hashtagCount > limit) assertHashtagCount(hashtagCount, limit, 400)
   const count = fields.reduce(
     (total, field) => total + parseStringArray(query[field]).length,
     hashtagCount,
   )
-  if (count > MAX_TOPIC_SEARCH_TERMS)
-    throw createHttpError(400, `Too many topic identifiers (max ${MAX_TOPIC_SEARCH_TERMS})`)
+  if (count > limit) throw createHttpError(400, `Too many topic identifiers (max ${limit})`)
 }
 
 function assertHashtagCount(count: number, maxMentions: number, status: 400 | 422): void {

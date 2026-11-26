@@ -28,8 +28,7 @@
       }
     ],
     "no-console": "off",
-    "no-void": "off",
-    "no-await-in-loop": "off"
+    "no-void": "off"
   },
   "overrides": [
     {

@@ -7,7 +7,7 @@ import { createPsql, type Psql } from '@vouchington/postgres'
 import { resolveDatabaseConnectionString } from './connection-string-env.mts'
 import { withLibpqCompat } from './connection-string-utils.mts'
 import { getPsqlPoolConfiguration } from './pool-config.mts'
-import { createPoolStatsSampler } from './pool-stats-sampler.mts'
+import { startPoolStatsTelemetry } from './pool-stats-telemetry.mts'
 import { maybeCaptureQuery, runWithSingleQueryCapture } from './query-capture.mts'
 import { recordQueryTiming } from './query-timing.mts'
 import { assertNotCrossWorktreeConnection } from './worktree-guard.mts'
@@ -79,12 +79,12 @@ export const close: Psql['close'] = async () => {
   await Promise.all([psql.close(), jobSerializationPool.end()])
 }
 
-// One sampler, created when this module loads and started with the same arguments
-// as the previous module singleton.
-const poolStatsSampler = createPoolStatsSampler()
-poolStatsSampler.startConfiguredPoolStatsSampler(
-  { ...psql, jobSerializationPool },
-  poolConfiguration,
-)
+// Created when this module loads; the sampler no-ops while analytics is disabled.
+startPoolStatsTelemetry({
+  write: { pool: psql.writePool, max: poolConfiguration.writeMax },
+  read: { pool: psql.readPool, max: poolConfiguration.readMax },
+  'advisory-lock': { pool: psql.advisoryLockPool, max: poolConfiguration.advisoryLockMax },
+  'job-serialization': { pool: jobSerializationPool, max: poolConfiguration.advisoryLockMax },
+})
 
 export { Pool }

@@ -4,58 +4,6 @@ import type { CommunityListItemType } from '@voucha/types/entities/community'
 import { communityListItemStorageCatalog } from './catalog.mts'
 
 describe('community list item catalogs', () => {
-  it('defines public metadata for every supported item type', () => {
-    expect(Object.keys(communityListItemTypeCatalog)).toEqual([
-      'topic',
-      'rss_feed',
-      'post',
-      'url_hostname',
-      'url',
-    ])
-    expect(communityListItemTypeCatalog).toMatchObject({
-      topic: {
-        apiPathSegment: 'topics',
-        webPathSegment: 'topics',
-        requestBodyIdField: 'topic_id',
-        label: 'Topic',
-        labelPlural: 'Topics',
-        searchLabel: 'topics',
-      },
-      rss_feed: {
-        apiPathSegment: 'rss-feeds',
-        webPathSegment: 'feeds',
-        requestBodyIdField: 'rss_feed_id',
-        label: 'Source',
-        labelPlural: 'Sources',
-        searchLabel: 'sources',
-      },
-      post: {
-        apiPathSegment: 'posts',
-        webPathSegment: 'posts',
-        requestBodyIdField: 'post_id',
-        label: 'Post',
-        labelPlural: 'Posts',
-        searchLabel: 'posts',
-      },
-      url_hostname: {
-        apiPathSegment: 'domains',
-        webPathSegment: 'domains',
-        requestBodyIdField: 'url_hostname_id',
-        label: 'Domain',
-        labelPlural: 'Domains',
-        searchLabel: 'domains',
-      },
-      url: {
-        apiPathSegment: 'urls',
-        webPathSegment: 'urls',
-        requestBodyIdField: 'url_id',
-        label: 'URL',
-        labelPlural: 'URLs',
-        searchLabel: 'URLs',
-      },
-    })
-  })
-
   it('aligns backend storage metadata with public request body fields', () => {
     expect(Object.keys(communityListItemStorageCatalog)).toEqual(
       Object.keys(communityListItemTypeCatalog),

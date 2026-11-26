@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path'
 import { parse as parseJsonc } from 'jsonc-parser'
 import { describe, expect, it } from 'vitest'
 import { ChildCommandCleanupError, runChildCommand } from 'vouchington-tooling/dead-code'
-import { createFixtureDeadline } from '../static-code-analysis/test-helpers/fixture-deadline.mts'
+import { createFixtureDeadline } from 'vouchington-tooling/fixture-deadline'
 
 const binary = resolve('node_modules/.bin/oxlint')
 const require = createRequire(resolve('.oxlintrc.json'))

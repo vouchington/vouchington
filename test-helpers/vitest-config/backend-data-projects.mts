@@ -1,7 +1,8 @@
+import { resolveAiUsageDdlMaxWorkers } from './environment.mts'
 import type { TestProjectConfiguration } from 'vitest/config'
 import { backendNoDataUnitTestFiles } from './backend-no-data-unit-tests.mts'
 
-const backendDataStoreTestDefaults = {
+export const backendDataStoreTestDefaults = {
   pool: 'forks' as const,
   isolate: false,
   env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '2000' }, // Leave SQL attribution and cleanup headroom inside the project deadline.
@@ -91,6 +92,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       include: [
         'backend/{agents,api,data-stores,entrypoints,md,queues,rss,scripts,service-registrations,services,sitemaps,mcp,worker-runtime,workers}/**/*.test.mts',
         'backend/test-helpers/election-vote-stats.test.mts',
+        'backend/test-helpers/explain-analyze.test.mts',
         'backend/test-helpers/psql-pool-metrics.test.mts',
         'backend/test-helpers/post-search-query-syntax.test.mts',
         'backend/test-helpers/dynamic-config.test.mts',
@@ -117,19 +119,16 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         '**/*.s3.test.mts',
         '**/*.stripe.test.mts',
         'backend/services/browser-crawl/crawl.integration.test.mts',
-        'backend/data-stores/analytics/**/*.test.mts',
-        'backend/services/analytics/**/*.test.mts',
+        'backend/{data-stores,services}/analytics/**/*.test.mts',
         'backend/services/crawler-rss/index.redirect.test.mts',
-        'backend/services/landing-page-analytics/record-visit.test.mts',
-        'backend/services/landing-page-analytics/record-click.test.mts',
-        'backend/services/landing-page-analytics/get-analytics.test.mts',
-        'backend/services/jwt-session/create.test.mts',
-        'backend/services/jwt-session/flows.test.mts',
+        'backend/services/landing-page-analytics/{record-visit,record-click,get-analytics}.test.mts',
+        'backend/services/jwt-session/{create,flows}.test.mts',
         'backend/data-stores/psql/__tests__/schema-*.test.mts',
         'backend/data-stores/psql/__tests__/lifecycle-integrity.test.mts',
         'backend/api/v1/platform-stats/platform-stats.test.mts',
         'backend/services/ai-usage/__tests__/record-monthly-partition.test.mts',
         'backend/services/data-retention/cleanup-ai-usage*.test.mts',
+        'backend/data-stores/psql/migration-runner/guard-and-retire-monthly-partition.test.mts',
       ],
     },
   },
@@ -139,6 +138,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       ...backendDataStoreTestDefaults,
       name: 'backend-ai-usage-monthly-ddl',
       sequence: { groupOrder: 1 },
+      maxWorkers: resolveAiUsageDdlMaxWorkers(),
       isolate: true,
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: [

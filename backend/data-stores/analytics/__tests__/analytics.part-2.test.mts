@@ -7,7 +7,7 @@ import os from 'node:os'
 
 import fs from 'node:fs'
 
-import { getPartitionPath, flush, writeRecord } from '../backend-local.mts'
+import { flush, writeRecord } from '../backend-local.mts'
 
 import { query } from '../query.mts'
 
@@ -220,5 +220,4 @@ describe('analytics', () => {
   const keepCrawlerRequestRecord: CrawlerRequestRecord | null = null
   void (0 as unknown as typeof keepCrawlerRequestRecord)
   void (0 as unknown as typeof fs)
-  void (0 as unknown as typeof getPartitionPath)
 })

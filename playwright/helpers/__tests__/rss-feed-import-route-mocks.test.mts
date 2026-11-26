@@ -36,7 +36,7 @@ describe('mockCompletedRssFeedImport', () => {
 
     await mockCompletedRssFeedImport(page)
 
-    expect(routes.map(route => route.pattern)).toEqual([
+    expect(routes.map(route => route.pattern)).toStrictEqual([
       RSS_FEED_IMPORT_ROUTE_PATTERNS.submit,
       RSS_FEED_IMPORT_ROUTE_PATTERNS.status('01900000-0000-7000-8000-000000000001'),
     ])

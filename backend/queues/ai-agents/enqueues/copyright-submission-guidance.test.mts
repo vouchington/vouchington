@@ -1,131 +1,80 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   enqueueCopyrightSubmissionGuidance,
-  enqueueOrRetryCopyrightSubmissionGuidance,
+  enqueueCopyrightSubmissionGuidances,
 } from './copyright-submission-guidance.mts'
 import {
   enqueueCopyrightAppealRecommendation,
-  enqueueOrRetryCopyrightAppealRecommendation,
+  enqueueCopyrightAppealRecommendations,
 } from './copyright-appeal-recommendation.mts'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, type AIAgentJobName } from '../config.mts'
 import { ai_agents } from '../queues.mts'
+
+type RunEnqueue = { submissionId: string; runId: string }
 
 const enqueues: Array<{
   name: Extract<AIAgentJobName, 'copyright-submission-guidance' | 'copyright-appeal-recommendation'>
   prefix: string
   enqueue: (submissionId: string, runId: string) => Promise<void>
-  recover: typeof enqueueOrRetryCopyrightSubmissionGuidance
+  enqueueBulk: (items: readonly RunEnqueue[]) => Promise<void>
 }> = [
   {
     name: 'copyright-submission-guidance',
     prefix: 'copyright_submission_guidance_',
     enqueue: enqueueCopyrightSubmissionGuidance,
-    recover: enqueueOrRetryCopyrightSubmissionGuidance,
+    enqueueBulk: enqueueCopyrightSubmissionGuidances,
   },
   {
     name: 'copyright-appeal-recommendation',
     prefix: 'copyright_appeal_recommendation_',
     enqueue: enqueueCopyrightAppealRecommendation,
-    recover: enqueueOrRetryCopyrightAppealRecommendation,
+    enqueueBulk: enqueueCopyrightAppealRecommendations,
   },
 ]
 
-describe.each(enqueues)(
-  '$name enqueue recovery',
-  ({ name, prefix, enqueue: enqueueJob, recover }) => {
-    it('persists an ordered, deduplicated guidance job', async () => {
-      const submissionId = crypto.randomUUID()
-      const runId = crypto.randomUUID()
-      const jobId = `${prefix}${runId}`
-      try {
-        await enqueueJob(submissionId, runId)
+describe.each(enqueues)('$name enqueue', ({ name, prefix, enqueue: enqueueJob, enqueueBulk }) => {
+  it('persists an ordered, deduplicated job', async () => {
+    const submissionId = crypto.randomUUID()
+    const runId = crypto.randomUUID()
+    const jobId = `${prefix}${runId}`
+    try {
+      await enqueueJob(submissionId, runId)
 
-        // The in-memory GlideMQ shim records the options the enqueue passed. It does not prove
-        // Valkey deduplication or ordering.
-        await expect(ai_agents.getJob(jobId)).resolves.toMatchObject({
-          id: jobId,
-          name,
-          data: { submission_id: submissionId, run_id: runId },
-          opts: {
-            attempts: AI_AGENTS_DEFAULTS.attempts,
-            backoff: AI_AGENTS_DEFAULTS.backoff,
-            priority: AGENT_PRIORITY[name],
-            removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-            removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
-            deduplication: { id: jobId, mode: 'simple' },
-            ordering: { key: `${prefix}${submissionId}`, concurrency: 1 },
-          },
-        })
-      } finally {
-        await (await ai_agents.getJob(jobId))?.remove()
-      }
-    })
-
-    it('removes a completed job before recovering its missing advisory result', async () => {
-      const remove = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-      const enqueue = vi
-        .fn<(id: string, runId: string) => Promise<void>>()
-        .mockResolvedValue(undefined)
-
-      await recover('submission-id', 'run-id', {
-        getJob: vi
-          .fn<
-            () => Promise<{
-              name: string
-              getState(): Promise<string>
-              retry(): Promise<void>
-              remove(): Promise<void>
-            }>
-          >()
-          .mockResolvedValue({
-            name,
-            getState: async () => 'completed',
-            remove,
-            retry: async () => undefined,
-          }),
-        enqueue,
+      // The in-memory GlideMQ shim records the options the enqueue passed. It does not prove
+      // Valkey deduplication or ordering.
+      await expect(ai_agents.getJob(jobId)).resolves.toMatchObject({
+        id: jobId,
+        name,
+        data: { submission_id: submissionId, run_id: runId },
+        opts: {
+          attempts: AI_AGENTS_DEFAULTS.attempts,
+          backoff: AI_AGENTS_DEFAULTS.backoff,
+          priority: AGENT_PRIORITY[name],
+          removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
+          removeOnFail: true,
+          deduplication: { id: jobId, mode: 'simple' },
+          ordering: { key: `${prefix}${submissionId}`, concurrency: 1 },
+        },
       })
+    } finally {
+      await (await ai_agents.getJob(jobId))?.remove()
+    }
+  })
 
-      expect(remove).toHaveBeenCalledOnce()
-      expect(enqueue).toHaveBeenCalledWith('submission-id', 'run-id')
-    })
-
-    it('does not replace a retained job owned by another queue route', async () => {
-      const enqueue = vi
-        .fn<(id: string, runId: string) => Promise<void>>()
-        .mockResolvedValue(undefined)
-
-      await recover('submission-id', 'run-id', {
-        getJob: async () => ({
-          name: 'another-job',
-          getState: async () => 'waiting',
-          retry: async () => undefined,
-          remove: async () => undefined,
-        }),
-        enqueue,
-      })
-
-      expect(enqueue).not.toHaveBeenCalled()
-    })
-
-    it('retries a retained failed advisory job without adding another job', async () => {
-      const retry = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-      const enqueue = vi
-        .fn<(id: string, runId: string) => Promise<void>>()
-        .mockResolvedValue(undefined)
-
-      await recover('submission-id', 'run-id', {
-        getJob: async () => ({
-          name,
-          getState: async () => 'failed',
-          retry,
-          remove: async () => undefined,
-        }),
-        enqueue,
-      })
-
-      expect(retry).toHaveBeenCalledOnce()
-      expect(enqueue).not.toHaveBeenCalled()
-    })
-  },
-)
+  it('adds a page of runs in one call, one job per run id', async () => {
+    const items = [0, 1].map(() => ({
+      submissionId: crypto.randomUUID(),
+      runId: crypto.randomUUID(),
+    }))
+    const jobIds = items.map(item => `${prefix}${item.runId}`)
+    try {
+      await enqueueBulk(items)
+      const jobs = await Promise.all(jobIds.map(id => ai_agents.getJob(id)))
+      expect(jobs.map(job => job?.data)).toEqual(
+        items.map(item => ({ submission_id: item.submissionId, run_id: item.runId })),
+      )
+    } finally {
+      await Promise.all(jobIds.map(async id => (await ai_agents.getJob(id))?.remove()))
+    }
+  })
+})

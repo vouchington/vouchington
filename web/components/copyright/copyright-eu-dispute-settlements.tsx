@@ -3,6 +3,7 @@
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { PaginatedListFooter } from '@/components/shared/paginated-list-footer'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { listCopyrightEuDisputeSettlements } from '@/lib/api/client/copyright-eu-dispute-settlements'
 import type {
@@ -18,12 +19,14 @@ export function CopyrightEuDisputeSettlements({
   data: CopyrightEuDisputeSettlementsPage
 }) {
   const uiLocale = useUiLocale()
-  const { pages, hasNextPage, loadMore, loadingMore, fetchError, clearError } = usePaginatedList(
-    data,
-    `/api/v1/copyright-notices/${noticeId}/eu-dispute-settlements`,
-    {},
-    { loadPage: after => listCopyrightEuDisputeSettlements(noticeId, { after }) },
-  )
+  const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError } =
+    usePaginatedList(
+      data,
+      `/api/v1/copyright-notices/${noticeId}/eu-dispute-settlements`,
+      {},
+      { loadPage: after => listCopyrightEuDisputeSettlements(noticeId, { after }) },
+    )
+  const canLoadMore = pageHasContinuation({ has_next_page: hasNextPage, end_cursor: endCursor })
   const referrals = new Map<string, CopyrightEuDisputeSettlement>()
   for (const page of pages) {
     for (const referral of page.copyright_eu_dispute_settlements)
@@ -36,7 +39,7 @@ export function CopyrightEuDisputeSettlements({
     >
       <h2 className='text-lg font-semibold'>Dispute settlements</h2>
       {referrals.size === 0 ? (
-        <p>No dispute settlement has been recorded.</p>
+        !canLoadMore && !fetchError && <p>No dispute settlement has been recorded.</p>
       ) : (
         <ul className='space-y-3'>
           {[...referrals.values()].map(referral => (
@@ -62,7 +65,7 @@ export function CopyrightEuDisputeSettlements({
         </ul>
       )}
       <PaginatedListFooter
-        canLoadMore={hasNextPage}
+        canLoadMore={canLoadMore}
         fetchError={fetchError}
         loadingMore={loadingMore}
         clearError={clearError}

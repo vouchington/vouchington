@@ -42,8 +42,9 @@ Valkey entry cannot bypass that privacy fence. The request boundary also attempt
 Cloudflare user-tag purge immediately after commit. A successful purge completes its recorded work;
 a failed purge remains pending for the background deletion worker instead of being acknowledged.
 
-Writers of user-owned deletion data take the user-scoped lock and reject deleted owners. In-flight
-writes finish before the deletion fence; later writes fail, so completed phases cannot be repopulated.
+Writers of user-owned deletion data reject deleted owners. Writers that take the user-scoped lock
+finish in-flight writes before the deletion fence. Ballot writers check that the voter is active and
+can finish an in-flight ballot after the fence. The scheduled recovery pass handles those ballots.
 
 The `user-deletions` worker then commits one bounded phase page at a time. Each job carries the
 request ID and an exact processing-attempt fencing token; the successor is enqueued only after the
@@ -96,7 +97,7 @@ continue to block final account deletion and are never eligible for this cleanup
    archive after its request is expired.
 6. Stripe customers and ready export objects are sanitized/deleted from durable work records, and
    the Cloudflare user cache tag is purged.
-7. A final transaction locks the `users` row `FOR NO KEY UPDATE` (writers hold it `FOR SHARE`), verifies every phase is empty,
+7. A final transaction locks the `users` row `FOR NO KEY UPDATE`, verifies every phase is empty,
    performs an independent residual-data sweep across deletion-owned tables and OAuth credentials, and sets
    `user_deletion_requests.completed_at` only when both checks are empty. It also clears the copied
    prior username, clears completed provider work keys to `NULL` while retaining non-identifying
@@ -104,6 +105,14 @@ continue to block final account deletion and are never eligible for this cleanup
    completed relation-effect pointer may then become `NULL`; pending effects require their typed
    same-request impact pointer. A separate bounded retention sweep reclaims unreferenced retained
    relation identities. Request and audit history follow their respective retention windows.
+
+Once an account reaches finalization, scheduled account-deletion recovery revisits it in bounded
+ballot pages, even if a late ballot has prevented finalization from completing. This removes an
+in-flight ballot that commits after the drain, including its network, device, session, and user-agent
+references. A released user-agent
+string follows the existing orphan cleanup if no other record references it. The sweep keeps its
+position across runs and revisits earlier accounts when it wraps. Backlog and worker availability
+determine how soon a late ballot is removed.
 
 Stripe customer anonymization uses a request-derived provider idempotency key. The per-provider
 egress flag selects the direct or HTTP CONNECT transport without changing the operation or retrying
@@ -125,9 +134,24 @@ The check runs in the request transaction under the `users` row lock, before the
 privacy fence, so a refused request changes nothing. The single message does not say which case
 applies, so it does not tell the account holder that legal process exists. `deleteUser` is the only
 path that sets `deleted_at`. The immediate erasure phases act only on accounts that are already
-soft-deleted and do not check preservation holds. Final purge and preservation-hold admission use serializable transactions so a conflicting hold
-and hard delete cannot both commit. A final-purge collision aborts that page without retry or
-continuation; the next scheduled run rediscovers the account. Incoming references remain unchanged
+soft-deleted and do not check preservation holds. Final purge runs at read committed and takes the account row's
+`FOR NO KEY UPDATE` lock, the lock hold admission takes, immediately before its `DELETE`. The `DELETE`
+repeats every condition it relies on (retention window, open requests, open refund, open hold) in its own
+`WHERE`. A hold that committed first makes it delete nothing, and the page rolls back. A hold arriving
+while the purge holds the row waits; it reports 404 only if the purge commits the account `DELETE`, and
+proceeds normally if the purge rolls back. A conflicting hold and hard delete cannot both commit. A
+zero-row `DELETE` rolls its page back, reports more work and leaves the account eligible for
+rediscovery; the batch does not promise to rediscover it in the same run, because a later deadlock in
+the batch stops the pass. A deadlock ends its page without retry. A continuation page already in flight
+(a page that returns more work before the final `DELETE`) can commit its stage deletions after a hold is
+placed; only the page that attempts the final `DELETE` re-checks the hold and rolls back. Every page begins
+with an eligibility read that includes the no-open-hold condition and does not lock the account row.
+Accepted limitation (owner decision, 2026-11-22): a hold placed after an intermediate page's eligibility
+read and before that page commits does not stop that page. At most one bounded page of rows is deleted,
+and the next page sees the hold and stops. The hold is a manual administrator action, so the window is very
+unlikely to be hit, and the loss is one page on an account that is already partly purged. Locking the
+account row at the start of every page would hold the lock across the page and conflict with the deliberate
+ordering where the `DELETE` takes the user lock last, after membership grant writes. Incoming references remain unchanged
 until the final user deletion applies their existing null-on-delete behavior.
 
 An operative repeat-infringer incident does not block deletion. The normal deletion phases erase

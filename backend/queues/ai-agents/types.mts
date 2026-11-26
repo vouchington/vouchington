@@ -124,7 +124,10 @@ type AIAgentJobPayloadsByName = {
   'reconcile-copyright-form-effect-dispatches': CopyrightAgentSweepData
   'reconcile-copyright-appeal-dispatches': CopyrightAgentSweepData
   'reconcile-copyright-submission-guidance-dispatches': CopyrightAgentSweepData
-  'reconcile-ai-agent-failures': Record<string, never>
+  'expire-stuck-report-judgement-runs': Record<string, never>
+  'expire-stuck-copyright-email-runs': Record<string, never>
+  'expire-stuck-copyright-appeal-runs': Record<string, never>
+  'expire-stuck-copyright-guidance-runs': Record<string, never>
   'expire-stuck-appeal-resolution-runs': Record<string, never>
   'expire-stuck-dispute-resolution-runs': Record<string, never>
 }

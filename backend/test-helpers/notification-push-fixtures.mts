@@ -19,15 +19,13 @@ export async function createDelivery(leaseSeconds = 120, endpointCount = 2) {
     (_, index) => `https://push.example.com/${index}-${crypto.randomUUID()}`,
   )
   const [prompt, slow] = endpoints
-  const subscriptions = await Promise.all(
-    endpoints.map(endpoint => addSubscription(recipient.id, endpoint!)),
-  )
+  await Promise.all(endpoints.map(endpoint => addSubscription(recipient.id, endpoint)))
   const intent = await claimNotificationPushIntent(
     { user_id: recipient.id, notification_id: notification!.id },
     leaseSeconds,
   )
   if (!intent) throw new Error('Expected notification push intent claim')
-  return { intent, prompt, promptSubscriptionId: subscriptions[0]!.id, slow }
+  return { intent, prompt, slow }
 }
 
 async function addSubscription(userId: string, endpoint: string) {

@@ -1,4 +1,4 @@
-import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@vouchington/mcp-server/types'
 import type { BasicUser } from '@services/users/types'
 import { createMergedTool } from './create-merged-tool.mts'
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'

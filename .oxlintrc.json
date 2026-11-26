@@ -120,7 +120,7 @@
     "unicorn/error-message": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/escape-case": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/explicit-length-check": "off", // Intentional #1692: staged pedantic/style exclusion.
-    "unicorn/filename-case": "off", // Intentional #1692: staged pedantic/style exclusion.
+    "unicorn/filename-case": ["error", { "case": "kebabCase" }],
     "unicorn/new-for-builtins": "off", // Intentional #1692: staged pedantic/style exclusion.
     "unicorn/no-abusive-eslint-disable": "error",
     "unicorn/no-accessor-recursion": "error",
@@ -436,6 +436,7 @@
     "no-unused-vars": "off",
     "no-useless-call": "error",
     "no-useless-computed-key": "error",
+    "no-useless-assignment": "error",
     "no-useless-concat": "error",
     "no-useless-constructor": "error",
     "no-useless-return": "error",
@@ -448,7 +449,7 @@
     ],
     "no-warning-comments": "off",
     "operator-assignment": "error",
-    "prefer-const": "off",
+    "prefer-const": ["error", { "ignoreReadBeforeAssign": true }],
     "prefer-destructuring": "off",
     "prefer-exponentiation-operator": "error",
     "prefer-numeric-literals": "error",
@@ -864,7 +865,12 @@
     "react-doctor/js-index-maps": "error",
     "react-doctor/js-length-check-first": "error",
     "react-doctor/js-min-max-loop": "error",
+    "react-doctor/no-json-parse-stringify-clone": "error",
     "react-doctor/js-set-map-lookups": "off", // 68 findings / 49 files on 2026-08-19
+    // Accepts only an unconditional reset in finally. On 2026-11-23, 0 of its 32 findings were
+    // stuck flags; 24 were deliberate (stay disabled after success, skip stale or aborted
+    // requests) and would need suppressions. See #6256.
+    "react-doctor/no-loading-flag-reset-outside-finally": "off",
     "no-mistakes/await-array-methods": "error",
     "no-mistakes/no-delete-property": "error",
     "no-mistakes/no-import-only-test-files": "error",
@@ -914,7 +920,6 @@
           "@local/**",
           "@modules/**",
           "/on-error",
-          "/queue-config",
           "@queues/**",
           "@services/**",
           "@ts-shared/**",
@@ -1335,7 +1340,6 @@
             "executorTypeNames": ["TransactionQuery", "QueryExecutor"],
             "owners": [
               "backend/data-stores/psql/explain-analyze.mts",
-              "backend/data-stores/psql/migration-runner/config-driven-statements.mts",
               "backend/test-helpers/postgres-advisory-lock.mts",
               "backend/test-helpers/crawl-urls-queue-lock.mts",
               "backend/test-helpers/entities/moderation-transparency-date-reservation.mts"
@@ -1516,7 +1520,6 @@
         "**/__tests__/**/*.{mts,ts,tsx}"
       ],
       "rules": {
-        "typescript/no-dynamic-delete": "off",
         "no-mistakes/no-delete-property": "off"
       }
     },
@@ -1564,10 +1567,9 @@
         "**/test-helpers/**"
       ],
       "rules": {
-        "no-void": "off",
         "no-await-in-loop": "off",
-        "react/jsx-no-target-blank": "off",
-        "nextjs/no-html-link-for-pages": "off"
+        // Tests assert the serialized wire shape (Dates become strings, undefined keys drop), which structuredClone would not reproduce.
+        "react-doctor/no-json-parse-stringify-clone": "off"
       }
     }
   ]

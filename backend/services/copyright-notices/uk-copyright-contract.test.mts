@@ -1,5 +1,10 @@
+import {
+  failCopyrightWriteWithUnrelatedConflict,
+  readClaimantCopyrightNoticeIds,
+} from '@voucha/test-helpers/data-stores/psql/copyright-write-conflicts'
+import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
   concealJurisdictionPolicyApprovals,
   insertJurisdictionPolicyApproval,
@@ -7,7 +12,6 @@ import {
   readCopyrightTerritorialContractShape,
   withRolledBackTerritorialTransaction,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
-import { tryCommitCopyrightJurisdictionPolicyApproval } from '@voucha/test-helpers/data-stores/psql/copyright-jurisdiction-policy-writes'
 import {
   acknowledgeUkCopyrightNotice,
   recordUkCopyrightAcknowledgmentFailure,
@@ -30,24 +34,26 @@ function noticeRequest(): TerritorialNoticeRequest {
 }
 
 describe('UK copyright notice contracts', () => {
-  it('blocks a concurrent jurisdiction approval while concealed approvals are uncommitted', async () => {
-    const claimant = await createTestUser()
+  it('records one approval when administrators submit the same policy version concurrently', async () => {
+    const administrator = await createTestUser({ administrator: true })
     const policyVersion = `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`
-    await withRolledBackTerritorialTransaction(async transaction => {
-      await concealJurisdictionPolicyApprovals(transaction, 'uk', claimant.id)
-      await expect(
-        tryCommitCopyrightJurisdictionPolicyApproval('uk', policyVersion, claimant.id),
-      ).resolves.toBe(false)
-      await expect(
-        receiveTerritorialCopyrightNoticeInTransaction(
-          { user: claimant, identity: `user:${claimant.id}` },
-          'uk',
-          crypto.randomUUID(),
-          noticeRequest(),
-          transaction,
-        ),
-      ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
-    })
+    const input = { jurisdiction: 'uk' as const, policyVersion }
+    const results = await Promise.allSettled([
+      recordCopyrightJurisdictionPolicyApproval(administrator, input),
+      recordCopyrightJurisdictionPolicyApproval(administrator, input),
+    ])
+    expect(results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: 'fulfilled',
+          value: expect.objectContaining({ jurisdiction: 'uk', policy_version: policyVersion }),
+        }),
+        expect.objectContaining({
+          status: 'rejected',
+          reason: expect.objectContaining({ status: 409 }),
+        }),
+      ]),
+    )
   })
 
   it('fails closed without an approved policy and after that approval is withdrawn', async () => {
@@ -69,15 +75,21 @@ describe('UK copyright notice contracts', () => {
         `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
         claimant.id,
       )
+      const requester = { user: claimant, identity: `user:${claimant.id}` }
+      const key = crypto.randomUUID()
+      const request = noticeRequest()
       const opened = await receiveTerritorialCopyrightNoticeInTransaction(
-        { user: claimant, identity: `user:${claimant.id}` },
+        requester,
         'uk',
-        crypto.randomUUID(),
-        noticeRequest(),
+        key,
+        request,
         transaction,
       )
       expect(opened.route_destination).toBe('staff_queue')
       await insertJurisdictionPolicyWithdrawal(transaction, approvalId, claimant.id)
+      await expect(
+        receiveTerritorialCopyrightNoticeInTransaction(requester, 'uk', key, request, transaction),
+      ).resolves.toEqual({ ...opened, is_duplicate: true })
       await expect(
         receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
@@ -88,6 +100,35 @@ describe('UK copyright notice contracts', () => {
         ),
       ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
     })
+  })
+
+  it('propagates an unrelated unique violation and rolls back the territorial receipt', async () => {
+    const [claimant, administrator] = await Promise.all([
+      createTestUser(),
+      createTestUser({ administrator: true }),
+    ])
+    await recordCopyrightJurisdictionPolicyApproval(administrator, {
+      jurisdiction: 'uk',
+      policyVersion: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
+    })
+    const key = crypto.randomUUID()
+    const restore = failCopyrightWriteWithUnrelatedConflict(
+      '/* receiveTerritorialCopyrightNotice:receipt */',
+      key,
+      claimant.id,
+    )
+    try {
+      await expect(
+        receiveUkCopyrightNotice(
+          { user: claimant, identity: `user:${claimant.id}` },
+          key,
+          noticeRequest(),
+        ),
+      ).rejects.toMatchObject({ code: '23505', constraint: 'retained_user_identities_pkey' })
+    } finally {
+      restore()
+    }
+    await expect(readClaimantCopyrightNoticeIds(claimant.id)).resolves.toEqual([])
   })
 
   it('records receipt, human review, and redress without EU rows or a US clock', async () => {
@@ -101,11 +142,38 @@ describe('UK copyright notice contracts', () => {
       jurisdiction: 'uk',
       policyVersion: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
     })
-    const receipt = await receiveUkCopyrightNotice(
-      { user: claimant, identity: `user:${claimant.id}` },
-      crypto.randomUUID(),
-      noticeRequest(),
+    const key = crypto.randomUUID()
+    const request = noticeRequest()
+    const requester = { user: claimant, identity: `user:${claimant.id}` }
+    await using holder = await beginTransaction()
+    const first = await receiveTerritorialCopyrightNoticeInTransaction(
+      requester,
+      'uk',
+      key,
+      request,
+      holder,
     )
+    await using waiter = await createTestPostgresLockWaiter({
+      holder,
+      lock: { kind: 'transaction' },
+      selected: {
+        marker: '/* currentCopyrightJurisdictionPolicy */',
+        binding: { index: 0, value: 'uk' },
+      },
+    })
+    const second = receiveTerritorialCopyrightNoticeInTransaction(
+      requester,
+      'uk',
+      key,
+      request,
+      waiter.query,
+    )
+    await waiter.waitForLock(second)
+    await holder.commit()
+    const receipt = await second
+    await waiter.query.commit()
+    expect(first.is_duplicate).toBe(false)
+    expect(receipt).toEqual({ ...first, is_duplicate: true })
     const acknowledgment = await acknowledgeUkCopyrightNotice(claimant, receipt.notice_id)
     expect(receipt.route_destination).toBe('staff_queue')
     expect(acknowledgment.acknowledged_at).toBeInstanceOf(Date)

@@ -1,9 +1,9 @@
 import { MailParser, type AttachmentStream, type HeaderValue } from 'mailparser'
 import { createHash } from 'node:crypto'
 import type { Readable } from 'node:stream'
+import { getSesInboundMaxMimeNodes } from '@queues/ses-inbound/config'
 
 const MAX_MIME_TEXT_BYTES = 2 * 1024 * 1024
-const MAX_MIME_NODES = 1000
 
 type MailParserChunk = {
   type: string
@@ -39,14 +39,15 @@ export function streamMailParts(parser: MailParser): {
   const attachments: ParsedMimeAttachment[] = []
   let retainedTextBytes = 0
   let nodeCount = 0
+  const maxMimeNodes = getSesInboundMaxMimeNodes()
 
   internals.textTypes = []
   const processChunk = internals.processChunk
   internals.processChunk = (data, done) => {
     if (data.type === 'node') {
       nodeCount += 1
-      if (nodeCount > MAX_MIME_NODES) {
-        done(new Error(`MIME message exceeds ${MAX_MIME_NODES} nodes`))
+      if (nodeCount > maxMimeNodes) {
+        done(new Error(`MIME message exceeds ${String(maxMimeNodes)} nodes`))
         return
       }
       const contentType = data.contentType ?? (data.root ? 'text/plain' : '')

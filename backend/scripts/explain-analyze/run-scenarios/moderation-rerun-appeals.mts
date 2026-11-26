@@ -98,7 +98,6 @@ export async function runAppealScenarios(appealId: string): Promise<void> {
     )
     const scenarioId = `appeal-rerun-failed-batch-${batchSize}` as const
     register(scenarioId, batchSize * 2)
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed batch sizes require separate serialized custom/generic plan captures.
     await runAndCapture(
       scenarioId,
       async () => {

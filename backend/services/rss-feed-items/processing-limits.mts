@@ -1,5 +1,33 @@
+import { DynamicConfig } from '@data-stores/valkey'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
+
 export const RSS_FEED_FETCH_MAX_ITEMS = 500
 export const RSS_FEED_ITEM_MAX_CATEGORIES = 20
+
+export const rssFeedItemIngestionMaxValues = {
+  fetch_max_items: RSS_FEED_FETCH_MAX_ITEMS,
+  item_max_categories: RSS_FEED_ITEM_MAX_CATEGORIES,
+  podcast_chapters_max_count: 200,
+}
+
+export const rssFeedItemIngestionConfig = new DynamicConfig({
+  key: 'rss-feed-item-ingestion-config',
+  fieldTypes: {
+    fetch_max_items: 'number',
+    item_max_categories: 'number',
+    podcast_chapters_max_count: 'number',
+  },
+  defaultFields: rssFeedItemIngestionMaxValues,
+})
+
+export function getRssFeedItemIngestionLimit(
+  field: keyof typeof rssFeedItemIngestionMaxValues,
+): number {
+  return getBoundedPositiveIntegerField(rssFeedItemIngestionConfig, field, {
+    defaultValue: rssFeedItemIngestionMaxValues[field],
+    maxValue: rssFeedItemIngestionMaxValues[field],
+  })
+}
 
 export type RssFeedItemCategoryAnalysis = {
   categories: string[]
@@ -13,6 +41,7 @@ export function normalizeRssFeedItemCategories(categories: string[] | undefined)
 
 export function analyzeRssFeedItemCategories(
   categories: string[] | undefined,
+  categoryCap = getRssFeedItemIngestionLimit('item_max_categories'),
 ): RssFeedItemCategoryAnalysis {
   if (!categories || categories.length === 0) {
     return { categories: [], uncappedCount: 0, truncatedCount: 0 }
@@ -27,7 +56,7 @@ export function analyzeRssFeedItemCategories(
     seen.add(key)
     return [trimmed]
   })
-  const normalized = unique.slice(0, RSS_FEED_ITEM_MAX_CATEGORIES)
+  const normalized = unique.slice(0, categoryCap)
 
   return {
     categories: normalized,

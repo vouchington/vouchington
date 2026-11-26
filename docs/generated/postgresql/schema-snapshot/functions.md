@@ -300,14 +300,6 @@ CREATE OR REPLACE FUNCTION public.fn_lock_active_user_for_mutation(target_user_i
  LANGUAGE plpgsql
 ```
 
-## `fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)
- RETURNS void
- LANGUAGE plpgsql
-```
-
 ## `fn_membership_grant_remaining_duration(grant_id uuid)`
 
 ```sql
@@ -392,6 +384,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_active_user_data_request_claim()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_activitypub_post_likes()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_capture_inserted_notification_push_intents`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_capture_inserted_notification_push_intents()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1508,6 +1508,14 @@ CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)
  RETURNS timestamp with time zone
  LANGUAGE plpgsql
  IMMUTABLE
+```
+
+## `fn_update_agent_moderation_predecessors`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_agent_moderation_predecessors()
+ RETURNS trigger
+ LANGUAGE plpgsql
 ```
 
 ## `fn_update_agent_moderation_retention`

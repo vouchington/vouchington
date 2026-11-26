@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { buildPostSearchQuery } from '../query-builder.mts'
 import type { PrivateUser } from '@services/users/types'
 
@@ -26,7 +26,7 @@ describe('query-builder (pagination and moderation)', () => {
     })
 
     expect(query.sql).toContain('posts.id >=')
-    expect(query.values).toContain(timestampToUuidv7LowerBound(asOf.getTime() - 7 * 86_400_000))
+    expect(query.values).toContain(getMinUuidv7ForDate(new Date(asOf.getTime() - 7 * 86_400_000)))
   })
 
   it('buildPostSearchQuery allows drafts when currentUser matches user_id', () => {

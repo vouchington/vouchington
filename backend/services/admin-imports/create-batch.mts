@@ -6,8 +6,6 @@ import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
 import type { ImportType, ImportBatch, ImportRow } from './types.mts'
 
-export const MAX_ROWS = 50000
-
 type CreateBatchResult = {
   batch: ImportBatch
   rows: ImportRow[]
@@ -20,10 +18,12 @@ export async function createImportBatch(
   inputRows: Record<string, unknown>[],
   metadata?: Record<string, unknown>,
 ): Promise<CreateBatchResult> {
-  const CHUNK_SIZE = getAdminImportsWorkLimit('insert_chunk_size')
   const totalRows = inputRows.length
   assert(totalRows > 0, 400, 'Batch must have at least one row')
-  assert(totalRows <= MAX_ROWS, 400, `Batch must not exceed ${MAX_ROWS} rows`)
+
+  const limit = getAdminImportsWorkLimit('max_rows_per_batch')
+  assert(totalRows <= limit, 400, `Batch must not exceed ${limit} rows`)
+  const CHUNK_SIZE = getAdminImportsWorkLimit('insert_chunk_size')
 
   return runWithTransaction(undefined, async query => {
     const { rows: batchRows } = await write(

@@ -2,7 +2,7 @@
 
 import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
-import { assertPathIdentifier } from './path-identifiers'
+import { assertPathIdentifier } from '@vouchington/api-client'
 import type { PostMutationResponseBody } from '@/types/api-responses'
 import type { PostBroadcast, PostPrivacy, PostType } from '@/types/posts'
 

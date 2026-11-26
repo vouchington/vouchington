@@ -9,6 +9,7 @@ export async function createDataRequest(
   requestedById: string,
 ): Promise<UserDataRequest> {
   await using query = await beginTransaction()
+  // lock-reason: prevents: export admission after the account deletion fence; writer: account deletion.
   const { rows } = await query(sql`/* createDataRequest */
       WITH active_user_lock AS MATERIALIZED (
         SELECT fn_lock_active_user_for_mutation(${userId})

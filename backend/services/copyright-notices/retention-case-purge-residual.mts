@@ -24,7 +24,7 @@ export async function deleteCopyrightCaseResidualPartyPage(data: CopyrightCasePu
     /* readCopyrightCaseResidualPartyPage */
     SELECT party.account_user_id FROM copyright_notice_party_identities party
     WHERE party.copyright_notice_id = ${data.noticeId}::uuid`.append(cursor).append(sql`
-    ORDER BY party.account_user_id LIMIT ${pageSize} FOR UPDATE`),
+    ORDER BY party.account_user_id LIMIT ${pageSize}`),
   )
   const ids = parties.map(party => party.account_user_id)
   if (ids.length > 0) {

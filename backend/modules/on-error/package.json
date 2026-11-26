@@ -25,8 +25,8 @@
   "scripts": {},
   "dependencies": {
     "@modules/request-client-info": "workspace:^",
-    "@sentry/node": "^11.12.0",
+    "@sentry/node": "^11.14.0",
     "@ts-shared/utils": "workspace:^",
-    "@vouchington/sentry": "^0.6.0"
+    "@vouchington/sentry": "^0.7.0"
   }
 }

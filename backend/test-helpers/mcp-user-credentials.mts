@@ -1,3 +1,4 @@
+import type { TransactionQuery } from '@data-stores/psql'
 import { createApiKey } from '../services/api-keys/index.mts'
 import {
   createMcpCallAuditContext,
@@ -40,4 +41,19 @@ export async function recordTestApiKeyCallAudit(userId: string, apiKeyId: string
   await recordMcpCallAudit(context, [
     { jsonrpcMethod: 'tools/list', toolName: null, outcome: 'accepted' },
   ])
+}
+
+/** Add an audit child without committing its retained API-key FK pin yet. */
+export async function insertUncommittedTestApiKeyAudit(
+  query: TransactionQuery,
+  userId: string,
+  apiKeyId: string,
+): Promise<void> {
+  await query(
+    `/* insertUncommittedTestApiKeyAudit */
+     INSERT INTO mcp_call_audit_events
+       (audience, correlation_id, actor_user_id, api_key_id, resource, jsonrpc_method, outcome)
+     VALUES ('user', uuidv7(), $1::uuid, $2::uuid, 'https://example.com/mcp', 'tools/list', 'accepted')`,
+    [userId, apiKeyId],
+  )
 }

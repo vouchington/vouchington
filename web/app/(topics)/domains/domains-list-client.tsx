@@ -35,20 +35,6 @@ export function DomainsListClient({
   const allElections = mergeRecords(pages, page => page.hostname_elections ?? {})
   const allVotes = mergeRecords(pages, page => page.election_votes ?? {})
 
-  if (allResults.length === 0) {
-    return (
-      <EmptyState
-        title={t('extracted.domains.domainsListClient.noDomainsFound_7bb966c1')}
-        description={
-          searchParams.query
-            ? t('extracted.domains.domainsListClient.noDomainsMatchYourSearchTry_16de725d')
-            : t('extracted.domains.domainsListClient.noDomainsHaveBeenAddedYet_a7fb2626')
-        }
-        icon='search'
-      />
-    )
-  }
-
   return (
     <InfiniteScroll
       hasNextPage={hasNextPage}
@@ -58,6 +44,18 @@ export function DomainsListClient({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      itemCount={allResults.length}
+      emptyState={
+        <EmptyState
+          title={t('extracted.domains.domainsListClient.noDomainsFound_7bb966c1')}
+          description={
+            searchParams.query
+              ? t('extracted.domains.domainsListClient.noDomainsMatchYourSearchTry_16de725d')
+              : t('extracted.domains.domainsListClient.noDomainsHaveBeenAddedYet_a7fb2626')
+          }
+          icon='search'
+        />
+      }
     >
       <div className='space-y-4'>
         {allResults.map(ref => {

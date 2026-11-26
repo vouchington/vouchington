@@ -2,6 +2,7 @@ import '@data-stores/valkey-core/shutdown'
 
 import type { BatchProcessor, Job, Processor, Queue, Worker, WorkerOptions } from 'glide-mq'
 import {
+  DEFAULT_MAX_STALLED_COUNT,
   createGlideMqRuntime,
   type RuntimeQueueOptions,
   type RuntimeWorkerOptions,
@@ -15,13 +16,8 @@ import {
 import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
 import { createRetryingCommandClient } from './glide-mq-command-client.mts'
 import { checkedPriorityOptions, type QueuePriorityKind } from './queue-priority.mts'
-import { DEFAULT_MAX_STALLED_COUNT } from './worker-stall-budget.mts'
 import { applySharedQueueOrdering } from './shared-queue-ordering.mts'
-import {
-  rejectSelfAdd,
-  wrapBatchProcessor,
-  wrapSingleProcessor,
-} from './guarded-worker-processors.mts'
+import { guardedProcessors } from './guarded-worker-processors.mts'
 
 export type PriorityQueue<T> = Queue<T> & { readonly priorityKind: QueuePriorityKind }
 
@@ -42,14 +38,12 @@ const runtime = createGlideMqRuntime({
   unregister: instance => unregisterGlideMQInstance(instance as { close(): Promise<void> }),
   onError,
   defaultMaxStalledCount: DEFAULT_MAX_STALLED_COUNT,
-  wrapProcessor: (processor, queueName, workerOptions) =>
-    wrapSingleProcessor(queueName, processor, workerOptions),
-  wrapBatchProcessor: (processor, queueName, workerOptions) =>
-    wrapBatchProcessor(queueName, processor, workerOptions),
+  wrapProcessor: guardedProcessors.wrapSingleProcessor,
+  wrapBatchProcessor: guardedProcessors.wrapBatchProcessor,
   // Every queue add, bulk add and scheduler upsert keeps its queue's priority contract and
   // refuses to let a processor add the job it is running.
   guardAdd: ({ queueName, jobName, opts }) => {
-    if (rejectSelfAdd(queueName, jobName, opts)) return 'skip'
+    if (guardedProcessors.rejectSelfAdd(queueName, jobName, opts)) return 'skip'
     const checked = checkedPriorityOptions(queueName, priorityKinds.get(queueName)!, opts)
     const getConcurrency = orderingConcurrency.get(queueName)
     return {

@@ -48,8 +48,8 @@ async function cleanupRetainedIdentityFamily(
     ? null
     : (
         await query<{ cursor_identity_id: string | null }>(
-          `/* lockRetainedIdentityCleanupProgress */
-          SELECT cursor_identity_id FROM retained_identity_cleanup_cursors WHERE family = $1 FOR UPDATE`,
+          `/* readRetainedIdentityCleanupProgress */
+          SELECT cursor_identity_id FROM retained_identity_cleanup_cursors WHERE family = $1`,
           [family],
         )
       ).rows[0]

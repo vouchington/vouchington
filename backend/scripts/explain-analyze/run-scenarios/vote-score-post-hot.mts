@@ -106,7 +106,6 @@ export async function runVoteScorePostHotScenarios(): Promise<void> {
 
   for (const scenario of scenarios) {
     registerScenarioContract(scenario.id, scenario.contract)
-    // no-mistakes-disable-next-line query-reached-per-item: each ranking entrypoint has its own plan contract.
     await runAndCapture(scenario.id, scenario.run)
   }
 }

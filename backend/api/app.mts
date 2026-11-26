@@ -12,7 +12,10 @@ import { createRequestContextListener } from './context/request-context.mts'
 import applyContext from './context/index.mts'
 import applyRateLimitContext from './context/rate-limit.mts'
 import applyRequestVerificationContext from './context/request-verification.mts'
-import { buildApiErrorEnvelope, normalizeErrorForLogging } from '@vouchington/utils/api-errors'
+import {
+  buildApiErrorEnvelope,
+  normalizeErrorForLogging,
+} from '@vouchington/server-utils/api-errors'
 import { isBotChallengeRequiredError } from './bot-challenge.mts'
 
 type HttpListener = (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
@@ -89,7 +92,25 @@ app.errorHandler((ctx, error: unknown) => {
     exposeDetails: !isDeployedEnvironment(),
     requestId,
   })
+  if (
+    status === 429 &&
+    error instanceof Error &&
+    'retryAfterSeconds' in error &&
+    typeof error.retryAfterSeconds === 'number' &&
+    Number.isSafeInteger(error.retryAfterSeconds) &&
+    error.retryAfterSeconds > 0
+  ) {
+    ctx.set('Retry-After', String(error.retryAfterSeconds))
+  }
   ctx.setStatus(status)
+  if (
+    status === 429 &&
+    error instanceof Error &&
+    'retryAfterSeconds' in error &&
+    typeof error.retryAfterSeconds === 'number'
+  ) {
+    ctx.set('Retry-After', String(error.retryAfterSeconds))
+  }
   if (isBotChallengeRequiredError(error)) {
     ctx.json({ ...body, action: error.action })
   } else if (

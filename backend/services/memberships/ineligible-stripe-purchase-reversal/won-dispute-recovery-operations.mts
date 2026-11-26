@@ -1,5 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getOrCreateProviderContextId } from '../provider-context.mts'
 import { createWonDisputeRecoveryIdempotencyPrefix } from '../ineligible-stripe-purchase-reversal-idempotency.mts'
 import type { IneligiblePurchaseReversalCase } from './case-ledger.mts'
 
@@ -38,8 +39,9 @@ export async function getWonDisputeRecoveryOperation(
   reversalCase: IneligiblePurchaseReversalCase,
   idempotencyKey: string,
   query: QueryExecutor,
+  lockOperation: boolean,
 ): Promise<WonDisputeRecoveryOperation | null> {
-  const { rows } = await query(sql`/* getWonDisputeRecoveryOperation */
+  const statement = sql`/* getWonDisputeRecoveryOperation */
     SELECT operation.id, operation.completed_at IS NOT NULL AS completed,
       operation.failed_at IS NOT NULL AS failed,
       EXISTS (
@@ -59,7 +61,82 @@ export async function getWonDisputeRecoveryOperation(
       AND operation.membership_lineage_binding_id = ${reversalCase.membershipLineageBindingId}
       AND operation.operation_kind = 'collision_resolution'
       AND operation.idempotency_key = ${idempotencyKey}
-    FOR UPDATE OF operation
-  `)
+  `
+  // lock-reason: prevents: claiming dispute recovery using refund state superseded by a competing recovery claim; writer: claimExistingRecovery
+  if (lockOperation) statement.append(sql` FOR UPDATE OF operation`)
+  const { rows } = await query(statement)
   return (rows[0] as WonDisputeRecoveryOperation | undefined) ?? null
+}
+
+export async function getOriginalReversalWithReceipt(
+  reversalCaseId: string,
+  originalKey: string,
+  query: QueryExecutor,
+) {
+  const { rows } = await query(sql`/* claimWonStripeDisputeRecovery:original */
+    SELECT operation.id,
+      operation.qualifying_allocation_minor_units::TEXT AS "qualifyingAllocationMinorUnits",
+      receipt.amount_minor_units::TEXT AS "receiptAmountMinorUnits"
+    FROM membership_ineligible_purchase_reversal_case_operations case_operation
+    INNER JOIN membership_operations operation
+      ON operation.id = case_operation.membership_operation_id
+    INNER JOIN membership_automatic_refund_receipts receipt
+      ON receipt.membership_operation_id = operation.id
+    WHERE case_operation.membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
+      AND operation.idempotency_key = ${originalKey}
+      AND operation.completed_at IS NOT NULL
+  `)
+  return rows[0] as
+    | {
+        id: string
+        qualifyingAllocationMinorUnits: string
+        receiptAmountMinorUnits: string
+      }
+    | undefined
+}
+
+export type RecoveryPayment = { paymentReference: string; chargeId: string }
+
+export async function createRecoveryOperation(
+  reversalCase: IneligiblePurchaseReversalCase,
+  idempotencyKey: string,
+  payment: RecoveryPayment | null,
+  amountMinorUnits: number,
+  query: QueryExecutor,
+): Promise<WonDisputeRecoveryOperation> {
+  if (!payment) throw new Error('Could not prepare payment for won-dispute reversal recovery')
+  await insertRecoveryOperation(reversalCase, idempotencyKey, payment, amountMinorUnits, query)
+  const created = await getWonDisputeRecoveryOperation(reversalCase, idempotencyKey, query, true)
+  if (!created) throw new Error('Could not create won-dispute reversal recovery')
+  return created
+}
+
+async function insertRecoveryOperation(
+  reversalCase: IneligiblePurchaseReversalCase,
+  idempotencyKey: string,
+  payment: RecoveryPayment,
+  amountMinorUnits: number,
+  query: QueryExecutor,
+): Promise<void> {
+  const providerContextId = await getOrCreateProviderContextId(
+    {
+      provider: 'stripe',
+      environment: reversalCase.providerEnvironment,
+      applicationId: reversalCase.providerApplicationId,
+    },
+    query,
+  )
+  await query(sql`/* claimWonStripeDisputeRecovery:insert */
+    INSERT INTO membership_operations (
+      membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
+      membership_provider_context_id, operation_kind, idempotency_key, provider_payment_reference, provider_charge_id,
+      qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
+      period_started_at, period_ends_at, collision_at
+    ) VALUES (
+      ${reversalCase.membershipSourceId}, ${reversalCase.membershipProviderLineageId},
+      ${reversalCase.membershipLineageBindingId}, ${providerContextId}, 'collision_resolution', ${idempotencyKey}, ${payment.paymentReference}, ${payment.chargeId},
+      ${amountMinorUnits}, ${amountMinorUnits}, ${reversalCase.currency},
+      ${reversalCase.periodStartedAt}, ${reversalCase.periodEndsAt}, ${reversalCase.collisionAt}
+    )
+  `)
 }

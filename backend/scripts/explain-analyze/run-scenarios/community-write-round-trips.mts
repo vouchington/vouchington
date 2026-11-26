@@ -2,7 +2,6 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { hashCommunityInviteCode } from '@services/communities/invites/code'
 import { redeemInviteCode } from '@services/communities/invites/redeem'
-import { setApplicationQuestions } from '@services/communities/applications/questions'
 import { addConversationParticipant } from '@services/messaging'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
@@ -92,26 +91,5 @@ export async function runInviteRedeem(communityId: string): Promise<void> {
           WHERE id = ${rows[0]!.id}`)
       },
     },
-  )
-}
-
-// The application form is replaced by one statement. The two fixture questions stay, so the
-// replay retires them; the next run replaces them again.
-export async function runApplicationQuestions(communityId: string): Promise<void> {
-  registerScenarioContract('community-application-questions', {
-    expectations: [
-      // Both modes process six rows: two found, two retired, two inserted; budget adds 20%.
-      { kind: 'maxProcessedRows', relation: 'community_application_questions', max: 8 },
-    ],
-  })
-  await runAndCapture(
-    'community-application-questions',
-    () =>
-      setApplicationQuestions(seedUser.id, communityId, [
-        { question: 'Why join?', field_type: 'short_text' },
-        { question: 'Tell us more', field_type: 'long_text' },
-      ]),
-    undefined,
-    'setApplicationQuestions',
   )
 }

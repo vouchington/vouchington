@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUserDirect } from '@voucha/test-helpers'
+import { beginTransaction, createTestUserDirect } from '@voucha/test-helpers'
 import { DELETED_USER_ID } from '@services/users/constants'
 import {
   attemptYoungReleasedHoldDeletion,
   createTestCompletedDeletionProof,
   createTestIdentityVerificationAttempt,
+  createTestIdentityVerificationEntitlement,
+  createTestIdentityVerificationEntitlementChild,
   createTestReleasedLegalHold,
   legalRecordExists,
 } from '@voucha/test-helpers/entities/legal-retention'
+import { commitTestPostgresHolderAfterActionOrWait } from '@voucha/test-helpers/postgres-lock-skip'
 import { cleanupLegalRecords } from './cleanup-legal-records.mts'
 
 describe('legal record retention', () => {
@@ -88,10 +91,18 @@ describe('legal record retention', () => {
     await expect(legalRecordExists('user_deletion_requests', oldestId)).resolves.toBe(false)
     await expect(legalRecordExists('user_deletion_requests', middleId)).resolves.toBe(false)
     await expect(legalRecordExists('user_deletion_requests', newestId)).resolves.toBe(true)
+    expect(await cleanupLegalRecords({ ...limits, maxBatches: 1 }, now, [newestId])).toContainEqual(
+      {
+        family: 'user_deletion_request',
+        scanned: 1,
+        deleted: 1,
+        hasMore: true,
+      },
+    )
     expect(await cleanupLegalRecords(limits, now, ids)).toContainEqual({
       family: 'user_deletion_request',
-      scanned: 1,
-      deleted: 1,
+      scanned: 0,
+      deleted: 0,
       hasMore: false,
     })
   })
@@ -150,6 +161,46 @@ describe('legal record retention', () => {
     expect(await legalRecordExists('user_deletion_requests', youngRequestId)).toBe(true)
     expect(await legalRecordExists('user_legal_preservation_holds', expiredHoldId)).toBe(false)
     expect(await legalRecordExists('user_legal_preservation_holds', youngHoldId)).toBe(true)
+  })
+
+  it('keeps an entitlement with an in-flight child while deleting another expired attempt', async () => {
+    const now = new Date('2026-10-23T12:00:00.000Z')
+    const parent = await createTestIdentityVerificationEntitlement(
+      DELETED_USER_ID,
+      new Date('2019-10-21T12:00:00.000Z'),
+    )
+    const unrelated = await createTestIdentityVerificationAttempt(
+      DELETED_USER_ID,
+      new Date('2019-10-22T12:00:00.000Z'),
+    )
+    await using checkout = await beginTransaction()
+    const child = await createTestIdentityVerificationEntitlementChild(
+      checkout,
+      DELETED_USER_ID,
+      parent,
+    )
+    const limits = { batchSize: 1, maxBatches: 1 }
+    const page = await commitTestPostgresHolderAfterActionOrWait(
+      checkout,
+      'deleteExpiredLegalRecordPage',
+      () => cleanupLegalRecords(limits, now, [parent, unrelated]),
+    )
+
+    expect(page).toContainEqual({
+      family: 'identity_verification_attempt',
+      scanned: 1,
+      deleted: 1,
+      hasMore: true,
+    })
+    expect(await legalRecordExists('identity_verification_attempts', unrelated)).toBe(false)
+    expect(await legalRecordExists('identity_verification_attempts', parent)).toBe(true)
+    expect(await legalRecordExists('identity_verification_attempts', child)).toBe(true)
+    expect(await cleanupLegalRecords(limits, now, [parent])).toContainEqual({
+      family: 'identity_verification_attempt',
+      scanned: 0,
+      deleted: 0,
+      hasMore: false,
+    })
   })
 
   it('expires only seven-year-old attempts attached to the deleted-user tombstone', async () => {

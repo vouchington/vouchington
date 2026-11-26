@@ -44,21 +44,16 @@ export function TopicList({
 
   const allResults = mergePageResultsById(pages)
   const allTopics = mergeRecords(pages, page => page.topics)
+  const visibleTopics = allResults.flatMap(result => {
+    const topic = allTopics[result.id]
+    return topic ? [topic] : []
+  })
   const allMetrics = mergeRecords(pages, page => page.topics_metrics)
   const allElections = mergeRecords(pages, page => page.topic_elections ?? {})
   const allBookmarks = mergeRecords(pages, page => page.bookmarks ?? {})
   const allElectionVotes = mergeRecords(pages, page => page.election_votes ?? {})
   const allFediverseInstances = mergeRecords(pages, page => page.fediverse_instances ?? {})
   const allHostnameElections = mergeRecords(pages, page => page.hostname_elections ?? {})
-
-  if (allResults.length === 0) {
-    return (
-      <EmptyState
-        title={t('extracted.topics.topicList.noTopicsFound_a32677cf')}
-        description={t('extracted.topics.topicList.tryAdjustingYourSearchOrFilters_54f7b4c2')}
-      />
-    )
-  }
 
   const canLoadMore = hasNextPage && !!nextPageEndpoint
 
@@ -71,32 +66,34 @@ export function TopicList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      itemCount={visibleTopics.length}
+      emptyState={
+        <EmptyState
+          title={t('extracted.topics.topicList.noTopicsFound_a32677cf')}
+          description={t('extracted.topics.topicList.tryAdjustingYourSearchOrFilters_54f7b4c2')}
+        />
+      }
     >
       <div className='space-y-4'>
-        {allResults.map(result => {
-          const topic = allTopics[result.id]
-          if (!topic) return null
-
-          return (
-            <TopicCard
-              key={topic.id}
-              topic={topic}
-              metrics={allMetrics[topic.id]}
-              election={allElections[topic.id]}
-              isFollowing={allBookmarks[topic.id]?.follow}
-              isMuted={allBookmarks[topic.id]?.mute}
-              electionVoteChoice={
-                allElectionVotes[topic.id]?.choice as
-                  | import('@/lib/api/client/elections').SentimentChoice
-                  | undefined
-              }
-              fediverseInstance={allFediverseInstances[topic.id]}
-              hostnameElection={
-                topic.hostname?.id ? allHostnameElections[topic.hostname.id] : undefined
-              }
-            />
-          )
-        })}
+        {visibleTopics.map(topic => (
+          <TopicCard
+            key={topic.id}
+            topic={topic}
+            metrics={allMetrics[topic.id]}
+            election={allElections[topic.id]}
+            isFollowing={allBookmarks[topic.id]?.follow}
+            isMuted={allBookmarks[topic.id]?.mute}
+            electionVoteChoice={
+              allElectionVotes[topic.id]?.choice as
+                | import('@/lib/api/client/elections').SentimentChoice
+                | undefined
+            }
+            fediverseInstance={allFediverseInstances[topic.id]}
+            hostnameElection={
+              topic.hostname?.id ? allHostnameElections[topic.hostname.id] : undefined
+            }
+          />
+        ))}
       </div>
     </InfiniteScroll>
   )

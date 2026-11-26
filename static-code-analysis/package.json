@@ -9,18 +9,17 @@
   "scripts": {},
   "dependencies": {
     "@vouchington/localization": "^0.3.1",
-    "@vouchington/localization-compiler": "^0.3.0",
-    "@vouchington/postgres": "^0.6.1",
+    "@vouchington/localization-compiler": "^0.3.1",
+    "@vouchington/postgres": "^0.6.2",
     "ajv": "^8.20.0",
-    "no-mistakes": "^0.109.109",
-    "oxfmt": "^0.78.0",
-    "picomatch": "^4.0.4",
-    "vouchington-tooling": "^3.5.0",
+    "no-mistakes": "^0.109.122",
+    "oxfmt": "^0.79.0",
+    "vouchington-tooling": "^3.10.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
-    "dependency-cruiser": "^18.7.2",
+    "dependency-cruiser": "^18.8.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }

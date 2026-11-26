@@ -32,16 +32,7 @@ export function ModQueueReportsPanel({
   selection: ModQueueSelection
 }) {
   const t = useTranslations()
-  if (queue.pendingReports.length === 0) {
-    return (
-      <p
-        className='py-6 text-center text-sm text-muted-foreground'
-        data-pw='mod-queue-reports-empty'
-      >
-        {t('extracted.communities.modQueue.noPendingReports_36379210')}
-      </p>
-    )
-  }
+  if (queue.pendingReports.length === 0) return null
 
   return (
     <section

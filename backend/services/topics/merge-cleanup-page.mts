@@ -22,7 +22,7 @@ export async function processTopicMergeCleanupPage(
   const { rowCount } = await query(
     `/* processTopicMergeCleanupPage */ WITH page AS MATERIALIZED (
       SELECT ${key} FROM ${table} WHERE operation_id = $1::uuid
-      ORDER BY ${key} LIMIT $2::integer FOR UPDATE
+      ORDER BY ${key} LIMIT $2::integer
     ) DELETE FROM ${table} target USING page
       WHERE target.operation_id = $1::uuid AND target.${key} = page.${key}`,
     [operationId, limit],

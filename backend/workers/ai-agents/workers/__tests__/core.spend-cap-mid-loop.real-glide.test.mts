@@ -9,7 +9,7 @@ import {
   spendCapDelayedRegistryKey,
 } from '@services/ai-usage'
 import { getDayBounds } from '@ts-shared/utils/dates'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import { cleanUpSpendCapDay } from '@voucha/test-helpers/ai-agents-spend-cap'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -53,7 +53,7 @@ describe('registered AI worker spend-cap admission after dispatch', () => {
           create.mockImplementationOnce(() => {
             const response = (async () => {
               await insertTestAiUsageRecord({
-                id: timestampToUuidv7LowerBound(Date.now()),
+                id: getMinUuidv7ForDate(new Date()),
                 costMicrounits: 12_000_000,
               })
               await refreshDailyAiCostTotalMicrounits()

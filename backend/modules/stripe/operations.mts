@@ -1,3 +1,4 @@
+import { parseStripeInvoicePaymentTarget, type StripeInvoicePaymentLike } from '@vouchington/stripe'
 import * as stripeCheckout from './checkout.mts'
 import * as stripeCustomers from './customers.mts'
 import * as stripeIdentity from './identity.mts'
@@ -93,12 +94,7 @@ export async function listSubscriptionInvoicesOperation(
       description: invoice.description ?? null,
       payments: payments.map(({ amount_paid: amountPaid, payment }) => ({
         amountPaid,
-        payment: {
-          type: payment?.type ?? '',
-          chargeId: payment?.type === 'charge' ? (payment.charge ?? null) : null,
-          paymentIntentId:
-            payment?.type === 'payment_intent' ? (payment.payment_intent ?? null) : null,
-        },
+        payment: parseStripeInvoicePaymentTarget(payment),
       })),
     }
   })
@@ -108,11 +104,7 @@ type InvoiceWithPayments = {
   payments?: {
     data: Array<{
       amount_paid: number
-      payment?: {
-        type: string
-        charge?: string | null
-        payment_intent?: string | null
-      } | null
+      payment?: StripeInvoicePaymentLike | null
     }>
   }
 }

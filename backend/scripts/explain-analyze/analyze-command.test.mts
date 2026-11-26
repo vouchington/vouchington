@@ -1,5 +1,7 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it, vi } from 'vitest'
 import { analyzePairedResults } from './analyze-command.mts'
+import { assertNoGenericPlanRegressions } from './generic-plan-regressions.mts'
 
 describe('explain analyze paired results', () => {
   it('classifies and displays the same baseline and heavy names', () => {
@@ -17,7 +19,7 @@ describe('explain analyze paired results', () => {
         }),
       )
       analyzePairedResults('fixture.json', results, results, {})
-      const lines = output.mock.calls.map(([line]) => line)
+      const lines = output.mock.calls.flatMap(([text]) => String(text).split('\n'))
       expect(lines).toContain('| get_heavy_posts | baseline | 1.0 | 1.0 | - |')
       expect(lines).toContain('| get_posts | heavy | 1.0 | 1.0 | - |')
       expect(lines).toContain('| get_posts:heavy-follow-users | heavy | 1.0 | 1.0 | - |')
@@ -176,5 +178,113 @@ function modifyTableWal(exclusiveMegabytes: number, childMegabytes: number) {
         Plans: [{ 'Node Type': 'Insert', 'WAL Bytes': childMegabytes * bytes }],
       },
     },
+  }
+}
+
+describe('generic plan regression gate', () => {
+  it('rejects a repeated generic slowdown for the same scenario statement', () => {
+    const custom = planResult('force_custom_plan', 23.739)
+    const generic = planResult('force_generic_plan', 5803.19)
+    const sameSqlDifferentCapture = [
+      { ...custom, capture_index: 1, execution_time_ms: 6000 },
+      { ...generic, capture_index: 1, execution_time_ms: 6000 },
+    ]
+    expect(() =>
+      assertNoGenericPlanRegressions(
+        [custom, generic, ...sameSqlDifferentCapture],
+        [
+          ...sameSqlDifferentCapture,
+          { ...generic, execution_time_ms: 5926.598 },
+          { ...custom, execution_time_ms: 23.666 },
+        ],
+      ),
+    ).toThrow(/story-post-related-url-active-relations-maximum.*capture 0.*244\.5x.*250\.4x/)
+  })
+
+  it.each([
+    { case: 'a one-pass outlier', custom: 25, generic: 600, repeatCustom: 24, repeatGeneric: 25 },
+    {
+      case: 'a slow cold custom capture',
+      custom: 1238,
+      generic: 295,
+      repeatCustom: 290,
+      repeatGeneric: 291,
+    },
+    {
+      case: 'a small absolute increase',
+      custom: 0.027,
+      generic: 2.454,
+      repeatCustom: 0.027,
+      repeatGeneric: 2.462,
+    },
+    {
+      case: 'a large increase below the ratio threshold',
+      custom: 90,
+      generic: 300,
+      repeatCustom: 95,
+      repeatGeneric: 310,
+    },
+  ])('allows $case', ({ custom, generic, repeatCustom, repeatGeneric }) => {
+    expect(() =>
+      assertNoGenericPlanRegressions(
+        [planResult('force_custom_plan', custom), planResult('force_generic_plan', generic)],
+        [
+          planResult('force_custom_plan', repeatCustom),
+          planResult('force_generic_plan', repeatGeneric),
+        ],
+      ),
+    ).not.toThrow()
+  })
+
+  it('applies the standard timing safeguard to each report-only continuation capture', () => {
+    const scenario = 'community-moderation-queue-report-continuation'
+    const custom = {
+      ...planResult('force_custom_plan', 500),
+      scenario_id: scenario,
+      name: 'searchCommunityModerationQueue:force_custom_plan',
+    }
+    const generic = {
+      ...planResult('force_generic_plan', 5_001),
+      scenario_id: scenario,
+      name: 'searchCommunityModerationQueue:force_generic_plan',
+    }
+    const results = [custom, generic]
+    expect(() => assertNoGenericPlanRegressions(results, results)).toThrow(
+      /community-moderation-queue-report-continuation capture 0/,
+    )
+
+    const anotherCapture = results.map(result => ({ ...result, capture_index: 1 }))
+    expect(() => assertNoGenericPlanRegressions(anotherCapture, anotherCapture)).toThrow(
+      /community-moderation-queue-report-continuation capture 1/,
+    )
+  })
+
+  it('does not compare different scenarios or statements', () => {
+    const custom = planResult('force_custom_plan', 10)
+    const generic = planResult('force_generic_plan', 1000)
+    const results = [
+      custom,
+      { ...generic, capture_index: 1 },
+      { ...generic, scenario_id: 'another-scenario' },
+      { ...generic, query_text: 'SELECT 2' },
+    ]
+    expect(() => assertNoGenericPlanRegressions(results, results)).not.toThrow()
+  })
+})
+
+function planResult(
+  mode: 'force_custom_plan' | 'force_generic_plan',
+  executionTimeMs: number,
+): ExplainResult {
+  return {
+    name: `storyPostRelatedUrlProjectionActiveRelationIds:${mode}`,
+    scenario_id: 'story-post-related-url-active-relations-maximum',
+    capture_index: 0,
+    plan_cache_mode: mode,
+    query_text: 'SELECT 1',
+    plan: { Plan: { 'Node Type': 'Result' } },
+    execution_time_ms: executionTimeMs,
+    planning_time_ms: 1,
+    timestamp: '2026-11-06T00:00:00.000Z',
   }
 }

@@ -1,135 +1,55 @@
 import type { BasicUser } from '@voucha/types/entities/user'
 import type { EntityRelationMetadata } from './metadata.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
 import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
-import { buildInsertBody } from './build-insert-query.mts'
 
-type RelationPair = {
-  subject: UpsertEntityTypes | EntityIdentifier
-  object: UpsertEntityTypes | EntityIdentifier
-}
-
-/**
- * Both directions in one statement. Self-pairs are not provably rejected before this write, so the
- * reverse row is omitted when subject and object are the same id. Two upserts of one primary key
- * in one statement fail with "ON CONFLICT DO UPDATE command cannot affect row a second time".
- * `related` is the only bidirectional predicate; it is not a follow or an ordered relation.
- */
-export function buildBidirectionalInsertBody(
+export function buildBidirectionalInsertQuery(
   relation: EntityRelationMetadata,
   creator: BasicUser | null,
-  forwardPairs: RelationPair[],
-  reversePairs: RelationPair[],
+  subjectId: string,
+  objectIds: readonly string[],
   options?: UpsertEntityRelationsOptions,
 ): SQLStatement {
-  const distinctReversePairs = reversePairs.filter(
-    pair => pair.subject.id.toLowerCase() !== pair.object.id.toLowerCase(),
-  )
-  if (distinctReversePairs.length === 0)
-    return buildInsertBody(relation, creator, forwardPairs, options)
-  if (relation.order_index || options?.skipIfDeleted || isUserFollowRelation(relation)) {
+  const reverseIds = objectIds.filter(id => id.toLowerCase() !== subjectId.toLowerCase())
+  if (reverseIds.length > 0 && options?.skipIfDeleted) {
     throw new Error(`Bidirectional insert does not support ${relation.table_name}`)
   }
-  const query = sql`
-    WITH `
-  appendDirection(query, 'forward', relation, creator, forwardPairs)
-  query.append(sql`, `)
-  appendDirection(query, 'reverse', relation, creator, distinctReversePairs)
-  query.append(sql`
-    SELECT rows.*
-    FROM (
-      SELECT forward_upserted.*,
-        (forward_existing.subject_id IS NULL OR forward_existing.deleted_at IS NOT NULL) AS newly_active,
-        'forward'::text AS direction,
-        forward_input.ordinality
-      FROM forward_upserted
-      JOIN forward_input
-        ON forward_input.subject_id = forward_upserted.subject_id
-        AND forward_input.object_id = forward_upserted.object_id
-      LEFT JOIN forward_existing
-        ON forward_existing.subject_id = forward_upserted.subject_id
-        AND forward_existing.object_id = forward_upserted.object_id
-      UNION ALL
-      SELECT reverse_upserted.*,
-        (reverse_existing.subject_id IS NULL OR reverse_existing.deleted_at IS NOT NULL) AS newly_active,
-        'reverse'::text AS direction,
-        reverse_input.ordinality
-      FROM reverse_upserted
-      JOIN reverse_input
-        ON reverse_input.subject_id = reverse_upserted.subject_id
-        AND reverse_input.object_id = reverse_upserted.object_id
-      LEFT JOIN reverse_existing
-        ON reverse_existing.subject_id = reverse_upserted.subject_id
-        AND reverse_existing.object_id = reverse_upserted.object_id
-    ) rows
-    ORDER BY rows.direction, rows.ordinality
-  `)
-  return query
-}
+  const subjectIds = [...objectIds.map(() => subjectId), ...reverseIds]
+  const pairedObjectIds = [...objectIds, ...reverseIds.map(() => subjectId)]
 
-function appendDirection(
-  query: SQLStatement,
-  prefix: 'forward' | 'reverse',
-  relation: EntityRelationMetadata,
-  creator: BasicUser | null,
-  pairs: RelationPair[],
-): void {
-  const subjectIds = pairs.map(({ subject }) => subject.id)
-  const objectIds = pairs.map(({ object }) => object.id)
-  query.append(`${prefix}_input AS (
+  // Write in primary-key order across both directions, then restore the caller's order.
+  return sql`/* buildBidirectionalInsertQuery */
+    WITH input AS (
       SELECT subject_id, object_id, ordinality
-      FROM unnest(`)
-  query.append(sql`${subjectIds}::uuid[], ${objectIds}::uuid[]) WITH ORDINALITY
+      FROM unnest(${subjectIds}::uuid[], ${pairedObjectIds}::uuid[]) WITH ORDINALITY
         AS t(subject_id, object_id, ordinality)
-    ), `)
-  query.append(`${prefix}_ordered AS MATERIALIZED (
-      SELECT subject_id, object_id
-      FROM ${prefix}_input
+    ), upserted AS (
+      INSERT INTO `.append(relation.table_name)
+    .append(sql` AS target (subject_id, object_id, created_by_id)
+      SELECT subject_id, object_id, ${creator?.id ?? null}
+      FROM input
       ORDER BY subject_id, object_id
-    ), ${prefix}_existing AS MATERIALIZED (
-      SELECT r.subject_id, r.object_id, r.deleted_at
-      FROM ${prefix}_ordered ordered_input
-      JOIN LATERAL (
-        SELECT subject_id, object_id, deleted_at
-        FROM `)
-  query.append(relation.table_name)
-  query.append(` relation
-        WHERE relation.subject_id = ordered_input.subject_id
-          AND relation.object_id = ordered_input.object_id
-        FOR UPDATE
-        LIMIT 1
-      ) r ON TRUE
-    ), ${prefix}_upserted AS (
-      INSERT INTO `)
-  query.append(relation.table_name)
-  query.append(sql` (subject_id, object_id, created_by_id)
-      SELECT input.subject_id, input.object_id, ${creator?.id ?? null}
-      FROM `)
-  query.append(`${prefix}_input input
-      LEFT JOIN ${prefix}_existing existing
-        ON existing.subject_id = input.subject_id AND existing.object_id = input.object_id
-      ORDER BY input.subject_id, input.object_id
-      ON CONFLICT (subject_id, object_id)
-        DO UPDATE SET
-          created_at = CASE
-            WHEN `)
-  query.append(relation.table_name)
-  query.append(`.deleted_at IS NULL THEN `)
-  query.append(relation.table_name)
-  query.append(`.created_at
-            ELSE clock_timestamp()
-          END,
-          deleted_at = NULL,
-          deleted_by_id = NULL
-      RETURNING *
-    )`)
-}
-
-function isUserFollowRelation(relation: EntityRelationMetadata): boolean {
-  return (
-    relation.subject_type === 'user' &&
-    relation.predicate === 'follow' &&
-    relation.object_type === 'user'
-  )
+      ON CONFLICT (subject_id, object_id) DO UPDATE SET
+        created_at = CASE
+          WHEN target.deleted_at IS NULL THEN target.created_at
+          ELSE clock_timestamp()
+        END,
+        deleted_at = NULL,
+        deleted_by_id = NULL
+      WHERE NOT ${options?.skipIfDeleted === true} OR target.deleted_at IS NULL
+      RETURNING target.subject_id, target.object_id, target.created_by_id, target.created_at,
+        target.deleted_at, target.deleted_by_id, target.id, target.votes_score_up,
+        target.votes_score_none, target.votes_score_down, target.votes_count_up,
+        target.votes_count_none, target.votes_count_down, target.votes_score_sort,
+        target.votes_score_net, (old.subject_id IS NULL OR old.deleted_at IS NOT NULL) AS newly_active
+    )
+    SELECT upserted.subject_id, upserted.object_id, upserted.created_by_id, upserted.created_at,
+      upserted.deleted_at, upserted.deleted_by_id, upserted.id, upserted.votes_score_up,
+      upserted.votes_score_none, upserted.votes_score_down, upserted.votes_count_up,
+      upserted.votes_count_none, upserted.votes_count_down, upserted.votes_score_sort,
+      upserted.votes_score_net, upserted.newly_active,
+      CASE WHEN input.ordinality <= ${objectIds.length} THEN 'forward' ELSE 'reverse' END AS direction
+    FROM upserted
+    JOIN input USING (subject_id, object_id)
+    ORDER BY input.ordinality`)
 }

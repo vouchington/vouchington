@@ -1,3 +1,5 @@
+/* oxlint-disable no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- moved test support forwards the command data-pw prop the autocomplete tests query */
+
 import { configure } from '@testing-library/react'
 import { createContext, use } from 'react'
 import { vi } from 'vitest'
@@ -32,6 +34,7 @@ vi.mock(
         onFocus,
         onKeyDown,
         disabled,
+        'data-pw': dataPw,
       }: {
         placeholder?: string
         value?: string
@@ -39,12 +42,14 @@ vi.mock(
         onFocus?: () => void
         onKeyDown?: (e: React.KeyboardEvent) => void
         disabled?: boolean
+        'data-pw'?: string
       }) => (
         <Input
           placeholder={placeholder}
           aria-label={placeholder ?? 'Command search'}
           value={value}
           disabled={disabled}
+          data-pw={dataPw}
           onChange={e => onValueChange?.(e.target.value)}
           onFocus={onFocus}
           onKeyDown={onKeyDown}

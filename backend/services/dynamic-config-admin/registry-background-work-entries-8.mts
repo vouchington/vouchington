@@ -32,6 +32,7 @@ export const backgroundWorkRegistryEntries8 = {
       processing_timeout_minutes: 'Processing timeout minutes before background recovery.',
       batch_size: 'Batch size for user deletions processing.',
       lifecycle_recovery_batch_size: 'Lifecycle recovery batch size for user deletions processing.',
+      straggler_ballot_batch_size: 'Maximum inspected users and deleted ballots per recovery tick.',
     },
   }),
   'engagement-emails-work-config': defineBoundedWorkNamespace({

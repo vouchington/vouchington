@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
-import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import { createCodedError } from '@vouchington/sentry'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'

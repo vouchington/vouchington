@@ -32,7 +32,7 @@
     "@queues/memberships": "workspace:^",
     "@services/memberships": "workspace:^",
     "@vouchington/memberships": "^0.2.0",
-    "@vouchington/stripe": "^0.2.0",
+    "@vouchington/stripe": "^0.2.1",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",
     "stripe": "^23.1.0",

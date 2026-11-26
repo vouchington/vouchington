@@ -1,32 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { GITHUB_BODY_MAX_CHARACTERS, validateGitHubBodyLength } from 'vouchington-tooling/gh-cli'
+import { validatePrBody } from 'vouchington-tooling/pr-description'
 
-import {
-  VALID_PR_BODY as VALID_BODY,
-  VALID_PROVENANCE_BLOCK,
-} from '../../test-helpers/pr-description/valid-pr-body.mts'
-import { validatePrBody } from '../validate.mts'
+import { VALID_PR_BODY as VALID_BODY } from '../../test-helpers/pr-description/valid-pr-body.mts'
+import { VOUCHA_PR_BODY_POLICY } from '../policy.mts'
 
-function withoutSection(body: string, sectionHeading: string): string {
-  const lines = body.split('\n')
-  const index = lines.findIndex(line => line.trim() === sectionHeading)
-  if (index === -1) return body
-  let end = lines.findIndex((line, lineIndex) => lineIndex > index && line.startsWith('## '))
-  if (end === -1) end = lines.length
-  return lines
-    .filter((_, lineIndex) => lineIndex < index || lineIndex >= end)
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-}
-
-function bodyAtLength(length: number): string {
-  const currentLength = validateGitHubBodyLength(VALID_BODY).characterCount
-  return `${VALID_BODY}${'x'.repeat(length - currentLength)}`
-}
-
-describe('validatePrBody', () => {
+describe('Voucha PR body validation policy', () => {
   it('accepts a valid PR body', () => {
-    expect(validatePrBody(VALID_BODY)).toEqual({
+    expect(validatePrBody(VALID_BODY, { policy: VOUCHA_PR_BODY_POLICY })).toEqual({
       advisories: [],
       errors: [],
       ok: true,
@@ -34,80 +14,23 @@ describe('validatePrBody', () => {
     })
   })
 
-  it('accepts a body at GitHub’s limit', () => {
-    expect(validatePrBody(bodyAtLength(GITHUB_BODY_MAX_CHARACTERS)).ok).toBe(true)
-  })
-
-  it('reports the character and UTF-8 byte counts one character over GitHub’s limit', () => {
-    expect(validatePrBody(bodyAtLength(GITHUB_BODY_MAX_CHARACTERS + 1)).errors.join('\n')).toMatch(
-      /65,537 Unicode characters.*65,537 UTF-8 bytes.*65,536/,
-    )
-  })
-
-  it('reports missing required sections together', () => {
-    const result = validatePrBody('## Summary\n\nNo related issues or workspace setup.\n')
-    expect(result.ok).toBe(false)
-    expect(result.errors).toContain(
-      'PR body must include a "## Related issues" section (e.g. a heading followed by "Closes #123").',
-    )
-    expect(result.errors).toContain(
-      'PR body must include a "Workspace setup:" line (e.g. "Workspace setup: ./dev/initialize monorepo").',
-    )
-  })
-
-  it('rejects a body with no Related issues heading', () => {
-    const result = validatePrBody(withoutSection(VALID_BODY, '## Related issues'))
-    expect(result.ok).toBe(false)
-    expect(result.errors).toContain(
-      'PR body must include a "## Related issues" section (e.g. a heading followed by "Closes #123").',
-    )
-  })
-
-  it('rejects a body with no Workspace setup line', () => {
-    const result = validatePrBody(VALID_BODY.replace('Workspace setup:', 'Setup:'))
+  it('reports the Voucha Workspace setup example when missing', () => {
+    const result = validatePrBody(VALID_BODY.replace('Workspace setup:', 'Setup:'), {
+      policy: VOUCHA_PR_BODY_POLICY,
+    })
     expect(result.ok).toBe(false)
     expect(result.errors).toContain(
       'PR body must include a "Workspace setup:" line (e.g. "Workspace setup: ./dev/initialize monorepo").',
     )
   })
 
-  it.each(['Refs #123', 'Closes \\#123'])(
-    'rejects a Related issues section without a closing keyword: %s',
-    reference => {
-      const result = validatePrBody(VALID_BODY.replace('Closes #123', reference))
-      expect(result.ok).toBe(false)
-      expect(result.errors).toContain(
-        'PR body must include at least one GitHub closing keyword (e.g. "Closes #123") in the "## Related issues" section, or the exact interactive direct-user-request no-source representation, scheduled no-source representation, or partial-batch representation after its single Refs entry.',
-      )
-    },
-  )
-
-  it.each(['Fixes #1', 'Resolves #1', 'Closed #1', 'Fixed #1', 'Resolved #1'])(
-    'accepts closing keyword: %s',
-    reference => {
-      expect(validatePrBody(VALID_BODY.replace('Closes #123', reference)).ok).toBe(true)
-    },
-  )
-
-  it.each(['closes #1', 'CLOSES #1', 'Closes #1'])(
-    'accepts case-insensitive closing keyword: %s',
-    reference => {
-      expect(validatePrBody(VALID_BODY.replace('Closes #123', reference)).ok).toBe(true)
-    },
-  )
-
-  it('accepts Refs alongside a closing reference', () => {
-    expect(validatePrBody(VALID_BODY.replace('Closes #123', 'Closes #123\nRefs #456')).ok).toBe(
-      true,
+  it('reports the Voucha missing closing keyword message with local no-source options', () => {
+    const result = validatePrBody(VALID_BODY.replace('Closes #123', 'Refs #123'), {
+      policy: VOUCHA_PR_BODY_POLICY,
+    })
+    expect(result.ok).toBe(false)
+    expect(result.errors).toContain(
+      'PR body must include at least one GitHub closing keyword (e.g. "Closes #123") in the "## Related issues" section, or the exact interactive direct-user-request no-source representation, scheduled no-source representation, or partial-batch representation after its single Refs entry.',
     )
-  })
-
-  it('rejects a closing keyword outside Related issues', () => {
-    const body = `## Summary\n\nCloses #999\n\n## Impact\n\nDevelopers receive clearer workflow feedback; product behavior is unchanged.\n\n## Related issues\n\nRefs #123\n\nWorkspace setup: ./dev/initialize monorepo\n${VALID_PROVENANCE_BLOCK}\n`
-    expect(validatePrBody(body).errors.join(' ')).toContain('"## Related issues" section')
-  })
-
-  it('accepts cross-repository closing references', () => {
-    expect(validatePrBody(VALID_BODY.replace('Closes #123', 'Closes owner/repo#123')).ok).toBe(true)
   })
 })

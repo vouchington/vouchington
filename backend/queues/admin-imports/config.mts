@@ -8,6 +8,8 @@ export const ADMIN_TOPIC_IMPORT_ROW_DEDUP_PREFIX = 'imports.processAdminTopicImp
 export const ADMIN_TOPIC_IMPORT_DISPATCH_ID_PREFIX = 'imports_dispatchAdminTopicImport'
 
 const defaultFields = {
+  max_rows_per_batch: 50000,
+  max_parent_slugs_per_row: 20,
   insert_chunk_size: 1000,
   dispatch_page_size: 1000,
   recovery_batch_size: 100,
@@ -15,6 +17,8 @@ const defaultFields = {
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const adminImportsWorkMaxValues = {
+  max_rows_per_batch: 50000,
+  max_parent_slugs_per_row: 20,
   insert_chunk_size: 10000,
   dispatch_page_size: 10000,
   recovery_batch_size: 1000,
@@ -23,6 +27,8 @@ export const adminImportsWorkMaxValues = {
 export const adminImportsWorkConfig = new DynamicConfig({
   key: 'admin-imports-work-config',
   fieldTypes: {
+    max_rows_per_batch: 'number',
+    max_parent_slugs_per_row: 'number',
     insert_chunk_size: 'number',
     dispatch_page_size: 'number',
     recovery_batch_size: 'number',

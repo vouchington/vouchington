@@ -5,90 +5,24 @@
 import type { PostType } from '@voucha/types/entities/post'
 import type { TopicTypes } from '@voucha/types/entities/topic'
 import type { TimeRange } from '@voucha/types/feed'
+import type {
+  NameCursor,
+  PreciseTimestampCursor,
+  RankingCursor,
+  ScopedAliasCursor,
+  ScopedPreciseTimestampCursor,
+  ScopedScoreCursor,
+  ScopedSimpleCursor,
+  ScopedTierCursor,
+  ScopedTierPreciseNameCursor,
+  ScopedTierPreciseUuidCursor,
+  ScopedTimestampCursor,
+  ScoreCursor,
+  SimpleCursor,
+  TierCursor,
+  TimestampCursor,
+} from '@vouchington/pagination'
 import type { MediaType } from './filters.mts'
-
-/**
- * Cursor types for different pagination modes
- */
-type SimpleCursor = {
-  id: string
-}
-
-type ScopedSimpleCursor = {
-  id: string
-  scope: string
-}
-
-export type ScoreCursor = {
-  score: number
-  id: string
-}
-
-type ScopedScoreCursor = ScoreCursor & {
-  scope: string
-}
-
-type RankingCursor = {
-  ranking: number
-  id: string
-}
-
-type TimestampCursor = {
-  timestamp: number
-  id: string
-}
-
-type ScopedTimestampCursor = {
-  timestamp: number
-  id: string
-  scope: string
-}
-
-type PreciseTimestampCursor = {
-  timestamp: string
-  id: string
-}
-
-export type ScopedPreciseTimestampCursor = PreciseTimestampCursor & {
-  scope: string
-}
-
-type ScopedTierPreciseNameCursor = {
-  tier: number
-  timestamp: string
-  name: string
-  scope: string
-}
-
-export type ScopedTierPreciseUuidCursor = {
-  timestamp: string
-  tier: number
-  id: string
-  scope: string
-}
-
-export type NameCursor = {
-  name: string
-  id: string
-}
-
-type TierCursor = {
-  tier: number
-  id: string
-}
-
-type ScopedTierCursor = TierCursor & {
-  scope: string
-}
-
-/**
- * Scoped cursor for lists keyed by a globally-unique text column with no surrogate id
- * (e.g. `topic_aliases.alias`). The text value itself is the sort/tiebreaker key.
- */
-type ScopedAliasCursor = {
-  alias: string
-  scope: string
-}
 
 export type Cursor =
   | SimpleCursor

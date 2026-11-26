@@ -54,6 +54,15 @@ export function AppealsClient({
   )
   const open = state.openId ? state.appealOverrides[state.openId] : undefined
 
+  const list = (
+    <AppealsTable
+      viewerTier={viewerTier}
+      appeals={appeals}
+      loadingIds={actions.loadingIds}
+      onOpen={actions.handleOpen}
+    />
+  )
+
   return (
     <div
       className='space-y-4'
@@ -70,13 +79,10 @@ export function AppealsClient({
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
+        itemCount={appeals.length}
+        emptyState={list}
       >
-        <AppealsTable
-          viewerTier={viewerTier}
-          appeals={appeals}
-          loadingIds={actions.loadingIds}
-          onOpen={actions.handleOpen}
-        />
+        {list}
       </InfiniteScroll>
       {viewerTier === 'staff' ? (
         <AppealDetailDialog

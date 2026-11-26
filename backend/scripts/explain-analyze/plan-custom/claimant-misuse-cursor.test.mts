@@ -1,5 +1,5 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 import { assertClaimantMisuseCursorSeek } from './claimant-misuse-cursor.mts'
 
 function result(indexCondition: string, indexName = 'idx_copyright_notices__claimant_user') {

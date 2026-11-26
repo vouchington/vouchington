@@ -19,7 +19,8 @@ import {
 } from '@services/posts/public-post-projection'
 import { projectMcpRecommendation } from './topic-recommendation-read-output.mts'
 import type { TopicRecommendationPost } from '@services/topic-recommendations'
-import { closedObject, pickProperties } from './read-tool-output-schema.mts'
+import { objectSchema } from '@vouchington/mcp-server/schema'
+import { pickProperties } from './read-tool-output-schema.mts'
 
 /** The post fields the MCP read tools return, in output order. */
 const SUMMARY_FIELDS = [
@@ -44,7 +45,7 @@ export type McpPostSummary = Pick<McpPost, (typeof SUMMARY_FIELDS)[number]> & {
 
 /** The published schema of an `McpPost`, from the generated `Post` contract. */
 export function mcpPostSchema(details = false) {
-  return closedObject(
+  return objectSchema(
     {
       ...pickProperties('Post', details ? PUBLIC_POST_FIELDS : SUMMARY_FIELDS),
       ...(details ? pickProperties('Post', ['topic_recommendation']) : {}),

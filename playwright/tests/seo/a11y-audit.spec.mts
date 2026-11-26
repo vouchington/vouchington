@@ -90,8 +90,10 @@ async function analyzePageA11y(page: Page, path: string) {
 test.describe('Accessibility audit @a11y', () => {
   test.describe('public routes', () => {
     for (const { name, path } of publicRoutes) {
-      test(`${name} has no axe violations`, async ({ page }) => {
-        await assertNoAxeViolations(page, path)
+      test.describe(name, () => {
+        test('has no axe violations', async ({ page }) => {
+          await assertNoAxeViolations(page, path)
+        })
       })
     }
   })
@@ -100,8 +102,10 @@ test.describe('Accessibility audit @a11y', () => {
     test.use({ storageState: AUTH_STATE })
 
     for (const { name, path } of authenticatedRoutes) {
-      test(`${name} has no axe violations`, async ({ page }) => {
-        await assertNoAxeViolations(page, path)
+      test.describe(name, () => {
+        test('has no axe violations', async ({ page }) => {
+          await assertNoAxeViolations(page, path)
+        })
       })
     }
   })
@@ -110,8 +114,10 @@ test.describe('Accessibility audit @a11y', () => {
     test.use({ storageState: AUTH_STATE })
 
     for (const { name, path } of adminRoutes) {
-      test(`${name} has no axe violations`, async ({ page }) => {
-        await assertNoAxeViolations(page, path)
+      test.describe(name, () => {
+        test('has no axe violations', async ({ page }) => {
+          await assertNoAxeViolations(page, path)
+        })
       })
     }
   })

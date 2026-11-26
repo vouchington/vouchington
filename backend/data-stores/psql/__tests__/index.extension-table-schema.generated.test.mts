@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { read } from '../index.mts'
-import { allowUnannotatedQuery } from '../prepared-statement-name.mts'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 
 type TableColumn = {
   column_name: string

@@ -35041,7 +35041,7 @@
                 "format": "uuid",
                 "type": "string"
               },
-              "maxItems": 500,
+              "maxItems": 256,
               "minItems": 1,
               "type": "array",
               "uniqueItems": true
@@ -47958,6 +47958,15 @@
           }
         },
         "required": ["idOrSlug"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "description": "Continuation cursor for the topic follower group",
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },

@@ -1,9 +1,20 @@
+import type {
+  GeneratedFkAlias,
+  GeneratedSelfRootAlias,
+  RelationalStorageCatalog,
+} from 'vouchington-tooling/relational-storage'
+
+import {
+  ALLOWED_AUDIT_SNAPSHOT_ID,
+  ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
+} from './relational-storage-reviewed-ids.mts'
+
 // Every exception is an exact table.column from the committed PostgreSQL schema snapshot.
 // Remove an entry once its column no longer needs the exception. New entries require plan review.
 // JSON documents are allowed. This list records reviewed opaque provider, protocol, and replay
 // payloads. Structured documents and change history stay JSON too. An entity id inside any of
 // them is a foreign-key column; the rest of the document stays JSON.
-export const ALLOWED_OPAQUE_JSON = new Set([
+const ALLOWED_OPAQUE_JSON = new Set([
   'agent_moderations.results',
   'apple_accounts.apple_user_data',
   'classifier_runs.configuration_json',
@@ -37,15 +48,8 @@ export const ALLOWED_OPAQUE_JSON = new Set([
   'x_accounts.x_user_data',
 ])
 
-// Two further reviewed categories carry one reason per entry: token, cursor or protocol
-// identifiers, and audit snapshot identifiers. Both are defined in the schema rules.
-export {
-  ALLOWED_AUDIT_SNAPSHOT_ID,
-  ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
-} from './relational-storage-reviewed-ids.mts'
-
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
-export const ALLOWED_NONRELATION_UUID = new Set([
+const ALLOWED_NONRELATION_UUID = new Set([
   // Durable keyset positions can outlive their scanned rows.
   'copyright_notice_operational_retention_cursors.cursor_record_id',
   'copyright_notice_operational_retention_cursors.sweep_upper_bound_record_id',
@@ -132,7 +136,7 @@ export const ALLOWED_NONRELATION_UUID = new Set([
 // Sole UUID primary keys without a generator are shared identities unless listed here. Retained
 // roots, publication bridges that mint their own id, and the session JWT sid are their own identity.
 // A shared primary key that points at its parent keeps that foreign key instead of joining this set.
-export const ALLOWED_OWN_PRIMARY_UUID = new Set([
+const ALLOWED_OWN_PRIMARY_UUID = new Set([
   'oauth_grant_retention_anchors.id',
   'post_publication_community_identities.id',
   'retained_api_key_identities.id',
@@ -147,15 +151,9 @@ export const ALLOWED_OWN_PRIMARY_UUID = new Set([
   'user_sessions.id',
 ])
 
-export type GeneratedFkAlias = {
-  expression: string
-  oneTargetCheck: string
-  sourceColumns: readonly string[]
-}
-
 // The sole generated UUID alias combines three concrete target FKs and the exact one-target check.
 // Match the whole COALESCE expression and num_nonnulls(...) = 1 body; a similar check is not enough.
-export const GENERATED_FK_ALIASES = new Map<string, GeneratedFkAlias>([
+const GENERATED_FK_ALIASES = new Map<string, GeneratedFkAlias>([
   [
     'curated_aside_items.entity_id',
     {
@@ -165,3 +163,27 @@ export const GENERATED_FK_ALIASES = new Map<string, GeneratedFkAlias>([
     },
   ],
 ])
+
+const GENERATED_SELF_ROOT_ALIASES = new Map<string, GeneratedSelfRootAlias>([
+  [
+    'urls.canonical_root_id',
+    {
+      expression: 'CASE WHEN (canonical_url_id IS NULL) THEN id ELSE NULL::uuid END',
+      primaryKeyColumn: 'id',
+      selfReferenceColumn: 'canonical_url_id',
+    },
+  ],
+])
+
+const EXTRA_ENCODED_REFERENCE_COLUMNS = new Set(['copyright_notice_targets.placement_key'])
+
+export const RELATIONAL_STORAGE_CATALOG: RelationalStorageCatalog = {
+  allowedOpaqueJson: ALLOWED_OPAQUE_JSON,
+  allowedNonrelationUuids: ALLOWED_NONRELATION_UUID,
+  allowedOwnPrimaryUuids: ALLOWED_OWN_PRIMARY_UUID,
+  allowedTokenCursorProtocolIds: ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
+  allowedAuditSnapshotIds: ALLOWED_AUDIT_SNAPSHOT_ID,
+  generatedFkAliases: GENERATED_FK_ALIASES,
+  generatedSelfRootAliases: GENERATED_SELF_ROOT_ALIASES,
+  extraEncodedReferenceColumns: EXTRA_ENCODED_REFERENCE_COLUMNS,
+}

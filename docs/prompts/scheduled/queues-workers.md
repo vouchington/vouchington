@@ -2,7 +2,7 @@ Review backend queues and workers. Pick at most one concrete, bounded improvemen
 
 Unit: one queue and its worker.
 
-Load `voucha-queue-authoring`, `glide-mq`, and `queue-rules`; follow [backend-queues.md](../../checklists/backend-queues.md).
+Load `voucha-queue-authoring`, `glide-mq`, and `queue-rules`.
 
 - Trace queue and worker sources to runtime registration: named-export consumers, operator catalog parity, and membership in the applicable worker policy, not matching names alone.
 - Fire-and-forget enqueue, publish, or signal calls need `.catch(onError)` or a justified benign catch.

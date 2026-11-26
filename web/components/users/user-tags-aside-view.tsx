@@ -107,18 +107,18 @@ export function UserTagsAsideView({
         fetchError={pagination.fetchError}
         clearError={pagination.clearError}
         resetKey={pagination.resetKey}
-      >
-        {relations.length > 0 ? (
-          <UserTagsList
-            relations={relations}
-            electionVotes={merged.election_votes}
-            canManageUserTags={canManageUserTags}
-          />
-        ) : (
+        itemCount={relations.length}
+        emptyState={
           <div className='text-sm text-muted-foreground'>
             {t('extracted.users.userTagsAsideView.noUserTagsYet_71772144')}
           </div>
-        )}
+        }
+      >
+        <UserTagsList
+          relations={relations}
+          electionVotes={merged.election_votes}
+          canManageUserTags={canManageUserTags}
+        />
       </InfiniteScroll>
     </Card>
   )

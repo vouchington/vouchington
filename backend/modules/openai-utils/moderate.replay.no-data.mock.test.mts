@@ -1,18 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from '../../test-helpers/recorded-response.mts'
 import { requestOpenAIModeration } from './moderate.mts'
 
 // The recorded `/moderations` responses are served through the real OpenAI SDK's `fetch` option, so
 // the SDK parses actual wire bytes. The live counterpart is the non-gating smoke check in
 // backend/services/openai-moderation/__tests__/posts.openai.test.mts.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay()
 })
 
 vi.mock<typeof import('openai')>(import('openai'), async importOriginal => {
   const actual = await importOriginal()
-  const { replayClient } = await import('../../test-helpers/provider-replay.mts')
+  const { replayClient } = await import('vouchington-tooling/provider-replay')
   return { ...actual, default: replayClient(actual.default, replay) }
 })
 

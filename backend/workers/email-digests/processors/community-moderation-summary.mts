@@ -3,7 +3,7 @@ import type { ProcessSendCommunityModerationSummaryEmailVariables } from '@queue
 import type { EmailTemplateInput } from '@queues/emails/types'
 import { renderCommunityModerationSummaryEmail } from '@email-templates/core'
 import { getMarketingPostalAddress } from '@modules/utils'
-import { isAwsThrottlingError } from '@modules/queue-errors'
+import { isAwsThrottlingError } from '@vouchington/aws/errors'
 import { sendClassifiedEmail } from '@services/email-classification'
 import { createEmailUnsubscribeUrl } from '@services/users'
 import {

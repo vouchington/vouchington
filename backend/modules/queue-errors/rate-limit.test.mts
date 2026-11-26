@@ -127,7 +127,6 @@ describe('wrapHttpForRetry AWS throttling', () => {
     sesError('Throttling', 'Maximum sending rate exceeded.'),
     sesError('Throttling', 'Daily message quota exceeded'),
     sesError('ThrottlingException', 'Rate exceeded'),
-    sesError('MaxSendRateExceeded', 'Rate exceeded'),
     sesError('Error', 'Maximum sending rate exceeded.'),
   ])('retries SES throttling even though it is HTTP 400: $name $message', throttling => {
     expect(thrownBy(() => wrapHttpForRetry(throttling))).toBe(throttling)

@@ -3,6 +3,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
   expireContributionAdmissionClaimForTest,
+  expireContributionAdmissionClaimDuringTransactionForTest,
   getContributionAdmissionClaimExpiryForTest,
   getContributionAdmissionReplayRetentionForTest,
   insertTestTopic,
@@ -16,6 +17,10 @@ import { preparePostWithCommunityReviews } from '../posts/create.mts'
 import { executePreparedContribution } from './prepared-contribution.mts'
 import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from './config.mts'
 import { CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES } from './admission-replay-retention.mts'
+import { normalizeContributionAdmissionAudit } from './admission-audit.mts'
+import { claimContributionAdmission } from './admission-reservations.mts'
+import { publishFinalizedContributionResponse } from './publish-finalized-response.mts'
+import { commitRelationWriteDuringCompetingMutationForTest } from '@voucha/test-helpers/relation-write-interleaving'
 
 const MINIMUM_REPLAY_RETENTION_SECONDS = CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES * 60 - 30
 
@@ -28,6 +33,29 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 }
 
 describe('contribution admission finalization', () => {
+  it('leaves the claim for recovery when it expires in a concurrent transaction', async () => {
+    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const idempotencyKey = crypto.randomUUID()
+    const claim = await claimContributionAdmission(
+      user.id,
+      idempotencyKey,
+      { request: crypto.randomUUID() },
+      normalizeContributionAdmissionAudit({}),
+    )
+    if (claim.kind !== 'claimed') throw new Error('Expected a new admission claim')
+
+    const result = await commitRelationWriteDuringCompetingMutationForTest(
+      query => expireContributionAdmissionClaimDuringTransactionForTest(query, claim.reservationId),
+      'publishFinalizedContributionResponse.release',
+      () => publishFinalizedContributionResponse(claim),
+    )
+
+    expect(result).toEqual({ kind: 'lost' })
+    await expect(
+      getContributionAdmissionClaimExpiryForTest({ actorId: user.id, idempotencyKey }),
+    ).resolves.toBeInstanceOf(Date)
+  })
+
   it('publishes the transaction-captured response instead of a mutable finalizer replacement', async () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const idempotencyKey = crypto.randomUUID()

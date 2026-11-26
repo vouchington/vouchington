@@ -72,6 +72,7 @@ try {
   const engagement = await import('../../seed-data/engagement.mts')
   const maintenance = await import('../../seed-data/maintenance.mts')
   const psql = await import('@data-stores/psql')
+  const explain = await import('@voucha/test-helpers/explain-analyze')
   const { gracefulShutdown } = await import('@data-stores/graceful-shutdown')
   const { getTopicMetricsByAnyBatch } = await import('@services/topics/metrics-batch')
   closePools = gracefulShutdown
@@ -88,11 +89,11 @@ try {
     topicIds: seed.topicIds,
     readPool: psql.readPool,
     getTopicMetrics: getTopicMetricsByAnyBatch,
-    clearCapturedQueries: psql.clearCapturedQueries,
-    enableQueryCapture: psql.enableQueryCapture,
-    disableQueryCapture: psql.disableQueryCapture,
-    getCapturedQueries: psql.getCapturedQueries,
-    explainAnalyze: psql.explainAnalyze,
+    clearCapturedQueries: explain.clearCapturedQueries,
+    enableQueryCapture: explain.enableQueryCapture,
+    disableQueryCapture: explain.disableQueryCapture,
+    getCapturedQueries: explain.getCapturedQueries,
+    explainAnalyze: explain.explainAnalyze,
   })
   const environment = {
     node: process.version,

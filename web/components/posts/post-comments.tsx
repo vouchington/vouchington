@@ -40,6 +40,7 @@ export function PostComments({
   const handleLoadMore = pagination.loadMore
   return (
     <InfiniteScroll
+      itemCount={mergedData.results.length}
       hasNextPage={pagination.hasNextPage}
       endCursor={pagination.endCursor}
       onLoadMore={handleLoadMore}

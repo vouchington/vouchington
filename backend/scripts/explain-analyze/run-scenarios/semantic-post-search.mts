@@ -65,7 +65,6 @@ export async function runSemanticPostSearchScenarios(): Promise<void> {
           'buildPostSearchQuery',
           { localSettings: SEMANTIC_POST_SEARCH_SETTINGS },
         )
-      // no-mistakes-disable-next-line query-reached-per-item: the fixed five-variant matrix needs independent plans; the hot variant's two bounded vote writes restore the seed.
       await (sort === 'hot' ? withPositiveSemanticNeighbours(capture) : capture())
     } catch (err) {
       try {

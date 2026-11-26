@@ -1,5 +1,7 @@
+import { getRssFeedsWorkLimit } from './work-limits.mts'
+
 /**
- * Pure extractors for podcast-specific feed-level itunes namespace metadata.
+ * Extractors for podcast-specific feed-level itunes namespace metadata.
  * Extracted here so validate.mts stays under the max-lines limit.
  * Uses the same opaque-record + type-guard drilling pattern as media-classify.mts.
  */
@@ -114,10 +116,10 @@ export function extractFeedCategories(parsedFeed: Record<string, unknown>): stri
   const result: string[] = []
   const seen = new Set<string>()
 
-  const MAX_CATEGORIES = 20
+  const maxCategories = getRssFeedsWorkLimit('podcast_max_categories')
 
   function collectCategory(cat: unknown, depth = 0): void {
-    if (result.length >= MAX_CATEGORIES || depth > 3) return
+    if (result.length >= maxCategories || depth > 3) return
     if (!cat || typeof cat !== 'object') return
     const catObj = cat as Record<string, unknown>
     const text = catObj['text']

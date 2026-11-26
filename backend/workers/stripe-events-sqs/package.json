@@ -21,10 +21,11 @@
     "@modules/on-error": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@services/stripe": "workspace:^",
-    "@vouchington/worker-runtime": "^0.3.1"
+    "@vouchington/stripe": "^0.2.1",
+    "@vouchington/worker-runtime": "^0.3.2"
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1169.0",
+    "@aws-sdk/client-sqs": "^3.1172.0",
     "@voucha/test-helpers": "workspace:^"
   }
 }

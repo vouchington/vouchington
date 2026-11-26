@@ -73,6 +73,7 @@ export const REGISTRY_ORDER = [
   'household-limits-config',
   'profile-count-config',
   'session-limits-config',
+  'email-auth-limits-config',
   'elections-votes-work-config',
   'classifiers-work-config',
   'classifier-runs-work-config',
@@ -82,6 +83,7 @@ export const REGISTRY_ORDER = [
   'notifications-work-config',
   'rss-feeds-work-config',
   'rss-feed-items-work-config',
+  'rss-feed-item-ingestion-config',
   'post-publication-work-config',
   'ai-usage-work-config',
   'bluesky-follows-work-config',
@@ -107,6 +109,7 @@ export const REGISTRY_ORDER = [
   'background-queue-config',
   'ai-agents-queue-config',
   'psql-queue-config',
+  'queue-monitoring-work-config',
   'background-cpu-queue-config',
   'crawl-dispatch-work-config',
   'crawler-refresh-work-config',
@@ -133,6 +136,9 @@ export const REGISTRY_ORDER = [
   'oauth-authorization-exchange-work-config',
   'api-egress-proxy',
   'stuck-resolution-run-expiry-config',
+  'mcp-tools-work-config',
+  'search-params-config',
+  'dispute-annotations-config',
 ] as const
 
 export type RegisteredDynamicConfigKey = (typeof REGISTRY_ORDER)[number]

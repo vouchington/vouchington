@@ -1,10 +1,11 @@
 import type { QueryExecutor } from '@data-stores/psql/types'
+import { lockRetentionPreservationAccounts } from '@data-stores/psql/retention-preservation-lock'
 import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { MODERATION_APPEAL_HISTORY_RETENTION_MONTHS } from '@services/moderation-appeals/config'
 import type { ModerationHistoryCleanupKind } from './cleanup-moderation-kinds.mts'
 
-/** Delete only terminal records after their window; the candidate ids are one locked keyset page. */
+/** Delete only terminal records after their window; the candidate IDs come from one bounded keyset page. */
 export async function deleteExpiredModerationHistory(
   kind: ModerationHistoryCleanupKind,
   query: QueryExecutor,
@@ -41,6 +42,8 @@ export async function deleteExpiredModerationHistory(
         DELETE FROM moderation_appeals appeal
         WHERE appeal.id = ANY(${ids}::uuid[])
           AND appeal.resolved_at < ${now}::timestamptz - make_interval(months => ${MODERATION_APPEAL_HISTORY_RETENTION_MONTHS})
+          -- A long-resolved appeal may have only recently received its public response.
+          AND appeal.sent_at < ${now}::timestamptz - make_interval(months => ${MODERATION_APPEAL_HISTORY_RETENTION_MONTHS})
       `))
   } else if (kind === 'disputes') {
     ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:disputes */
@@ -49,6 +52,14 @@ export async function deleteExpiredModerationHistory(
           AND dispute.resolved_at < ${now}::timestamptz - interval '24 months'
       `))
   } else if (kind === 'actions') {
+    await lockRetentionPreservationAccounts(
+      query,
+      sql`
+      SELECT target_user_id FROM moderator_actions
+      WHERE id = ANY(${ids}::uuid[])
+        AND action_type IN ('report_integrity_penalty_review', 'vote_integrity_penalty_review')
+    `,
+    )
     ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:actions */
         DELETE FROM moderator_actions action
         WHERE action.id = ANY(${ids}::uuid[])
@@ -91,6 +102,17 @@ export async function deleteExpiredModerationHistory(
           )
       `))
   } else if (kind === 'judgements') {
+    await lockRetentionPreservationAccounts(
+      query,
+      sql`
+      SELECT reported_user_id FROM moderation_report_judgements
+      WHERE id = ANY(${ids}::uuid[])
+      UNION ALL
+      SELECT post.created_by_id FROM moderation_report_judgements judgement
+      JOIN posts post ON post.id = judgement.post_id
+      WHERE judgement.id = ANY(${ids}::uuid[])
+    `,
+    )
     ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:judgements */
         DELETE FROM moderation_report_judgements judgement
         WHERE judgement.id = ANY(${ids}::uuid[])

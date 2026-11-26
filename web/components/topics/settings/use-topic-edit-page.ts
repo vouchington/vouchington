@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import onError, { onSuccess } from '@/lib/on-error'
 import {
   updateSpendingCategoryAttributes,
@@ -38,9 +38,12 @@ export function useTopicEditPage(
   const isValidTopicType = validTopicTypeSlugs.has(topicType)
   const imageActions = useTopicImageActions({ dispatch, id, state })
 
-  useEffect(() => {
-    queueMicrotask(() => dispatch({ typeSaving: false }))
-  }, [id, topicType])
+  const typeScope = `${id}\0${topicType}`
+  const [syncedTypeScope, setSyncedTypeScope] = useState(typeScope)
+  if (syncedTypeScope !== typeScope) {
+    setSyncedTypeScope(typeScope)
+    dispatch({ typeSaving: false })
+  }
 
   useEffect(() => {
     if (id !== initialIdRef.current) hasLeftInitialIdRef.current = true

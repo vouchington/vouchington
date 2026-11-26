@@ -11,21 +11,6 @@ export async function insertCopyrightNoticeTargetsInTransaction(
   transaction: TransactionQuery,
 ): Promise<void> {
   assert(targets.length > 0, 422, 'A copyright notice requires at least one hosted target')
-  const surfaceTargets = targets.filter(target => target.bindingFamily === 'surface')
-  if (surfaceTargets.length > 0) {
-    const ids = [...new Set(surfaceTargets.map(target => target.placementId))].toSorted()
-    const { rows: lockedPlacements } = await transaction<{ id: string; revision: number }>(sql`
-      /* insertCopyrightNoticeTargets:lockSurfaceEpochs */
-      SELECT id, revision FROM media_placements WHERE id = ANY(${ids}::uuid[])
-      ORDER BY id FOR UPDATE
-    `)
-    const current = new Map(lockedPlacements.map(row => [row.id, row.revision]))
-    assert(
-      surfaceTargets.every(target => current.get(target.placementId) === target.placementRevision),
-      409,
-      'Hosted image placement changed before notice capture',
-    )
-  }
   const serializedTargets = JSON.stringify(
     targets.map(target => ({
       placement_id: target.placementId,
@@ -37,6 +22,7 @@ export async function insertCopyrightNoticeTargetsInTransaction(
   )
   const insertion = await transaction<{
     copyright_notice_target_id: string
+    binding_family: CopyrightNoticeTargetInput['bindingFamily']
   }>(sql`/* insertCopyrightNoticeTargets */
     WITH target_inputs AS (
       SELECT * FROM jsonb_to_recordset(${serializedTargets}::jsonb) AS target_input(
@@ -59,6 +45,8 @@ export async function insertCopyrightNoticeTargetsInTransaction(
       JOIN media_placements placement ON placement.id = target_input.placement_id
       LEFT JOIN image_surface_placements surface ON surface.placement_id = target_input.placement_id
       LEFT JOIN user_profile_links link ON link.id = surface.user_profile_link_id
+      WHERE target_input.binding_family <> 'surface'
+        OR (placement.revision = target_input.placement_revision AND placement.retired_at IS NULL)
       RETURNING id, placement_id, placement_revision
     )
     INSERT INTO copyright_notice_target_images (
@@ -68,8 +56,14 @@ export async function insertCopyrightNoticeTargetsInTransaction(
       target_inputs.image_id, target_inputs.binding_family
     FROM inserted_targets
     INNER JOIN target_inputs USING (placement_id, placement_revision)
-    RETURNING copyright_notice_target_id
+    RETURNING copyright_notice_target_id, binding_family
   `)
+  assert(
+    insertion.rows.filter(row => row.binding_family === 'surface').length ===
+      targets.filter(target => target.bindingFamily === 'surface').length,
+    409,
+    'Hosted image placement changed before notice capture',
+  )
   assert(insertion.rowCount === targets.length, 422, 'Hosted image placement was not found')
   await retainCopyrightCaseTargetParties(
     transaction,

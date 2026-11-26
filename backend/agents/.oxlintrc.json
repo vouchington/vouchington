@@ -72,7 +72,6 @@
         "executorTypeNames": ["TransactionQuery", "QueryExecutor"],
         "owners": [
           "backend/data-stores/psql/explain-analyze.mts",
-          "backend/data-stores/psql/migration-runner/config-driven-statements.mts",
           "backend/test-helpers/postgres-advisory-lock.mts",
           "backend/test-helpers/crawl-urls-queue-lock.mts",
           "backend/test-helpers/entities/moderation-transparency-date-reservation.mts"
@@ -86,8 +85,7 @@
         "executorFactoryNames": ["beginTransaction", "beginBoundedTransaction"],
         "executorTypeNames": ["TransactionQuery", "QueryExecutor"]
       }
-    ],
-    "no-await-in-loop": "off"
+    ]
   },
   "overrides": [
     {

@@ -16,7 +16,6 @@ export async function seedPublicationTopicFeedPages(): Promise<void> {
   for (let offset = 0; offset < total; offset += fixtureBatchSize) {
     const from = start + offset
     const to = Math.min(from + fixtureBatchSize, start + total)
-    // no-mistakes-disable-next-line query-reached-per-item: fixture batches limit PostgreSQL topic-reference locks to 500 rows per transaction.
     await seedPublicationTopicFeedBatch(from, to)
   }
   await write('/* analyzePublicationTopicFeedPages */ ANALYZE rss_feeds')
@@ -58,7 +57,6 @@ export async function cleanupPublicationTopicFeedPages(): Promise<void> {
   for (let offset = 0; offset < total; offset += fixtureBatchSize) {
     const from = start + offset
     const to = Math.min(from + fixtureBatchSize, start + total)
-    // no-mistakes-disable-next-line query-reached-per-item: fixture cleanup releases topic-reference locks after each 500-row transaction.
     await cleanupPublicationTopicFeedBatch(from, to)
   }
 }

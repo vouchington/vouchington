@@ -8,7 +8,7 @@ import {
   SUCCESS_RESULT_SCHEMA,
   type ListItemToolArgs,
 } from './list-tool-support.mts'
-import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@vouchington/mcp-server/types'
 import { selectApiByArgument } from '@vouchington/mcp-server/tools'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
 

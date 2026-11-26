@@ -3,7 +3,8 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { bookmarkEntity, unbookmarkEntity } from '@/lib/api/client/bookmarks'
 import { toast } from 'sonner'
-import { isRateLimitError, getRateLimitMessage } from '@/lib/api/rate-limit-error'
+import { isRateLimitError } from '@vouchington/api-client'
+import { getRateLimitMessage } from '@/lib/api/rate-limit-error'
 
 type KeyedBookmarkPredicate = 'hide' | 'save'
 

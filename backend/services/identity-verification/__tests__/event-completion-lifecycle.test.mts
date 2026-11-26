@@ -8,6 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import {
   createIdentityPendingUser,
+  createIdentityPendingUserWithAttempt,
   observeUserCacheInvalidations,
 } from '@voucha/test-helpers/services/identity-verification/event-verified-fixtures'
 import { createPaymentPendingUser } from '@voucha/test-helpers/services/identity-verification/payment-pending-fixtures'
@@ -76,7 +77,7 @@ describe('onVerificationSessionRequiresInput', () => {
 
 describe('onVerificationSessionCanceled', () => {
   it('resets verification_status to unverified, clears verification_provider and pending session', async () => {
-    const { user, sessionId } = await createIdentityPendingUser()
+    const { user, sessionId } = await createIdentityPendingUserWithAttempt()
     await setUserVerificationFields(user.id, { verificationProvider: 'stripe_identity' })
     const invalidations = observeUserCacheInvalidations()
 
@@ -94,18 +95,49 @@ describe('onVerificationSessionCanceled', () => {
     expect(invalidations.forUser(user.id)).toEqual([[user.id]])
   })
 
-  it('finds the user by session id when Stripe cleared the metadata', async () => {
-    const { user, sessionId } = await createIdentityPendingUser()
+  it('resets only the recorded owner when Stripe cleared the metadata, including on replay', async () => {
+    const { user, sessionId } = await createIdentityPendingUserWithAttempt()
+    const other = await createTestUser()
+    // The pending session text on users is not unique.
+    await setUserVerificationFields(other.id, {
+      verificationStatus: 'identity_pending',
+      pendingVerificationSessionId: sessionId,
+    })
     const invalidations = observeUserCacheInvalidations()
 
     await onVerificationSessionCanceled('evt_1', { id: sessionId, metadata: {} })
+    await onVerificationSessionCanceled('evt_1', { id: sessionId, metadata: {} })
 
     expect((await getUserVerificationState(user.id))?.verification_status).toBe('unverified')
+    expect(await getUserVerificationState(other.id)).toMatchObject({
+      verification_status: 'identity_pending',
+      pending_verification_session_id: sessionId,
+    })
     expect(invalidations.forUser(user.id)).toEqual([[user.id]])
+    expect(invalidations.forUser(other.id)).toEqual([])
+  })
+
+  it('preserves the current session when the event is stale or has no recorded attempt', async () => {
+    const { user, sessionId } = await createIdentityPendingUserWithAttempt()
+    const currentSessionId = `vs_${v7()}`
+    await setUserVerificationFields(user.id, { pendingVerificationSessionId: currentSessionId })
+    const invalidations = observeUserCacheInvalidations()
+
+    await onVerificationSessionCanceled('evt_stale', { id: sessionId })
+    await onVerificationSessionCanceled('evt_unrecorded', {
+      id: currentSessionId,
+      metadata: { user_id: user.id },
+    })
+
+    expect(await getUserVerificationState(user.id)).toMatchObject({
+      verification_status: 'identity_pending',
+      pending_verification_session_id: currentSessionId,
+    })
+    expect(invalidations.forUser(user.id)).toEqual([])
   })
 
   it('does nothing when the session id is absent or the user is not identity_pending', async () => {
-    const { user, sessionId } = await createIdentityPendingUser()
+    const { user, sessionId } = await createIdentityPendingUserWithAttempt()
     const verified = await createTestUser()
     await insertTestVerifiedIdentity(verified.id, makeFingerprint(), `vs_${v7()}`)
     await setUserVerificationFields(verified.id, { verificationStatus: 'verified' })

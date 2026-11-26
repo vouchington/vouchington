@@ -21,11 +21,11 @@
     "@modules/on-error": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",
-    "@vouchington/worker-runtime": "^0.3.1",
+    "@vouchington/worker-runtime": "^0.3.2",
     "http-assert": "^1.5.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1169.0",
+    "@aws-sdk/client-sqs": "^3.1172.0",
     "@voucha/test-helpers": "workspace:^"
   }
 }

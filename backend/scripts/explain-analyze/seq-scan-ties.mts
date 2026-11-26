@@ -1,6 +1,5 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectNodes } from './plan-node-stats.mts'
-import { isLargeTable, parentRelationName } from './plan-warnings.mts'
+import { collectNodes, type ExplainResult, isLargeTable } from '@vouchington/explain-plan'
+import { PLAN_ANALYSIS_OPTIONS, parentRelationName } from './plan-analysis-options.mts'
 
 /**
  * A sequential scan is a near-tie when avoiding every sequential scan raises the statement's
@@ -41,7 +40,7 @@ export function costWithoutSeqScan(
 ): number | undefined {
   const stillScanned = new Set(
     collectNodes(probePlan).flatMap(node =>
-      node.seqScan && node.relationName && isLargeTable(node.relationName)
+      node.seqScan && node.relationName && isLargeTable(node.relationName, PLAN_ANALYSIS_OPTIONS)
         ? [parentRelationName(node.relationName)]
         : [],
     ),
@@ -53,7 +52,9 @@ export function costWithoutSeqScan(
 function seqScanCost(plan: unknown): number {
   return collectNodes(plan).reduce(
     (sum, node) =>
-      node.seqScan && node.relationName && isLargeTable(node.relationName) ? sum + node.cost : sum,
+      node.seqScan && node.relationName && isLargeTable(node.relationName, PLAN_ANALYSIS_OPTIONS)
+        ? sum + node.cost
+        : sum,
     0,
   )
 }
@@ -68,7 +69,7 @@ export function forcedSeqScan(probePlan: unknown, relation: string): ForcedSeqSc
     node =>
       node.seqScan &&
       node.relationName &&
-      isLargeTable(node.relationName) &&
+      isLargeTable(node.relationName, PLAN_ANALYSIS_OPTIONS) &&
       parentRelationName(node.relationName) === relation,
   )
   const totalCost = planTotalCost(probePlan)

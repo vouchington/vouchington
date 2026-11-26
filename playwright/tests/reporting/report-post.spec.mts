@@ -39,7 +39,7 @@ test.describe('Report post — full flow', () => {
       .first()
 
     const kebabButton = seededCard.getByTestId('post-card-report-button')
-    await expect(kebabButton).toBeVisible({ timeout: 10_000 })
+    await expect(kebabButton).toBeVisible()
     await kebabButton.click()
 
     const reportMenuItem = page.getByTestId('report-menu-item')
@@ -72,7 +72,7 @@ test.describe('Report post — self-report guard', () => {
       .and(page.locator(`[data-post-slug="${postSlug}"]`))
       .first()
 
-    await expect(seededCard).toBeVisible({ timeout: 10_000 })
+    await expect(seededCard).toBeVisible()
     await expect(seededCard.getByTestId('post-card-report-button')).toBeHidden()
   })
 })

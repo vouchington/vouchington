@@ -1,6 +1,7 @@
 import { navigateTo } from 'vouchington-tooling/playwright'
 import { test, expect } from '../../helpers/test.mts'
 import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
+import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 test.describe('Global Search', () => {
   test('should open search dialog with Cmd+K', async ({ page }) => {
@@ -120,7 +121,9 @@ test.describe('Page shortcuts', () => {
     await input.pressSequentially('sources')
 
     // Should show page shortcut
-    await expect(page.getByTestId('search-page-shortcut-sources')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('search-page-shortcut-sources')).toBeVisible({
+      timeout: SHORT_WAIT_TIMEOUT_MS,
+    })
   })
 
   test('page shortcut is a real anchor with correct href', async ({ page }) => {
@@ -130,7 +133,9 @@ test.describe('Page shortcuts', () => {
     const input = page.getByTestId('search-input')
     await input.pressSequentially('sources')
 
-    await expect(page.getByTestId('search-page-shortcut-sources')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('search-page-shortcut-sources')).toBeVisible({
+      timeout: SHORT_WAIT_TIMEOUT_MS,
+    })
     await expect(page.getByTestId('search-page-shortcut-sources')).toHaveAttribute(
       'href',
       '/sources',
@@ -146,7 +151,9 @@ test.describe('Page shortcuts', () => {
     await page.keyboard.press('ControlOrMeta+k')
     const input = page.getByTestId('search-input')
     await input.pressSequentially('sources')
-    await expect(page.getByTestId('search-page-shortcut-sources')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('search-page-shortcut-sources')).toBeVisible({
+      timeout: SHORT_WAIT_TIMEOUT_MS,
+    })
 
     const popupPromise = page.context().waitForEvent('page')
     await page.getByTestId('search-page-shortcut-sources').click({ modifiers: ['ControlOrMeta'] })
@@ -164,7 +171,9 @@ test.describe('Page shortcuts', () => {
     const input = page.getByTestId('search-input')
     await input.pressSequentially('news')
 
-    await expect(page.getByTestId('search-page-shortcut-news')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('search-page-shortcut-news')).toBeVisible({
+      timeout: SHORT_WAIT_TIMEOUT_MS,
+    })
   })
 
   test('shows multiple matching shortcuts', async ({ page }) => {
@@ -175,7 +184,9 @@ test.describe('Page shortcuts', () => {
     // "do" matches "Domains"
     await input.pressSequentially('do')
 
-    await expect(page.getByTestId('search-page-shortcut-domains')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('search-page-shortcut-domains')).toBeVisible({
+      timeout: SHORT_WAIT_TIMEOUT_MS,
+    })
   })
 })
 
@@ -190,7 +201,9 @@ test.describe('Pages tab', () => {
     const input = page.getByTestId('search-input')
     await input.pressSequentially('sources')
 
-    await expect(page.getByTestId('search-page-shortcut-sources')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('search-page-shortcut-sources')).toBeVisible({
+      timeout: SHORT_WAIT_TIMEOUT_MS,
+    })
   })
 
   test('Posts tab does not show Pages section', async ({ page }) => {
@@ -237,7 +250,7 @@ test.describe('Admin page shortcuts', () => {
     await input.pressSequentially('queues')
 
     await expect(page.getByTestId('search-page-shortcut-admin-queues')).toBeVisible({
-      timeout: 5000,
+      timeout: SHORT_WAIT_TIMEOUT_MS,
     })
   })
 

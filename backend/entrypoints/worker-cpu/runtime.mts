@@ -7,7 +7,7 @@ import { WORKER_DEFINITIONS } from './worker-definitions.mts'
 import { SQS_CONSUMER_DEFINITIONS } from './sqs-consumer-definitions.mts'
 import { SCHEDULE_DEFINITIONS } from './schedule-definitions.mts'
 import { startGrafanaHeartbeat } from './grafana-heartbeat.mts'
-import { registerNativeAddonShutdown } from './nativeAddonShutdown.mts'
+import { registerNativeAddonShutdown } from './native-addon-shutdown.mts'
 
 type WorkerCpuDependencies = {
   initializeWorkerRuntime: (config: WorkerRuntimeConfig) => Promise<WorkerRuntime>

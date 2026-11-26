@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import Link from 'next/link'
 import { TooltipButton } from '../_button-tooltip'
 import { Button } from '../button'
 
@@ -108,7 +109,7 @@ describe('Button', () => {
         asChild
         loading
       >
-        <a href='/'>Home page</a>
+        <Link href='/'>Home page</Link>
       </Button>,
     )
     const link = screen.getByRole('link', { name: 'Home page' })

@@ -39,25 +39,32 @@ export async function createTopicMergeOperation(
   assert(currentUserCanMergeTopic(currentUser), 403, 'Forbidden')
   assert(sourceTopic.id !== destinationTopic.id, 409, 'Cannot merge a topic into itself')
   await using query = await beginTransaction()
-  const topicIds = [sourceTopic.id, destinationTopic.id]
   await lockAndAssertMergeParticipants(query, sourceTopic.id, destinationTopic.id)
-  const { rows: reservations } = await query<{ id: string }>(
-    `/* createTopicMergeOperation reservations */
-      SELECT id FROM topic_merge_operations
-      WHERE completed_at IS NULL AND failed_at IS NULL
-        AND (source_topic_id = ANY($1::uuid[]) OR destination_topic_id = ANY($1::uuid[]))
-      LIMIT 1`,
-    [topicIds],
-  )
-  assert(reservations.length === 0, 409, 'A topic merge is already in progress')
   const { rows } = await query<OperationRow>(
-    `/* createTopicMergeOperation */ INSERT INTO topic_merge_operations
-      (source_topic_id, destination_topic_id, requested_by_id)
-      VALUES ($1::uuid, $2::uuid, $3::uuid)
-      RETURNING ${operationProjection}`,
+    `/* createTopicMergeOperation */
+    INSERT INTO topic_merge_operations (source_topic_id, destination_topic_id, requested_by_id)
+    SELECT source.id, destination.id, $3::uuid
+    FROM topics source
+    JOIN topics destination ON destination.id = $2::uuid
+      AND destination.deleted_at IS NULL AND destination.merged_into_topic_id IS NULL
+    WHERE source.id = $1::uuid
+      AND source.deleted_at IS NULL AND source.merged_into_topic_id IS NULL
+      AND source.topic_type = destination.topic_type
+      AND NOT EXISTS (
+        SELECT 1 FROM topic_aliases
+        WHERE alias = source.slug AND unlink_requested_at IS NOT NULL
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM topic_merge_operations operation
+        WHERE operation.completed_at IS NULL AND operation.failed_at IS NULL
+          AND (operation.source_topic_id IN ($1::uuid, $2::uuid)
+            OR operation.destination_topic_id IN ($1::uuid, $2::uuid))
+      )
+    RETURNING ${operationProjection}`,
     [sourceTopic.id, destinationTopic.id, currentUser.id],
   )
-  const operation = rows[0]!
+  const operation = rows[0]
+  assert(operation, 409, 'A topic merge is already in progress')
   await query.commit()
   await awaitReportedEnqueueAdmission(() =>
     enqueueTopicMergePage(operation.id, operation.generation),

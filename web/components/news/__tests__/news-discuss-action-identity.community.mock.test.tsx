@@ -1,3 +1,4 @@
+import '@/test-helpers/components/shared/username-required-dialog.mock-support'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
@@ -74,40 +75,6 @@ vi.mock(
         </button>
       ),
     }) as unknown as typeof import('@/components/ui/dropdown-menu'),
-)
-
-vi.mock(
-  import('@/components/shared/username-required-dialog'),
-  () =>
-    ({
-      UsernameRequiredDialog: ({
-        open,
-        onUsernameSet,
-        onClose,
-      }: {
-        open: boolean
-        onUsernameSet: () => void
-        onClose: () => void
-      }) =>
-        open ? (
-          <div data-testid='username-required-dialog-stub'>
-            <button
-              type='button'
-              data-testid='username-dialog-set'
-              onClick={onUsernameSet}
-            >
-              Set username
-            </button>
-            <button
-              type='button'
-              data-testid='username-dialog-close'
-              onClick={onClose}
-            >
-              Close
-            </button>
-          </div>
-        ) : null,
-    }) as unknown as typeof import('@/components/shared/username-required-dialog'),
 )
 
 vi.mock(import('../news-community-discussion-helpers'), async () => {

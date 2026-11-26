@@ -1,4 +1,9 @@
 import { read } from '@data-stores/psql'
+import {
+  getPartitionStatus as getPlatformPartitionStatus,
+  type PartitionStatus as PlatformPartitionStatus,
+  type PartitionStatusRow,
+} from '@vouchington/postgres/partitions'
 import onError from '@modules/on-error'
 import {
   dataRetentionConfig,
@@ -17,56 +22,31 @@ import {
   type PartitionDropStatusReason,
 } from '@data-stores/psql/migration-runner/partition-drop-guard'
 
-interface PartitionInfo {
-  name: string
-  size_bytes: number
-  drop_refusal: PartitionDropStatusReason | null
-}
-
-interface PartitionTable {
-  name: string
-  partition_count: number
-  total_size_bytes: number
-  partitions: PartitionInfo[]
-}
-
-export interface PartitionStatus {
-  tables: PartitionTable[]
-}
+export type PartitionStatus = PlatformPartitionStatus<PartitionDropStatusReason>
 
 export async function getPartitionStatus(): Promise<PartitionStatus> {
   await dataRetentionConfig.waitForInitialization()
   const referenceDate = new Date()
-  let rows: Record<string, unknown>[]
   try {
-    const result = await read(
-      `/* getPartitionStatus */
-      SELECT parent.relname AS parent_table,
-             child.relname AS partition_name,
-             pg_get_expr(child.relpartbound, child.oid) AS partition_bound,
-             pg_total_relation_size(child.oid) AS size_bytes
-      FROM pg_inherits
-      JOIN pg_class AS parent ON pg_inherits.inhparent = parent.oid
-      JOIN pg_class AS child ON pg_inherits.inhrelid = child.oid
-      JOIN pg_namespace AS ns ON parent.relnamespace = ns.oid
-      WHERE ns.nspname = current_schema()
-      ORDER BY parent.relname, child.relname`,
-      [],
-    )
-    rows = result.rows
+    return await getPlatformPartitionStatus<PartitionDropStatusReason>({
+      query: read,
+      resolveRefusals: rows => resolveDropRefusals(rows, referenceDate),
+    })
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
     throw err
   }
+}
 
+async function resolveDropRefusals(rows: readonly PartitionStatusRow[], referenceDate: Date) {
   const classifierTables = new Set(CLASSIFIER_RESULT_PARTITION_TABLES)
   const requestTables = new Set<string>(USER_DATA_REQUEST_PARTITION_TABLES)
   const candidates = rows.map(row => {
-    const table = row.parent_table as string
-    const partition = row.partition_name as string
+    const table = row.parent_table
+    const partition = row.partition_name
     const operatorRange =
       classifierTables.has(table) || requestTables.has(table)
-        ? classifierRangeFromChild(table, partition, row.partition_bound as string)
+        ? classifierRangeFromChild(table, partition, row.partition_bound)
         : null
     return {
       table,
@@ -95,27 +75,5 @@ export async function getPartitionStatus(): Promise<PartitionStatus> {
       refusals.set(candidate.partition, 'check-pending')
     }
   }
-  const tableMap = new Map<string, PartitionInfo[]>()
-  for (const row of rows) {
-    const parentTable = row.parent_table as string
-    const partition: PartitionInfo = {
-      name: row.partition_name as string,
-      size_bytes: parseInt(row.size_bytes as string, 10),
-      drop_refusal: refusals.get(row.partition_name as string) ?? null,
-    }
-    if (!tableMap.has(parentTable)) tableMap.set(parentTable, [])
-    tableMap.get(parentTable)!.push(partition)
-  }
-
-  const tables: PartitionTable[] = []
-  for (const [name, partitions] of tableMap) {
-    tables.push({
-      name,
-      partition_count: partitions.length,
-      total_size_bytes: partitions.reduce((sum, p) => sum + p.size_bytes, 0),
-      partitions,
-    })
-  }
-
-  return { tables }
+  return refusals
 }

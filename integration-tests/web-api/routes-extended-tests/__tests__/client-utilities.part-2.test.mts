@@ -1,4 +1,9 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+
+import {
+  closeWebApiClientRuntime,
+  withWebApiClientRuntime,
+} from '../../../test-helpers/web-api-client-runtime.mts'
 
 import http from 'node:http'
 
@@ -22,28 +27,19 @@ import { getPaginatedPage } from '@/lib/api/client/paginated'
 describe('client-utilities', () => {
   describe('raw-fetch and paginated (HTTP-backed)', () => {
     let backendServer: http.Server
-    let previousApiBaseUrl: string | undefined
-    let previousPublicApiBaseUrl: string | undefined
     let previousFetch: typeof globalThis.fetch
-    let hadWindow: boolean
-    let previousWindow: unknown
     let backendBaseUrl: string
     let clientRuntimeActive = false
     let clientCookieValue: string | undefined
     let userCookieHeader: CookieHeader
 
     beforeAll(async () => {
-      previousApiBaseUrl = process.env.API_BASE_URL
-      previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-
       backendServer = createWebApiTestServer(serverApp.callback())
       backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
-      process.env.API_BASE_URL = backendBaseUrl
-      process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
+      vi.stubEnv('API_BASE_URL', backendBaseUrl)
+      vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', backendBaseUrl)
 
       previousFetch = globalThis.fetch
-      hadWindow = Object.hasOwn(globalThis, 'window')
-      previousWindow = (globalThis as { window?: unknown }).window
       globalThis.fetch = (input, init) => {
         if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
           return previousFetch(input, init)
@@ -71,46 +67,25 @@ describe('client-utilities', () => {
       await createTestPost({ user })
     })
 
-    afterAll(async () => {
-      await new Promise<void>(resolve => {
-        backendServer.close(() => resolve())
-      })
-      if (previousApiBaseUrl === undefined) {
-        delete process.env.API_BASE_URL
-      } else {
-        process.env.API_BASE_URL = previousApiBaseUrl
-      }
-      if (previousPublicApiBaseUrl === undefined) {
-        delete process.env.NEXT_PUBLIC_API_BASE_URL
-      } else {
-        process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
-      }
-      globalThis.fetch = previousFetch
-      if (hadWindow) {
-        ;(globalThis as { window?: unknown }).window = previousWindow
-      } else {
-        delete (globalThis as { window?: unknown }).window
-      }
-    })
+    afterAll(() =>
+      closeWebApiClientRuntime({
+        backendServer,
+        previousFetch,
+      }),
+    )
 
-    async function withClientRuntime<T>(
+    function withClientRuntime<T>(
       run: () => Promise<T>,
       cookieHeader?: Record<string, string>,
     ): Promise<T> {
-      clientRuntimeActive = true
-      clientCookieValue = cookieHeader?.Cookie
-      ;(globalThis as { window?: unknown }).window = {}
-      try {
-        return await run()
-      } finally {
-        clientRuntimeActive = false
-        clientCookieValue = undefined
-        if (hadWindow) {
-          ;(globalThis as { window?: unknown }).window = previousWindow
-        } else {
-          delete (globalThis as { window?: unknown }).window
-        }
-      }
+      return withWebApiClientRuntime({
+        cookieHeader,
+        setActive: (active, cookie) => {
+          clientRuntimeActive = active
+          clientCookieValue = cookie
+        },
+        run,
+      })
     }
 
     it('clientFetch without init calls fetch directly (success path)', async () => {

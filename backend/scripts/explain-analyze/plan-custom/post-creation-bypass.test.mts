@@ -1,5 +1,5 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 import { assertPostCreationBypassPointRead } from './post-creation-bypass.mts'
 
 function result(queryText: string, condition: Record<string, string>): ExplainResult {

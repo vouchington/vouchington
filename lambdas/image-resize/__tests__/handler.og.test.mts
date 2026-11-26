@@ -45,17 +45,13 @@ describe('handler.og', () => {
     maxHeight: 2400,
   }
 
-  const savedSigningKeys = process.env[SIDELOAD_SIGNING_KEYS_ENV]
-  const savedEnvironment = process.env.ENVIRONMENT
-  const savedNodeEnv = process.env.NODE_ENV
-
   let handler: ReturnType<typeof createLambdaHandler>
   let dependencies: LambdaHandlerDependencies
 
   beforeEach(() => {
-    delete process.env[SIDELOAD_SIGNING_KEYS_ENV]
-    process.env.NODE_ENV = 'test'
-    delete process.env.ENVIRONMENT
+    vi.stubEnv(SIDELOAD_SIGNING_KEYS_ENV, undefined)
+    vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('ENVIRONMENT', undefined)
 
     dependencies = {
       createS3Client: vi.fn<NonNullable<LambdaHandlerDependencies['createS3Client']>>(
@@ -91,12 +87,7 @@ describe('handler.og', () => {
   })
 
   afterEach(() => {
-    if (savedSigningKeys === undefined) delete process.env[SIDELOAD_SIGNING_KEYS_ENV]
-    else process.env[SIDELOAD_SIGNING_KEYS_ENV] = savedSigningKeys
-    if (savedEnvironment === undefined) delete process.env.ENVIRONMENT
-    else process.env.ENVIRONMENT = savedEnvironment
-    if (savedNodeEnv === undefined) delete process.env.NODE_ENV
-    else process.env.NODE_ENV = savedNodeEnv
+    vi.unstubAllEnvs()
   })
 
   it('renders a generic card as a 1200x630 PNG without touching S3 or the transform pipeline', async () => {
@@ -252,7 +243,7 @@ describe('handler.og', () => {
   })
 
   it('rejects unsigned OG requests in staging with 403', async () => {
-    process.env.ENVIRONMENT = 'staging'
+    vi.stubEnv('ENVIRONMENT', 'staging')
     const event = createMockOgEvent({
       type: 'generic',
       eyebrow: 'Voucha',

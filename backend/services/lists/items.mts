@@ -1,12 +1,8 @@
 import { clampLimit } from '@services/pagination'
 import { read, write } from '@data-stores/psql'
 import assert from 'http-assert'
-import {
-  buildPageInfo,
-  decodeUuidCursor,
-  isSimpleCursor,
-  sliceRawKeysetPage,
-} from '@modules/pagination'
+import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
+import { sliceRawKeysetPage } from '@vouchington/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import { getListItemStorageConfig } from './catalog.mts'

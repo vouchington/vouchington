@@ -1,4 +1,3 @@
-import { resolveStripeRefundChargeId } from '../refund-issuance.mts'
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getOrCreateProviderContextId } from '../provider-context.mts'
@@ -29,6 +28,7 @@ async function claimIneligiblePurchaseReversal(options: {
   membershipProviderLineageId: string
   periodEndsAt: Date
   periodStartedAt: Date
+  preparedCharges: ReadonlyMap<string, string> | undefined
   providerEnvironment: 'test' | 'production'
   providerApplicationId: string
   query: QueryExecutor
@@ -51,20 +51,25 @@ async function claimIneligiblePurchaseReversal(options: {
     },
     options.query,
   )
-  await options.query(sql`/* claimIneligiblePurchaseReversal:insert */
-    INSERT INTO membership_operations (
-      membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      membership_provider_context_id, operation_kind, idempotency_key, provider_payment_reference, provider_charge_id,
-      qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
-      period_started_at, period_ends_at, collision_at
-    ) VALUES (
-      ${options.membershipSourceId}, ${options.membershipProviderLineageId},
-      ${options.membershipLineageBindingId}, ${providerContextId}, 'ineligible_purchase_reversal', ${idempotencyKey}, ${options.target.chargeId ?? options.target.paymentIntentId}, ${await resolveStripeRefundChargeId(options.target.chargeId ?? options.target.paymentIntentId!)},
-      ${options.target.qualifyingAmountMinorUnits}, ${options.target.amountMinorUnits},
-      ${options.target.currency}, ${options.periodStartedAt}, ${options.periodEndsAt},
-      ${options.collisionAt}
-    ) ON CONFLICT (membership_provider_context_id, idempotency_key) DO NOTHING
-  `)
+  // An operation already found in preflight retains its immutable charge identity.
+  const providerChargeId = options.target.chargeId ?? options.preparedCharges?.get(idempotencyKey)
+  if (providerChargeId) {
+    await options.query(sql`/* claimIneligiblePurchaseReversal:insert */
+      INSERT INTO membership_operations (
+        membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
+        membership_provider_context_id, operation_kind, idempotency_key, provider_payment_reference, provider_charge_id,
+        qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
+        period_started_at, period_ends_at, collision_at
+      ) VALUES (
+        ${options.membershipSourceId}, ${options.membershipProviderLineageId},
+        ${options.membershipLineageBindingId}, ${providerContextId}, 'ineligible_purchase_reversal', ${idempotencyKey}, ${options.target.chargeId ?? options.target.paymentIntentId}, ${providerChargeId},
+        ${options.target.qualifyingAmountMinorUnits}, ${options.target.amountMinorUnits},
+        ${options.target.currency}, ${options.periodStartedAt}, ${options.periodEndsAt},
+        ${options.collisionAt}
+      ) ON CONFLICT (membership_provider_context_id, idempotency_key) DO NOTHING
+    `)
+  }
+  // lock-reason: prevents: claiming a reversal using stale refund amounts or completion state during reconciliation; writer: reconcileFailedIneligiblePurchaseReversal
   const { rows } = await options.query(sql`/* claimIneligiblePurchaseReversal:lock */
     SELECT operation.id,
       EXISTS (
@@ -93,6 +98,7 @@ async function claimIneligiblePurchaseReversal(options: {
         remainingRefundableMinorUnits: string
       }
     | undefined
+  // Reallocation can expose an unprepared payment intent. Only a committed operation can satisfy it.
   if (!row) throw new Error(`Could not claim Stripe reversal ${idempotencyKey}`)
   await recordReversalCaseOperation(options.reversalCaseId, row.id, options.query)
   row.remainingRefundableMinorUnits = String(

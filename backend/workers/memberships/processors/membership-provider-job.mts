@@ -25,7 +25,7 @@ export async function processMembershipProviderJob(
     )
 
   let processingFailure: { error: unknown } | undefined
-  let released = false
+  let released: boolean
   try {
     await runWithMembershipVerificationLeaseRenewal(lease, operation)
   } catch (err) {

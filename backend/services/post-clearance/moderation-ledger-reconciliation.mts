@@ -34,12 +34,10 @@ export async function reconcilePostModerationWork(
     1,
     Math.min(Math.trunc(limit), getPostClearanceWorkLimit('reconciliation_batch_size')),
   )
-  // Requested posts are distinct so duplicate input ids cannot duplicate source work.
   // Probe each live post's exact content and policy version before merging work.
   const versionSource = postIds
     ? `(
-        SELECT version.* FROM (SELECT DISTINCT unnest($3::uuid[]) AS post_id) requested
-        JOIN posts post ON post.id = requested.post_id AND post.deleted_at IS NULL
+        SELECT version.* FROM posts post
         JOIN LATERAL (
           SELECT version.id, version.post_id, version.content_sha256,
             version.policy_revision, version.deadline_at
@@ -53,6 +51,7 @@ export async function reconcilePostModerationWork(
             AND ($4::uuid IS NULL OR version.id >= $4::uuid)
           ORDER BY version.id
         ) version ON TRUE
+        WHERE post.id = ANY($3::uuid[]) AND post.deleted_at IS NULL
       )`
     : `post_moderation_versions`
   const { rows } = await write<{

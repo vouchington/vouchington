@@ -20,6 +20,7 @@ updates:
       exclude:
         - '@jongleberry/*'
         - '@vouchington/*'
+        - 'agent-blackboard'
         - 'coverage-check'
         - 'eslint-plugin-no-mistakes'
         - 'eslint-plugin-vouchington'
@@ -41,6 +42,7 @@ updates:
         patterns:
           - '@jongleberry/*'
           - '@vouchington/*'
+          - 'agent-blackboard'
           - 'coverage-check'
           - 'eslint-plugin-no-mistakes'
           - 'eslint-plugin-vouchington'

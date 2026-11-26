@@ -2,10 +2,7 @@ import { FollowContextCard } from '@/components/social/follow-context-card'
 import { getTopicFollowContext } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getTranslations } from '@/lib/i18n/get-translations'
-
-function hasFollowContext(totalValues: number[]): boolean {
-  return totalValues.some(total => total > 0)
-}
+import { TopicFollowerSection } from './topic-follower-section'
 
 export default async function TopicFollowContext({ id }: { id: string }) {
   const t = await getTranslations()
@@ -14,15 +11,13 @@ export default async function TopicFollowContext({ id }: { id: string }) {
 
   const context = await getTopicFollowContext(id)
   if (!context) return null
-  if (
-    !hasFollowContext([
-      context.positive_by_following?.total ?? 0,
-      context.negative_by_following?.total ?? 0,
-      context.following_topic_followers?.total ?? 0,
-    ])
-  ) {
-    return null
-  }
+  const followers = context.following_topic_followers
+  const totalIsExact = followers.total_is_exact !== false
+  const hasVotes =
+    context.positive_by_following.total > 0 || context.negative_by_following.total > 0
+  if (!hasVotes && followers.total === 0 && totalIsExact) return null
+
+  const topicFollowersTitle = t('extracted.topics.topicFollowContext.followThisTopic_5b12931d')
 
   return (
     <FollowContextCard
@@ -42,14 +37,32 @@ export default async function TopicFollowContext({ id }: { id: string }) {
             'extracted.topics.topicFollowContext.noFollowedUsersLeftANegativeSignalForThis_d22b1c9b',
           ),
         },
-        {
-          title: t('extracted.topics.topicFollowContext.followThisTopic_5b12931d'),
-          data: context.following_topic_followers,
-          emptyLabel: t(
-            'extracted.topics.topicFollowContext.noFollowedUsersFollowThisTopic_25a8aed7',
-          ),
-        },
+        ...(totalIsExact
+          ? [
+              {
+                title: topicFollowersTitle,
+                data: followers,
+                emptyLabel: t(
+                  'extracted.topics.topicFollowContext.noFollowedUsersFollowThisTopic_25a8aed7',
+                ),
+              },
+            ]
+          : []),
       ]}
+      extraSection={
+        !totalIsExact && (
+          <TopicFollowerSection
+            key={id}
+            topicId={id}
+            title={topicFollowersTitle}
+            initialPage={{
+              total: followers.total,
+              users: followers.users,
+              next_cursor: followers.next_cursor ?? null,
+            }}
+          />
+        )
+      }
     />
   )
 }

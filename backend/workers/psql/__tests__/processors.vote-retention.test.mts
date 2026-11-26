@@ -90,7 +90,9 @@ describe('processPsql vote retention continuations', () => {
   })
 
   it('runs selected detail pages and leaves disabled and excluded rows unchanged', async () => {
-    const addBulk = await spyOnTestVoteRetentionAdmission()
+    const addBulk = await spyOnTestVoteRetentionAdmission(
+      'vote-retention__4cd7ec77528a76d322eeee4b297ed8ab',
+    )
     const ballots = await createTestVoteRetentionPostBallots()
     const owned = await createTestVoteRetentionDetails(ballots.postId)
     const neighborPost = await createTestVoteRetentionPost()
@@ -132,7 +134,13 @@ describe('processPsql vote retention continuations', () => {
     ).toEqual({
       supersededVoteBallots: [],
       orphanedUserAgentStrings: { scanned: 1, deleted: 1, hasMore: false },
-      voteIntegrityDetails: { scanned: 1, redacted: 1, hasMore: false },
+      voteIntegrityDetails: { scanned: 1, redacted: 1, hasMore: true },
+    })
+    const [continuation] = addBulk.mock.calls[0]![0]
+    expect(continuation?.data).toEqual({
+      voteTables: [],
+      userAgentStrings: false,
+      voteIntegrityDetails: true,
     })
     expect(await hasTestUserAgentString(owned.userAgentStringId)).toBe(false)
     expect(await getTestVoteIntegrityFlagDetails(owned.flagId)).toEqual({ threshold: 3 })
@@ -154,7 +162,7 @@ describe('processPsql vote retention continuations', () => {
       orphanedUserAgentStrings: { scanned: 0, deleted: 0, hasMore: false },
       voteIntegrityDetails: { scanned: 0, redacted: 0, hasMore: false },
     })
-    expect(addBulk).not.toHaveBeenCalled()
+    expect(addBulk).toHaveBeenCalledOnce()
   })
 
   it('rolls back a ballot write failure without admitting a continuation', async () => {

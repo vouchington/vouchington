@@ -141,7 +141,7 @@ export const CrawlText: Story = {
     await expect(markdown).toHaveAttribute('dir', 'ltr')
 
     const unknown = canvas.getByText('Markdown without a page language')
-    await expect(unknown.getAttribute('lang')).toBeNull()
+    await expect(unknown).toHaveAttribute('lang', '')
     await expect(unknown).toHaveAttribute('dir', 'auto')
     await expect(canvas.getByText('Title')).not.toHaveAttribute('lang')
   },

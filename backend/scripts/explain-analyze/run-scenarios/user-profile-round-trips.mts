@@ -136,7 +136,7 @@ export async function runUserProfileRoundTripScenarios(): Promise<void> {
     'financial-profile-upsert',
     () => upsertUserFinancialProfile(seedUser.id, { hard_inquiries_12m: 4 }),
     undefined,
-    ['upsertUserFinancialProfile:lockOwner', 'upsertUserFinancialProfile'],
+    ['upsertUserFinancialProfile:getOwner', 'upsertUserFinancialProfile'],
   )
 
   const { rows: profileLinks } = await read<{ id: string }>(

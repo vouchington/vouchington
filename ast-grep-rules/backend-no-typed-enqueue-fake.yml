@@ -1,11 +1,11 @@
 id: backend-no-typed-enqueue-fake
 language: Tsx
-severity: warning
+severity: error
 message: Do not fake an internal enqueue with `vi.fn<typeof enqueueFoo>()`; exercise the real queue in a real-boundary test.
 note: >-
   A typed fake of an internal enqueue hides continuation bugs, such as a job that re-adds itself
   under its own active dedup id and gets silently dropped. Exercise the real queue in real-boundary
-  tests instead; see the queue checklist in docs/checklists/backend-queues.md.
+  tests instead; see the voucha-queue-authoring skill.
 files:
   - 'backend/workers/**/*.test.mts'
   - 'backend/services/**/*.test.mts'

@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes, processedRows } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult, processedRows } from '@vouchington/explain-plan'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const PAGE_SHAPES = new Map<string, { limit: number; after: boolean; excluded: boolean }>()

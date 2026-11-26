@@ -1,6 +1,6 @@
-import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes, type ExplainResult, processedRows } from '@vouchington/explain-plan'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes.mts'
+import { baseRelationName } from '../plan-nodes.mts'
 
 export function assertUsernamePrefixCandidates(result: ExplainResult): void {
   const nodes = collectPlanNodes(result.plan)

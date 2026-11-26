@@ -1,21 +1,25 @@
-import { read, beginTransaction, write } from '@data-stores/psql'
+import { read, beginTransaction, registerPostCommitAction, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { getSystemUserByUsername } from '@services/users/system-users'
 import { assertEntityRelationUpsertAllowed } from '@services/entity-relations/upsert'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
+import { recordPostPublicationChange } from '@services/post-publication'
 import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort } from '@queues/story-post-related-url-projections/enqueues'
 import { getPostStoryByStoryId } from './get-post-stories.mts'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
-import { dispatchStoryPostRelationEffects } from './story-post-relation-effects.mts'
-import { lockStoryPostRelations } from './story-post-relation-locks.mts'
+import {
+  dispatchStoryPostRelationEffects,
+  type StoryPostRelationEffects,
+} from './story-post-relation-effects.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
 import type { PrivateUser } from '@services/users/types'
 
 type RefreshStoryPostQueryOptions = Omit<QueryOptions, 'query'> & {
   query?: TransactionQuery
+  expectedPostId?: string
+  captureCategoryChanges?: boolean
 }
 type RefreshStoryPostTransactionOptions = RefreshStoryPostQueryOptions & {
   query: TransactionQuery
@@ -27,24 +31,25 @@ export type StoryPostRefreshResult = {
   dispatchPostCommitEffects: () => Promise<void>
 }
 
+type RefreshedStoryPost = StoryPostRefreshResult &
+  Pick<StoryPostRelationEffects, 'categoryTopicRelations'>
+
 /**
  * If a story post exists for this story, refresh it:
  * re-aggregate topic relations and restart the durable URL projection, then
  * re-enqueue the story-post summarisation agent with force=true so a stale
  * ai_summary_markdown is overwritten.
  *
- * Assignment, removal, and clustering callers include this refresh in their transaction and hold the
- * story lifecycle lock first; without `options.query` the refresh locks the story in its own transaction.
+ * Assignment, removal, and clustering callers include this refresh in their transaction.
  * If no story post exists yet (the story was never turned into a post), this is a no-op.
  */
 export async function refreshStoryPostForStory(
   storyId: string,
   options: RefreshStoryPostQueryOptions = {},
-): Promise<StoryPostRefreshResult | null> {
+): Promise<RefreshedStoryPost | null> {
   const existingQuery = options.query
   if (!existingQuery) {
     await using query = await beginTransaction()
-    await lockStoryLifecycles(query, [storyId])
     const result = await refreshStoryPostForStoryInTransaction(storyId, { query })
     await query.commit()
     if (result) {
@@ -59,33 +64,31 @@ export async function refreshStoryPostForStory(
 async function refreshStoryPostForStoryInTransaction(
   storyId: string,
   options: RefreshStoryPostTransactionOptions,
-): Promise<StoryPostRefreshResult | null> {
+): Promise<RefreshedStoryPost | null> {
   const postStory = await getPostStoryByStoryId(storyId, options)
-  if (!postStory) return null
+  if (!postStory || (options.expectedPostId && options.expectedPostId !== postStory.post_id))
+    return null
 
   const postId = postStory.post_id
-  await lockStoryPostRelations(options.query, postId)
+  const topicIdsToLock = await readStoryTopicIds(options.query, storyId)
+  // lock-reason: prevents: writing a stale topic projection after a concurrent story source change; writer: story assignment, clustering and category relation writes.
+  await options.query(sql`/* refreshStoryPostForStory:lockTopics */
+    SELECT id FROM relation__post__category__topic
+    WHERE subject_id = ${postId}
+      AND (deleted_at IS NULL OR object_id = ANY(${topicIdsToLock}::uuid[]))
+    ORDER BY subject_id, object_id FOR UPDATE`)
+
+  // lock-reason: prevents: pruning a manually confirmed URL after a membership refresh captures or restarts projection; writer: manual related URL upsert, including confirmation of a projected URL.
+  await options.query(sql`/* lockStoryPostRelations:urls */
+    SELECT id FROM relation__post__related__url WHERE subject_id = ${postId}
+    ORDER BY subject_id, object_id FOR UPDATE`)
 
   // Category projection remains transaction-local. URL projection is durable and bounded;
   // it resumes after this membership transaction commits.
   await markStoryPostRelatedUrlProjection(options.query, postId, storyId)
-  const { rows } = await read(
-    sql`/* refreshStoryPostForStory */
-    SELECT
-      ARRAY_AGG(DISTINCT c.topic_id) FILTER (WHERE c.topic_id IS NOT NULL) AS topic_ids
-    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
-    FROM rss_feed_items rfi
-    LEFT JOIN rss_feed_item_categories c
-      ON c.rss_feed_item_id = rfi.id
-      AND c.topic_id IS NOT NULL
-    WHERE rfi.story_id = ${storyId}
-      AND rfi.deleted_at IS NULL
-  `,
-    options,
-  )
 
-  const topicIds = (rows[0]?.topic_ids as string[] | null) ?? []
-
+  // Topic sources may change while the relation locks wait. Use the new snapshot for writes.
+  const topicIds = await readStoryTopicIds(options.query, storyId)
   const storyTellerUser = await getStoryTellerUser()
 
   const { rows: priorTopicRows } = await read<{ object_id: string }>(
@@ -144,13 +147,44 @@ async function refreshStoryPostForStoryInTransaction(
       categoryTopicRelations,
       handleVotes: false,
     })
-    void enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
   }
+  const impactedTopicIds = [...new Set([...priorTopicIds, ...topicIds])]
+  if (
+    options.captureCategoryChanges &&
+    (impactedTopicIds.length !== priorTopicIds.length ||
+      impactedTopicIds.length !== topicIds.length)
+  ) {
+    await recordPostPublicationChange(options.query, {
+      scope: { type: 'post', postId },
+      reason: 'post_updated',
+      impactedTopicIds,
+    })
+  }
+  registerPostCommitAction(options.query, enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort)
   return {
     postId,
-    impactedTopicIds: [...new Set([...priorTopicIds, ...topicIds])],
+    impactedTopicIds,
+    categoryTopicRelations,
     dispatchPostCommitEffects,
   }
+}
+
+async function readStoryTopicIds(query: TransactionQuery, storyId: string): Promise<string[]> {
+  const { rows } = await query<{ topic_ids: string[] | null }>(
+    sql`/* refreshStoryPostForStory */
+    SELECT
+      ARRAY_AGG(DISTINCT c.topic_id) FILTER (WHERE c.topic_id IS NOT NULL) AS topic_ids
+    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
+    FROM rss_feed_items rfi
+    LEFT JOIN rss_feed_item_categories c
+      ON c.rss_feed_item_id = rfi.id
+      AND c.topic_id IS NOT NULL
+    WHERE rfi.story_id = ${storyId}
+      AND rfi.deleted_at IS NULL
+  `,
+  )
+
+  return rows[0]?.topic_ids ?? []
 }
 
 async function getStoryTellerUser(): Promise<PrivateUser> {

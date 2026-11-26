@@ -75,20 +75,11 @@ export function NewsItemList({
   )
 
   // Derived from visible results so hidden items are excluded from modal navigation.
-  const visibleResults = allResults.filter(
-    result => !hiddenItemIds.has(result.entity_id ?? result.id),
-  )
-  const orderedItemIds = [...new Set(visibleResults.map(result => result.entity_id ?? result.id))]
-
-  if (allResults.length === 0) {
-    return (
-      <EmptyState
-        title={t('extracted.feed.newsItemList.noNewsFound_1cb8f117')}
-        description={t('extracted.feed.newsItemList.followTopicsOrSourcesToSee_48a88aa2')}
-        icon='inbox'
-      />
-    )
-  }
+  const visibleRows = allResults.flatMap(result => {
+    const item = allItems[result.entity_id ?? result.id]
+    return item && !hiddenItemIds.has(item.id) ? [{ result, item }] : []
+  })
+  const orderedItemIds = [...new Set(visibleRows.map(({ item }) => item.id))]
 
   const canLoadMore = hasNextPage && !!nextPageEndpoint
 
@@ -107,13 +98,18 @@ export function NewsItemList({
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
+        itemCount={visibleRows.length}
+        emptyState={
+          <EmptyState
+            title={t('extracted.feed.newsItemList.noNewsFound_1cb8f117')}
+            description={t('extracted.feed.newsItemList.followTopicsOrSourcesToSee_48a88aa2')}
+            icon='inbox'
+          />
+        }
       >
         <HackerNewsReferencesProvider references={allHackerNewsReferences}>
           <div className='space-y-4'>
-            {visibleResults.map(result => {
-              const item = allItems[result.entity_id ?? result.id]
-              if (!item) return null
-
+            {visibleRows.map(({ result, item }) => {
               const relatedPostIds = allRelatedPostsByUrlId[item.url.id] ?? []
               const relatedPosts = relatedPostIds.flatMap(id =>
                 allPosts[id] ? [allPosts[id]] : [],

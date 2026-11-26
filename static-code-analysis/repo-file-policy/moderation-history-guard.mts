@@ -68,6 +68,7 @@ export async function checkModerationHistoryGuard(
     const filePath = join(repoRoot, file)
     const content = readFileSync(filePath, 'utf8')
 
+    // oxlint-disable-next-line no-await-in-loop -- migration file count is unbounded; serial parsing keeps memory flat and error order deterministic
     const facts = await parsePostgresSql({ sql: content })
     if (facts.diagnostics.length > 0) {
       errors.push(

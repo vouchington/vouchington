@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import sql from 'sql-template-strings'
 import type { ClassifierRunUsage, ClassifierUsageWindow } from './usage-report-types.mts'
 import { getClassifierRunsWorkLimit } from './work-limits.mts'
@@ -70,9 +70,11 @@ export async function readClassifierRunUsage(
 ): Promise<ClassifierRunUsage[]> {
   assertClassifierUsageWindow(window)
   const maxRuns = getClassifierRunsWorkLimit('usage_report_max_runs')
-  const lowerBound = timestampToUuidv7LowerBound(window.from.getTime())
-  const upperBound = timestampToUuidv7LowerBound(window.to.getTime())
-  const ledgerLowerBound = timestampToUuidv7LowerBound(window.from.getTime() - LEDGER_CLOCK_SKEW_MS)
+  const lowerBound = getMinUuidv7ForDate(window.from)
+  const upperBound = getMinUuidv7ForDate(window.to)
+  const ledgerLowerBound = getMinUuidv7ForDate(
+    new Date(window.from.getTime() - LEDGER_CLOCK_SKEW_MS),
+  )
   // The report tolerates replica lag because it summarizes a closed time window.
   const { rows } = await read<RunRow>(sql`/* readClassifierRunUsage */
     SELECT run.id AS run_id,

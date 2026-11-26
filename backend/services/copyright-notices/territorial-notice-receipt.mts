@@ -12,6 +12,7 @@ import {
   assertIdempotencyKey,
   sameSha256,
   territorialRequestSha256,
+  territorialCopyrightUnavailableMessage,
   type TerritorialCopyrightJurisdiction,
   type TerritorialNoticeRequest,
   type EuTerritorialNoticeRequest,
@@ -25,6 +26,7 @@ import {
   insertReceiptQuery,
   insertRoutingQuery,
 } from './territorial-notice-receipt-sql.mts'
+import { throwCopyrightSubmissionRequestConflict } from './submission-request-conflict.mts'
 
 export type TerritorialCopyrightNoticeReceipt = {
   notice_id: string
@@ -35,7 +37,6 @@ export type TerritorialCopyrightNoticeReceipt = {
 }
 
 export type TerritorialNoticeRequester = { user: PrivateUser | null; identity: string }
-
 type TerritorialReceiptRow = Omit<TerritorialCopyrightNoticeReceipt, 'is_duplicate'> & {
   request_sha256: Uint8Array
 }
@@ -69,9 +70,7 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
   const fields = noticeFields(request, jurisdiction)
   const requestSha256 = territorialRequestSha256(fields)
   const identitySha256 = createHash('sha256').update(requester.identity).digest()
-  await transaction(sql`/* receiveTerritorialCopyrightNotice:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${`${identitySha256.toString('hex')}:${idempotencyKey}`}, 0))
-  `)
+  const approval = await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
   const { rows: existingRows } = await transaction<TerritorialReceiptRow>(
     existingReceiptQuery(jurisdiction, identitySha256, idempotencyKey),
   )
@@ -90,7 +89,7 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
       is_duplicate: true,
     }
   }
-  const approval = await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
+  assert(approval, 403, territorialCopyrightUnavailableMessage(jurisdiction))
   const labels = territorialLabels(jurisdiction)
   const purpose = `${labels.noticePurpose}:${idempotencyKey}`
   const failure = labels.noticeFailed
@@ -126,6 +125,11 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
         ? encryptSecret(fields.notifierEmail, `${purpose}:notifier_email`)
         : null,
       'goodFaithStatement' in fields ? fields.goodFaithStatement : null,
+    ),
+  ).catch((err: unknown) =>
+    throwCopyrightSubmissionRequestConflict(
+      err,
+      'uq_copyright_territorial_notice_receipts__idempotency',
     ),
   )
   const receipt = receipts[0]

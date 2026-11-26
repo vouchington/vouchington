@@ -90,7 +90,7 @@ jobs:
           ref: ${{ inputs.checkout_ref || github.sha }}
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -109,7 +109,7 @@ jobs:
           overwrite: true
           name: storybook-node-test-report
           path: storybook-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Preserve full web-storybook LCOV
         timeout-minutes: 1
@@ -121,7 +121,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: web-storybook
       - name: Upload full web-storybook LCOV to GitHub (attempt 2)
@@ -129,7 +129,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: web-storybook
           name-suffix: -retry
@@ -144,7 +144,7 @@ jobs:
           RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Install Playwright Chromium
-        uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 5
       - name: Clear stale coverage before browser run
         timeout-minutes: 1
@@ -178,7 +178,7 @@ jobs:
           overwrite: true
           name: storybook-browser-junit
           path: storybook-browser-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Upload bounded Storybook browser diagnostics
         if: ${{ failure() }}
@@ -188,7 +188,7 @@ jobs:
           overwrite: true
           name: browser-debug-log-storybook
           path: storybook-browser-diagnostics.log
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: ignore
       - name: Preserve full web-storybook-browser LCOV
         timeout-minutes: 1
@@ -200,7 +200,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: web-storybook-browser
       - name: Upload full web-storybook-browser LCOV to GitHub (attempt 2)
@@ -208,7 +208,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-2.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: web-storybook-browser
           name-suffix: -retry

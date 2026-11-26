@@ -6,7 +6,12 @@ import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
  * `active_links(id, user_id, referral_program_topic_id, url, label, activated_at)`; these CTEs
  * score only the users in it.
  */
-export function rankingCtesSql(referralProgramId: string): SQLStatement {
+export function rankingCtesSql(
+  referralProgramId: string,
+  scope: 'in-network' | 'out-of-network',
+): SQLStatement {
+  // Small personalized lists benefit from keyed author probes. Cold shared lists use topic membership filters.
+  const outOfNetwork = scope === 'out-of-network'
   const query = sql`linked_topic_ids AS (
   SELECT id FROM topics
   WHERE referral_program_topic_id = ${referralProgramId}
@@ -25,15 +30,34 @@ user_contributions AS (
   JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
   WHERE p.deleted_at IS NULL
     AND p.post_type IN ('data_point', 'review')
-    AND p.created_by_id IN (SELECT user_id FROM active_links)
     AND `
-  query.append(buildPublicPostEligibilityFilter('p', 'root_post')).append(sql`
+  query
+    .append(
+      outOfNetwork
+        ? 'p.created_by_id = ANY(ARRAY(SELECT user_id FROM active_links))'
+        : 'p.created_by_id IN (SELECT user_id FROM active_links)',
+    )
+    .append('\n    AND ')
+    .append(buildPublicPostEligibilityFilter('p', 'root_post'))
+  query.append(
+    outOfNetwork
+      ? `
+    AND (p.id IN (
+      SELECT post_id FROM post_data_point_topics
+      WHERE topic_id IN (SELECT id FROM linked_topic_ids)
+      UNION ALL
+      SELECT post_id FROM post_review_topic_ratings
+      WHERE topic_id IN (SELECT id FROM linked_topic_ids)
+    )) IS TRUE`
+      : `
     AND (
       EXISTS (SELECT 1 FROM post_data_point_topics pdt
               WHERE pdt.post_id = p.id AND pdt.topic_id IN (SELECT id FROM linked_topic_ids))
       OR EXISTS (SELECT 1 FROM post_review_topic_ratings prt
                  WHERE prt.post_id = p.id AND prt.topic_id IN (SELECT id FROM linked_topic_ids))
-    )
+    )`,
+  )
+  query.append(sql`
   GROUP BY p.created_by_id
 ),
 user_reviews AS (
@@ -47,20 +71,29 @@ user_reviews AS (
       WHERE prt.post_id = p.id
         AND prt.topic_id IN (SELECT id FROM linked_topic_ids)
     ) AS review_avg_rating
-  FROM posts p
-  JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
+  FROM posts p`)
+  if (!outOfNetwork)
+    query.append(`
+  JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)`)
+  query.append(`
   WHERE p.deleted_at IS NULL
     AND p.post_type = 'review'
-    AND p.root_post_id IS NULL
+    AND p.root_post_id IS NULL`)
+  if (!outOfNetwork)
+    query.append(`
     AND p.broadcast = 'everyone'
-    AND p.approved_at IS NOT NULL
+    AND p.approved_at IS NOT NULL`)
+  query
+    .append(`
     AND p.created_by_id IN (SELECT user_id FROM active_links)
     AND `)
-  query.append(buildPublicPostEligibilityFilter('p', 'root_post')).append(sql`
-    AND EXISTS (
+    .append(buildPublicPostEligibilityFilter('p', outOfNetwork ? 'p' : 'root_post'))
+    .append(outOfNetwork ? '\n    AND (EXISTS (' : '\n    AND EXISTS (')
+    .append(`
       SELECT 1 FROM post_review_topic_ratings prt
       WHERE prt.post_id = p.id AND prt.topic_id IN (SELECT id FROM linked_topic_ids)
-    )
+    )`)
+    .append(outOfNetwork ? ') IS TRUE' : '').append(sql`
   ORDER BY p.created_by_id, p.votes_score_sort DESC NULLS LAST, p.id DESC
 ),
 user_tiers AS (

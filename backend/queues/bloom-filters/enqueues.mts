@@ -1,5 +1,5 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import { isActiveProcessorJob } from '@data-stores/valkey-glide-mq/guarded-worker-processors'
+import { guardedProcessors } from '@data-stores/valkey-glide-mq/guarded-worker-processors'
 import type { EnqueueReturnType } from '@voucha/types'
 import {
   backfillBloomFilterJobOptions,
@@ -129,7 +129,7 @@ async function admitBlocklistRebuild(
   jobId: string,
 ): Promise<boolean> {
   // A running rebuild cannot re-add its own id. The other id carries that commit.
-  if (isActiveProcessorJob(QUEUE_NAME, jobId)) return false
+  if (guardedProcessors.isActiveProcessorJob(QUEUE_NAME, jobId)) return false
   const margin = BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs
   const added = await enqueueRebuildBloomFilterJob(data, {
     ...rebuildBloomFilterJobOptions(data, priority),

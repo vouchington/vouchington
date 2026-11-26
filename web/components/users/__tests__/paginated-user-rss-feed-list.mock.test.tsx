@@ -1,48 +1,10 @@
+import { receiveLoadMore } from '@/test-helpers/components/users/paginated-user-list.mock-support'
 import { act, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RssFeedsListResponseBody } from '@/types/api-responses'
 import type { ViewRssFeed } from '@/types/rss-feeds'
 import { getPaginatedPage } from '@/lib/api/client'
 import { PaginatedUserRssFeedList } from '../paginated-user-rss-feed-list'
-
-const { receiveLoadMore } = vi.hoisted(() => ({
-  receiveLoadMore: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/api/client'), () => ({
-  getPaginatedPage: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({
-    children,
-    clearError,
-    fetchError,
-    onLoadMore,
-  }: React.PropsWithChildren<{
-    clearError?: () => void
-    fetchError?: Error | null
-    onLoadMore: () => void
-  }>) => {
-    receiveLoadMore(onLoadMore)
-    return (
-      <div>
-        {children}
-        {fetchError ? (
-          <button
-            type='button'
-            onClick={() => {
-              clearError?.()
-              onLoadMore()
-            }}
-          >
-            Retry
-          </button>
-        ) : null}
-      </div>
-    )
-  },
-}))
 
 vi.mock(import('@/components/sources/rss-feed-list-item'), () => ({
   RssFeedListItem: ({ feed }: { feed: { id: string } }) => <div>{feed.id}</div>,
@@ -127,6 +89,5 @@ describe('PaginatedUserRssFeedList', () => {
     )
 
     expect(screen.getByText('No followed podcasts')).toBeDefined()
-    expect(receiveLoadMore).not.toHaveBeenCalled()
   })
 })

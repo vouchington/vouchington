@@ -14,7 +14,7 @@ export function normalizeS3Request(
   const cacheKey = buildCacheKey({
     key: request.key,
     width,
-    height: request.height,
+    ...(request.height === undefined ? {} : { height: request.height }),
     quality,
     lossless: request.lossless,
     progressive: request.progressive,
@@ -34,7 +34,7 @@ export function normalizeSideloadRequest(
   const cacheKey = buildCacheKey({
     key: `${TRANSFORMED_SIDELOAD_CACHE_PREFIX}${sha256(request.url)}`,
     width,
-    height: request.height,
+    ...(request.height === undefined ? {} : { height: request.height }),
     quality,
     lossless: request.lossless,
     progressive: request.progressive,

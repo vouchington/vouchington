@@ -2,7 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { getMinUuidv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import {
-  lockPaymentCleanupCursor,
+  readPaymentCleanupCursor,
   savePaymentCleanupCursor,
 } from './cleanup-payment-operations.mts'
 
@@ -18,7 +18,7 @@ export async function cleanupStripeEventPage(
   recordIds?: readonly string[],
 ) {
   await using query = await beginTransaction()
-  const cursorId = recordIds ? null : await lockPaymentCleanupCursor(query, 'stripe_event_ledger')
+  const cursorId = recordIds ? null : await readPaymentCleanupCursor(query, 'stripe_event_ledger')
   const statement = sql`/* selectExpiredStripeEventLedgerPage */
     SELECT event.id FROM stripe_events event WHERE `
   if (recordIds) {
@@ -34,7 +34,7 @@ export async function cleanupStripeEventPage(
   }
   statement.append(sql`
     ORDER BY event.id
-    LIMIT ${pageSize + 1} FOR UPDATE OF event SKIP LOCKED`)
+    LIMIT ${pageSize + 1}`)
   const { rows } = await query<{ id: string }>(statement)
   const ids = rows.slice(0, pageSize).map(row => row.id)
   const hasMore = !recordIds && rows.length > pageSize

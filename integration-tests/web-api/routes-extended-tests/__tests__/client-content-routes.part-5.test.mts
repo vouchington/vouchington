@@ -4,12 +4,8 @@ import { psql as psqlQueue } from '../../../../backend/queues/psql/queues.mts'
 import * as clientRoutes from '@/lib/api/client'
 import { installClientContentRouteHarness } from '../../../test-helpers/client-content-route-harness.mts'
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('client-content-routes', () => {
-  const harness = installClientContentRouteHarness({ unset })
+  const harness = installClientContentRouteHarness()
 
   describe('psql client routes (admin only)', () => {
     it('fetchMigrations returns 200', async () => {

@@ -29,11 +29,11 @@ describe('CrawlAuthoredText', () => {
 
     const title = screen.getByText('Untitled crawl title')
     expect(title.tagName).toBe('DD')
-    expect(title).not.toHaveAttribute('lang')
+    expect(title).toHaveAttribute('lang', '')
     expect(title).toHaveAttribute('dir', 'auto')
   })
 
-  it('omits lang when the crawl has no page language', () => {
+  it('sets an empty lang when the crawl has no page language', () => {
     render(
       <CrawlAuthoredText
         as='pre'
@@ -43,7 +43,7 @@ describe('CrawlAuthoredText', () => {
     )
 
     const markdown = screen.getByText('Markdown without a page language')
-    expect(markdown).not.toHaveAttribute('lang')
+    expect(markdown).toHaveAttribute('lang', '')
     expect(markdown).toHaveAttribute('dir', 'auto')
   })
 })

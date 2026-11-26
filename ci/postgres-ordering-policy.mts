@@ -59,15 +59,11 @@ export const expectedDirectiveInventory = [
   'backend/services/communities/list-items/add.mts:1',
   // Delivery batches take sorted case locks before the ordered blocker generation rows.
   'backend/services/crawl-chunks/create.mts:1',
-  // Replay cleanup locks the floor before an ordered ledger page and waits on older rows.
-  'backend/services/data-retention/cleanup-activitypub-replay.mts:1',
-  'backend/services/data-retention/cleanup-deferred-post-votes.mts:2',
   // Both retention readers lock a bounded (timestamp, id) keyset page with SKIP LOCKED.
   // The directive covers only that ordered candidate read; deletes recheck eligibility.
   'backend/services/data-retention/cleanup-deleted-conversation-cursor.mts:1',
   'backend/services/data-retention/cleanup-oauth-friend-edges.mts:2',
   'backend/services/data-retention/cleanup-operational-tombstone-candidates.mts:1',
-  'backend/services/data-retention/cleanup-vote-ballots.mts:1',
   'backend/services/entity-cache/hostname-invalidation-drain.mts:2',
   'backend/services/individuals-households/households/spending-categories.mts:1',
   'backend/services/lists/add-item.mts:1',
@@ -78,8 +74,6 @@ export const expectedDirectiveInventory = [
   'backend/services/notifications/reconcile-rss-feed-item-writes.mts:1',
   'backend/services/notifications/reconcile-rss-feed-item.mts:1',
   'backend/services/oauth-authorization-server/retention-tokens.mts:2',
-  'backend/services/oauth-authorization-server/retention.mts:1',
-  'backend/services/stripe/membership-provider-facts/context.mts:1',
   'backend/services/vote-integrity/create-flag.mts:3',
 ] as const
 

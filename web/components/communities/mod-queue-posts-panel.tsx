@@ -34,10 +34,6 @@ export function ModQueuePostsPanel({
       {t('extracted.communities.modQueue.noPendingPosts_df860938')}
     </p>
   )
-  if (queue.pendingPosts.length === 0 && !hasNextPage) {
-    return pendingPostsEmpty
-  }
-
   return (
     <InfiniteScroll
       hasNextPage={hasNextPage}
@@ -47,31 +43,27 @@ export function ModQueuePostsPanel({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      itemCount={queue.pendingPosts.length}
+      emptyState={pendingPostsEmpty}
     >
-      {queue.pendingPosts.length > 0 ? (
-        <ModQueuePosts
-          activeAction={queue.state.activeAction}
-          activeKey={activeKey}
-          bulkDisabled={selection.mutationsDisabled}
-          communitySlug={communitySlug}
-          currentUserId={currentUserId}
-          loading={queue.state.loading}
-          onActiveChange={onActiveChange}
-          onApprove={actions.handleApprove}
-          onCancelReject={() => queue.dispatch({ type: 'reject-cancelled' })}
-          onRejectStart={postId => queue.dispatch({ type: 'reject-started', postId })}
-          onRejectSubmit={actions.handleRejectSubmit}
-          onRejectionReasonChange={value =>
-            queue.dispatch({ type: 'reject-reason-changed', value })
-          }
-          onSelectionToggle={postId => selection.toggleSelected(`post:${postId}`)}
-          posts={queue.pendingPosts}
-          rejectionReason={queue.state.rejectionReason}
-          selectedIds={selection.selectedPostIds}
-        />
-      ) : (
-        pendingPostsEmpty
-      )}
+      <ModQueuePosts
+        activeAction={queue.state.activeAction}
+        activeKey={activeKey}
+        bulkDisabled={selection.mutationsDisabled}
+        communitySlug={communitySlug}
+        currentUserId={currentUserId}
+        loading={queue.state.loading}
+        onActiveChange={onActiveChange}
+        onApprove={actions.handleApprove}
+        onCancelReject={() => queue.dispatch({ type: 'reject-cancelled' })}
+        onRejectStart={postId => queue.dispatch({ type: 'reject-started', postId })}
+        onRejectSubmit={actions.handleRejectSubmit}
+        onRejectionReasonChange={value => queue.dispatch({ type: 'reject-reason-changed', value })}
+        onSelectionToggle={postId => selection.toggleSelected(`post:${postId}`)}
+        posts={queue.pendingPosts}
+        rejectionReason={queue.state.rejectionReason}
+        selectedIds={selection.selectedPostIds}
+      />
     </InfiniteScroll>
   )
 }

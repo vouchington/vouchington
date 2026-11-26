@@ -3,7 +3,7 @@ import { write } from '@data-stores/psql'
 import { prepareAiUsageMonth } from '@data-stores/psql/ai-usage-monthly-partition'
 import { recordAiUsage } from '@services/ai-usage/record'
 import { buildMonthlyPartitionName } from '@vouchington/postgres/partitions'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import sql from 'sql-template-strings'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -62,11 +62,11 @@ export async function runAiUsageLookupScenarios(): Promise<void> {
     serviceTier,
     usage,
   }
-  const lower = timestampToUuidv7LowerBound(
-    Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), 1),
+  const lower = getMinUuidv7ForDate(
+    new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), 1)),
   )
-  const upper = timestampToUuidv7LowerBound(
-    Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1),
+  const upper = getMinUuidv7ForDate(
+    new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1)),
   )
   try {
     await write(sql`/* explainAiUsageTierNoise */

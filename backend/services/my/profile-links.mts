@@ -110,22 +110,22 @@ export async function updateProfileLink(
   const urlId = input.url !== undefined ? await resolveUrlId(userId, input.url) : undefined
   // CASE WHEN preserves existing column values for fields not included in input
   await using transaction = await beginTransaction()
-  const { rows: existingRows } = await transaction<{ image_id: string | null }>(sql`
-    /* updateProfileLink:lockImageSurface */
-    SELECT image_id FROM user_profile_links
-    WHERE id = ${linkId} AND user_id = ${userId}
-    FOR UPDATE
-  `)
-  const existing = existingRows[0]
-  assert(existing, 404, 'Profile link not found')
-  const desiredImageId = input.image_id === undefined ? existing.image_id : input.image_id
-  if (input.image_id !== undefined)
+  if (input.image_id !== undefined) {
+    // lock-reason: prevents: updating placement authority for a link concurrently removed or attached to another image; writer: profile-link image update and deletion.
+    const { rows } = await transaction(sql`
+      /* updateProfileLink:lockImageSurface */
+      SELECT id FROM user_profile_links
+      WHERE id = ${linkId} AND user_id = ${userId}
+      FOR UPDATE
+    `)
+    assert(rows.length === 1, 404, 'Profile link not found')
     await syncImageSurfacePlacement(
       { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
-      desiredImageId ?? null,
-      desiredImageId ? userId : null,
+      input.image_id,
+      input.image_id ? userId : null,
       transaction,
     )
+  }
   const { rows } = await transaction(sql`/* updateProfileLink */
     UPDATE user_profile_links
     SET
@@ -154,6 +154,7 @@ export async function updateProfileLink(
 }
 export async function deleteProfileLink(userId: string, linkId: string): Promise<void> {
   await using transaction = await beginTransaction()
+  // lock-reason: prevents: a concurrent image update recreating placement authority during link removal; writer: profile-link image update.
   const { rows } = await transaction(
     sql`/* deleteProfileLink:lock */ SELECT id FROM user_profile_links
       WHERE id = ${linkId} AND user_id = ${userId} FOR UPDATE`,

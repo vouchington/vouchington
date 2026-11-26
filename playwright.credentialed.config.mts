@@ -9,14 +9,18 @@
 // gates on trusted_secret_context (never runs on dependabot / fork PRs).
 
 import { defineConfig } from '@playwright/test'
-import { CHROMIUM_USE, CI, createPlaywrightConfig } from './playwright/config/shared-config.mts'
+import {
+  CHROMIUM_USE,
+  CI,
+  createVouchaPlaywrightConfig,
+} from './playwright/config/shared-config.mts'
 import { validatePlaywrightConfigTimeouts } from './playwright/config/test-timeout.mts'
 
 const reuseExistingServer = !CI
 
 export default validatePlaywrightConfigTimeouts(
   defineConfig(
-    createPlaywrightConfig({
+    createVouchaPlaywrightConfig({
       testDir: './playwright/credentialed',
       timeout: 30_000,
       junitOutputFile: 'credentialed-test-report.junit.xml',

@@ -8,7 +8,7 @@ import {
   createProviderReplay,
   parseRecordedResponse,
   type ProviderReplay,
-} from './provider-replay.mts'
+} from 'vouchington-tooling/provider-replay'
 import { createOwnedSqlFixtureLifetime } from './owned-sql-fixture-lifetime.mts'
 import {
   cleanupTestEmbeddingsBatches,

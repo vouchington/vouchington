@@ -52,13 +52,13 @@ function OAuthBrokerCallbackContent() {
 
   useEffect(() => {
     if (!flowId) return undefined
-    const lifetime = new AbortController()
+    let cancelled = false
     const pending: { cancelPoll?: () => void; cancelReceipt?: () => void } = {}
 
     const complete = async (): Promise<void> => {
       try {
         const result = await completeOAuthAuthorization<CompletionResponse>(flowId)
-        if (lifetime.signal.aborted) return
+        if (cancelled) return
         if ('status' in result && result.status === 'pending') {
           pending.cancelPoll = scheduleOAuthCompletion(complete)
           return
@@ -85,15 +85,15 @@ function OAuthBrokerCallbackContent() {
         pending.cancelReceipt = receipt.cancel
         opener.postMessage(completionMessage, window.location.origin)
         if (!(await receipt.result)) {
-          if (!lifetime.signal.aborted) setFailed(true)
+          if (!cancelled) setFailed(true)
           return
         }
-        if (lifetime.signal.aborted) return
+        if (cancelled) return
         await acknowledgeOAuthAuthorization(flowId)
-        if (lifetime.signal.aborted) return
+        if (cancelled) return
         window.close()
       } catch (err) {
-        if (!lifetime.signal.aborted) {
+        if (!cancelled) {
           if (isRetryableCompletionError(err)) {
             pending.cancelPoll = scheduleOAuthCompletion(complete)
             return
@@ -118,7 +118,7 @@ function OAuthBrokerCallbackContent() {
 
     void complete()
     return () => {
-      lifetime.abort()
+      cancelled = true
       pending.cancelPoll?.()
       pending.cancelReceipt?.()
     }

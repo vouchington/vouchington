@@ -21,6 +21,7 @@ export function createOwnedEmbeddingQueue(
   const writes: Promise<unknown>[] = []
   const creations: Promise<Worker>[] = []
   const release: Array<() => void> = []
+  // oxlint-disable-next-line prefer-const -- cleanup registered before the assignment can read this if setup throws; const would throw a TDZ ReferenceError
   let events: QueueEvents | undefined
   let closing: Promise<void> | undefined
   let accepting = true

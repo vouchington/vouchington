@@ -1,5 +1,5 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 
 function result(
   scenarioId: string,

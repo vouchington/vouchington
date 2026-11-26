@@ -1,7 +1,7 @@
 'use client'
 
 import { clientApi } from './instance'
-import { assertPathIdentifier } from './path-identifiers'
+import { assertPathIdentifier } from '@vouchington/api-client'
 
 export async function lockPost(postIdOrSlug: string): Promise<void> {
   const safePostIdOrSlug = assertPathIdentifier(postIdOrSlug)

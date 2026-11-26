@@ -14,6 +14,12 @@ export const authAndFediverseEndpointRegistry = {
     requestHeaders: nativeRequestHeaders,
     requestBody: { emailAddress: 'fixture@example.test' },
   },
+  'native.auth.email-address.tokens.recently-sent': {
+    method: 'POST',
+    path: '/api/v1/auth/native/email-address/tokens',
+    requestHeaders: nativeRequestHeaders,
+    requestBody: { emailAddress: 'fixture@example.test' },
+  },
   'native.auth.email-address.login.authenticated': {
     method: 'POST',
     path: '/api/v1/auth/native/email-address/login',

@@ -14,37 +14,42 @@ export const mockAiGeneratedModerationResults = {
 
 import crypto from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 /**
  * Insert a test agent moderation record for a post
  */
-export async function insertTestAgentModeration(options: {
-  postId: string
-  promptId: string
-  agentId: string
-  results?: Record<string, unknown> & { flagged: boolean }
-  flagged?: boolean
-  inputSha256?: Buffer
-  occurredAt?: Date
-  occurredAtSequence?: number
-  moderationId?: string
-  deletedAt?: Date | null
-}): Promise<string> {
+export async function insertTestAgentModeration(
+  options: {
+    postId: string
+    promptId: string
+    agentId: string
+    results?: Record<string, unknown> & { flagged: boolean }
+    flagged?: boolean
+    inputSha256?: Buffer
+    occurredAt?: Date
+    occurredAtSequence?: number
+    moderationId?: string
+    deletedAt?: Date | null
+  },
+  query?: QueryExecutor,
+): Promise<string> {
   const results = options.results ?? { flagged: false }
   const flagged = options.flagged ?? false
   const deletedAt = options.deletedAt === undefined ? null : options.deletedAt
   const inputSha256 =
     options.inputSha256 ??
-    (flagged ? await getPostLLMModerationInputSha256(options.postId) : crypto.randomBytes(32))
+    (flagged
+      ? await getPostLLMModerationInputSha256(options.postId, query)
+      : crypto.randomBytes(32))
 
   const id =
     options.moderationId ??
     (options.occurredAt
       ? uuidv7({ msecs: options.occurredAt.getTime(), seq: options.occurredAtSequence ?? 0 })
       : null)
-  const { rows } = await write<{ id: string }>(
+  const { rows } = await (query ?? write)<{ id: string }>(
     sql`/* insertTestAgentModeration */
     INSERT INTO agent_moderations (id, post_id, input_sha256, prompt_id, agent_id, results, is_flagged, deleted_at)
     VALUES (
@@ -145,8 +150,11 @@ export async function insertTestAgentModerationFalseyResults(options: {
   )
 }
 
-async function getPostLLMModerationInputSha256(postId: string): Promise<Buffer> {
-  const { rows } = await read<{ llm_moderation_content_sha256: Buffer | null }>(
+async function getPostLLMModerationInputSha256(
+  postId: string,
+  query: QueryExecutor = read,
+): Promise<Buffer> {
+  const { rows } = await query<{ llm_moderation_content_sha256: Buffer | null }>(
     sql`/* getPostLLMModerationInputSha256 */
     SELECT llm_moderation_content_sha256
     FROM posts

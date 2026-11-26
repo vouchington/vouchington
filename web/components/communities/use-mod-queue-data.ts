@@ -3,6 +3,7 @@
 import { useMemo, useReducer, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
+import { pageHasContinuation } from '@vouchington/api-client'
 import {
   getCommunityPendingModerationReportsClient,
   type ModerationReportSortParam,
@@ -81,8 +82,20 @@ export function useModQueueData({
     [reports],
   )
   const escalatedPosts = useMemo(() => posts.filter(post => Boolean(post.escalated_at)), [posts])
+  const reportsCanContinue = pageHasContinuation({
+    has_next_page: reportPagination.hasNextPage,
+    end_cursor: reportPagination.endCursor,
+  })
+  const postsCanContinue = pageHasContinuation({
+    has_next_page: hasNextPage,
+    end_cursor: endCursor,
+  })
   const fallbackActiveTab: ModQueueTab =
-    pendingReports.length > 0 ? 'reports' : pendingPosts.length > 0 ? 'posts' : 'escalated'
+    pendingReports.length > 0 || reportsCanContinue
+      ? 'reports'
+      : pendingPosts.length > 0 || postsCanContinue
+        ? 'posts'
+        : 'escalated'
   const reportsById = useMemo(() => new Map(reports.map(report => [report.id, report])), [reports])
 
   function handleReportSortChange(value: ModerationReportSortParam) {

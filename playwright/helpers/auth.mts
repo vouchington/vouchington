@@ -4,7 +4,8 @@ import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import type { createTestUser } from '../../backend/test-helpers/index.mts'
 import type { PrivateUser } from '../../backend/services/users/types.mts'
 import { TEST_USER_ID } from '../../integration-tests/web/helpers/constants.mts'
-import { randomSuffix, retryOnConnectionLost } from 'vouchington-tooling/playwright'
+import { randomSuffix } from 'vouchington-tooling/playwright'
+import { cookieOrigin } from './cookie-origin.mts'
 
 export const TEST_USER_USERNAME = 'tests'
 
@@ -12,7 +13,7 @@ type LoginAsUserDependencies = {
   createDeviceAndSessionTokens: typeof createDeviceAndSessionTokens
   createVerifiedMfaTestSession: typeof import('../../backend/test-helpers/authenticated-session.mts').createVerifiedMfaTestSession
   mintUUIDv7: typeof mintUUIDv7
-  retryOnConnectionLost: typeof retryOnConnectionLost
+  cookieOrigin: typeof cookieOrigin
 }
 
 export async function loginAsTestUser(
@@ -42,19 +43,15 @@ export async function loginAsMfaUser(
       .createVerifiedMfaTestSession
   const userAgent = await page.evaluate(() => navigator.userAgent)
   const tokens = await createVerifiedMfaTestSession(userId, { user_agent: userAgent })
-  await setSessionCookies(
-    page,
-    tokens,
-    dependencies?.retryOnConnectionLost ?? retryOnConnectionLost,
-  )
+  await setSessionCookies(page, tokens, dependencies?.cookieOrigin ?? cookieOrigin)
 }
 
 // Creates device + session JWTs directly and injects them as cookies, bypassing
 // the email login API. This prevents concurrent loginAsTestUser
 // calls from clearing passkeys inserted by a concurrent passkeys test.
 //
-// Navigates once to '/' only to establish the cookie origin, then injects cookies
-// and returns. It performs NO post-login navigation (no /feed/news) — callers issue
+// Injects cookies for the project's baseURL origin without loading a page. It performs NO
+// post-login navigation (no /feed/news) — callers issue
 // their own navigateTo(), so an intermediate feed render would be wasted work.
 export async function loginAsUser(
   page: Page,
@@ -63,7 +60,6 @@ export async function loginAsUser(
 ): Promise<void> {
   const createTokens = dependencies?.createDeviceAndSessionTokens ?? createDeviceAndSessionTokens
   const createUUIDv7 = dependencies?.mintUUIDv7 ?? mintUUIDv7
-  const retry = dependencies?.retryOnConnectionLost ?? retryOnConnectionLost
   const did = createUUIDv7()
   const userAgent = await page.evaluate(() => navigator.userAgent)
   const { deviceToken, sessionToken } = await createTokens({
@@ -71,34 +67,23 @@ export async function loginAsUser(
     uid: userId,
     deviceContext: { user_agent: userAgent },
   })
-  await setSessionCookies(page, { deviceToken, sessionToken }, retry)
+  await setSessionCookies(
+    page,
+    { deviceToken, sessionToken },
+    dependencies?.cookieOrigin ?? cookieOrigin,
+  )
 }
 
 async function setSessionCookies(
   page: Page,
   tokens: Awaited<ReturnType<typeof createDeviceAndSessionTokens>>,
-  retry: typeof retryOnConnectionLost,
+  origin: typeof cookieOrigin,
 ): Promise<void> {
-  await retry(async () => {
-    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 15_000 })
-    const origin = new URL(page.url()).origin
-    await page.context().addCookies([
-      {
-        name: 'dt',
-        value: tokens.deviceToken.token,
-        url: origin,
-        httpOnly: true,
-        sameSite: 'Lax',
-      },
-      {
-        name: 'st',
-        value: tokens.sessionToken.token,
-        url: origin,
-        httpOnly: true,
-        sameSite: 'Lax',
-      },
-    ])
-  })
+  const url = origin()
+  await page.context().addCookies([
+    { name: 'dt', value: tokens.deviceToken.token, url, httpOnly: true, sameSite: 'Lax' },
+    { name: 'st', value: tokens.sessionToken.token, url, httpOnly: true, sameSite: 'Lax' },
+  ])
 }
 
 // Creates a site moderator user (has 'moderator' role, no 'administrator' role).

@@ -2,22 +2,33 @@ import type { Queue } from 'glide-mq'
 import { vi } from 'vitest'
 import { backgroundQueue } from './shared-background-queue.mts'
 
-/** Reject one admission on the supplied real queue; unrelated jobs pass through. */
+/** Reject one admission, single or bulk, on the supplied real queue; unrelated jobs pass through. */
 export function rejectNextQueueJobAddForTest(
-  queue: Pick<typeof backgroundQueue, 'add'>,
+  queue: Pick<typeof backgroundQueue, 'add' | 'addBulk'>,
   jobName: string,
   error: Error,
 ): () => void {
   const realAdd = queue.add
+  const realAddBulk = queue.addBulk
   let rejected = false
-  const spy = vi.spyOn(queue, 'add').mockImplementation((name, data, opts) => {
+  const addSpy = vi.spyOn(queue, 'add').mockImplementation((name, data, opts) => {
     if (!rejected && name === jobName) {
       rejected = true
       return Promise.reject(error)
     }
     return Reflect.apply(realAdd, queue, [name, data, opts])
   })
-  return () => spy.mockRestore()
+  const addBulkSpy = vi.spyOn(queue, 'addBulk').mockImplementation(jobs => {
+    if (!rejected && jobs.some(job => job.name === jobName)) {
+      rejected = true
+      return Promise.reject(error)
+    }
+    return Reflect.apply(realAddBulk, queue, [jobs])
+  })
+  return () => {
+    addSpy.mockRestore()
+    addBulkSpy.mockRestore()
+  }
 }
 
 /** Reject matching admissions on a caller-owned queue while other jobs pass through. */
@@ -30,6 +41,20 @@ export function rejectQueueJobAddForTest<Data>(
   const spy = vi.spyOn(queue, 'add').mockImplementation((name, data, opts) => {
     if (matches(name, data)) return Promise.reject(error)
     return realAdd.call(queue, name, data, opts)
+  })
+  return () => spy.mockRestore()
+}
+
+/** Reject a bulk admission that contains a matching job on a caller-owned queue. */
+export function rejectQueueJobAddBulkForTest<Data>(
+  queue: Queue<Data>,
+  matches: (name: string, data: Data) => boolean,
+  error: Error,
+): () => void {
+  const realAddBulk = queue.addBulk
+  const spy = vi.spyOn(queue, 'addBulk').mockImplementation(jobs => {
+    if (jobs.some(job => matches(job.name, job.data as Data))) return Promise.reject(error)
+    return realAddBulk.call(queue, jobs)
   })
   return () => spy.mockRestore()
 }

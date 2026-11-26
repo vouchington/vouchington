@@ -1,12 +1,13 @@
 import { onTestFinished, vi } from 'vitest'
 import * as stripeClient from '../modules/stripe/client.mts'
-import { createProviderReplay } from './provider-replay.mts'
+import { createProviderReplay } from 'vouchington-tooling/provider-replay'
 import { createReplayStripeClient, loadStripeFixture, routeStripeReplay } from './stripe-replay.mts'
 
 /** Resolve fixture PaymentIntents through the real SDK without reading credentials or using the network. */
 export function replayStripePaymentIntentCharges(
   payments: ReadonlyArray<{ paymentIntentId: string; chargeId: string }>,
-): void {
+  beforeFirstResponse?: () => Promise<void>,
+) {
   const replay = createProviderReplay()
   const routes = routeStripeReplay(replay)
   for (const payment of payments) {
@@ -19,12 +20,18 @@ export function replayStripePaymentIntentCharges(
       }),
     )
   }
-  const client = vi
-    .spyOn(stripeClient, 'getStripeClient')
-    .mockReturnValue(createReplayStripeClient(routes.fetch))
+  const client = vi.spyOn(stripeClient, 'getStripeClient').mockReturnValue(
+    createReplayStripeClient(async (input, init) => {
+      const firstRequest = replay.requests.length === 0
+      const response = await routes.fetch(input, init)
+      if (firstRequest) await beforeFirstResponse?.()
+      return response
+    }),
+  )
   onTestFinished(() => {
     client.mockRestore()
     routes.assertAnswered()
     replay.assertDrained()
   })
+  return replay.requests
 }

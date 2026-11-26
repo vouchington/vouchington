@@ -1,4 +1,5 @@
-import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import onError from '@modules/on-error'
 import createHttpError from 'http-errors'
 import { getImageByHash, getImageById } from './get.mts'

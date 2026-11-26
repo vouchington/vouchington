@@ -54,7 +54,7 @@ describe('MyRemovedPostsClient', () => {
       />,
     )
 
-    expect(screen.getByText('You have no removed posts.')).toBeVisible()
+    expect(screen.queryByText('You have no removed posts.')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
 
     await waitFor(() => {

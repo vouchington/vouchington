@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes, processedRows } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult, processedRows } from '@vouchington/explain-plan'
 
 /** Topic, review and alias membership each consume the viewer set at most once. */
 export function assertPostTopicMembershipIsReused(result: ExplainResult): void {

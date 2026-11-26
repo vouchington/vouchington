@@ -77,11 +77,11 @@ async function lockInitiatedStoryPosts(
   authorUserId: string,
   postIds: string[],
 ): Promise<void> {
-  await lockAuthoredPostScopes(query, postIds)
   await query(
     `/* processAuthorDeletionPublicationBatch:lockInitiatedStoryPosts */
     SELECT post_id FROM story_posts
     WHERE initiated_by_id = $1::uuid AND post_id = ANY($2::uuid[])
+    -- lock-reason: prevents: capturing story initiator deletion against an overlapping reassignment; writer: author deletion publication batches.
     ORDER BY post_id FOR UPDATE`,
     [authorUserId, postIds],
   )
@@ -100,6 +100,7 @@ async function processAuthoredPostBatch(
 async function lockAuthoredPostScopes(query: TransactionQuery, postIds: string[]): Promise<void> {
   await query(
     `/* processAuthorDeletionPublicationBatch:lockAuthoredPosts */
+      -- lock-reason: prevents: capturing authored-post deletion against an overlapping post write; writer: author reassignment and normal post updates.
       SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
     [postIds],
   )
@@ -127,21 +128,9 @@ async function processContributedSources(
   sources: SourceCandidate[],
 ): Promise<void> {
   const postIds = [...new Set(sources.map(source => source.post_id))]
-  await lockContributedSourcePosts(query, postIds)
   await lockContributedSourceRows(query, sources)
   return recordContributedSourceWork(query, userId, priorUsername, postIds, sources).then(() =>
     reassignContributedSources(query, sources),
-  )
-}
-
-async function lockContributedSourcePosts(
-  query: TransactionQuery,
-  postIds: string[],
-): Promise<void> {
-  await query(
-    `/* processAuthorDeletionPublicationBatch:lockSourcePosts */
-      SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
-    [postIds],
   )
 }
 
@@ -152,6 +141,7 @@ async function lockContributedSourceRows(
   await query(
     `/* processAuthorDeletionPublicationBatch:lockSources */
       SELECT id FROM post_topic_alias_sources
+      -- lock-reason: prevents: capturing contribution provenance while another writer changes the source; writer: publication source updates and author deletion.
       WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
     [sources.map(source => source.id)],
   )

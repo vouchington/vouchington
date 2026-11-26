@@ -29,12 +29,10 @@ describe('copyright correspondence concurrent writers', () => {
       .map(event => event.copyright_notice_correspondence_id)
     expect(createdIds).toEqual(expect.arrayContaining([messages[0]!.id, messages[2]!.id]))
     const after = await readTestCopyrightGuestEventClocks(noticeId)
-    expect(
-      after.last_legal_activity_at.localeCompare(before.last_legal_activity_at),
-    ).toBeGreaterThan(0)
+    expect(after.last_legal_activity_at).toBeGreaterThan(before.last_legal_activity_at)
     expect(after.last_lifecycle_activity_at).not.toBeNull()
-    expect(
-      after.last_lifecycle_activity_at!.localeCompare(before.last_lifecycle_activity_at ?? ''),
-    ).toBeGreaterThan(0)
+    expect(after.last_lifecycle_activity_at!).toBeGreaterThan(
+      before.last_lifecycle_activity_at ?? 0n,
+    )
   })
 })

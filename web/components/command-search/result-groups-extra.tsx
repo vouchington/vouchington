@@ -3,6 +3,7 @@
 import { CommandGroup, CommandItem } from '@/components/ui/command'
 import { decodeHtmlEntities } from '@ts-shared/utils/html'
 import { appendUtm, isExternalHref, isHttpHref, OUTBOUND_UTM } from '@/lib/url/utm'
+import { ThirdPartyText } from '@/components/shared/third-party-text'
 import { communityHref, domainHref } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { SearchResults, SearchTab } from '../command-search-data'
@@ -114,14 +115,18 @@ export function FediverseResults({ activeTab, onOpenChange, results }: CommonPro
             key={`${item.provider}:${item.external_url}`}
             href={appendUtm(item.external_url, OUTBOUND_UTM)}
             external
-            label={{ kind: 'ui-text', text: item.title }}
+            label={{ kind: 'third-party-text', text: item.title }}
             sublabel={sublabel}
             onOpenChange={onOpenChange}
           />
         ) : (
           <CommandItem key={`${item.provider}:${item.external_url}`}>
             <div className='flex flex-col'>
-              <span className='font-medium'>{item.title}</span>
+              <ThirdPartyText
+                as='span'
+                className='font-medium'
+                text={item.title}
+              />
               <span className='text-xs text-muted-foreground'>{sublabel}</span>
             </div>
           </CommandItem>

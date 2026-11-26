@@ -21,8 +21,11 @@ import { processReconcileClassifierRuns } from './processors/process-reconcile-c
 import {
   processExpireStuckAppealResolutionRuns,
   processExpireStuckDisputeResolutionRuns,
+  processExpireStuckReportJudgementRuns,
+  processExpireStuckCopyrightEmailRuns,
+  processExpireStuckCopyrightAppealRuns,
+  processExpireStuckCopyrightGuidanceRuns,
 } from './processors/process-expire-stuck-resolution-runs.mts'
-import { processReconcileAIAgentFailures } from './processors/reconcile-ai-agent-failures.mts'
 
 type AIAgentJob = NamedQueueJob<AIAgentJobPayloads>
 
@@ -46,7 +49,10 @@ const processors = {
     throw new Error('Response recovery must settle before processor dispatch')
   },
   ...copyrightAgentDispatchJobProcessors,
-  'reconcile-ai-agent-failures': () => processReconcileAIAgentFailures(),
+  'expire-stuck-report-judgement-runs': () => processExpireStuckReportJudgementRuns(),
+  'expire-stuck-copyright-email-runs': () => processExpireStuckCopyrightEmailRuns(),
+  'expire-stuck-copyright-appeal-runs': () => processExpireStuckCopyrightAppealRuns(),
+  'expire-stuck-copyright-guidance-runs': () => processExpireStuckCopyrightGuidanceRuns(),
   'expire-stuck-appeal-resolution-runs': () => processExpireStuckAppealResolutionRuns(),
   'expire-stuck-dispute-resolution-runs': () => processExpireStuckDisputeResolutionRuns(),
 } satisfies {

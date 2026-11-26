@@ -12,7 +12,6 @@ const defaultFields = {
   sql_batch_size: 250,
   category_sql_batch_size: 1000,
   enqueue_batch_size: 1000,
-  story_category_item_batch_size: 500,
   story_category_change_batch_size: 1000,
 }
 
@@ -28,7 +27,6 @@ export const rssFeedItemsWorkMaxValues = {
   sql_batch_size: 2500,
   category_sql_batch_size: 10000,
   enqueue_batch_size: 10000,
-  story_category_item_batch_size: 5000,
   story_category_change_batch_size: 10000,
 }
 
@@ -45,7 +43,6 @@ export const rssFeedItemsWorkConfig = new DynamicConfig({
     sql_batch_size: 'number',
     category_sql_batch_size: 'number',
     enqueue_batch_size: 'number',
-    story_category_item_batch_size: 'number',
     story_category_change_batch_size: 'number',
   },
   defaultFields,

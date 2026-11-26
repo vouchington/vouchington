@@ -53,7 +53,7 @@ jobs:
         id: setup-backend
         timeout-minutes: 5
       - name: Install Gitleaks and Lychee for tooling tests
-        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+        uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
         with:
           cache: false
           install_args: aqua:gitleaks/gitleaks aqua:lycheeverse/lychee
@@ -79,7 +79,7 @@ jobs:
           overwrite: true
           name: tooling-junit
           path: tooling-test-report.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Preserve full tooling LCOV
         timeout-minutes: 1
@@ -91,7 +91,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: tooling
       - name: Upload full tooling LCOV to GitHub (attempt 2)
@@ -99,7 +99,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: tooling
           name-suffix: -retry

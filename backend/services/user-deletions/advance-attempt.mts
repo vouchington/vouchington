@@ -1,7 +1,8 @@
 import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getNextUserDeletionPhase, type UserDeletionPhase } from './phases.mts'
+import { purgeDeletedUserBallotPage } from './deleted-user-ballot-page.mts'
+import { getNextUserDeletionPhase } from './phases.mts'
 import { createUserDeletionSuccessor } from './successor.mts'
 import type { UserDeletionBatchResult, UserDeletionRequest } from './types.mts'
 
@@ -11,23 +12,26 @@ export async function advanceUserDeletionAttempt(
   delayMs = 0,
 ): Promise<UserDeletionBatchResult> {
   await using query = await beginTransaction()
-  const { rows } = await query(sql`/* advanceUserDeletionAttempt:lock */
-      SELECT current_phase
+  const nextPhase = hasMore ? request.currentPhase : getNextUserDeletionPhase(request.currentPhase)
+  if (nextPhase) {
+    const successor = await createUserDeletionSuccessor(request, nextPhase, delayMs, query)
+    await query.commit()
+    return successor
+  }
+
+  const { rowCount } = await query(sql`/* advanceUserDeletionAttempt:lock */
+      SELECT id
       FROM user_deletion_requests
       WHERE id = ${request.id}
         AND processing_attempt_id = ${request.processingAttemptId}
+        AND current_phase = ${request.currentPhase}
         AND processing_started_at IS NOT NULL
         AND completed_at IS NULL
       FOR UPDATE
     `)
-  if (rows.length === 0) return null
+  if (!rowCount) return null
 
-  const phase = rows[0] as { current_phase: UserDeletionPhase }
-  if (phase.current_phase !== request.currentPhase) return null
-  const nextPhase = hasMore ? phase.current_phase : getNextUserDeletionPhase(phase.current_phase)
-  const result = !nextPhase
-    ? await finalizeUserDeletionAttempt(request, query)
-    : await createUserDeletionSuccessor(request, nextPhase, delayMs, query)
+  const result = await finalizeUserDeletionAttempt(request, query)
   await query.commit()
   return result
 }
@@ -46,8 +50,8 @@ async function finalizeUserDeletionAttempt(
 }
 
 /**
- * Locks the users row `FOR NO KEY UPDATE` before the "no remaining owned data" check. Writers
- * fence with `FOR SHARE` on this row, so one that started earlier commits first and is counted.
+ * lock-reason: prevents: finalizing erasure before in-flight user-owned data has been drained; writer: active-user mutation callers.
+ * Fenced writers take `FOR SHARE` on this row. A late ballot is removed by `canCompleteUserDeletion`.
  */
 async function lockUserRow(userId: string, query: TransactionQuery) {
   await query(sql`/* advanceUserDeletionAttempt:lockUser */
@@ -110,6 +114,15 @@ async function canCompleteUserDeletion(
     )
   `)
   if ((receipts.rowCount ?? 0) > 0) return false
+
+  // A ballot that commits after the votes phase would otherwise fail this check on every retry
+  // until the global sweep reaches the user. Ballots are append-only and never fenced.
+  const ballots = await purgeDeletedUserBallotPage(
+    query,
+    request.userId,
+    getUserDeletionsWorkLimit('straggler_ballot_batch_size'),
+  )
+  if (ballots > 0) return false
 
   const { rows } = await query(sql`/* advanceUserDeletionAttempt:canComplete */
     SELECT NOT EXISTS (

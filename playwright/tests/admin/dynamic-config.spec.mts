@@ -78,36 +78,41 @@ test.describe('Dynamic Config', () => {
     await expect(page.getByTestId('dynamic-config-save-field').first()).toBeVisible()
   })
 
-  for (const slice of Array.from({ length: namespacePanelSliceCount }, (_, index) => index)) {
-    test(`admin can open registered namespace panels in slice ${slice + 1} of ${namespacePanelSliceCount} without client errors`, async ({
-      page,
-    }) => {
-      await navigateTo(page, '/admin/dynamic-config')
+  for (const { slice, name } of Array.from({ length: namespacePanelSliceCount }, (_, index) => ({
+    slice: index,
+    name: String(index + 1),
+  }))) {
+    test.describe(name, () => {
+      test('admin can open registered namespace panels in this slice without client errors', async ({
+        page,
+      }) => {
+        await navigateTo(page, '/admin/dynamic-config')
 
-      const namespaceButtons = page.getByTestId('dynamic-config-namespace-button')
-      await expect(namespaceButtons.first()).toBeVisible()
+        const namespaceButtons = page.getByTestId('dynamic-config-namespace-button')
+        await expect(namespaceButtons.first()).toBeVisible()
 
-      // Snapshot every label up front so the click loop below never re-resolves a button's
-      // label after clicking it — that gap let a background refresh race the click and read
-      // back a stale label. See dynamic-config-state.ts for the underlying selection-race fix.
-      const labels = await page
-        .getByTestId('dynamic-config-namespace-button-label')
-        .allTextContents()
-      expect(labels.length).toBeGreaterThan(0)
-      expect(Math.ceil(labels.length / namespacePanelSliceCount)).toBeLessThanOrEqual(
-        maxNamespacesPerSlice,
-      )
+        // Snapshot every label up front so the click loop below never re-resolves a button's
+        // label after clicking it — that gap let a background refresh race the click and read
+        // back a stale label. See dynamic-config-state.ts for the underlying selection-race fix.
+        const labels = await page
+          .getByTestId('dynamic-config-namespace-button-label')
+          .allTextContents()
+        expect(labels.length).toBeGreaterThan(0)
+        expect(Math.ceil(labels.length / namespacePanelSliceCount)).toBeLessThanOrEqual(
+          maxNamespacesPerSlice,
+        )
 
-      const selected = namespacePanelSlice(labels, slice)
-      expect(selected.length).toBeGreaterThan(0)
+        const selected = namespacePanelSlice(labels, slice)
+        expect(selected.length).toBeGreaterThan(0)
 
-      for (const { index, label } of selected) {
-        await namespaceButtons.nth(index).click()
+        for (const { index, label } of selected) {
+          await namespaceButtons.nth(index).click()
 
-        await expect(page.getByTestId('dynamic-config-namespace-title')).toHaveText(label)
-        await expect(page.getByTestId('dynamic-config-fields-table')).toBeVisible()
-        await expect(page.getByTestId('dynamic-config-history')).toBeVisible()
-      }
+          await expect(page.getByTestId('dynamic-config-namespace-title')).toHaveText(label)
+          await expect(page.getByTestId('dynamic-config-fields-table')).toBeVisible()
+          await expect(page.getByTestId('dynamic-config-history')).toBeVisible()
+        }
+      })
     })
   }
 })

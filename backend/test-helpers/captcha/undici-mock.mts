@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
-import type * as Undici from 'undici'
 
 // Shared by tests that mock `fetch` from `undici` to intercept the Cloudflare Turnstile
-// `siteverify` call. Each consumer keeps its own `vi.mock(import('undici'), () =>
+// `siteverify` call. The provider clients call `getExternalFetch()`, so each consumer also routes
+// that to `mockFetch` in `beforeEach`. Each consumer keeps its own `vi.mock(import('undici'), () =>
 // createCaptchaUndiciMock())` call -- that keeps the `.mock.test.mts` filename suffix meaningful
 // (see `no-mistakes/vitest-mock-test-file-naming` and `docs/development/reference-tests-vitest-mock-typing.md`)
 // and keeps these files routed into the `backend-mocks` Vitest project.
@@ -14,7 +14,7 @@ import type * as Undici from 'undici'
 // binding from this module. If some other import triggers the mocked `undici` load before this
 // binding initializes, the factory throws a temporal-dead-zone `ReferenceError` instead of
 // returning the mock -- this is plain ESM evaluation order, not a Vitest-specific limitation.
-export const mockFetch = vi.fn<typeof Undici.fetch>()
+export const mockFetch = vi.fn<VitestLooseMock>()
 
 export async function createCaptchaUndiciMock(): Promise<typeof import('undici')> {
   const actual = await vi.importActual<typeof import('undici')>('undici')

@@ -40,14 +40,13 @@
     "@services/urls-hostnames": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/sentry": "^0.6.0",
+    "@vouchington/sentry": "^0.7.0",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
     "@services/elections-votes": "workspace:^",
     "@services/web-risk": "workspace:^",
-    "@voucha/test-helpers": "workspace:^",
-    "undici": "^8.12.4"
+    "@voucha/test-helpers": "workspace:^"
   }
 }

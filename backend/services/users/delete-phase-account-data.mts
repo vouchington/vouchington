@@ -10,13 +10,15 @@ export async function processUserDeletionAccountDataBatch(
     const referrals = await query(sql`/* processUserDeletionAccountData:referrals */
       WITH candidates AS (
         SELECT id FROM session_referral_attributions
-        WHERE user_id = ${userId} ORDER BY id LIMIT ${batchSize} FOR UPDATE
+        WHERE user_id = ${userId} ORDER BY id LIMIT ${batchSize}
       )
       UPDATE session_referral_attributions SET user_id = NULL
       FROM candidates WHERE session_referral_attributions.id = candidates.id
+        AND session_referral_attributions.user_id = ${userId}
     `)
     if ((referrals.rowCount ?? 0) > 0) return { hasMore: true }
 
+    // lock-reason: prevents: recording an external delete while an upload lease is renewed; writer: account export uploader.
     const attempts = await query(sql`/* processUserDeletionAccountData:exportAttempts */
       WITH candidates AS (
         SELECT attempt.request_id, attempt.processing_attempt_id
@@ -60,6 +62,7 @@ export async function processUserDeletionAccountDataBatch(
     const retryAfterMs = blockedAttempts[0]?.retry_after_ms
     if (retryAfterMs) return { hasMore: true, retryAfterMs: Math.max(1_000, retryAfterMs) }
 
+    // lock-reason: prevents: losing the S3 key when an export completes in parallel; writer: account export completion.
     const { rows: requests } = await query<{
       id: string
       s3_key: string | null

@@ -56,45 +56,43 @@ export function NewsItemClusterList({
       loadingMore={news.loadingMore}
       onLoadMore={news.handleLoadMore}
     >
-      {news.allResults.length === 0 ? (
-        emptyContent
-      ) : (
-        <InfiniteScroll
-          hasNextPage={canLoadMore}
-          endCursor={news.endCursor}
-          onLoadMore={news.handleLoadMore}
-          loadingMore={news.loadingMore}
-          fetchError={news.fetchError}
-          clearError={news.clearError}
-          resetKey={news.resetKey}
-        >
-          <HackerNewsReferencesProvider references={news.allHackerNewsReferences}>
-            <div className='space-y-4'>
-              {news.visibleClusters.map(cluster => (
-                <NewsItemClusterListRow
-                  key={cluster.primaryResult.id}
-                  allBookmarks={news.allBookmarks}
-                  allElectionVotes={news.allElectionVotes}
-                  allElections={news.allElections}
-                  allPosts={news.allPosts}
-                  allRelatedPostsByUrlId={news.allRelatedPostsByUrlId}
-                  allStories={news.allStories}
-                  allStoryPostIds={news.allStoryPostIds}
-                  allThumbnailUrls={news.allThumbnailUrls}
-                  allEmbeds={news.allEmbeds}
-                  allUsers={news.allUsers}
-                  cluster={cluster}
-                  communityDiscussionTarget={communityDiscussionTarget}
-                  expandedStoryIds={news.expandedStoryIds}
-                  feedStyle={feedStyle}
-                  onExpandedStoryIdsChange={news.handleExpandedStoryIdsChange}
-                  onLoadStoryMore={news.handleLoadStoryMore}
-                />
-              ))}
-            </div>
-          </HackerNewsReferencesProvider>
-        </InfiniteScroll>
-      )}
+      <InfiniteScroll
+        hasNextPage={canLoadMore}
+        endCursor={news.endCursor}
+        onLoadMore={news.handleLoadMore}
+        loadingMore={news.loadingMore}
+        fetchError={news.fetchError}
+        clearError={news.clearError}
+        resetKey={news.resetKey}
+        itemCount={news.visibleClusters.length}
+        emptyState={emptyContent}
+      >
+        <HackerNewsReferencesProvider references={news.allHackerNewsReferences}>
+          <div className='space-y-4'>
+            {news.visibleClusters.map(cluster => (
+              <NewsItemClusterListRow
+                key={cluster.primaryResult.id}
+                allBookmarks={news.allBookmarks}
+                allElectionVotes={news.allElectionVotes}
+                allElections={news.allElections}
+                allPosts={news.allPosts}
+                allRelatedPostsByUrlId={news.allRelatedPostsByUrlId}
+                allStories={news.allStories}
+                allStoryPostIds={news.allStoryPostIds}
+                allThumbnailUrls={news.allThumbnailUrls}
+                allEmbeds={news.allEmbeds}
+                allUsers={news.allUsers}
+                cluster={cluster}
+                communityDiscussionTarget={communityDiscussionTarget}
+                expandedStoryIds={news.expandedStoryIds}
+                feedStyle={feedStyle}
+                onExpandedStoryIdsChange={news.handleExpandedStoryIdsChange}
+                onLoadStoryMore={news.handleLoadStoryMore}
+              />
+            ))}
+          </div>
+        </HackerNewsReferencesProvider>
+      </InfiniteScroll>
       {modal === undefined ? children : modal}
     </RssItemNavProvider>
   )

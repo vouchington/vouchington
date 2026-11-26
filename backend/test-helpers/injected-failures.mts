@@ -7,6 +7,7 @@ export { rejectNextClassifierRunDispatcherAddForTest } from './injected-classifi
 export {
   rejectNextQueueJobAddForTest,
   rejectQueueJobAddForTest,
+  rejectQueueJobAddBulkForTest,
   rejectNextBackgroundJobAddForTest,
   rejectNextBackgroundJobAddBulkForTest,
 } from './injected-queue-failures.mts'
@@ -118,19 +119,19 @@ export function answerPostgresWritesForTest(
   return () => spy.mockRestore()
 }
 
-/** Run each default-pool write for real, then observe its committed result. One hook per test. */
+/** Run each default-pool query for real, then await its observer before returning the result. */
 export function runAfterPostgresWriteForTest(
   after: (
     statement: string,
     values: readonly unknown[],
     result: { rowCount: number | null; rows: readonly Record<string, unknown>[] },
-  ) => void,
+  ) => void | Promise<void>,
 ): () => void {
   const realWrite = psql.write
   const spy = vi.spyOn(psql, 'write').mockImplementation(async (query, ...rest) => {
     const result = await realWrite(query, ...rest)
-    if (typeof query === 'string') after(query, [], result)
-    else after(query.text, query.values ?? [], result)
+    if (typeof query === 'string') await after(query, [], result)
+    else await after(query.text, query.values ?? [], result)
     return result
   })
   return () => spy.mockRestore()

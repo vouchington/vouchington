@@ -151,7 +151,7 @@ export async function runRelationRoundTripScenarios(): Promise<void> {
       )
     },
     undefined,
-    'buildInsertQuery',
+    'buildBidirectionalInsertQuery',
   )
 
   registerScenarioContract('post-category-relation-insert', {

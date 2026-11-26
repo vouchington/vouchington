@@ -6,7 +6,6 @@ import {
   type PublicationCapturedKey,
 } from '@services/post-publication/captured-keys'
 import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 import { enqueueCapturedPublicationChangeAfterCommit } from '@services/post-publication/direct-capture'
 
 export type HardDeleteRssFeedSourcePage = {
@@ -22,7 +21,6 @@ export async function hardDeleteRssFeedSourcePage(
 ): Promise<HardDeleteRssFeedSourcePage> {
   const limit = getPostPublicationWorkLimit('rss_feed_hard_delete_capture_batch_size')
   await using query = await beginTransaction()
-  // The feed row is only read: item and source row locks below serialize concurrent pages.
   const feed = await query<{ topic_id: string }>(
     `/* hardDeleteRssFeedSourcePage:feed */
     SELECT topic_id FROM rss_feeds
@@ -56,14 +54,7 @@ export async function hardDeleteRssFeedSourcePage(
     return { removed: 0, hasMore: false, keys: [] }
   }
   const candidateIds = sourcePage.rows.map(row => row.rss_feed_item_id)
-  // Item-before-source locking matches RSS ingestion; the item lock also stabilizes story_id.
-  const items = await query<{ id: string; story_id: string | null }>(
-    `/* hardDeleteRssFeedSourcePage:lockItems */
-    SELECT id, story_id FROM rss_feed_items
-    WHERE id = ANY($1::uuid[])
-    ORDER BY id FOR UPDATE`,
-    [candidateIds],
-  )
+  // lock-reason: prevents: overlapping deletion pages reconciling and publishing the same source associations; writer: hardDeleteRssFeedSourcePage
   const sourceRows = await query<{ rss_feed_item_id: string }>(
     `/* hardDeleteRssFeedSourcePage:lockSources */
     SELECT rss_feed_item_id FROM rss_feed_item_sources
@@ -72,26 +63,6 @@ export async function hardDeleteRssFeedSourcePage(
     [rssFeedId, candidateIds],
   )
   const itemIds = sourceRows.rows.map(row => row.rss_feed_item_id)
-  const sourceIds = new Set(itemIds)
-  const storyIds = [
-    ...new Set(
-      items.rows.flatMap(row => (sourceIds.has(row.id) && row.story_id ? [row.story_id] : [])),
-    ),
-  ]
-  await lockStoryLifecycles(query, storyIds)
-  const linkedPosts =
-    storyIds.length > 0
-      ? await query<{ post_id: string }>(
-          `/* hardDeleteRssFeedSourcePage:storyPosts */
-        SELECT post_id FROM story_posts WHERE story_id = ANY($1::uuid[])
-        ORDER BY post_id`,
-          [storyIds],
-        )
-      : { rows: [] }
-  const keys = uniquePublicationKeys([
-    ...itemIds.map(uuidValue => ({ kind: 'impact_rss_feed_item' as const, uuidValue })),
-    ...linkedPosts.rows.map(row => ({ kind: 'impact_post' as const, uuidValue: row.post_id })),
-  ])
   // The item-owned categories remain until their existing reconciler compares all surviving
   // sources. It captures old topic/alias keys if that later removes a global category.
   await markRssFeedItemCategorySnapshotsForReconciliation(query, itemIds)
@@ -101,6 +72,19 @@ export async function hardDeleteRssFeedSourcePage(
     WHERE rss_feed_id = $1::uuid AND rss_feed_item_id = ANY($2::uuid[])`,
     [rssFeedId, itemIds],
   )
+  const linkedPosts = await query<{ post_id: string }>(
+    `/* hardDeleteRssFeedSourcePage:storyPosts */
+      SELECT story_post.post_id
+      FROM rss_feed_items item
+      JOIN story_posts story_post ON story_post.story_id = item.story_id
+      WHERE item.id = ANY($1::uuid[])
+      ORDER BY story_post.post_id`,
+    [itemIds],
+  )
+  const keys = uniquePublicationKeys([
+    ...itemIds.map(uuidValue => ({ kind: 'impact_rss_feed_item' as const, uuidValue })),
+    ...linkedPosts.rows.map(row => ({ kind: 'impact_post' as const, uuidValue: row.post_id })),
+  ])
   enqueueCapturedPublicationChangeAfterCommit(query, {
     scope: { type: 'rss_feed', rssFeedId },
     reason: 'rss_feed_source_changed',

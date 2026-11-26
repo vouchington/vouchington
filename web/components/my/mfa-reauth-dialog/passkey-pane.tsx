@@ -73,6 +73,7 @@ function PasskeyChoices({ initialData, ...props }: Props & { initialData: ListRe
   }
   return (
     <InfiniteScroll
+      itemCount={passkeys.length}
       hasNextPage={pagination.hasNextPage}
       endCursor={pagination.endCursor}
       onLoadMore={() => pagination.loadMore()}

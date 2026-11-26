@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { recordPostRelatedUrlPublicationChanges } from '@services/entity-relations/post-topic-publication'
 import { relationLimitsMaxValues } from '@services/entity-relations/relation-limits-config'
-import { markStoryPostRelatedUrlProjectionInvalidationRequired } from './story-post-related-url-projection-invalidation.mts'
 import type { ProjectionWork } from './story-post-related-url-projection-types.mts'
 
 /**
@@ -16,12 +15,12 @@ export async function pruneStoryPostRelatedUrlsOutsidePrefix(
   work: ProjectionWork,
   storyTellerId: string,
   admittedUrlIds: readonly string[],
-): Promise<void> {
+): Promise<{ ok: true; pruned: boolean } | { ok: false }> {
   assert.ok(
     admittedUrlIds.length <= relationLimitsMaxValues.post_related_url,
     `post_related_url admitted prefix has ${admittedUrlIds.length} URL ids; relationLimitsMaxValues.post_related_url is ${relationLimitsMaxValues.post_related_url}`,
   )
-  const { rows } = await query<{ subject_id: string }>(
+  const { rows } = await query<{ id: string }>(
     `/* pruneStoryPostRelatedUrlsOutsidePrefix */
       -- no-mistakes-disable-next-line postgres-bounded-statements: the relation write guard keeps this post's live story-teller rows at or under relationLimitsMaxValues.post_related_url; this pass must remove every projected URL outside the admitted prefix, and a LIMIT would leave outsiders attached
       UPDATE relation__post__related__url AS relation
@@ -29,7 +28,8 @@ export async function pruneStoryPostRelatedUrlsOutsidePrefix(
       WHERE relation.subject_id = $1
         AND relation.deleted_at IS NULL
         AND relation.created_by_id = $2
-        AND NOT (relation.object_id = ANY($3::uuid[]))
+        AND $3::uuid[] IS NOT NULL
+        AND NOT (relation.object_id = ANY(SELECT unnest($3::uuid[])))
         AND NOT EXISTS (
           SELECT 1
           FROM story_post_related_url_projection_relation_mutations mutation
@@ -45,10 +45,22 @@ export async function pruneStoryPostRelatedUrlsOutsidePrefix(
             AND job.lease_token = $5
             AND job.lease_expires_at > clock_timestamp()
         )
-      RETURNING relation.subject_id`,
+      RETURNING relation.id`,
     [work.post_id, storyTellerId, admittedUrlIds, work.generation, work.lease_token],
   )
-  if (rows.length === 0) return
+  if (rows.length === 0) return { ok: true, pruned: false }
+
+  // A manual confirmation may commit while the UPDATE waits on its relation row.
+  const { rows: confirmations } = await query<{ confirmed: boolean }>(
+    `/* verifyStoryPostRelatedUrlPrune */
+      SELECT EXISTS (
+        SELECT 1 FROM story_post_related_url_projection_relation_mutations
+        WHERE post_id = $1 AND generation = $2 AND relation_id = ANY($3::uuid[])
+      ) AS confirmed`,
+    [work.post_id, work.generation, rows.map(row => row.id)],
+  )
+  if (confirmations[0]?.confirmed) return { ok: false }
+
   await recordPostRelatedUrlPublicationChanges(query, [work.post_id])
-  await markStoryPostRelatedUrlProjectionInvalidationRequired(query, work)
+  return { ok: true, pruned: true }
 }

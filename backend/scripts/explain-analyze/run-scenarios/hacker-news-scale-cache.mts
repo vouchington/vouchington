@@ -1,5 +1,6 @@
-import { explainAnalyze, write, type ExplainPlanCacheMode } from '@data-stores/psql'
-import { collectPlanNodes } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainPlanCacheMode } from '@vouchington/explain-plan'
+import { write } from '@data-stores/psql'
+import { explainAnalyze } from '@voucha/test-helpers/explain-analyze'
 import type { BeforeExplain } from '../capture-passes.mts'
 
 export type HackerNewsCacheState = 'cold' | 'warm'
@@ -89,7 +90,6 @@ async function evictPlanRelations(input: Parameters<BeforeExplain>[0]): Promise<
     }
     const stillSkipped: string[] = []
     for (const name of pending) {
-      // no-mistakes-disable-next-line query-reached-per-item: each of at most 500 plan-selected local relations needs its own PostgreSQL cache eviction; no global buffer or OS cache operation.
       const { rows: evictions } = await write<{
         buffers_evicted: number | string
         buffers_flushed: number | string

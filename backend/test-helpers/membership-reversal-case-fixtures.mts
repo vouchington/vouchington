@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { reconcileFailedIneligiblePurchaseReversal } from '../services/memberships/ineligible-stripe-purchase-reversal-reconcile.mts'
 import sql from 'sql-template-strings'
 import { createTestPersistedReversalCaseFixture } from './data-stores/psql/membership-reversal-cases.mts'
 import { getLockedIneligiblePurchaseReversalCase } from '../services/memberships/ineligible-stripe-purchase-reversal/case-ledger.mts'
@@ -98,4 +99,25 @@ export async function assertReversalClaimLeavesProviderContextUnlockedForTest(op
   if (!reversalCase) throw new Error('Expected the owned reversal case')
   await caseTransaction.rollback()
   await contextTransaction.rollback()
+}
+
+export async function reconcileTestRefundBalance(
+  operation: { id: string; amountMinorUnits: number },
+  beforeWrite?: () => Promise<void>,
+): Promise<number> {
+  await using query = await beginTransaction()
+  await beforeWrite?.()
+  const amount = await reconcileFailedIneligiblePurchaseReversal(
+    {
+      failed: true,
+      hasReceipt: false,
+      id: operation.id,
+      qualifyingAllocationMinorUnits: String(operation.amountMinorUnits),
+      remainingRefundableMinorUnits: String(operation.amountMinorUnits),
+    },
+    operation.amountMinorUnits - 1,
+    { providerRefundObservedSucceeded: false, query },
+  )
+  await query.commit()
+  return amount
 }

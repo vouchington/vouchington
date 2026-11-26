@@ -7,12 +7,8 @@ import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { getListWriteContext, LIST_ID_PARAMETER } from './list-tool-support.mts'
 import { oneOfSchema, successSchema } from '@vouchington/mcp-server/schema'
 import { entityIdOrMissing } from './resolve-entity-reference.mts'
-import {
-  ADD_LIST_ITEM_LIMIT,
-  addVisibleListItems,
-  type AddedListItem,
-  type ListItemRef,
-} from './add-list-items.mts'
+import { addVisibleListItems, type AddedListItem, type ListItemRef } from './add-list-items.mts'
+import { listImportMaxValues } from '@services/lists/import-config'
 import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
 
 const IMPORT = { method: 'POST' as const, path: '/api/v1/lists/:id/import' }
@@ -48,7 +44,12 @@ const tool: Tool<
           type: 'object',
           properties: {
             list_id: LIST_ID_PARAMETER,
-            items: { type: 'array', minItems: 1, maxItems: ADD_LIST_ITEM_LIMIT, items: ITEM },
+            items: {
+              type: 'array',
+              minItems: 1,
+              maxItems: listImportMaxValues.add_list_items_max,
+              items: ITEM,
+            },
           },
           required: ['list_id', 'items'],
           additionalProperties: false,

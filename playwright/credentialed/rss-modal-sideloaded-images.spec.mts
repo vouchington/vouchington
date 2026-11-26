@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 // Sideload pipeline test. The image lambda serves the reserved Playwright cover locally, so CI
 // does not fetch an external host. Runs only in the credentialed Playwright workflow, which
 // provides AWS credentials and the image buckets. A missing credential fails the test.
@@ -9,7 +9,7 @@ import { insertTestTopic } from '../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../helpers/insert-test-rss-feed.mts'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 import { insertTestRssFeedItem } from '../../backend/test-helpers/entities/rss-feed-items.mts'
-import { parseSigningKeys, signPath } from '@vouchington/utils/url-signing'
+import { parseSigningKeys, signPath } from '@vouchington/server-utils/url-signing'
 import { SIDELOAD_SIGNING_KEYS_ENV } from '../../ts-shared/url-signing/index.mts'
 
 test.describe('sideloaded images in RSS item modal', () => {

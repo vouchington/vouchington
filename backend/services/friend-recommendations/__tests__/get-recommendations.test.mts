@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestUser,
+  createRandomTestProviderUserId,
   insertTestOAuthAccount,
   connectTestOAuthAccount,
   insertTestFriend,
@@ -30,15 +31,15 @@ const dismissTable = getEntityRelationTableNameOrThrow({
 describe('getFriendRecommendations', () => {
   // Current user and their github account
   let currentUser: PrivateUser
-  const currentGithubId = String(Math.floor(Math.random() * 1_000_000) + 400_000_000)
+  const currentGithubId = createRandomTestProviderUserId()
 
   // A friend who is also on the platform
   let friendUser: PrivateUser
-  const friendGithubId = String(Math.floor(Math.random() * 1_000_000) + 500_000_000)
+  const friendGithubId = createRandomTestProviderUserId()
 
   // A second friend for pagination tests
   let friend2User: PrivateUser
-  const friend2GithubId = String(Math.floor(Math.random() * 1_000_000) + 600_000_000)
+  const friend2GithubId = createRandomTestProviderUserId()
 
   beforeAll(async () => {
     currentUser = await createTestUser()
@@ -238,9 +239,9 @@ describe('getFriendRecommendations', () => {
     const restrictedUser: PrivateUser = await createTestUser()
     const unrestricted: PrivateUser = await createTestUser()
 
-    const viewerGithubId = String(Math.floor(Math.random() * 1_000_000) + 100_000_000)
-    const restrictedGithubId = String(Math.floor(Math.random() * 1_000_000) + 200_000_000)
-    const unrestrictedGithubId = String(Math.floor(Math.random() * 1_000_000) + 300_000_000)
+    const viewerGithubId = createRandomTestProviderUserId()
+    const restrictedGithubId = createRandomTestProviderUserId()
+    const unrestrictedGithubId = createRandomTestProviderUserId()
 
     await insertTestOAuthAccount('github', viewerGithubId, null)
     await connectTestOAuthAccount('github', viewerUser.id, viewerGithubId)

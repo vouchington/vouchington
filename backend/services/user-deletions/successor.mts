@@ -17,6 +17,9 @@ export async function createUserDeletionSuccessor(
         dispatched_at = CURRENT_TIMESTAMP + (${delayMs}::int * INTERVAL '1 millisecond')
     WHERE id = ${request.id}
       AND processing_attempt_id = ${request.processingAttemptId}
+      AND current_phase = ${request.currentPhase}
+      AND processing_started_at IS NOT NULL
+      AND completed_at IS NULL
     RETURNING processing_attempt_id
   `)
   const successor = rows[0] as { processing_attempt_id: string } | undefined

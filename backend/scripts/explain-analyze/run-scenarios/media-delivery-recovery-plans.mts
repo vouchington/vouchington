@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { extractQueryName, getCapturedQueries, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
+import { extractQueryName, getCapturedQueries } from '@voucha/test-helpers/explain-analyze'
 import { listFailedImageDeliveryRepairMarkers } from '@services/media-delivery-safety/delivery-registry-recovery'
 import {
   getMediaDeliverySafetyWorkLimit,
@@ -17,7 +18,6 @@ import {
   targetImage,
   targetPost,
 } from './media-delivery-lock-fixture.mts'
-
 export async function captureRecovery(): Promise<void> {
   await mediaDeliverySafetyWorkConfig.waitForInitialization()
   const limit = getMediaDeliverySafetyWorkLimit('recovery_page_size')
@@ -134,7 +134,6 @@ export async function captureRecovery(): Promise<void> {
         ],
         seededRows,
       })
-      // no-mistakes-disable-next-line query-reached-per-item: four fixed scopes have independent captured plans.
       await runAndCapture(
         scenario.id,
         () =>

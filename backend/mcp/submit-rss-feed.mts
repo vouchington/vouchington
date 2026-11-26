@@ -8,13 +8,10 @@ import {
   submitAndDispatchRssFeedImport,
 } from '@services/user-import-export/rss-feed-imports'
 import { submitRssFeedSource } from '@services/user-import-export/submit-rss-feed-source'
-import { RSS_FEED_IMPORT_MAX_URLS } from '@services/user-import-export/config'
+import { USER_IMPORT_EXPORT_MAX_VALUES } from '@services/user-import-export/config'
 import { parseCreateSourceBody } from '@services/rss-feeds/request-body'
-import type {
-  ToolApiEndpoint,
-  ToolMeta,
-  ToolOutputSchema,
-} from '@services/openai-agents/tool-types'
+import type { ToolMeta } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@vouchington/mcp-server/types'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
@@ -74,7 +71,7 @@ const importSource: MergedToolSource<
   Awaited<ReturnType<typeof submitAndDispatchRssFeedImport>>
 > = {
   schema: {
-    description: `Import a JSON list of up to ${RSS_FEED_IMPORT_MAX_URLS} feed URLs. Poll import_status with import.id. Follow defaults to false for administrators.`,
+    description: `Import a JSON list of up to ${USER_IMPORT_EXPORT_MAX_VALUES.rss_feed_import_max_urls} feed URLs. Poll import_status with import.id. Follow defaults to false for administrators.`,
     parameters: {
       type: 'object',
       properties: {
@@ -82,7 +79,7 @@ const importSource: MergedToolSource<
           type: 'array',
           items: { type: 'string', maxLength: 2083 },
           minItems: 1,
-          maxItems: RSS_FEED_IMPORT_MAX_URLS,
+          maxItems: USER_IMPORT_EXPORT_MAX_VALUES.rss_feed_import_max_urls,
         },
         follow: { type: 'boolean' },
       },

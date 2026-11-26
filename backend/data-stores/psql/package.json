@@ -31,16 +31,16 @@
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/postgres": "^0.6.1",
-    "@vouchington/sentry": "^0.6.0",
-    "@vouchington/utils": "^0.12.0",
+    "@vouchington/postgres": "^0.6.2",
+    "@vouchington/sentry": "^0.7.0",
+    "@vouchington/utils": "^0.13.0",
     "pg": "^8.23.1",
     "sql-template-strings": "^2.2.2",
-    "vouchington-tooling": "^3.5.0"
+    "vouchington-tooling": "^3.10.0"
   },
   "devDependencies": {
-    "no-mistakes": "^0.109.109",
-    "oxfmt": "^0.78.0",
+    "no-mistakes": "^0.109.122",
+    "oxfmt": "^0.79.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   }
 }

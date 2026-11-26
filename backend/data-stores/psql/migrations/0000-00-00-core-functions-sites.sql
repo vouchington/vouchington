@@ -38,7 +38,7 @@ DECLARE
   column_name text;
   notice_id text := current_setting('app.copyright_case_purge_notice_id', true);
 BEGIN
-  IF NOT fn_copyright_case_purge_permitted(table_name)
+  IF fn_copyright_case_purge_permitted(table_name) IS NOT TRUE
     OR COALESCE(old_row ->> CASE WHEN table_name = 'copyright_notices' THEN 'id'
       ELSE 'copyright_notice_id' END, '') <> notice_id THEN RETURN false; END IF;
   allowed := CASE table_name
@@ -75,6 +75,7 @@ DECLARE
   actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);
   old_row JSONB;
   new_row JSONB;
+  partition_root REGCLASS;
 BEGIN
   IF TG_OP = 'UPDATE' AND TG_TABLE_SCHEMA = 'public'
     AND TG_TABLE_NAME = 'copyright_notice_storage_objects'
@@ -91,15 +92,34 @@ BEGIN
     AND (to_jsonb(OLD) - 'is_deletion_claimed') IS NOT DISTINCT FROM
       (to_jsonb(NEW) - 'is_deletion_claimed')
   THEN RETURN NEW; END IF;
+  -- The row trigger fires on the partition, while the purge scopes its permit to the parent.
   IF TG_OP = 'UPDATE' AND TG_TABLE_SCHEMA = 'public'
-    AND TG_TABLE_NAME = 'copyright_territorial_decisions'
+    AND pg_catalog.pg_partition_root(TG_RELID) =
+      pg_catalog.to_regclass('public.copyright_territorial_decisions')
     AND fn_copyright_case_purge_pointer_cut_permitted(
-      TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW))
+      'copyright_territorial_decisions', to_jsonb(OLD), to_jsonb(NEW))
   THEN RETURN NEW; END IF;
   IF TG_OP = 'DELETE' AND TG_TABLE_SCHEMA = 'public'
-    AND starts_with(TG_TABLE_NAME, 'copyright_')
-    AND fn_copyright_case_purge_permitted(TG_TABLE_NAME)
-  THEN RETURN OLD; END IF;
+    AND starts_with(TG_TABLE_NAME, 'copyright_') THEN
+    partition_root := pg_catalog.pg_partition_root(TG_RELID);
+    IF partition_root = pg_catalog.to_regclass('public.copyright_territorial_decisions') THEN
+      IF fn_copyright_case_purge_permitted('copyright_territorial_decisions')
+        AND OLD.copyright_notice_id =
+          NULLIF(current_setting('app.copyright_case_purge_notice_id', true), '')::uuid
+      THEN RETURN OLD; END IF;
+    ELSIF partition_root = pg_catalog.to_regclass('public.copyright_territorial_redress_decisions') THEN
+      IF fn_copyright_case_purge_permitted('copyright_territorial_redress_decisions')
+        AND EXISTS (
+          SELECT 1 FROM public.copyright_territorial_redress_requests request
+          WHERE request.id = OLD.copyright_territorial_redress_request_id
+            AND request.copyright_notice_id =
+              NULLIF(current_setting('app.copyright_case_purge_notice_id', true), '')::uuid
+        )
+      THEN RETURN OLD; END IF;
+    ELSIF fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN
+      RETURN OLD;
+    END IF;
+  END IF;
   IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1
     AND NOT (TG_TABLE_SCHEMA = 'public' AND TG_TABLE_NAME = 'amazon_ses_bounce_events')
   THEN RETURN OLD; END IF;
@@ -192,43 +212,6 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION fn_update_oauth_account_linkage() IS 'Tracks account unlink/relink and invalidates friend observations when a friend-capable account loses its user.';
-
--- Serialize friend imports with first connection as well as reconnection. A missing account has
--- no row to lock, so the external identity key must be held until the edge insert commits.
-CREATE OR REPLACE FUNCTION fn_lock_oauth_friend_targets(
-  target_provider TEXT,
-  target_external_ids TEXT[],
-  exclusive_lock BOOLEAN
-)
-RETURNS VOID LANGUAGE plpgsql AS $$
-DECLARE
-  external_id TEXT;
-  lock_key BIGINT;
-BEGIN
-  IF target_provider IS NULL OR target_provider NOT IN ('facebook', 'github', 'x')
-    OR exclusive_lock IS NULL
-    OR target_external_ids IS NULL OR cardinality(target_external_ids) > 256 THEN
-    RAISE EXCEPTION 'Invalid OAuth friend target lock request' USING ERRCODE = 'invalid_parameter_value';
-  END IF;
-  IF array_position(target_external_ids, NULL) IS NOT NULL THEN
-    RAISE EXCEPTION 'Invalid OAuth friend target lock request' USING ERRCODE = 'invalid_parameter_value';
-  END IF;
-
-  FOR external_id IN
-    SELECT DISTINCT target_id FROM unnest(target_external_ids) AS targets(target_id)
-    ORDER BY target_id
-  LOOP
-    lock_key := hashtextextended('oauth-friend-target:' || target_provider || ':' || external_id, 0);
-    IF exclusive_lock THEN
-      PERFORM pg_advisory_xact_lock(lock_key);
-    ELSE
-      PERFORM pg_advisory_xact_lock_shared(lock_key);
-    END IF;
-  END LOOP;
-END;
-$$;
-COMMENT ON FUNCTION fn_lock_oauth_friend_targets(TEXT, TEXT[], BOOLEAN) IS
-  'Locks at most 256 sorted provider identities per transaction before friend account row access; connection uses an exclusive key and imports use shared keys.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_latest_change()

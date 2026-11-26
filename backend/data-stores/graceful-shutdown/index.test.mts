@@ -1,267 +1,153 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { gracefulShutdownPeriodSeconds } from '@voucha/config'
 import {
   sentryCaptureExceptionMock,
   sentryFlushMock,
 } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import {
   SIGNAL_LISTENERS_REGISTERED,
-  createDeferred,
   loadSubject,
   restoreSignalListeners,
   snapshotSignalListeners,
 } from '@voucha/test-helpers/data-stores/graceful-shutdown/index.fixtures'
 
-const captureException = sentryCaptureExceptionMock
+/**
+ * Capture only the force-exit timer instead of installing process-wide fake timers: the fork's
+ * live GlideMQ worker schedules its wakes with `setTimeout`, and faking or clearing them strands
+ * an in-flight background job. Every other timer still reaches the real `setTimeout`.
+ */
+function captureForceExitTimer() {
+  const realSetTimeout = globalThis.setTimeout
+  const unref = vi.fn<() => void>()
+  let fire: () => void = () => {
+    throw new Error('The force-exit timer was never scheduled')
+  }
+  vi.spyOn(globalThis, 'setTimeout').mockImplementation(((
+    callback: () => void,
+    delay?: number,
+    ...args: unknown[]
+  ) => {
+    if (delay !== gracefulShutdownPeriodSeconds * 1000) {
+      return Reflect.apply(realSetTimeout, globalThis, [callback, delay, ...args])
+    }
+    fire = callback
+    return { unref }
+  }) as unknown as typeof setTimeout)
+  return { unref, fire: () => fire() }
+}
 
-describe('graceful shutdown', () => {
+describe('graceful shutdown wiring', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.restoreAllMocks()
     vi.resetModules()
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('does not register real SIGTERM/SIGINT listeners when NODE_ENV is test', async () => {
-    // index.mts skips its process.on('SIGTERM'/'SIGINT') registration under NODE_ENV === 'test'.
-    // A real listener here would remove Node's default terminate-on-signal behavior, so every
-    // backend Vitest fork would ignore Vitest's own SIGTERM at pool-teardown time and get
-    // SIGKILLed ~500ms later instead — destroying whatever stderr was buffered. See index.mts's
-    // own comment on the guard for the full rationale.
+    // A real listener would remove Node's default terminate-on-signal behavior, so every backend
+    // Vitest fork would ignore Vitest's own SIGTERM at pool-teardown time and get SIGKILLed.
     await loadSubject()
 
     const globalRef = globalThis as Record<symbol, boolean>
     expect(globalRef[SIGNAL_LISTENERS_REGISTERED]).toBeFalsy()
   })
 
-  it('addGracefulShutdownCallback registers and invokes callbacks on shutdown', async () => {
-    const { addGracefulShutdownCallback, onGracefulShutdown } = await loadSubject()
-
-    const callback = vi.fn<VitestLooseMock>(() => Promise.resolve())
-    addGracefulShutdownCallback(callback)
-
-    await onGracefulShutdown('SIGTERM')
-
-    expect(callback).toHaveBeenCalledTimes(1)
-  })
-
-  it('invokes callbacks then drain callbacks then data stores in order', async () => {
-    const {
-      addGracefulShutdownCallback,
-      addGracefulShutdownDrainCallback,
-      onGracefulShutdown,
-      onGracefulShutdownValkey,
-      onGracefulShutdownPSQL,
-    } = await loadSubject()
-
-    const order: string[] = []
-    addGracefulShutdownCallback(() => {
-      order.push('callback-1')
-      return Promise.resolve()
-    })
-    addGracefulShutdownCallback(() => {
-      order.push('callback-2')
-      return Promise.resolve()
-    })
-
-    const deferred = createDeferred<void>()
-    const drainStarted = Promise.withResolvers<void>()
-    addGracefulShutdownDrainCallback(async () => {
-      order.push('drain-start')
-      drainStarted.resolve()
-      await deferred.promise
-      order.push('drain-end')
-    })
-
-    onGracefulShutdownValkey.mockImplementation(() => {
-      order.push('valkey')
-      return Promise.resolve()
-    })
-    onGracefulShutdownPSQL.mockImplementation(() => {
-      order.push('psql')
-      return Promise.resolve()
-    })
-
-    const shutdown = onGracefulShutdown('SIGTERM')
-
-    await drainStarted.promise
-
-    deferred.resolve()
-    await shutdown
-
-    expect(order.indexOf('callback-1')).toBeLessThan(order.indexOf('drain-start'))
-    expect(order.indexOf('callback-2')).toBeLessThan(order.indexOf('drain-start'))
-    expect(order.indexOf('drain-end')).toBeLessThan(order.indexOf('valkey'))
-    expect(order.indexOf('drain-end')).toBeLessThan(order.indexOf('psql'))
-  })
-
-  it('flushes Sentry after drain callbacks and data store shutdown', async () => {
-    const {
-      addGracefulShutdownCallback,
-      addGracefulShutdownDrainCallback,
-      onGracefulShutdown,
-      onGracefulShutdownValkey,
-      onGracefulShutdownPSQL,
-    } = await loadSubject()
-    const flushMock = sentryFlushMock
-
-    const order: string[] = []
-    addGracefulShutdownCallback(() => {
-      order.push('callback')
-      return Promise.resolve()
-    })
-    addGracefulShutdownDrainCallback(() => {
-      order.push('drain')
-      return Promise.resolve()
-    })
-
-    onGracefulShutdownValkey.mockImplementation(() => {
-      order.push('valkey')
-      return Promise.resolve()
-    })
-    onGracefulShutdownPSQL.mockImplementation(() => {
-      order.push('psql')
-      return Promise.resolve()
-    })
-    flushMock.mockImplementation(() => {
-      order.push('flush')
-      return Promise.resolve(true)
-    })
-
-    await onGracefulShutdown('SIGTERM')
-
-    expect(order).toEqual(['callback', 'drain', 'valkey', 'psql', 'flush'])
-    expect(flushMock).toHaveBeenCalledWith(2000)
-  })
-
-  it('is idempotent - second call is a no-op', async () => {
-    const { addGracefulShutdownCallback, onGracefulShutdown, onGracefulShutdownValkey } =
-      await loadSubject()
-
-    const callback = vi.fn<VitestLooseMock>(() => Promise.resolve())
-    addGracefulShutdownCallback(callback)
-
-    await onGracefulShutdown('SIGTERM')
-    await onGracefulShutdown('SIGTERM')
-
-    expect(callback).toHaveBeenCalledTimes(1)
-    expect(onGracefulShutdownValkey).toHaveBeenCalledTimes(1)
-  })
-
-  it('callback errors are routed to onError without aborting shutdown', async () => {
-    const { addGracefulShutdownCallback, onGracefulShutdown, onGracefulShutdownValkey } =
-      await loadSubject()
-
-    const error = new Error('callback failed')
-    addGracefulShutdownCallback(() => Promise.reject(error))
-
-    await onGracefulShutdown('SIGTERM')
-
-    expect(captureException).toHaveBeenCalledWith(error, expect.anything())
-    expect(onGracefulShutdownValkey).toHaveBeenCalledTimes(1)
-  })
-
-  it('drain callback errors are routed to onError without aborting data store shutdown', async () => {
-    const { addGracefulShutdownDrainCallback, onGracefulShutdown, onGracefulShutdownValkey } =
-      await loadSubject()
-
-    const error = new Error('drain failed')
-    addGracefulShutdownDrainCallback(() => Promise.reject(error))
-
-    await onGracefulShutdown('SIGTERM')
-
-    expect(captureException).toHaveBeenCalledWith(error, expect.anything())
-    expect(onGracefulShutdownValkey).toHaveBeenCalledTimes(1)
-  })
-
-  it('synchronously throwing drain callback does not abort data store shutdown', async () => {
-    const { addGracefulShutdownDrainCallback, onGracefulShutdown, onGracefulShutdownValkey } =
-      await loadSubject()
-
-    const error = new Error('sync drain throw')
-    addGracefulShutdownDrainCallback(() => {
-      throw error
-    })
-
-    await onGracefulShutdown('SIGTERM')
-
-    expect(captureException).toHaveBeenCalledWith(error, expect.anything())
-    expect(onGracefulShutdownValkey).toHaveBeenCalledTimes(1)
-  })
-
-  it('data store shutdown errors are routed to onError', async () => {
+  it('closes the registered data stores, then flushes Sentry for two seconds', async () => {
     const { onGracefulShutdown, onGracefulShutdownValkey, onGracefulShutdownPSQL } =
       await loadSubject()
+    const order: string[] = []
+    onGracefulShutdownValkey.mockImplementation(async () => {
+      order.push('valkey')
+    })
+    onGracefulShutdownPSQL.mockImplementation(async () => {
+      order.push('psql')
+    })
+    sentryFlushMock.mockImplementation(async () => {
+      order.push('flush')
+      return true
+    })
 
+    await onGracefulShutdown('SIGTERM')
+
+    expect(order).toEqual(['valkey', 'psql', 'flush'])
+    expect(sentryFlushMock).toHaveBeenCalledWith(2000)
+  })
+
+  it('reports a failing data store to onError and still closes the others and flushes', async () => {
+    const { onGracefulShutdown, onGracefulShutdownValkey, onGracefulShutdownPSQL } =
+      await loadSubject()
     const valkeyError = new Error('valkey close failed')
     onGracefulShutdownValkey.mockRejectedValueOnce(valkeyError)
 
     await onGracefulShutdown('SIGTERM')
 
-    expect(captureException).toHaveBeenCalledWith(valkeyError, expect.anything())
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(valkeyError, {
+      tags: { shutdown_resource: 'Valkey' },
+    })
     expect(onGracefulShutdownPSQL).toHaveBeenCalledTimes(1)
+    expect(sentryFlushMock).toHaveBeenCalledWith(2000)
   })
 
-  it('does not call process.exit or process.kill on normal completion', async () => {
-    const { onGracefulShutdown } = await loadSubject()
-
-    const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
-    const killSpy = vi.spyOn(process, 'kill').mockReturnValue(true)
-    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
+  it('reports a failing callback as its original error tagged with phase and signal', async () => {
+    const { onGracefulShutdown, addGracefulShutdownCallback } = await loadSubject()
+    const callbackError = new Error('drain queue failed')
+    addGracefulShutdownCallback(async () => {
+      throw callbackError
+    })
 
     await onGracefulShutdown('SIGTERM')
 
-    expect(exitSpy).not.toHaveBeenCalled()
-    expect(killSpy).not.toHaveBeenCalled()
-    expect(setTimeoutSpy).not.toHaveBeenCalled()
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(1)
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(callbackError, {
+      tags: { shutdown_phase: 'callbacks', shutdown_signal: 'SIGTERM' },
+    })
   })
 
-  it('uses exit code 0 when the production force-exit timer fires after successful shutdown', async () => {
-    const originalNodeEnv = process.env.NODE_ENV
-    const signalListenersBefore = snapshotSignalListeners()
-    process.env.NODE_ENV = 'production'
-    vi.useFakeTimers()
-    try {
-      const { onGracefulShutdown } = await loadSubject()
-      const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('wraps a non-Error rejection so Sentry still gets an Error with the resource', async () => {
+    const { gracefulShutdown, onGracefulShutdownValkey } = await loadSubject()
+    onGracefulShutdownValkey.mockRejectedValueOnce('valkey gone')
 
-      await onGracefulShutdown('SIGTERM')
-      await vi.runOnlyPendingTimersAsync()
+    await gracefulShutdown()
 
-      expect(exitSpy).toHaveBeenCalledWith(0)
-      expect(errorSpy).not.toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-      process.env.NODE_ENV = originalNodeEnv
-      restoreSignalListeners(signalListenersBefore)
-    }
+    const [reported, context] = sentryCaptureExceptionMock.mock.calls[0] ?? []
+    expect(reported).toBeInstanceOf(Error)
+    expect(reported).toMatchObject({
+      message: 'valkey gone',
+      cause: { cause: 'valkey gone' },
+    })
+    expect(context).toEqual({ tags: { shutdown_resource: 'Valkey' } })
   })
 
-  it('uses exit code 1 when the production force-exit timer fires before shutdown completes', async () => {
-    const originalNodeEnv = process.env.NODE_ENV
-    const signalListenersBefore = snapshotSignalListeners()
-    process.env.NODE_ENV = 'production'
-    vi.useFakeTimers()
-    try {
-      const { addGracefulShutdownCallback, onGracefulShutdown } = await loadSubject()
-      const deferred = createDeferred<void>()
-      const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('reports a frozen failure without mutating it and still reports later failures', async () => {
+    const { onGracefulShutdown, addGracefulShutdownCallback } = await loadSubject()
+    const frozenError: Error = Object.freeze(
+      Object.assign(new Error('frozen failure'), { name: 'FrozenError', code: 'EFROZEN' }),
+    )
+    const laterError = new Error('later failure')
+    addGracefulShutdownCallback(async () => {
+      throw frozenError
+    })
+    addGracefulShutdownCallback(async () => {
+      throw laterError
+    })
 
-      addGracefulShutdownCallback(() => deferred.promise)
-      const shutdown = onGracefulShutdown('SIGTERM')
-      await vi.runOnlyPendingTimersAsync()
-      deferred.resolve()
-      await shutdown
+    await expect(onGracefulShutdown('SIGTERM')).resolves.toBeUndefined()
 
-      expect(errorSpy).toHaveBeenCalledWith(
-        'Graceful Shutdown: could not close connections in time, forcing exit...',
-      )
-      expect(exitSpy).toHaveBeenCalledWith(1)
-    } finally {
-      vi.useRealTimers()
-      process.env.NODE_ENV = originalNodeEnv
-      restoreSignalListeners(signalListenersBefore)
-    }
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(2)
+    const [reported, context] = sentryCaptureExceptionMock.mock.calls[0] ?? []
+    expect(reported).not.toBe(frozenError)
+    expect(reported).toMatchObject({
+      message: 'frozen failure',
+      name: 'FrozenError',
+      code: 'EFROZEN',
+    })
+    expect(context).toEqual({ tags: { shutdown_phase: 'callbacks', shutdown_signal: 'SIGTERM' } })
+    expect(Object.hasOwn(frozenError, 'tags')).toBe(false)
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(laterError, expect.anything())
   })
 
   it('gracefulShutdown only closes data stores', async () => {
@@ -272,15 +158,88 @@ describe('graceful shutdown', () => {
 
     expect(onGracefulShutdownValkey).toHaveBeenCalledTimes(1)
     expect(onGracefulShutdownPSQL).toHaveBeenCalledTimes(1)
+    expect(sentryFlushMock).not.toHaveBeenCalled()
   })
 
-  it('supports an injected quiet logger without changing default logging', async () => {
-    const { gracefulShutdown } = await loadSubject()
-    const messages: unknown[][] = []
-    await gracefulShutdown({ logger: (...args) => messages.push(args) })
-    expect(messages).toEqual([
-      ['Graceful Shutdown: Valkey connection closed.'],
-      ['Graceful Shutdown: PostgreSQL connection closed.'],
-    ])
+  it('does not schedule the force-exit timer under test', async () => {
+    const { onGracefulShutdown } = await loadSubject()
+    const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
+
+    await onGracefulShutdown('SIGTERM')
+
+    expect(exitSpy).not.toHaveBeenCalled()
+    expect(setTimeoutSpy).not.toHaveBeenCalled()
+  })
+
+  it('exits 0 after the configured grace period once production shutdown succeeded', async () => {
+    const originalNodeEnv = process.env.NODE_ENV
+    const signalListenersBefore = snapshotSignalListeners()
+    process.env.NODE_ENV = 'production'
+    vi.useFakeTimers()
+    try {
+      const { onGracefulShutdown } = await loadSubject()
+      const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
+
+      await onGracefulShutdown('SIGTERM')
+      await vi.runOnlyPendingTimersAsync()
+
+      expect(setTimeoutSpy).toHaveBeenCalledWith(
+        expect.any(Function),
+        gracefulShutdownPeriodSeconds * 1000,
+      )
+      expect(exitSpy).toHaveBeenCalledWith(0)
+      expect(errorSpy).not.toHaveBeenCalled()
+    } finally {
+      process.env.NODE_ENV = originalNodeEnv
+      restoreSignalListeners(signalListenersBefore)
+    }
+  })
+})
+
+describe('one-off data-store shutdown wiring', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('propagates cleanup failures after attempting every registered data store', async () => {
+    captureForceExitTimer()
+    const { shutdownDataStoresForOneOffCommand, onGracefulShutdownValkey, onGracefulShutdownPSQL } =
+      await loadSubject()
+    const valkeyError = new Error('valkey close failed')
+    const psqlError = new Error('psql close failed')
+    onGracefulShutdownValkey.mockRejectedValue(valkeyError)
+    onGracefulShutdownPSQL.mockRejectedValue(psqlError)
+
+    const rejection: unknown = await shutdownDataStoresForOneOffCommand().catch(
+      (err: unknown) => err,
+    )
+
+    expect(rejection).toBeInstanceOf(AggregateError)
+    const causes = (rejection as AggregateError).errors.map((error: Error) => error.cause)
+    expect(causes).toEqual([valkeyError, psqlError])
+
+    expect(onGracefulShutdownValkey).toHaveBeenCalledTimes(1)
+    expect(onGracefulShutdownPSQL).toHaveBeenCalledTimes(1)
+  })
+
+  it('forces a nonzero exit when native handles remain after cleanup succeeds', async () => {
+    const forceExitTimer = captureForceExitTimer()
+    const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { shutdownDataStoresForOneOffCommand } = await loadSubject()
+
+    await shutdownDataStoresForOneOffCommand()
+    expect(forceExitTimer.unref).toHaveBeenCalledTimes(1)
+    forceExitTimer.fire()
+
+    expect(exitSpy).toHaveBeenCalledWith(1)
+    expect(errorSpy).toHaveBeenCalledTimes(1)
   })
 })

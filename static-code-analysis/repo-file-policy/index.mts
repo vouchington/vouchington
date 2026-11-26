@@ -20,7 +20,6 @@ import {
   checkSchemaAllowlistFreshness,
   schemaAllowlistModules,
 } from './schema-allowlist-freshness.mts'
-import { checkAstGrepIgnoresFreshness } from './ast-grep-ignores-freshness.mts'
 import { checkRouteAdminSurfaceGuard } from './route-admin-surface-guard.mts'
 import { checkFiniteEnumRippleGuard } from './finite-enum-ripple-guard.mts'
 import { checkSchemaDocDriftGuard } from './schema-doc-drift-guard.mts'
@@ -28,14 +27,16 @@ import { checkClientParityMatrixGuard } from './client-parity-matrix-guard.mts'
 import { checkGhApiShellQuoting } from './gh-api-shell-quoting-guard.mts'
 import { checkLivingDocsPinGuard } from './living-docs-pin-guard.mts'
 import { checkMonetaryContracts, checkMonetarySnapshot } from './monetary-contract-guard.mts'
-import { checkSplitMarkdownCanonicalLinkGuard } from './split-markdown-canonical-link-guard.mts'
-import { loadSchemaSnapshot } from './schema-snapshot-loader.mts'
+import { checkCanonicalChildLinks } from 'vouchington-tooling/markdown-canonical-children'
+import { SPLIT_PARENT_PATHS } from './split-markdown-parents.mts'
+import { loadSchemaSnapshot, SCHEMA_SNAPSHOT_PATH } from './schema-snapshot-loader.mts'
 import { checkLifecycleScenarioContract } from './lifecycle-scenario-contract.mts'
 import { checkLocalLlmEndpointPolicyContract } from './local-llm-endpoint-policy-contract.mts'
 import { checkPostPublicationReaderInventory } from './post-publication-reader-inventory.mts'
 import { checkPostPublicationWriterInventory } from './post-publication-writer-inventory.mts'
-import { checkPublicSourceLiterals } from './public-source-literal-guard.mts'
-import { checkRelationalStorage } from './relational-storage-guard.mts'
+import { checkPublicSourceLiterals } from './public-source-literals.mts'
+import { checkRelationalStorage } from 'vouchington-tooling/relational-storage'
+import { RELATIONAL_STORAGE_CATALOG } from './relational-storage-catalog.mts'
 import {
   checkWebIdRouteSegments,
   webIdRouteSegmentAllowlistFile,
@@ -92,12 +93,17 @@ export async function checkRepoFilePolicy(
   await checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   checkMonetarySnapshot(schema, errors)
   const injectedSnapshot = options.schemaSnapshot !== undefined
-  errors.push(...checkRelationalStorage(schema, { enforceCatalogFreshness: !injectedSnapshot }))
-  checkSplitMarkdownCanonicalLinkGuard(ctx.repoRoot, trackedFiles, errors)
+  errors.push(
+    ...checkRelationalStorage(schema, {
+      snapshotPath: SCHEMA_SNAPSHOT_PATH,
+      catalog: RELATIONAL_STORAGE_CATALOG,
+      enforceCatalogFreshness: !injectedSnapshot,
+    }),
+  )
+  errors.push(...checkCanonicalChildLinks(ctx, { parents: SPLIT_PARENT_PATHS }).errors)
   await checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
   await checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
   checkSchemaAllowlistFreshness(trackedFiles, schema, schemaAllowlistModules, errors)
-  checkAstGrepIgnoresFreshness(ctx.repoRoot, trackedFiles, errors)
   checkRouteAdminSurfaceGuard(ctx.repoRoot, trackedFileSet, errors, options.remaining)
   checkFiniteEnumRippleGuard(ctx, errors, trackedFiles)
   checkSchemaDocDriftGuard(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
@@ -112,7 +118,7 @@ export async function checkRepoFilePolicy(
   })
   errors.push(...ghaWorkspacePolicy.errors)
   checkLivingDocsPinGuard(ctx.repoRoot, trackedFiles, errors)
-  checkPublicSourceLiterals(ctx.repoRoot, trackedFiles, errors)
+  errors.push(...(await checkPublicSourceLiterals(ctx)).errors)
   if (trackedFileSet.has(webIdRouteSegmentAllowlistFile))
     checkWebIdRouteSegments(trackedFiles, errors)
   return { errors }

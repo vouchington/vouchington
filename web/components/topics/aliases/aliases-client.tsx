@@ -114,41 +114,41 @@ export function AliasesClient({
           fetchError={fetchError}
           clearError={clearError}
           resetKey={resetKey}
-        >
-          {aliases.length === 0 ? (
+          itemCount={aliases.length}
+          emptyState={
             <p className='text-sm text-muted-foreground'>
               {t('extracted.aliases.aliasesClient.noAliasesYet_a985d7c2')}
             </p>
-          ) : (
-            <ul className='divide-y divide-border'>
-              {aliases.map(alias => (
-                <li
-                  key={alias.id}
-                  // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                  data-pw={`alias-row-${alias.alias}`}
-                  className='flex items-center justify-between py-3'
-                >
-                  <span className='text-sm text-foreground'>{alias.alias}</span>
-                  {alias.alias === topic.slug ? null : (
-                    <Button
-                      type='button'
-                      variant='destructive'
-                      size='sm'
-                      // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
-                      data-pw={`alias-remove-${alias.alias}`}
-                      onClick={() => handleDeleteAlias(alias)}
-                      loading={deletingAlias === alias.id}
-                      disabled={deletingAlias === alias.id}
-                    >
-                      {deletingAlias === alias.id
-                        ? t('extracted.aliases.aliasesClient.removing_60d18e42')
-                        : t('extracted.aliases.aliasesClient.remove_c3812fc4')}
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+          }
+        >
+          <ul className='divide-y divide-border'>
+            {aliases.map(alias => (
+              <li
+                key={alias.id}
+                // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
+                data-pw={`alias-row-${alias.alias}`}
+                className='flex items-center justify-between py-3'
+              >
+                <span className='text-sm text-foreground'>{alias.alias}</span>
+                {alias.alias === topic.slug ? null : (
+                  <Button
+                    type='button'
+                    variant='destructive'
+                    size='sm'
+                    // oxlint-disable-next-line no-mistakes/playwright-literals -- dynamic identifier from row data
+                    data-pw={`alias-remove-${alias.alias}`}
+                    onClick={() => handleDeleteAlias(alias)}
+                    loading={deletingAlias === alias.id}
+                    disabled={deletingAlias === alias.id}
+                  >
+                    {deletingAlias === alias.id
+                      ? t('extracted.aliases.aliasesClient.removing_60d18e42')
+                      : t('extracted.aliases.aliasesClient.remove_c3812fc4')}
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
         </InfiniteScroll>
       </section>
 

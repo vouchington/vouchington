@@ -77,7 +77,7 @@ jobs:
         with:
           name: retained-relation-bootstrap-prepared
           path: artifacts/retained-relation-bootstrap.json
-          retention-days: 1
+          retention-days: 7
           overwrite: true
           if-no-files-found: ignore
       # pg_dump/pg_restore reparses and flattens Boolean expression parentheses. Validate
@@ -101,6 +101,6 @@ jobs:
         with:
           name: backend-postgres-${{ github.run_id }}
           path: ${{ runner.temp }}/backend-postgres.dump
-          retention-days: 1
+          retention-days: 7
           overwrite: true
           if-no-files-found: error

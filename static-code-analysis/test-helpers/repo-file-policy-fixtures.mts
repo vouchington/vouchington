@@ -11,7 +11,7 @@ import {
   topicTypesSource,
 } from '../repo-file-policy/repo-file-policy-test-sources.mts'
 import { afterEach, beforeEach } from 'vitest'
-import { createFixtureDeadline } from './fixture-deadline.mts'
+import { createFixtureDeadline } from 'vouchington-tooling/fixture-deadline'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 import { checkRepoFilePolicy } from '../repo-file-policy/index.mts'

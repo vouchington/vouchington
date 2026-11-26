@@ -6,13 +6,8 @@ import { createWebApiMfaTestCookieHeader } from '../routes.mts'
 
 const proofNow = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')
 
-function unset(target: object, key: string) {
-  delete (target as Record<string, unknown>)[key]
-}
-
 describe('routes-extended', () => {
   const harness = installRoutesExtendedHarness({
-    unset,
     workerSecret: 'with-cookie',
   })
 

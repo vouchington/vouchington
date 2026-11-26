@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
+import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
+import { beginTransaction } from '../../setup.mts'
 import {
   getLocalClassifierBySlug,
   listLocalActiveClassifierPromptVersions,
@@ -34,8 +35,8 @@ describe('0635-00-06-seed-autotagger-agent-classifier SQL shape', () => {
 describe('0635-00-06-seed-autotagger-agent-classifier (real DB)', () => {
   it('reaches a stable single active classifier with no prompt version across reruns', async () => {
     const generated = generateSeedAutotaggerAgentClassifierSQL()
-    await runConfigDrivenStatementsInTransaction(generated, undefined)
-    await runConfigDrivenStatementsInTransaction(generated, undefined)
+    await runConfigDrivenStatementsInTransaction(generated, { beginTransaction })
+    await runConfigDrivenStatementsInTransaction(generated, { beginTransaction })
 
     const classifier = await getLocalClassifierBySlug('autotagger-agent')
     expect(classifier).not.toBeNull()

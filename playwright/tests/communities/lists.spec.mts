@@ -7,6 +7,7 @@ import {
 } from '../../../backend/test-helpers/entities/communities.mts'
 import { insertTestTopic } from '../../../backend/test-helpers/entities/topics.mts'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
+import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 /**
  * Community lists page tests.
@@ -197,7 +198,7 @@ test.describe('Community Lists Page', () => {
         resp.url().includes('/api/v1/urls') &&
         new URL(resp.url()).searchParams.has('query') &&
         resp.status() === 200,
-      { timeout: 5000 },
+      { timeout: SHORT_WAIT_TIMEOUT_MS },
     )
 
     await input.pressSequentially('htt')

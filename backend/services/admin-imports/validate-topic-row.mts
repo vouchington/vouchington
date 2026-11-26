@@ -1,4 +1,5 @@
 import { isSlug } from '@modules/utils'
+import { getAdminImportsWorkLimit } from '@queues/admin-imports/config'
 import { topicTypes } from '@voucha/types/entities/topic'
 import {
   validateReferralFields,
@@ -7,8 +8,6 @@ import {
 import { validateRssFeedFields } from './validate-topic-row-rss-feed.mts'
 
 const VALID_EXTENSIONS = new Set(['spending_category', 'retailer'])
-// Bounds the single parent-relation upsert processTopicParentRelations makes per row.
-const MAX_PARENT_SLUGS_PER_ROW = 20
 
 export type TopicRowValidationContext = {
   isDuplicateSlug: boolean
@@ -78,7 +77,6 @@ function validateExtensions(row: Record<string, string>): string[] {
 
 function validateParentSlugs(row: Record<string, string>): string[] {
   const parentSlugs = row.parent_slugs?.split('|').filter(slug => slug.trim()) ?? []
-  return parentSlugs.length > MAX_PARENT_SLUGS_PER_ROW
-    ? [`parent_slugs must contain at most ${MAX_PARENT_SLUGS_PER_ROW} slugs`]
-    : []
+  const limit = getAdminImportsWorkLimit('max_parent_slugs_per_row')
+  return parentSlugs.length > limit ? [`parent_slugs must contain at most ${limit} slugs`] : []
 }

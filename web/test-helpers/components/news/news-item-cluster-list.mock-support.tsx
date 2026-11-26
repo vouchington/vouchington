@@ -24,10 +24,6 @@ vi.mock(
   () => navMockModule as unknown as typeof import('next/navigation'),
 )
 
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-}))
-
 vi.mock(import('@/lib/api/client'), () => ({
   getPaginatedPage: vi.fn<VitestLooseMock>(),
 }))
@@ -141,13 +137,14 @@ export const makeClusterStoryPage = (itemIds: string[]) => ({
 
 export function renderClusterList(
   data: RssFeedItemsFeedResponseBody,
-  options?: { modal?: ReactNode; nav?: boolean },
+  options?: { modal?: ReactNode; nav?: boolean; nextPageEndpoint?: string },
 ) {
   const modal = options?.nav ? <ClusterListNavIds /> : options?.modal
   return render(
     <FeedStyleProvider>
       <NewsItemClusterList
         data={data}
+        nextPageEndpoint={options?.nextPageEndpoint}
         modal={modal}
       />
     </FeedStyleProvider>,

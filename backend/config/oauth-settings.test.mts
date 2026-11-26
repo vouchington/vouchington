@@ -16,8 +16,6 @@ const oauthEnvNames = [
   'X_CLIENT_SECRET',
 ] as const
 
-const originalEnv = new Map(oauthEnvNames.map(name => [name, process.env[name]]))
-
 async function importConfig() {
   vi.resetModules()
   return import('./index.mts')
@@ -25,18 +23,11 @@ async function importConfig() {
 
 describe('oauth config', () => {
   afterEach(() => {
-    for (const name of oauthEnvNames) {
-      const originalValue = originalEnv.get(name)
-      if (originalValue === undefined) {
-        delete process.env[name]
-      } else {
-        process.env[name] = originalValue
-      }
-    }
+    vi.unstubAllEnvs()
   })
 
   it('treats OpenTofu placeholder credentials as unset', async () => {
-    for (const name of oauthEnvNames) process.env[name] = 'PLACEHOLDER'
+    for (const name of oauthEnvNames) vi.stubEnv(name, 'PLACEHOLDER')
 
     await expect(importConfig()).resolves.toMatchObject({
       APPLE_CLIENT_ID: '',
@@ -56,9 +47,9 @@ describe('oauth config', () => {
   })
 
   it('trims configured OAuth credentials', async () => {
-    process.env.GITHUB_CLIENT_ID = ' github-client '
-    process.env.GITHUB_CLIENT_SECRET = ' github-secret '
-    process.env.MICROSOFT_TENANT_ID = ' organizations '
+    vi.stubEnv('GITHUB_CLIENT_ID', ' github-client ')
+    vi.stubEnv('GITHUB_CLIENT_SECRET', ' github-secret ')
+    vi.stubEnv('MICROSOFT_TENANT_ID', ' organizations ')
 
     await expect(importConfig()).resolves.toMatchObject({
       GITHUB_CLIENT_ID: 'github-client',
@@ -68,7 +59,7 @@ describe('oauth config', () => {
   })
 
   it('uses the common Microsoft tenant when the tenant id is unset', async () => {
-    delete process.env.MICROSOFT_TENANT_ID
+    vi.stubEnv('MICROSOFT_TENANT_ID', undefined)
 
     await expect(importConfig()).resolves.toMatchObject({
       MICROSOFT_TENANT_ID: 'common',

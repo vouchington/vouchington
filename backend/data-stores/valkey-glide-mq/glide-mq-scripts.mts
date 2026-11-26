@@ -1,24 +1,12 @@
 import { Script } from '@glidemq/speedkey'
+import { createScriptRegistry } from '@vouchington/utils/script-registry'
 import { loadScript } from 'valkyries'
 
-const scripts: Script[] = []
-let releaseHookRegistered = false
-
 /** Creates scripts in the same native registry used by workerQueueCommandClient. */
-export function registerWorkerQueueScript(code: string): Script {
-  if (!releaseHookRegistered) {
-    releaseHookRegistered = true
-    process.once('exit', releaseWorkerQueueScripts)
-  }
-  const script = new Script(code)
-  scripts.push(script)
-  return script
-}
+const registry = createScriptRegistry(code => new Script(code))
+
+export const registerWorkerQueueScript = registry.register
 
 export function registerWorkerQueueScriptFile(filename: string, importMetaUrl: string): Script {
-  return registerWorkerQueueScript(loadScript(filename, importMetaUrl))
-}
-
-function releaseWorkerQueueScripts(): void {
-  for (const script of scripts) script.release()
+  return registry.register(loadScript(filename, importMetaUrl))
 }

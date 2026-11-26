@@ -106,6 +106,29 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 COMMENT ON TYPE vote_ballot_cleanup_families IS 'Fixed ballot families eligible for one independent retention cursor each.';
 
+CREATE TABLE IF NOT EXISTS deleted_user_ballot_cleanup_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT true CHECK (is_singleton),
+  family vote_ballot_cleanup_families NOT NULL,
+  cursor_owner_id UUID,
+  cursor_entity_id UUID,
+  cursor_ballot_id UUID,
+  sweep_upper_bound_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK ((cursor_entity_id IS NULL) = (cursor_ballot_id IS NULL)),
+  CHECK (cursor_entity_id IS NULL OR cursor_owner_id IS NOT NULL)
+);
+CREATE OR REPLACE TRIGGER trigger_deleted_user_ballot_cleanup_cursors_updated_at
+  BEFORE UPDATE ON deleted_user_ballot_cleanup_cursors
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE deleted_user_ballot_cleanup_cursors IS 'Position of the cyclic ballot pass after the user deletion drain.';
+COMMENT ON COLUMN deleted_user_ballot_cleanup_cursors.is_singleton IS 'The one post-deletion ballot cleanup sweep.';
+COMMENT ON COLUMN deleted_user_ballot_cleanup_cursors.family IS 'Concrete ballot family at the current position.';
+COMMENT ON COLUMN deleted_user_ballot_cleanup_cursors.cursor_owner_id IS 'Last inspected user UUID or current owner when the ballot position is set.';
+COMMENT ON COLUMN deleted_user_ballot_cleanup_cursors.cursor_entity_id IS 'Entity key of the last inspected ballot within the current owner.';
+COMMENT ON COLUMN deleted_user_ballot_cleanup_cursors.cursor_ballot_id IS 'Ballot UUID of the last inspected ballot within the current owner and entity.';
+COMMENT ON COLUMN deleted_user_ballot_cleanup_cursors.sweep_upper_bound_id IS 'Frozen inclusive user UUID boundary for the active cycle.';
+COMMENT ON COLUMN deleted_user_ballot_cleanup_cursors.updated_at IS 'Last committed position change.';
+
 CREATE TABLE IF NOT EXISTS vote_ballot_cleanup_cursors (
   family vote_ballot_cleanup_families PRIMARY KEY,
   cursor_vote_id UUID,

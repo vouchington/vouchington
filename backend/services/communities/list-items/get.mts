@@ -1,11 +1,7 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import {
-  decodeUuidCursor,
-  buildPageInfo,
-  isRankingCursor,
-  sliceRawKeysetPage,
-} from '@modules/pagination'
+import { decodeUuidCursor, buildPageInfo, isRankingCursor } from '@modules/pagination'
+import { sliceRawKeysetPage } from '@vouchington/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
 import { communityListItemStorageCatalog, getCommunityListItemStorageConfig } from './catalog.mts'

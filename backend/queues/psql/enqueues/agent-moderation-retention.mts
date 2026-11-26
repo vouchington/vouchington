@@ -1,38 +1,37 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import { DATA_RETENTION_ORDERING, PRIORITY_DEFAULT, QUEUE_NAME } from '../config.mts'
 import { psql } from '../queues.mts'
 import type { AgentModerationRetentionContinuationData, PsqlJobPayloads } from '../types.mts'
 
-const enqueueAgentModerationRetentionJob = createEnqueueFunction<
-  PsqlJobPayloads['continueAgentModerationRetentionCleanup'],
-  'continueAgentModerationRetentionCleanup'
->({ queue: psql, queueName: QUEUE_NAME, jobName: 'continueAgentModerationRetentionCleanup' })
+const agentModerationRetentionJobId = (data: AgentModerationRetentionContinuationData): string =>
+  `agent-moderation-retention__${data.runId}__${data.step}`
+
+const enqueueBulkAgentModerationRetention = createBulkEnqueueFunction({
+  queue: psql,
+  queueName: QUEUE_NAME,
+  jobName: 'continueAgentModerationRetentionCleanup',
+  buildJob: (data: AgentModerationRetentionContinuationData) => ({
+    data: data satisfies PsqlJobPayloads['continueAgentModerationRetentionCleanup'],
+    opts: {
+      jobId: agentModerationRetentionJobId(data),
+      priority: PRIORITY_DEFAULT,
+      ordering: DATA_RETENTION_ORDERING,
+      attempts: 3,
+      backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  }),
+})
 
 export function enqueueAgentModerationRetentionContinuation(
   data: AgentModerationRetentionContinuationData,
 ) {
-  const jobId = `agent-moderation-retention__${data.runId}__${data.step}`
   return enqueueBulkReactivatingFinished({
     queue: psql,
     inputs: [data],
-    jobIdOf: () => jobId,
-    enqueueBulk: async inputs => {
-      const jobs = await Promise.all(
-        inputs.map(input =>
-          // ast-grep-ignore: backend-no-single-enqueue-in-loop -- the reactivation adapter always receives the one continuation input
-          enqueueAgentModerationRetentionJob(input, {
-            jobId,
-            priority: PRIORITY_DEFAULT,
-            ordering: DATA_RETENTION_ORDERING,
-            attempts: 3,
-            backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-            removeOnComplete: true,
-            removeOnFail: true,
-          }),
-        ),
-      )
-      return jobs.filter(job => job !== null)
-    },
+    jobIdOf: agentModerationRetentionJobId,
+    enqueueBulk: enqueueBulkAgentModerationRetention,
   })
 }

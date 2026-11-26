@@ -6,7 +6,8 @@ import {
   isAttestationRequiredForBypass,
   verifyAssertion,
 } from '@services/app-attestation'
-import { extractTurnstileTokenFromBody, verifyCaptchaToken } from './verify.mts'
+import { extractTurnstileToken } from '@vouchington/utils/turnstile-siteverify'
+import { verifyCaptchaToken } from './verify.mts'
 
 export type VerifyCaptchaOrAttestationOptions = {
   actionTag: string
@@ -64,10 +65,7 @@ export async function verifyCaptchaOrAttestation(
     return
   }
 
-  await verifyCaptchaToken(
-    extractTurnstileTokenFromBody(body, opts.fieldNames),
-    ctx.ip,
-    opts.actionTag,
-    { createMissingTokenError: opts.createMissingTokenError },
-  )
+  await verifyCaptchaToken(extractTurnstileToken(body, opts.fieldNames), ctx.ip, opts.actionTag, {
+    createMissingTokenError: opts.createMissingTokenError,
+  })
 }

@@ -27,6 +27,12 @@ import { runCommentDescendantPartitionedPages } from './run-scenarios/comment-de
 import { assertNoLeftoverCommentPartitions } from './seed-data/comment-descendant-partition-storage.mts'
 import { assertNoLeftoverHackerNewsScalePartitions } from './seed-data/hacker-news-scale-fixture.mts'
 import { runHackerNewsScaleScenarios } from './run-scenarios/hacker-news-scale.mts'
+import { runCommunityHistoryReadScenarios } from './run-scenarios/community-history-reads.mts'
+import { runCommunityModerationListCapacityScenarios } from './run-scenarios/community-moderation-list-capacity.mts'
+import { runCommunityPublicationCapacityScenarios } from './run-scenarios/community-publication-capacity.mts'
+import { runCommunityModerationQueueCapacityScenarios } from './run-scenarios/community-moderation-queue-capacity.mts'
+import { runCommunityRosterReadCapacityScenario } from './run-scenarios/community-roster-read-capacity.mts'
+import { runNotificationUnreadCapacityScenario } from './run-scenarios/notification-unread-capacity.mts'
 
 // EXPLAIN_SHARD splits the CI run (explain-shards.mts); unset runs everything.
 async function main() {
@@ -43,8 +49,31 @@ async function main() {
     if (shard === undefined || shard === 'partition')
       await runStep(runCommentDescendantPartitionedPages.name, runCommentDescendantPartitionedPages)
     // The late fixture writers close the last ordinary shard, after every ordinary plan.
-    if (shard === undefined || shard === ORDINARY_EXPLAIN_SHARDS.at(-1))
+    if (shard === undefined || shard === ORDINARY_EXPLAIN_SHARDS.at(-1)) {
       await runOrderedRunners(AFTER_PARTITION_RUNNERS)
+      // The mixed-recipient fixture updates notification statistics after other notification plans.
+      await runStep(
+        runNotificationUnreadCapacityScenario.name,
+        runNotificationUnreadCapacityScenario,
+      )
+      await runStep(
+        runCommunityRosterReadCapacityScenario.name,
+        runCommunityRosterReadCapacityScenario,
+      )
+      await runStep(runCommunityHistoryReadScenarios.name, runCommunityHistoryReadScenarios)
+      await runStep(
+        runCommunityModerationListCapacityScenarios.name,
+        runCommunityModerationListCapacityScenarios,
+      )
+      await runStep(
+        runCommunityPublicationCapacityScenarios.name,
+        runCommunityPublicationCapacityScenarios,
+      )
+      await runStep(
+        runCommunityModerationQueueCapacityScenarios.name,
+        runCommunityModerationQueueCapacityScenarios,
+      )
+    }
     // The million-post fixture comes last in a full run so its future leaves never touch ordinary plans.
     if (shard === undefined || shard === 'hn-scale')
       await runStep(runHackerNewsScaleScenarios.name, runHackerNewsScaleScenarios)

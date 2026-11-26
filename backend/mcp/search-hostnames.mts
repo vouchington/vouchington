@@ -1,12 +1,9 @@
+import { searchParamsMaxValues } from '@services/search-params/config'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
 import { getPaginationLimits } from '@services/pagination'
-import {
-  parseHostnamesSearchParams,
-  validateTopicSearchTerms,
-  MAX_TOPIC_SEARCH_TERMS,
-} from '@services/search-params'
+import { parseHostnamesSearchParams, validateTopicSearchTerms } from '@services/search-params'
 import { searchUrlHostnames } from '@services/urls-hostnames'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -22,7 +19,7 @@ import {
   INVALID_CURSOR_RESULT,
   type InvalidCursorResult,
 } from './paged-search.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
@@ -66,7 +63,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         topic_match: { type: 'string', enum: ['any', 'all'] },
         topics: {
           type: 'array',
-          maxItems: MAX_TOPIC_SEARCH_TERMS,
+          maxItems: searchParamsMaxValues.max_topic_search_terms,
           items: topicReferenceSchema,
           description: 'At most five topic terms, including topic.',
         },
@@ -80,7 +77,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['hostnames:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/hostnames' }],
-    outputSchema: foundOrNotFoundSchema(hostnamesPageProperties()),
+    outputSchema: outcomeSchema('success', hostnamesPageProperties()),
   },
   function:
     (_currentUser: BasicUser) =>

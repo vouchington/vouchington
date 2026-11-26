@@ -113,11 +113,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: ./.github/actions/start-valkey
-        timeout-minutes: 2
-      - uses: ./.github/actions/setup-backend
-        id: setup-backend
-        timeout-minutes: 5
       - uses: ./.github/actions/download-artifact
         timeout-minutes: 2
         with:
@@ -126,13 +121,19 @@ jobs:
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           run-id: ${{ github.run_id }}
-      - name: Restore prepared PostgreSQL database
+      - name: Start restoring the prepared PostgreSQL database in the background
+        # The restore needs only the dump and the service container, so it overlaps the Node setup
+        # below (about 15s and 28s on the runs measured). The next wait step reports its result.
+        timeout-minutes: 1
+        run: .github/workflows/explain-analyze-background.sh begin restore .github/workflows/explain-analyze-restore-prepared-database.sh
+      - uses: ./.github/actions/start-valkey
+        timeout-minutes: 2
+      - uses: ./.github/actions/setup-backend
+        id: setup-backend
+        timeout-minutes: 5
+      - name: Wait for the prepared PostgreSQL database restore
         timeout-minutes: 3
-        run: |
-          docker run --rm --network host -i \
-            ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
-            pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
-            < "$RUNNER_TEMP/backend-postgres.dump"
+        run: .github/workflows/explain-analyze-background.sh finish restore
       - name: Check native RSS crawl tier snapshot and dispatch
         # It needs the unseeded database: its owned feeds must reach the bounded dispatch pages.
         # Its coverage joins the merged native LCOV through the main shard.
@@ -177,7 +178,7 @@ jobs:
           if-no-files-found: error
           # The archive is already zstd-compressed.
           compression-level: 0
-          retention-days: 1
+          retention-days: 7
       - name: Upload crawl tier check coverage
         timeout-minutes: 1
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -186,7 +187,7 @@ jobs:
           name: explain-seed-coverage-${{ github.run_id }}
           path: backend/scripts/explain-analyze/output/pruning-v8/
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
       - name: Upload seed diagnostics
         if: always()
         continue-on-error: true
@@ -198,7 +199,7 @@ jobs:
           path: |
             backend/scripts/explain-analyze/output/seed-resources.txt
             backend/scripts/explain-analyze/output/seed-posts.jsonl
-          retention-days: 1
+          retention-days: 7
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
@@ -217,7 +218,7 @@ jobs:
     needs: [seed-explain]
     if: ${{ !cancelled() && needs.seed-explain.result == 'success' }}
     runs-on: ubuntu-latest
-    # About 1.5 minutes of setup and data directory transfer plus a step of at most 10 minutes on
+    # About 1 minute of setup and data directory transfer plus a step of at most 10 minutes on
     # a slow runner; the partition and hn-scale shards fit the same cap (see their steps).
     timeout-minutes: 15
     strategy:
@@ -245,11 +246,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.checkout-2.outcome != 'success'
         timeout-minutes: 1
-      - uses: ./.github/actions/start-valkey
-        timeout-minutes: 2
-      - uses: ./.github/actions/setup-backend
-        id: setup-backend
-        timeout-minutes: 5
       - uses: ./.github/actions/download-artifact
         timeout-minutes: 3
         with:
@@ -258,12 +254,24 @@ jobs:
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           run-id: ${{ github.run_id }}
-      - name: Start PostgreSQL on the seeded data directory
+      - name: Start PostgreSQL on the seeded data directory in the background
         # A step container, not a service: services start before any step can supply the data.
-        timeout-minutes: 4
+        # Unpacking the data directory and starting PostgreSQL (about 28s) need nothing from the
+        # Node setup (about 28s), so they overlap it. The wait step below reports the result.
+        timeout-minutes: 1
         env:
           PG_IMAGE: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
-        run: .github/workflows/explain-analyze-seeded-data-directory.sh start
+        run: .github/workflows/explain-analyze-background.sh begin postgres .github/workflows/explain-analyze-seeded-data-directory.sh start
+      - uses: ./.github/actions/start-valkey
+        timeout-minutes: 2
+      - uses: ./.github/actions/setup-backend
+        id: setup-backend
+        timeout-minutes: 5
+      - name: Wait for PostgreSQL on the seeded data directory
+        timeout-minutes: 4
+        run: |
+          .github/workflows/explain-analyze-background.sh finish postgres
+          .github/workflows/explain-analyze-seeded-data-directory.sh export
       - name: Add crawl tier check coverage
         # The seed job ran the check against the unseeded database; one shard carries its coverage.
         if: ${{ matrix.shard == 'main' }}
@@ -333,7 +341,7 @@ jobs:
           overwrite: true
           name: explain-analyze-results-${{ matrix.shard }}
           path: backend/scripts/explain-analyze/output/
-          retention-days: 1
+          retention-days: 7
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
@@ -399,7 +407,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: backend-native-migrations
       - name: Upload full native migration LCOV (attempt 2)
@@ -407,7 +415,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: backend-native-migrations
           name-suffix: -retry
@@ -430,4 +438,4 @@ jobs:
           overwrite: true
           name: explain-analyze-results
           path: backend/scripts/explain-analyze/output/
-          retention-days: 1
+          retention-days: 7

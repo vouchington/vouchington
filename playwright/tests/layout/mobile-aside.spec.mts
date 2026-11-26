@@ -169,12 +169,12 @@ test.describe('Mobile aside behavior', () => {
     } as const
 
     for (const [name, viewport] of Object.entries(viewports)) {
-      test(`discussions page no horizontal scroll at ${name} (${viewport.width}px)`, async ({
-        page,
-      }) => {
-        await page.setViewportSize(viewport)
-        await navigateTo(page, '/discussions')
-        await assertNoHorizontalScroll(page)
+      test.describe(name, () => {
+        test('discussions page no horizontal scroll', async ({ page }) => {
+          await page.setViewportSize(viewport)
+          await navigateTo(page, '/discussions')
+          await assertNoHorizontalScroll(page)
+        })
       })
     }
 
@@ -182,12 +182,12 @@ test.describe('Mobile aside behavior', () => {
       test.use({ storageState: AUTH_STATE })
 
       for (const [name, viewport] of Object.entries(viewports)) {
-        test(`settings page no horizontal scroll at ${name} (${viewport.width}px)`, async ({
-          page,
-        }) => {
-          await page.setViewportSize(viewport)
-          await navigateTo(page, '/my/preferences')
-          await assertNoHorizontalScroll(page)
+        test.describe(name, () => {
+          test('settings page no horizontal scroll', async ({ page }) => {
+            await page.setViewportSize(viewport)
+            await navigateTo(page, '/my/preferences')
+            await assertNoHorizontalScroll(page)
+          })
         })
       }
     })

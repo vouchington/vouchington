@@ -1,11 +1,9 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
+import { runSequentially } from '@modules/utils/run-sequentially'
 import { getEntityRelationIntegrityTargetColumn } from '@services/entity-relations/metadata'
 import { addUserDeletionRelationEffects } from '@services/user-deletions/external-work'
 import type { EntityRelationVoteTarget } from './delete-entity-relation-votes.mts'
 import { getElectedRelationMetadata } from './relation-impact-targets.mts'
-
-/** Orphan GC can only race a pin when it commits between the insert and the pin; a few attempts suffice. */
-const MAX_RETAINED_IDENTITY_PIN_ATTEMPTS = 5
 
 /** The deleted vote tuple, not a pre-delete candidate, authorizes each retained relation identity. */
 export async function recordDeletedRelationImpacts(
@@ -14,29 +12,31 @@ export async function recordDeletedRelationImpacts(
   deleted: readonly EntityRelationVoteTarget[],
 ): Promise<void> {
   const byTable = new Map<string, EntityRelationVoteTarget[]>()
-  const rootPins = new Map<string, { family: string; id: string }>()
+  const rootsByFamily = new Map<string, Set<string>>()
   for (const target of deleted) {
     const metadata = getElectedRelationMetadata(target.relationTable)
-    rootPins.set(`${metadata.subject_type}:${target.subjectId}`, {
-      family: metadata.subject_type,
-      id: target.subjectId,
-    })
+    const roots = rootsByFamily.get(metadata.subject_type) ?? new Set<string>()
+    roots.add(target.subjectId)
+    rootsByFamily.set(metadata.subject_type, roots)
     const targets = byTable.get(target.relationTable) ?? []
     targets.push(target)
     byTable.set(target.relationTable, targets)
   }
-  const roots = [...rootPins.values()].toSorted(
-    (left, right) => left.family.localeCompare(right.family) || left.id.localeCompare(right.id),
+  await runSequentially(
+    [...rootsByFamily]
+      .toSorted(([left], [right]) => left.localeCompare(right))
+      .map(
+        ([family, ids]) =>
+          () =>
+            query(
+              `/* ensureDeletedRelationSubjectRoots */
+           INSERT INTO retained_${family}_identities (id)
+           SELECT id FROM UNNEST($1::uuid[]) AS root(id)
+           ORDER BY id ON CONFLICT (id) DO NOTHING`,
+              [[...ids]],
+            ),
+      ),
   )
-  // All concrete roots are pinned in one statement, in stable order, before dependent tuples.
-  if (roots.length > 0)
-    await query(
-      `/* pinDeletedRelationSubjectRoots */
-       SELECT fn_ensure_retained_identity(root.family::retained_identity_families, root.id)
-       FROM unnest($1::text[], $2::uuid[]) WITH ORDINALITY AS root(family, id, position)
-       ORDER BY root.position`,
-      [roots.map(root => root.family), roots.map(root => root.id)],
-    )
   for (const [relationTable, targets] of [...byTable].toSorted(([left], [right]) =>
     left.localeCompare(right),
   )) {
@@ -61,31 +61,13 @@ async function recordRelationTableImpacts(
   ]
   const subjects = unique.map(target => target.subjectId)
   const relations = unique.map(target => target.entityRelationId)
-  // A conflicting orphan may disappear between ON CONFLICT and the pin while the
-  // separate cleanup transaction runs. Retry until every target holds KEY SHARE.
-  let pinned = false
-  for (let attempt = 0; attempt < MAX_RETAINED_IDENTITY_PIN_ATTEMPTS && !pinned; attempt++) {
-    // oxlint-disable-next-line no-await-in-loop -- the retry closes the concurrent orphan-GC gap.
-    await query(
-      `/* ensureDeletedRelationIdentities */
-       INSERT INTO ${retained} (subject_id, id)
-       SELECT subject_id, relation_id FROM UNNEST($1::uuid[], $2::uuid[]) AS target(subject_id, relation_id)
-       ORDER BY subject_id, relation_id ON CONFLICT (subject_id, id) DO NOTHING`,
-      [subjects, relations],
-    )
-    // oxlint-disable-next-line no-await-in-loop -- all retained tuples must be pinned before dependent impacts.
-    const { rows } = await query<{ subject_id: string; id: string }>(
-      `/* pinDeletedRelationIdentities */
-       SELECT owner.subject_id, owner.id FROM ${retained} owner
-       JOIN UNNEST($1::uuid[], $2::uuid[]) AS target(subject_id, relation_id)
-         ON target.subject_id = owner.subject_id AND target.relation_id = owner.id
-       ORDER BY owner.subject_id, owner.id FOR KEY SHARE OF owner`,
-      [subjects, relations],
-    )
-    pinned = rows.length === unique.length
-  }
-  if (!pinned) throw new Error(`Deleted relation identities were not pinned for ${relationTable}`)
-
+  await query(
+    `/* ensureDeletedRelationIdentities */
+     INSERT INTO ${retained} (subject_id, id)
+     SELECT subject_id, relation_id FROM UNNEST($1::uuid[], $2::uuid[]) AS target(subject_id, relation_id)
+     ORDER BY subject_id, relation_id ON CONFLICT (subject_id, id) DO NOTHING`,
+    [subjects, relations],
+  )
   await query(
     `/* insertDeletedRelationImpacts */
      INSERT INTO user_deletion_relation_impacts (request_id, subject_id, ${column})

@@ -8,10 +8,7 @@ import type {
   SourceDecision,
   SourceRow,
 } from './story-post-related-url-projection-types.mts'
-import {
-  isStoryPostRelatedUrlProjectionWorkCurrent,
-  lockStoryPostRelatedUrlProjectionWork,
-} from './story-post-related-url-projection-work.mts'
+import { isStoryPostRelatedUrlProjectionWorkCurrent } from './story-post-related-url-projection-work.mts'
 
 export async function getStoryPostRelatedUrlProjectionPrefix(
   input: {
@@ -122,12 +119,8 @@ export async function stageStoryPostRelatedUrlProjectionReceipts(
   existingQuery?: TransactionQuery,
 ): Promise<boolean> {
   if (rows.length === 0) return isStoryPostRelatedUrlProjectionWorkCurrent(work, existingQuery)
-  if (existingQuery) {
-    if (!(await isStoryPostRelatedUrlProjectionWorkCurrent(work, existingQuery))) return false
-    return stageStoryPostRelatedUrlProjectionReceiptsOn(existingQuery, work, rows)
-  }
+  if (existingQuery) return stageStoryPostRelatedUrlProjectionReceiptsOn(existingQuery, work, rows)
   await using query = await beginTransaction()
-  if (!(await lockStoryPostRelatedUrlProjectionWork(query, work))) return false
   const staged = await stageStoryPostRelatedUrlProjectionReceiptsOn(query, work, rows)
   if (staged) await query.commit()
   return staged
@@ -144,6 +137,11 @@ async function stageStoryPostRelatedUrlProjectionReceiptsOn(
         (post_id, generation, url_id, source_item_id, is_eligible)
       SELECT $1::uuid AS post_id, $2::bigint AS generation, url_id, source_item_id, is_eligible
       FROM unnest($3::uuid[], $4::uuid[], $5::boolean[]) AS input(url_id, source_item_id, is_eligible)
+      WHERE EXISTS (
+        SELECT 1 FROM story_post_related_url_projection_jobs job
+        WHERE job.post_id = $1 AND job.generation = $2 AND job.lease_token = $6
+          AND job.lease_expires_at > clock_timestamp()
+      )
       ORDER BY post_id, generation, url_id
       ON CONFLICT (post_id, generation, url_id) DO NOTHING
       RETURNING url_id`,
@@ -153,9 +151,10 @@ async function stageStoryPostRelatedUrlProjectionReceiptsOn(
       sourceRowUrlIds(rows),
       sourceRowIds(rows),
       sourceRowEligibility(rows),
+      work.lease_token,
     ],
   )
-  return true
+  return isStoryPostRelatedUrlProjectionWorkCurrent(work, query)
 }
 
 function sourceRowUrlIds(rows: SourceRow[]): string[] {

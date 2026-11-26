@@ -9,7 +9,8 @@ import sql from 'sql-template-strings'
 import {
   observeTestAdvisoryLockNotice,
   observeTestTransactionLockNotice,
-} from './postgres-advisory-lock-notice.mts'
+} from 'vouchington-tooling/postgres-test-faults'
+import { testLockNoticeOptions } from './postgres-lock-notice-options.mts'
 import {
   observeTestPostgresLockQuery,
   type TestPostgresLockQuery,
@@ -97,8 +98,11 @@ export async function createTestPostgresLockWaiter(options: {
       const eligible = () => observation?.selectedPending === true
       observer =
         lock.kind === 'advisory'
-          ? observeTestAdvisoryLockNotice(client, lock.tag, eligible)
-          : observeTestTransactionLockNotice(client, lock.transactionId, eligible)
+          ? observeTestAdvisoryLockNotice(client, lock.tag, { ...testLockNoticeOptions, eligible })
+          : observeTestTransactionLockNotice(client, lock.transactionId, {
+              ...testLockNoticeOptions,
+              eligible,
+            })
       await observer.ready
       requireOpen()
       transaction = await beginTransaction({ client })

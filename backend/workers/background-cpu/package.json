@@ -19,7 +19,6 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
     "@queues/background-cpu": "workspace:^",
     "@queues/content-analysis": "workspace:^",
@@ -27,6 +26,7 @@
     "@services/images": "workspace:^",
     "@services/queue-domain-controls": "workspace:^",
     "@vouchington/queue-errors": "^0.2.1",
+    "@vouchington/utils": "^0.13.0",
     "@workers/ai-agents": "workspace:^",
     "@workers/bedrock-embeddings": "workspace:^",
     "@workers/bedrock-embeddings-batch": "workspace:^",
@@ -38,7 +38,7 @@
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-bedrock": "^3.1169.0",
+    "@aws-sdk/client-bedrock": "^3.1172.0",
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-core": "workspace:^",
     "@modules/aws": "workspace:^",

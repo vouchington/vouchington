@@ -1,26 +1,28 @@
 import { beginTransaction } from '@data-stores/psql'
 import { contentHash, seedUuidAtTimestamp } from './common.mts'
+import { captureFixtureInstant } from './parallel-fixture-load.mts'
 import {
   addUtcMonths,
   createCommentPartitions,
-  insertCommentRows,
+  loadCommentRows,
   logCommentFixturePhase,
   nextUtcMonthStart,
   partitionName,
   type CommentRow,
 } from './comment-descendant-partition-storage.mts'
+import {
+  ID_SERIAL_START,
+  buildBoundaryRows,
+  loadWideCommentTree,
+} from './comment-descendant-partition-tree.mts'
 
 const PARTITION_MONTHS = 24
 const BACKGROUND_COMMENT_COUNT = 100_000
 const LARGE_THREAD_HEAD_COUNT = 100
-const LARGE_THREAD_FAN_OUT = 3
-const LARGE_THREAD_DEPTH = 8
-export const BOUNDARY_PENDING_LEAF_COUNT = 500
 const HEAD_PAGE_ROOT_INDEX = 8_700_000
 const LARGE_THREAD_ROOT_INDEX = 8_700_001
 const BACKGROUND_ROOT_INDEX = 8_710_000
 const BOUNDARY_ROOT_INDEX = 8_710_001
-const ID_SERIAL_START = 8_800_000
 const INSERT_BATCH_SIZE = 5_000
 
 export interface CommentDescendantPartitionFixture {
@@ -67,16 +69,25 @@ export async function seedCommentDescendantPartitionFixture(): Promise<CommentDe
     ),
   )
   const hash = contentHash('comment-descendant-partition-fixture')
-  await using transaction = await beginTransaction()
-  await createCommentPartitions(transaction, months)
+  const instant = await captureFixtureInstant()
+  {
+    await using transaction = await beginTransaction()
+    await createCommentPartitions(transaction, months)
+    await transaction.commit()
+  }
   phaseStartedAt = logCommentFixturePhase('partitions', phaseStartedAt)
   const roots: CommentRow[] = [
-    { id: rootId, parentId: null, rootId: null },
-    { id: wideRootId, parentId: null, rootId: null },
-    { id: boundaryRootId, parentId: null, rootId: null },
-    ...backgroundRootIds.map((id): CommentRow => ({ id, parentId: null, rootId: null })),
+    { id: rootId, parentId: null, rootId: null, monthIndex: 0 },
+    { id: wideRootId, parentId: null, rootId: null, monthIndex: 0 },
+    { id: boundaryRootId, parentId: null, rootId: null, monthIndex: 0 },
+    ...backgroundRootIds.map((id, monthIndex): CommentRow => ({
+      id,
+      parentId: null,
+      rootId: null,
+      monthIndex,
+    })),
   ]
-  await insertCommentRows(transaction, roots, hash)
+  await loadCommentRows(roots, hash, instant)
 
   const pageHeads = pageHeadIds.map((id, index) => ({
     id,
@@ -90,76 +101,23 @@ export async function seedCommentDescendantPartitionFixture(): Promise<CommentDe
     rootId: wideRootId,
     monthIndex: index % PARTITION_MONTHS,
   }))
-  await insertCommentRows(transaction, [...pageHeads, ...wideHeads], hash)
-  let serial = ID_SERIAL_START + 10_000
-  let parents: CommentRow[] = wideHeads
-  let wideBoundaryParentId: string | null = wideHeadIds[0]!
-  const wideBoundaryPathIds = [wideHeadIds[0]!]
-  for (let depth = 2; depth <= LARGE_THREAD_DEPTH; depth++) {
-    const children: CommentRow[] = []
-    for (const parent of parents) {
-      const month = months[parent.monthIndex ?? 0]!
-      const timestamp = month + 2 * 60 * 60_000 + depth * 1_000
-      for (let childIndex = 0; childIndex < LARGE_THREAD_FAN_OUT; childIndex++) {
-        children.push({
-          id: seedUuidAtTimestamp(timestamp, serial++),
-          parentId: parent.id,
-          rootId: wideRootId,
-          monthIndex: parent.monthIndex,
-          approved:
-            depth === LARGE_THREAD_DEPTH || parent.id !== wideBoundaryParentId || childIndex !== 0,
-        })
-      }
-    }
-    const priorBoundaryParentId: string | null = wideBoundaryParentId
-    const nextBoundaryChild: CommentRow | undefined = children.find(
-      child => child.parentId === priorBoundaryParentId,
-    )
-    if (nextBoundaryChild) {
-      wideBoundaryPathIds.push(nextBoundaryChild.id)
-      wideBoundaryParentId = nextBoundaryChild.id
-    }
-    await insertCommentRows(transaction, children, hash)
-    parents = children
-  }
-  const boundaryRows: CommentRow[] = [
-    {
-      id: boundaryHeadId,
-      parentId: boundaryRootId,
-      rootId: boundaryRootId,
-      approved: false,
-    },
-  ]
-  let boundaryParentId = boundaryHeadId
-  const boundaryPathIds = [boundaryHeadId]
-  for (let depth = 2; depth <= LARGE_THREAD_DEPTH; depth++) {
-    const id = seedUuidAtTimestamp(
-      months[0]! + 3 * 60 * 60_000 + depth * 1_000,
-      ID_SERIAL_START + 3_000 + depth,
-    )
-    boundaryRows.push({
-      id,
-      parentId: boundaryParentId,
-      rootId: boundaryRootId,
-      approved: depth === LARGE_THREAD_DEPTH,
-    })
-    boundaryPathIds.push(id)
-    boundaryParentId = id
-  }
-  const boundaryPendingLeafIds = Array.from({ length: BOUNDARY_PENDING_LEAF_COUNT }, (_, index) =>
-    seedUuidAtTimestamp(months[0]! + 3 * 60 * 60_000 + 7_500, ID_SERIAL_START + 4_000 + index),
-  )
-  boundaryRows.push(
-    ...boundaryPendingLeafIds.map(id => ({
-      id,
-      parentId: boundaryPathIds[6]!,
-      rootId: boundaryRootId,
-      approved: false,
-    })),
-  )
-  await insertCommentRows(transaction, boundaryRows, hash)
+  await loadCommentRows([...pageHeads, ...wideHeads], hash, instant)
+  const { wideBoundaryPathIds } = await loadWideCommentTree({
+    months,
+    wideHeads,
+    wideRootId,
+    hash,
+    instant,
+  })
+  const { boundaryRows, boundaryPathIds, boundaryPendingLeafIds } = buildBoundaryRows({
+    months,
+    boundaryRootId,
+    boundaryHeadId,
+  })
+  await loadCommentRows(boundaryRows, hash, instant)
   phaseStartedAt = logCommentFixturePhase('wide tree and boundary rows', phaseStartedAt)
-  serial = ID_SERIAL_START + 2_000_000
+  let serial = ID_SERIAL_START + 2_000_000
+  const backgroundRows: CommentRow[] = []
   for (let monthIndex = 0; monthIndex < PARTITION_MONTHS; monthIndex++) {
     const month = months[monthIndex]!
     let remaining =
@@ -167,16 +125,14 @@ export async function seedCommentDescendantPartitionFixture(): Promise<CommentDe
       (monthIndex < BACKGROUND_COMMENT_COUNT % PARTITION_MONTHS ? 1 : 0)
     while (remaining > 0) {
       const batchCount = Math.min(remaining, INSERT_BATCH_SIZE)
-      const rows = backgroundCommentRows(month, backgroundRootIds[monthIndex]!, serial, batchCount)
-      // no-mistakes-disable-next-line query-reached-per-item: insert the 100,000-row background corpus in bounded 5,000-row batches
-      await insertCommentRows(transaction, rows, hash)
+      const root = backgroundRootIds[monthIndex]!
+      backgroundRows.push(...backgroundCommentRows(month, root, serial, batchCount, monthIndex))
       serial += batchCount
       remaining -= batchCount
     }
   }
-  phaseStartedAt = logCommentFixturePhase('background rows', phaseStartedAt)
-  await transaction.commit()
-  logCommentFixturePhase('commit', phaseStartedAt)
+  await loadCommentRows(backgroundRows, hash, instant)
+  logCommentFixturePhase('background rows', phaseStartedAt)
   return {
     pageRootId: rootId,
     pageHeadIds,
@@ -192,7 +148,18 @@ export async function seedCommentDescendantPartitionFixture(): Promise<CommentDe
   }
 }
 
-function backgroundCommentRows(at: number, root: string, from: number, count: number) {
+function backgroundCommentRows(
+  at: number,
+  root: string,
+  from: number,
+  count: number,
+  monthIndex: number,
+): CommentRow[] {
   const idAt = (i: number) => seedUuidAtTimestamp(at + 5 * 60 * 60_000, from + i)
-  return Array.from({ length: count }, (_, i) => ({ id: idAt(i), parentId: root, rootId: root }))
+  return Array.from({ length: count }, (_, i) => ({
+    id: idAt(i),
+    parentId: root,
+    rootId: root,
+    monthIndex,
+  }))
 }

@@ -146,33 +146,34 @@ test.describe('Post Detail Pages', () => {
     // Badge pills are TopicLabel anchors with data-pw='topic-label'
     await expect(page.getByTestId('topic-label').first()).toBeVisible()
 
-    // The old detailed star list used role='img' per topic row — must not exist.
-    // Using page.locator with a CSS selector (not a free-text matcher) is allowed by playwright-prefer-test-id.
-    await expect(page.locator('[role="img"][aria-label*="out of 5 stars"]')).toHaveCount(0)
+    // The old detailed star list used role='img' per topic row — must not exist, even hidden.
+    await expect(
+      page.getByRole('img', { name: /out of 5 stars/, includeHidden: true }),
+    ).toHaveCount(0)
   })
 
   for (const { type, segment, id } of POST_TYPE_CASES) {
-    test(`Posted by byline appears below content on ${type}`, async ({ page }) => {
-      await navigateTo(page, `/${segment}/${id}`)
+    test.describe(type, () => {
+      test('Posted by byline appears below content', async ({ page }) => {
+        await navigateTo(page, `/${segment}/${id}`)
 
-      const heading = page.getByTestId('post-detail-heading')
-      const byline = page.getByTestId('post-detail-byline').first()
-      await expect(heading).toBeVisible()
-      await expect(byline).toBeVisible()
+        const heading = page.getByTestId('post-detail-heading')
+        const byline = page.getByTestId('post-detail-byline').first()
+        await expect(heading).toBeVisible()
+        await expect(byline).toBeVisible()
 
-      const headingBox = await heading.boundingBox()
-      const bylineBox = await byline.boundingBox()
-      expect(headingBox).not.toBeNull()
-      expect(bylineBox).not.toBeNull()
-      expect(bylineBox!.y).toBeGreaterThanOrEqual(headingBox!.y + headingBox!.height)
-    })
-  }
+        const headingBox = await heading.boundingBox()
+        const bylineBox = await byline.boundingBox()
+        expect(headingBox).not.toBeNull()
+        expect(bylineBox).not.toBeNull()
+        expect(bylineBox!.y).toBeGreaterThanOrEqual(headingBox!.y + headingBox!.height)
+      })
 
-  for (const { type, segment, id } of POST_TYPE_CASES) {
-    test(`Manage Tags tab visible on ${type} for authenticated user`, async ({ page }) => {
-      await navigateTo(page, `/${segment}/${id}`)
+      test('Manage Tags tab visible for authenticated user', async ({ page }) => {
+        await navigateTo(page, `/${segment}/${id}`)
 
-      await expect(page.getByTestId('post-detail-tab-manage-tags')).toBeVisible()
+        await expect(page.getByTestId('post-detail-tab-manage-tags')).toBeVisible()
+      })
     })
   }
 

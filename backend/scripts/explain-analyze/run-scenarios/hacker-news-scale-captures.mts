@@ -1,5 +1,7 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import assert from 'node:assert/strict'
-import { explainAnalyze, read, type ExplainResult } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
+import { explainAnalyze } from '@voucha/test-helpers/explain-analyze'
 import { buildPostSearchQuery } from '@services/posts/search/query-builder'
 import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import { getHackerNewsUrlIdsByPostIds } from '@services/urls/hacker-news-post-urls'
@@ -124,12 +126,10 @@ export async function captureHackerNewsScaleReference(
   const modes = getExplainPlanCacheModes()
   for (const planCacheMode of modes) {
     const input = { text: reference.text, values: reference.values, planCacheMode }
-    // no-mistakes-disable-next-line query-reached-per-item: each of two fixed plan modes requires independently evicted statement buffers before its cold/warm diagnostic pair.
     await hackerNewsCachePreparation('cold', eviction => {
       context.observations.push({ scenario: prefix, reference: true, planCacheMode, eviction })
     })(input)
     for (const cache of ['cold', 'warm'] as const) {
-      // no-mistakes-disable-next-line query-reached-per-item: execute a fixed cold/warm pair in immediate succession; historical plans are evidence, not application or baseline exceptions.
       const result = await explainAnalyze(
         `${prefix}-${page.name}-join-${cache}`,
         reference.text,

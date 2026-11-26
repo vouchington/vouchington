@@ -2,6 +2,7 @@ import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.
 import { loginAsTestUser as loginAsAdmin } from '../../helpers/auth.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 import { seedTopicRecommendations } from '../../helpers/topic-recommendations.mts'
+import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 test.describe('Topic Recommendations page', () => {
   test.describe.configure({ mode: 'serial' })
@@ -148,7 +149,9 @@ test.describe('Topic Recommendations page', () => {
 
     // The pre-filled topic_title drives the similarity query (length > 3)
     // Panels should appear after the debounce fires and API responds
-    await expect(dialog.getByTestId('similarity-panels')).toBeVisible({ timeout: 5000 })
+    await expect(dialog.getByTestId('similarity-panels')).toBeVisible({
+      timeout: SHORT_WAIT_TIMEOUT_MS,
+    })
     await expect(dialog.getByText('Similar topics')).toBeVisible()
     await expect(dialog.getByText('Similar news')).toBeVisible()
     await expect(dialog.getByText('Similar posts')).toBeVisible()

@@ -4,6 +4,8 @@
  * running, is observable.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { mcpToolsWorkConfig } from '@services/mcp-work-config'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, suspendTestUser } from '@voucha/test-helpers'
 import {
@@ -213,6 +215,29 @@ describe('user MCP call audit', () => {
         expect(new Set(events.map(event => event.correlation_id))).toEqual(
           new Set([response.headers['x-correlation-id']]),
         )
+      })
+
+      it('applies a lowered audit budget before dispatch and retains single-message admission', async () => {
+        const restore = overrideDynamicConfigFieldsForTest(mcpToolsWorkConfig, {
+          max_audited_messages: 1,
+        })
+        try {
+          const { user, token } = await issueTestUserMcpCredential(kind, 'topics:read')
+          await postUserMcp(token, [
+            toolCall(READ_TOOL, { note: 'first' }, 1),
+            toolCall(READ_TOOL, { note: 'second' }, 2),
+          ]).expect(413)
+          expect(invoked).not.toHaveBeenCalled()
+          expect(await readTestMcpCallAuditEvents(user.id)).toEqual([
+            expect.objectContaining({ jsonrpc_method: null, outcome: 'invalid_request' }),
+          ])
+          await postUserMcp(token, [toolCall(READ_TOOL, { note: 'boundary' }, 3)]).expect(200)
+          expect(invoked).toHaveBeenCalledTimes(1)
+          await postUserMcp(token, toolCall(READ_TOOL, { note: 'single' }, 4)).expect(200)
+          expect(invoked).toHaveBeenCalledTimes(2)
+        } finally {
+          restore()
+        }
       })
 
       it('rejects an oversized batch with 413 and one audit row', async () => {

@@ -15,9 +15,9 @@ vi.mock<typeof import('vouchington-tooling/github-projects')>(
   () => githubProjects as unknown as typeof import('vouchington-tooling/github-projects'),
 )
 
-import type { ReferencedIssue } from '../closing-refs.mts'
+import type { ClosingIssueForAudit, ReferencedIssue } from 'vouchington-tooling/pr-description'
+
 import { createProjectAuditor } from '../project-audit.mts'
-import type { ClosingIssueForAudit } from '../validate.mts'
 
 const REPO = 'vouchington/vouchington'
 
@@ -27,6 +27,7 @@ function closingIssue(number: number, repo?: string): ClosingIssueForAudit {
   const issue: ReferencedIssue = {
     body: '',
     isPullRequest: false,
+    milestone: undefined,
     number,
     state: 'closed',
     title: `Issue ${number}`,

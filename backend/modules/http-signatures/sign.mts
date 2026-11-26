@@ -1,4 +1,4 @@
-import { buildSignatureHeaders as buildPlatformSignatureHeaders } from '@vouchington/utils/http-signatures'
+import { buildSignatureHeaders as buildPlatformSignatureHeaders } from '@vouchington/server-utils/http-signatures'
 
 export interface SignatureHeaders {
   digest: string

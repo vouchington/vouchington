@@ -153,15 +153,11 @@ FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_endpoint_owner_subscription();
 CREATE OR REPLACE FUNCTION fn_reject_notification_push_intent_conversation_mismatch() RETURNS TRIGGER AS $$
 DECLARE
   notification_conversation_id UUID;
-  entering_pending BOOLEAN;
   context_changed BOOLEAN;
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    entering_pending := TRUE;
     context_changed := TRUE;
   ELSE
-    entering_pending := OLD.delivered_at IS NOT NULL OR OLD.suppressed_at IS NOT NULL
-      OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id;
     context_changed := NEW.user_id IS DISTINCT FROM OLD.user_id
       OR NEW.notification_id IS DISTINCT FROM OLD.notification_id
       OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id;
@@ -172,11 +168,6 @@ BEGIN
     IF NEW.conversation_id IS DISTINCT FROM notification_conversation_id THEN
       RAISE EXCEPTION 'Push intent conversation must match its notification';
     END IF;
-  END IF;
-  IF entering_pending AND NEW.conversation_id IS NOT NULL
-    AND NEW.delivered_at IS NULL AND NEW.suppressed_at IS NULL THEN
-    -- Serialize new pending work with retention's FOR UPDATE parent lock.
-    PERFORM 1 FROM conversations WHERE id = NEW.conversation_id FOR KEY SHARE;
   END IF;
   RETURN NEW;
 END;
@@ -213,9 +204,27 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_notifications_capture_push_intent
-AFTER INSERT OR UPDATE OF id ON notifications
+CREATE TRIGGER trigger_notifications_capture_updated_push_intent
+AFTER UPDATE OF id ON notifications
 FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_project_capture_inserted_notification_push_intents() RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO notification_push_intents (user_id, notification_id, conversation_id)
+  SELECT user_id, id, conversation_id
+  FROM inserted_notifications
+  ORDER BY user_id, id
+  ON CONFLICT (user_id, notification_id) DO NOTHING;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TRIGGER trigger_notifications_capture_inserted_push_intents
+AFTER INSERT ON notifications
+REFERENCING NEW TABLE AS inserted_notifications
+FOR EACH STATEMENT EXECUTE FUNCTION fn_project_capture_inserted_notification_push_intents();
 
 CREATE TRIGGER trigger_assert_notification_conversation_immutable
 BEFORE UPDATE OF conversation_id ON notifications

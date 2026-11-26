@@ -18,6 +18,16 @@ export function ReportIntegrityFlagsTable(props: ReportIntegrityFlagsTableProps)
       fetchError={props.fetchError}
       clearError={props.clearError}
       resetKey={props.resetKey}
+      itemCount={props.flags.length}
+      emptyState={
+        <div className='p-12 text-center'>
+          <p className='text-muted-foreground'>
+            {t('extracted.flags.reportIntegrityFlagsTable.noStatusFlagsFound_b50a0a53', {
+              status: props.initialStatus !== 'all' ? props.initialStatus : '',
+            })}
+          </p>
+        </div>
+      }
     >
       <div className='overflow-hidden rounded-lg bg-card shadow-sm dark:shadow-none'>
         <div className='overflow-x-auto'>
@@ -34,15 +44,6 @@ export function ReportIntegrityFlagsTable(props: ReportIntegrityFlagsTableProps)
             </tbody>
           </table>
         </div>
-        {props.flags.length === 0 && (
-          <div className='p-12 text-center'>
-            <p className='text-muted-foreground'>
-              {t('extracted.flags.reportIntegrityFlagsTable.noStatusFlagsFound_b50a0a53', {
-                status: props.initialStatus !== 'all' ? props.initialStatus : '',
-              })}
-            </p>
-          </div>
-        )}
       </div>
     </InfiniteScroll>
   )

@@ -119,10 +119,10 @@ async function cleanupPageInTransaction(
     )
     cursor = (
       await query<Cursor>(
-        `/* lockNotificationEmailRetentionCursor */
+        `/* readNotificationEmailRetentionCursor */
        SELECT cursor_at::text AS cursor_at, cursor_notification_id, cursor_notification_partition_id, sweep_cutoff_at
        FROM notification_email_retention_cleanup_cursors
-       WHERE cleanup_name = $1 FOR UPDATE`,
+       WHERE cleanup_name = $1`,
         [name],
       )
     ).rows[0]

@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { HouseholdSectionView } from './household-section'
 import type { HouseholdMembership, HouseholdSection } from '@/types/my'
 import { getHouseholdMembershipsClient, removeHouseholdMembership } from '@/lib/api/client'
@@ -95,8 +94,6 @@ export function HouseholdSectionController({ initialSection, sharedCount, shared
     }
   }
 
-  const handleLoadMore = pagination.loadMore
-
   async function removeMembership(membership: HouseholdMembership) {
     const requestKey = `${householdId}:${membership.id}`
     if (removeInFlight.current.has(requestKey)) return
@@ -127,30 +124,29 @@ export function HouseholdSectionController({ initialSection, sharedCount, shared
   }
 
   return (
-    <InfiniteScroll
-      hasNextPage={!initialLoadError && pagination.hasNextPage}
-      endCursor={pagination.endCursor}
-      onLoadMore={handleLoadMore}
-      loadingMore={pagination.loadingMore}
-      fetchError={pagination.fetchError}
-      clearError={pagination.clearError}
-      resetKey={pagination.resetKey}
-    >
-      <HouseholdSectionView
-        section={section}
-        sharedCount={sharedCount}
-        sharedIndex={sharedIndex}
-        retrying={retryingInitial}
-        confirmingKey={confirmingKey}
-        onRetry={() => {
-          void retryInitialPage()
-        }}
-        onRequestRemove={setConfirmingKey}
-        onCancelRemove={() => setConfirmingKey(null)}
-        onConfirmRemove={(_candidate, membership) => {
-          void removeMembership(membership)
-        }}
-      />
-    </InfiniteScroll>
+    <HouseholdSectionView
+      pagination={{
+        hasNextPage: !initialLoadError && pagination.hasNextPage,
+        endCursor: pagination.endCursor,
+        onLoadMore: pagination.loadMore,
+        loadingMore: pagination.loadingMore,
+        fetchError: pagination.fetchError,
+        clearError: pagination.clearError,
+        resetKey: pagination.resetKey,
+      }}
+      section={section}
+      sharedCount={sharedCount}
+      sharedIndex={sharedIndex}
+      retrying={retryingInitial}
+      confirmingKey={confirmingKey}
+      onRetry={() => {
+        void retryInitialPage()
+      }}
+      onRequestRemove={setConfirmingKey}
+      onCancelRemove={() => setConfirmingKey(null)}
+      onConfirmRemove={(_candidate, membership) => {
+        void removeMembership(membership)
+      }}
+    />
   )
 }

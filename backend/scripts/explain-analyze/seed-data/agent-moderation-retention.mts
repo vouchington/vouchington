@@ -102,11 +102,11 @@ export async function restoreAgentModerationRetentionPages(): Promise<void> {
   const newMs = anchorMs - 100 * DAY_MS
   const bulkStartMs = oldMs - 5 * 60_000 + 100
   await insertModerationRows(oldMs, newMs, bulkStartMs, RESTORE_PAGE_POSTS)
-  // A captured page can leave an existing source blocked. Re-arm only this finite
-  // fixture window so every replay measures an actual due-page deletion.
-  const postIds = Array.from({ length: RESTORE_PAGE_POSTS }, (_, index) =>
-    seedUuid(100 + index, '05'),
-  )
+  // Re-arm blocked fixture rows for due-page replays and preserve settled keepers.
+  const postIds = [
+    ...Array.from({ length: 41 }, (_, index) => seedUuid(index, '05')),
+    ...Array.from({ length: RESTORE_PAGE_POSTS }, (_, index) => seedUuid(100 + index, '05')),
+  ]
   await write(
     `/* restoreAgentModerationRetentionDuePages */
      UPDATE agent_moderations
@@ -114,6 +114,7 @@ export async function restoreAgentModerationRetentionPages(): Promise<void> {
          retention_blocked_reason = NULL
      WHERE post_id = ANY($1::uuid[])
        AND id < $2::uuid
+       AND retention_blocked_reason IS DISTINCT FROM 'newest'
        AND (retention_due_at IS NULL OR retention_blocked_reason IS NOT NULL)`,
     [postIds, seedUuidAtTimestamp(newMs, 0)],
   )
@@ -185,7 +186,6 @@ async function seedReleasedCommunityNoise(day: string, occurredAt: Date): Promis
   )
   for (let start = 0; start < communityIds.length; start += BATCH_SIZE) {
     const batch = communityIds.slice(start, start + BATCH_SIZE)
-    // no-mistakes-disable-next-line query-reached-per-item: fixed rollup noise is inserted in bounded batches below PostgreSQL bind limits
     await write(
       `/* seedAgentModerationRetentionReleasedNoise */
        INSERT INTO moderation_transparency_released_daily_rollups

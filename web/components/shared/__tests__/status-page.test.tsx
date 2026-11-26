@@ -42,7 +42,7 @@ describe('StatusPage', () => {
       }),
     )
 
-    const homeLink = screen.getByRole('link', { name: /home/i })
+    const homeLink = screen.getByRole('link', { name: /\bhome\b/i })
     const topicsLink = screen.getByRole('link', { name: /topics/i })
     const discussionsLink = screen.getByRole('link', { name: /discussions/i })
     const reviewsLink = screen.getByRole('link', { name: /reviews/i })

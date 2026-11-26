@@ -1,5 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
 
 /**
  * Restarts projections for the posts of stories whose assigned RSS URL changed.
@@ -10,23 +9,43 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
   query: TransactionQuery,
   storyIds: readonly string[],
 ): Promise<boolean> {
-  const uniqueStoryIds = [...new Set(storyIds)]
-  if (uniqueStoryIds.length === 0) return false
-
-  const postIds = await lockStoriesAndFindStoryPostIds(query, uniqueStoryIds)
-  if (postIds.length === 0) return false
+  if (storyIds.length === 0) return false
 
   const { rows } = await query<{ post_id: string }>(
     `/* markStoryPostRelatedUrlProjectionsForStories */
-      WITH post_stories AS (
-        SELECT post_story.post_id, post_story.story_id
-        FROM story_posts post_story
-        JOIN posts ON posts.id = post_story.post_id
-        WHERE post_story.story_id = ANY($1::uuid[])
-          AND posts.deleted_at IS NULL
-      ), high_waters AS (
-        SELECT post_stories.post_id, post_stories.story_id,
-          (
+      INSERT INTO story_post_related_url_projection_jobs (post_id, story_id)
+      SELECT post_story.post_id, post_story.story_id
+      FROM story_posts post_story
+      JOIN posts ON posts.id = post_story.post_id
+      WHERE post_story.story_id = ANY($1::uuid[])
+        AND posts.deleted_at IS NULL
+      ORDER BY post_story.post_id
+      ON CONFLICT (post_id) DO UPDATE
+      SET story_id = EXCLUDED.story_id,
+          generation = story_post_related_url_projection_jobs.generation + 1,
+          source_completed_at = NULL,
+          lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
+      RETURNING post_id`,
+    [storyIds],
+  )
+  if (rows.length === 0) return false
+  await refreshStoryPostRelatedUrlProjectionSources(
+    query,
+    rows.map(row => row.post_id),
+  )
+  return true
+}
+
+/** Capture the committed source prefix after the caller has restarted these jobs in this transaction. */
+export async function refreshStoryPostRelatedUrlProjectionSources(
+  query: TransactionQuery,
+  postIds: readonly string[],
+): Promise<{ sweep_upper_bound_source_id: string | null }[]> {
+  // A restart can wait for another membership write. Read its committed changes in a fresh snapshot.
+  const { rows } = await query<{ sweep_upper_bound_source_id: string | null }>(
+    `/* refreshStoryPostRelatedUrlProjectionSources */
+      UPDATE story_post_related_url_projection_jobs post_stories
+      SET sweep_upper_bound_source_id = (
             SELECT rss_feed_items.id
             -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
             FROM rss_feed_items
@@ -34,28 +53,13 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
               AND rss_feed_items.deleted_at IS NULL
             ORDER BY rss_feed_items.id DESC
             LIMIT 1
-          ) AS sweep_upper_bound_source_id
-        FROM post_stories
-      ), marked AS (
-        INSERT INTO story_post_related_url_projection_jobs
-          (post_id, story_id, sweep_upper_bound_source_id)
-        SELECT post_id, story_id, sweep_upper_bound_source_id
-        FROM high_waters
-        ORDER BY post_id
-        ON CONFLICT (post_id) DO UPDATE
-        SET story_id = EXCLUDED.story_id,
-            generation = story_post_related_url_projection_jobs.generation + 1,
-            sweep_upper_bound_source_id = EXCLUDED.sweep_upper_bound_source_id,
-            source_completed_at = NULL,
-            lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
-        RETURNING post_id
       )
-      SELECT post_id FROM marked`,
-    [uniqueStoryIds],
+      WHERE post_stories.post_id = ANY($1::uuid[])
+      RETURNING post_stories.sweep_upper_bound_source_id`,
+    [postIds],
   )
-  if (rows.length === 0) return false
   await query(
-    `/* markStoryPostRelatedUrlProjectionsForStories:transferMutations */
+    `/* refreshStoryPostRelatedUrlProjectionSources:transferMutations */
       INSERT INTO story_post_related_url_projection_relation_mutations
         (post_id, generation, relation_id)
       SELECT work.post_id, work.generation, mutation.relation_id
@@ -66,31 +70,7 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
       WHERE work.post_id = ANY($1::uuid[])
       ORDER BY work.post_id, work.generation, mutation.relation_id
       ON CONFLICT (post_id, generation, relation_id) DO NOTHING`,
-    [markedPostIds(rows)],
+    [postIds],
   )
-  return true
-}
-
-async function lockStoriesAndFindStoryPostIds(
-  query: TransactionQuery,
-  storyIds: readonly string[],
-): Promise<string[]> {
-  await lockStoryLifecycles(query, storyIds)
-  const { rows: postRows } = await query<{ post_id: string }>(
-    `/* markStoryPostRelatedUrlProjectionsForStories:posts */
-      SELECT post_story.post_id
-      FROM story_posts post_story
-      JOIN posts ON posts.id = post_story.post_id
-      WHERE post_story.story_id = ANY($1::uuid[])
-        AND posts.deleted_at IS NULL
-      ORDER BY post_story.post_id`,
-    [storyIds],
-  )
-  return markedPostIds(postRows)
-}
-
-function markedPostIds(rows: Array<{ post_id: string }>): string[] {
-  const postIds: string[] = []
-  for (const row of rows) postIds.push(row.post_id)
-  return postIds
+  return rows
 }

@@ -41,7 +41,8 @@
     "@services/users": "workspace:^",
     "@valkey/valkey-glide": "^2.6.0",
     "@voucha/config": "workspace:^",
-    "@vouchington/postgres": "^0.6.1",
+    "@vouchington/oauth-server": "^0.9.0",
+    "@vouchington/postgres": "^0.6.2",
     "http-errors": "^2.0.1",
     "uuid": "^14.0.3",
     "valkyries": "^0.15.0"

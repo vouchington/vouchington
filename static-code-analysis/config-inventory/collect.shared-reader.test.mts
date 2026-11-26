@@ -260,8 +260,7 @@ process.env.NEXT_PUBLIC_FIXTURE`,
     for (const missing of Object.keys(files).filter(
       path => !path.endsWith('/environment-variables.md'),
     )) {
-      const finite = { ...files }
-      delete finite[missing as keyof typeof finite]
+      const finite = Object.fromEntries(Object.entries(files).filter(([path]) => path !== missing))
       const negative = await makeRepoFixture(finite)
       testDirs.push(negative.dir)
       const result = await collectConfigInventory(negative.ctx)

@@ -18,6 +18,7 @@ export async function linkTopicAlias(
 ): Promise<TopicAlias> {
   let previousTopicId: string | null = null
   const run = async (query: TransactionQuery) => {
+    // lock-reason: prevents: a topic/alias lock-order deadlock between fn_project_topic_aliases and a slug or hostname change; writer: updateTopic
     const { rows: topicRows } = await query<{ id: string; merged_into_topic_id: string | null }>(
       `/* linkTopicAlias lockTopic */
       SELECT id, merged_into_topic_id
@@ -31,26 +32,28 @@ export async function linkTopicAlias(
     assert(topic, 404, 'Topic not found')
     assert(!topic.merged_into_topic_id, 409, 'Cannot add aliases to a merged topic')
     const { rows: aliasRows } = await query<{
-      topic_id: string | null
       unlink_requested_at: Date | null
     }>(
-      `/* linkTopicAlias lockAlias */
-      SELECT topic_id, unlink_requested_at
+      `/* linkTopicAlias getAlias */
+      SELECT unlink_requested_at
       FROM topic_aliases
-      WHERE id = $1
-      FOR UPDATE`,
+      WHERE id = $1`,
       [aliasId],
     )
     const existingAlias = aliasRows[0]
     assert(existingAlias, 404, 'Topic alias not found')
     assert(!existingAlias.unlink_requested_at, 409, 'Topic alias unlink is in progress')
-    previousTopicId = existingAlias.topic_id
-    const { rows } = await query<TopicAlias>(
+    const { rows } = await query<TopicAlias & { previous_topic_id: string | null }>(
       `/* linkTopicAlias */
       UPDATE topic_aliases
       SET topic_id = $1
       WHERE id = $2
         AND unlink_requested_at IS NULL
+        AND EXISTS (
+          SELECT 1 FROM topics destination
+          WHERE destination.id = $1
+            AND destination.deleted_at IS NULL AND destination.merged_into_topic_id IS NULL
+        )
         AND (
           topic_id IS NULL
           OR topic_id = $1
@@ -62,12 +65,14 @@ export async function linkTopicAlias(
               AND active_owner.merged_into_topic_id IS NULL
           )
         )
-      RETURNING id, topic_id, alias
+      RETURNING WITH (OLD AS prior) id, topic_id, alias, prior.topic_id AS previous_topic_id
     `,
       [topicId, aliasId],
     )
-    const alias = rows[0]
-    assert(alias, 409, 'Topic alias is linked to another topic')
+    const row = rows[0]
+    assert(row, 409, 'Topic alias is linked to another topic')
+    const { previous_topic_id, ...alias } = row
+    previousTopicId = previous_topic_id
     if (previousTopicId !== topicId) {
       await recordTopicAliasPublicationChanges(query, [
         { aliasId: alias.id, alias: alias.alias, previousTopicId, nextTopicId: topicId },

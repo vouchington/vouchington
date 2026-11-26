@@ -36,6 +36,56 @@ export function IntegrityPenaltiesTable<P extends IntegrityPenaltyRecord>(
     if (props.domain === 'vote' || column[0] !== 'multiplier') visible.push(column)
     return visible
   }, [])
+  const list = (
+    <AdminTableShell
+      aria-label={
+        props.domain === 'report'
+          ? t('extracted.flags.integrityPenalties.reportTitle_6f7f2d01')
+          : t('extracted.flags.integrityPenalties.voteTitle_3a621e8c')
+      }
+      isEmpty={props.state.penalties.length === 0}
+      emptyMessage={t('extracted.flags.integrityPenalties.noPenalties_02b8865c')}
+    >
+      <table className='w-full'>
+        <thead className='border-b bg-muted/50'>
+          <tr>
+            {columns.map(([key, messageKey]) => (
+              <th
+                key={key}
+                scope='col'
+                className='px-4 py-3 text-left text-sm font-medium text-foreground'
+              >
+                {t(messageKey)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className='divide-y'>
+          {props.state.penalties.map(penalty => (
+            <IntegrityPenaltyRow
+              key={penalty.id}
+              domain={props.domain}
+              initialStatus={props.initialStatus}
+              multiplier={props.multiplier(penalty)}
+              penalty={penalty}
+              reconciliationTestId={
+                props.domain === 'vote'
+                  ? 'vote-integrity-penalty-reconciliation'
+                  : 'report-integrity-penalty-reconciliation'
+              }
+              revokeTestId={
+                props.domain === 'vote'
+                  ? 'vote-integrity-penalty-revoke'
+                  : 'report-integrity-penalty-revoke'
+              }
+              state={props.state}
+            />
+          ))}
+        </tbody>
+      </table>
+    </AdminTableShell>
+  )
+
   return (
     <InfiniteScroll
       hasNextPage={
@@ -47,54 +97,10 @@ export function IntegrityPenaltiesTable<P extends IntegrityPenaltyRecord>(
       endCursor={props.state.endCursor}
       onLoadMore={handleLoadMore}
       resetKey={props.state.pages[0]}
+      itemCount={props.state.penalties.length}
+      emptyState={list}
     >
-      <AdminTableShell
-        aria-label={
-          props.domain === 'report'
-            ? t('extracted.flags.integrityPenalties.reportTitle_6f7f2d01')
-            : t('extracted.flags.integrityPenalties.voteTitle_3a621e8c')
-        }
-        isEmpty={props.state.penalties.length === 0}
-        emptyMessage={t('extracted.flags.integrityPenalties.noPenalties_02b8865c')}
-      >
-        <table className='w-full'>
-          <thead className='border-b bg-muted/50'>
-            <tr>
-              {columns.map(([key, messageKey]) => (
-                <th
-                  key={key}
-                  scope='col'
-                  className='px-4 py-3 text-left text-sm font-medium text-foreground'
-                >
-                  {t(messageKey)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className='divide-y'>
-            {props.state.penalties.map(penalty => (
-              <IntegrityPenaltyRow
-                key={penalty.id}
-                domain={props.domain}
-                initialStatus={props.initialStatus}
-                multiplier={props.multiplier(penalty)}
-                penalty={penalty}
-                reconciliationTestId={
-                  props.domain === 'vote'
-                    ? 'vote-integrity-penalty-reconciliation'
-                    : 'report-integrity-penalty-reconciliation'
-                }
-                revokeTestId={
-                  props.domain === 'vote'
-                    ? 'vote-integrity-penalty-revoke'
-                    : 'report-integrity-penalty-revoke'
-                }
-                state={props.state}
-              />
-            ))}
-          </tbody>
-        </table>
-      </AdminTableShell>
+      {list}
     </InfiniteScroll>
   )
 }

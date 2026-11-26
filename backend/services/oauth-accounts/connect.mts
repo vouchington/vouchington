@@ -49,12 +49,6 @@ export async function connectOAuthAccountToActiveUser(
   const { query, userId } = activeUser
   const config = providerTableConfigs[provider]
   const hasFriends = provider === 'facebook' || provider === 'github' || provider === 'x'
-  if (hasFriends) {
-    await query(
-      `/* lockOAuthFriendTargetConnection */ SELECT fn_lock_oauth_friend_targets($1::text, ARRAY[$2::text], TRUE)`,
-      [provider, providerUserId],
-    )
-  }
   const { rows, rowCount } = await query<{ id: string; provider_user_id: string }>(
     `/* connectOAuthAccountToUser */
      WITH connected_account AS (
@@ -99,7 +93,8 @@ export async function lockOAuthAccountConnectionUser(
   query: TransactionQuery,
   userId: string,
 ): Promise<LockedOAuthAccountConnectionUser> {
-  // `FOR NO KEY UPDATE` on the users row: it is written in this transaction, and deletion waits for it.
+  // lock-reason: prevents: attaching OAuth credentials after account erasure starts; writer: account deletion.
+  // This transaction also writes users, so it acquires the write mode before changing credentials.
   try {
     await query(
       '/* lockOAuthAccountConnectionUser */ SELECT fn_lock_active_user_for_mutation($1, TRUE)',

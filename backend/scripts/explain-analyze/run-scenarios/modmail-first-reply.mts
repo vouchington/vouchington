@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { extractQueryName, getCapturedQueries, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
+import { extractQueryName, getCapturedQueries } from '@voucha/test-helpers/explain-analyze'
 import { openModmailThread } from '@services/modmail/threads'
 import { loadModmailReplyAccess, replyToModmailThread } from '@services/modmail/member-actions'
 import { getPrivateUserByAny } from '@services/users/get'

@@ -7,7 +7,7 @@ export async function deleteAgentModerationRetentionPage(
   page: readonly Candidate[],
   upperBoundId: string,
   upperBoundDueAt: string,
-): Promise<number> {
+): Promise<{ deleted: number; checkNewest: boolean }> {
   const { rows: deletedRows } = await query<{ id: string; post_id: string }>(
     `/* deleteObsoleteAgentModerations */
      WITH page AS (
@@ -17,6 +17,7 @@ export async function deleteAgentModerationRetentionPage(
      WHERE moderation.id = page.id AND moderation.post_id = page.post_id
        AND moderation.id < $3::uuid
        AND moderation.retention_due_at <= $4::timestamptz
+       AND moderation.retention_blocked_reason IS NULL
        -- Scalar probes stay correlated single-row index lookups; EXISTS would drop the LIMIT
        -- and flatten into a join once the read-context lock is gone.
        AND (
@@ -62,18 +63,22 @@ export async function deleteAgentModerationRetentionPage(
      RETURNING moderation.id, moderation.post_id`,
     [page.map(row => row.id), page.map(row => row.post_id), upperBoundId, upperBoundDueAt],
   )
-  // Every surviving page member has a durable blocker. A matching lifecycle event wakes it;
-  // an unchanged daily run never selects it again. The daily transparency release has already frozen
+  // Recheck apparent keepers after this transaction commits, when a concurrent successor
+  // that missed the predecessor wake can be visible. The daily transparency release has frozen
   // disclosable cohorts from these sources, so this delete only drains the rest privately.
   // A post edit committing before this transaction's blocker is visible cannot register hash
   // work, so each new hash blocker publishes its post's work item in this same transaction; the
   // next run rechecks it against the committed hash once, then stays quiet.
-  await query(
+  const {
+    rows: [pending],
+  } = await query<{ check_newest: boolean }>(
     `/* blockAgentModerationRetentionCandidates */
      WITH blocked AS (
      UPDATE agent_moderations moderation
-     SET retention_due_at = NULL,
-         retention_blocked_reason = CASE
+     SET (retention_due_at, retention_blocked_reason) = (
+         SELECT CASE WHEN blocker.reason = 'check_newest' THEN moderation.retention_due_at END,
+                blocker.reason::agent_moderation_retention_block_reasons
+         FROM (SELECT CASE
            WHEN EXISTS (
              SELECT 1 FROM moderation_training_feedbacks feedback
              WHERE feedback.post_id = moderation.post_id AND feedback.agent_moderation_id = moderation.id
@@ -92,11 +97,13 @@ export async function deleteAgentModerationRetentionPage(
              WHERE post.id = moderation.post_id
                AND post.llm_moderation_content_sha256 = moderation.input_sha256
            ) THEN 'hash'
-           ELSE 'newest'
-         END::agent_moderation_retention_block_reasons
+           ELSE 'check_newest'
+         END AS reason) blocker
+     )
      FROM unnest($1::uuid[], $2::uuid[]) AS page(id, post_id)
      WHERE moderation.id = page.id AND moderation.post_id = page.post_id
        AND moderation.retention_due_at IS NOT NULL
+       AND moderation.retention_blocked_reason IS NULL
        -- Without the post lock, a hash change can commit between the delete and this publish.
        -- A row that no longer has any blocker stays due so the next run deletes it, rather
        -- than being frozen as 'newest' with an unwakeable blocker.
@@ -133,14 +140,18 @@ export async function deleteAgentModerationRetentionPage(
          )
        )
      RETURNING moderation.post_id, moderation.retention_blocked_reason
-     )
+     ), hash_work AS (
      INSERT INTO agent_moderation_retention_post_work_items (post_id)
      SELECT DISTINCT post_id FROM blocked WHERE retention_blocked_reason = 'hash'
      ORDER BY post_id ASC NULLS LAST
      ON CONFLICT (post_id) DO UPDATE
        SET cursor_moderation_record_id = '00000000-0000-0000-0000-000000000000',
-           changed_at = CURRENT_TIMESTAMP`,
+           changed_at = CURRENT_TIMESTAMP
+     )
+     SELECT EXISTS (
+       SELECT 1 FROM blocked WHERE retention_blocked_reason = 'check_newest'
+     ) AS check_newest`,
     [page.map(row => row.id), page.map(row => row.post_id)],
   )
-  return deletedRows.length
+  return { deleted: deletedRows.length, checkNewest: pending.check_newest }
 }

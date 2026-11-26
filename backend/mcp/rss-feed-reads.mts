@@ -1,10 +1,10 @@
+import { searchParamsMaxValues } from '@services/search-params/config'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import { getRssFeedByIdCached } from '@services/entity-fetch'
 import type { ViewRssFeed } from '@services/rss-feeds/types'
 import { buildRssFeedsPage, decodeRssFeedsCursor, searchRssFeeds } from '@services/rss-feeds'
 import {
-  MAX_TOPIC_SEARCH_TERMS,
   prepareRssFeedsSearchParams,
   resolveRssFeedsSearchParams,
   RSS_FEED_SORTS,
@@ -17,7 +17,7 @@ import { resolvedTopicFilters } from './resolve-topic.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, EMPTY_PAGE_INFO } from './paged-search.mts'
 import { mcpRssFeedSchema, toMcpRssFeeds, type McpRssFeed } from './mcp-rss-output.mts'
 import { pageInfoSchema, type McpPage } from './mcp-read-output.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type ListArgs = {
@@ -66,7 +66,7 @@ export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
         topic_match: { type: 'string', enum: ['any', 'all'] },
         topics: {
           type: 'array',
-          maxItems: MAX_TOPIC_SEARCH_TERMS,
+          maxItems: searchParamsMaxValues.max_topic_search_terms,
           items: topicReferenceSchema,
           description: 'Up to five topic/#hashtag terms.',
         },
@@ -93,7 +93,7 @@ export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
     requiredScopes: ['rss-feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feeds' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       results: { type: 'array', items: mcpRssFeedSchema() },
       page_info: pageInfoSchema(),
     }),
@@ -162,7 +162,7 @@ export const getRssFeedTool: MergedToolSource<DetailArgs, DetailResult> = {
     requiredScopes: ['rss-feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feeds/:id' }],
-    outputSchema: foundOrNotFoundSchema({ rss_feed: mcpRssFeedSchema() }),
+    outputSchema: outcomeSchema('success', { rss_feed: mcpRssFeedSchema() }),
   },
   function:
     (_currentUser: BasicUser) =>

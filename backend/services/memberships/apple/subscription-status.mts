@@ -10,6 +10,7 @@ import type {
   AppleRenewalInfoVerifier,
   AppleTransactionVerifier,
 } from './types.mts'
+import { toAppleEnvironment } from './environment.mts'
 import type { AppleSubscriptionStatusClient } from './history.mts'
 
 export { type AppleSubscriptionStatusClient } from './history.mts'
@@ -152,8 +153,4 @@ function toDate(value: number | undefined): Date | null {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
     ? new Date(value)
     : null
-}
-
-function toAppleEnvironment(environment: AppleMembershipProviderEnvironment): Environment {
-  return environment === 'test' ? Environment.SANDBOX : Environment.PRODUCTION
 }

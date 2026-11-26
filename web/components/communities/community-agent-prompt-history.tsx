@@ -10,6 +10,8 @@ import {
 import onError from '@/lib/on-error'
 import { useState, useTransition } from 'react'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { formatUtcDateTime } from '@ts-shared/utils/format'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { getUserLabel } from '@/lib/users/user-helpers'
 
 interface Props {
@@ -17,11 +19,6 @@ interface Props {
   initialNextCursor: string | null
   communitySlug: string
 }
-
-const DATE_TIME_FORMAT = new Intl.DateTimeFormat(undefined, {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-})
 
 const ACTION_COLORS: Record<CommunityAgentPromptHistoryEntry['action'], string> = {
   created: 'text-green-600 bg-green-50',
@@ -38,13 +35,14 @@ export function CommunityAgentPromptHistory({
   communitySlug,
 }: Props) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   const [extraEntries, setExtraEntries] = useState<CommunityAgentPromptHistoryEntry[]>([])
-  const [loadMoreCursor, setLoadMoreCursor] = useState<string | null>(null)
+  const [loadMoreCursor, setLoadMoreCursor] = useState<string | null>()
   const [loadMoreError, setLoadMoreError] = useState<Error | null>(null)
   const [isLoading, startLoading] = useTransition()
 
   const entries = [...initialEntries, ...extraEntries]
-  const currentCursor = extraEntries.length === 0 ? initialNextCursor : loadMoreCursor
+  const currentCursor = loadMoreCursor === undefined ? initialNextCursor : loadMoreCursor
 
   function handleLoadMore() {
     if (!currentCursor) return
@@ -76,9 +74,12 @@ export function CommunityAgentPromptHistory({
       </CardHeader>
       <CardContent>
         {entries.length === 0 ? (
-          <p className='text-sm text-muted-foreground'>
-            {t('extracted.communities.communityAgentPromptHistory.noChangesRecorded_fc21a407')}
-          </p>
+          !currentCursor &&
+          !loadMoreError && (
+            <p className='text-sm text-muted-foreground'>
+              {t('extracted.communities.communityAgentPromptHistory.noChangesRecorded_fc21a407')}
+            </p>
+          )
         ) : (
           <div className='space-y-3'>
             {entries.map(entry => (
@@ -98,11 +99,8 @@ export function CommunityAgentPromptHistory({
                       {getUserLabel(entry.changed_by, t('shared.user.deletedUser'))}
                     </span>
                   </span>
-                  <time
-                    className='text-muted-foreground'
-                    suppressHydrationWarning
-                  >
-                    {DATE_TIME_FORMAT.format(new Date(entry.created_at))}
+                  <time className='text-muted-foreground'>
+                    {formatUtcDateTime(entry.created_at, uiLocale)}
                   </time>
                 </div>
                 <div className='mt-3'>

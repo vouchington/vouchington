@@ -1,13 +1,7 @@
+import { createBotTierClassifier } from '@vouchington/edge'
 import { isbot } from 'isbot'
 
 export type BotTier = 'known' | 'unknown'
-
-export function isVerifiedBotRequest(request: Request): boolean {
-  return (
-    (request as Request & { cf?: { botManagement?: { verifiedBot?: boolean } } }).cf?.botManagement
-      ?.verifiedBot === true
-  )
-}
 
 // Substrings that identify known, useful bots.
 // Any case-insensitive match against the User-Agent string means 'known'.
@@ -47,17 +41,9 @@ const KNOWN_BOT_UA_SUBSTRINGS: string[] = [
   'BetterUptime',
 ]
 
-// Returns the tier if isbot() detected a bot, or null for humans. Known-bot
-// treatment requires a trusted platform signal; UA substrings alone are spoofable.
-export const getBotTier = (
-  userAgent: string | null,
-  options: { verifiedBot?: boolean } = {},
-): BotTier | null => {
-  if (!userAgent || !isbot(userAgent)) {
-    return null
-  }
-
-  const ua = userAgent.toLowerCase()
-  const isKnown = KNOWN_BOT_UA_SUBSTRINGS.some(substring => ua.includes(substring.toLowerCase()))
-  return isKnown && options.verifiedBot === true ? 'known' : 'unknown'
-}
+export const getBotTier = createBotTierClassifier<'known', 'unknown'>({
+  isBot: isbot,
+  knownUserAgentSubstrings: KNOWN_BOT_UA_SUBSTRINGS,
+  knownTier: 'known',
+  unknownTier: 'unknown',
+})

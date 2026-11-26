@@ -28,7 +28,8 @@
     "@services/urls": "workspace:^",
     "@services/urls-domains-robots": "workspace:^",
     "@voucha/config": "workspace:^",
-    "@vouchington/sentry": "^0.6.0",
+    "@vouchington/browser-crawl": "^0.0.1",
+    "@vouchington/sentry": "^0.7.0",
     "ssrf-guard": "^1.0.0"
   },
   "devDependencies": {

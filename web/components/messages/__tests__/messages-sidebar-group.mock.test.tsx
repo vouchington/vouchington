@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, waitFor, fireEvent, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { setupInfiniteScrollObserverHarness } from '@/test-helpers/infinite-scroll-observer-harness'
 
 const mockUseAuth = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock(import('@/lib/auth/context'), () => ({ useAuth: mockUseAuth }))
@@ -72,6 +73,9 @@ import '@/test-helpers/components/messages/messages-sidebar-group.mock-support'
 import { MessagesSidebarGroup } from '../messages-sidebar-group'
 
 describe('MessagesSidebarGroup', () => {
+  const { rafCallbacks, flushRaf, triggerIntersection, triggerScroll } =
+    setupInfiniteScrollObserverHarness()
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockUseAuth.mockReturnValue({ isAuthenticated: true })
@@ -187,25 +191,50 @@ describe('MessagesSidebarGroup', () => {
   })
 
   it('uses the same continuation action for automatic and manual loading', async () => {
-    mockGetMyMessages
-      .mockResolvedValueOnce({
-        results: [makeConversation('c1')],
-        page_info: makePageInfo(true, 'cursor-1'),
-      })
-      .mockResolvedValueOnce({
-        results: [makeConversation('c2')],
-        page_info: makePageInfo(true, 'cursor-2'),
-      })
-      .mockResolvedValueOnce({
-        results: [makeConversation('c3')],
-        page_info: makePageInfo(),
-      })
+    const pages = new Map([
+      [
+        undefined,
+        {
+          results: [makeConversation('c1', 'First chat')],
+          page_info: makePageInfo(true, 'cursor-1'),
+        },
+      ],
+      [
+        'cursor-1',
+        {
+          results: [makeConversation('c2', 'Second chat')],
+          page_info: makePageInfo(true, 'cursor-2'),
+        },
+      ],
+      [
+        'cursor-2',
+        {
+          results: [makeConversation('c3', 'Third chat')],
+          page_info: makePageInfo(),
+        },
+      ],
+    ])
+    mockGetMyMessages.mockImplementation(async (cursor?: string) => {
+      const page = pages.get(cursor)
+      if (!page) throw new Error(`Unexpected messages cursor: ${cursor}`)
+      return page
+    })
 
-    const { getByText } = renderWithProvider()
-    await waitFor(() => expect(getByText('Auto load')).toBeDefined())
-    fireEvent.click(getByText('Auto load'))
-    await waitFor(() => expect(mockGetMyMessages).toHaveBeenCalledWith('cursor-1'))
-    fireEvent.click(getByText('Load more'))
-    await waitFor(() => expect(mockGetMyMessages).toHaveBeenCalledWith('cursor-2'))
+    const { getByRole, getByText } = renderWithProvider()
+    // The footer can render before the effect registers the sentinel's observer.
+    await waitFor(() => expect(rafCallbacks.size).toBeGreaterThan(0))
+    await act(async () => {
+      flushRaf()
+      triggerScroll()
+      triggerIntersection(true)
+    })
+    expect(mockGetMyMessages).toHaveBeenNthCalledWith(2, 'cursor-1')
+    expect(getByText('Second chat')).toBeDefined()
+
+    await act(async () => {
+      fireEvent.click(getByRole('button', { name: 'Load more' }))
+    })
+    expect(mockGetMyMessages).toHaveBeenNthCalledWith(3, 'cursor-2')
+    expect(getByText('Third chat')).toBeDefined()
   })
 })

@@ -51,21 +51,16 @@ vi.mock(import('@/components/posts/post-card'), () => ({
 // Use mockReceiveLoadMore.mock.calls.at(-1)![0] as () => Promise<void> after rendering.
 export const mockReceiveLoadMore = vi.fn<VitestLooseMock>()
 
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({
-    children,
-    onLoadMore,
-  }: {
-    children: ReactNode
-    hasNextPage: boolean
-    endCursor: string | null
-    onLoadMore: () => Promise<void | boolean>
-    resetKey?: unknown
-  }) => {
-    mockReceiveLoadMore(onLoadMore)
-    return <div>{children}</div>
-  },
-}))
+vi.mock(import('@/components/shared/infinite-scroll'), async importOriginal => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    InfiniteScroll: (props: Parameters<typeof actual.InfiniteScroll>[0]) => {
+      mockReceiveLoadMore(props.onLoadMore)
+      return <actual.InfiniteScroll {...props} />
+    },
+  }
+})
 
 vi.mock(import('@/lib/api/client'), () => ({
   getPaginatedPage: vi.fn<VitestLooseMock>(),

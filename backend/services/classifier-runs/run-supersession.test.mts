@@ -16,6 +16,7 @@ import {
   reserveSyntheticRun,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { setTestPostClearanceStatus } from '@voucha/test-helpers/entities/post-clearance'
+import { raceClassifierSupersessionWithCompletion } from '@voucha/test-helpers/data-stores/psql/classifier-runs/supersession-completion-race'
 import { describe, expect, it } from 'vitest'
 import { listPendingClassifierRunRequests } from './run-discovery.mts'
 import { completeClassifierRun } from './run-completion.mts'
@@ -87,6 +88,39 @@ describe('classifier run supersession (real PG)', () => {
     })
     const [request] = await getClassifierRunRequestFacts(setup.post.id, setup.slug)
     expect(request).toMatchObject({ run_identity_id: run.runId, run_settled_at: expect.any(Date) })
+  })
+
+  it('preserves a concurrent completion when the subject becomes unavailable', async () => {
+    const setup = await createSyntheticFixture()
+    await requestSyntheticRun(setup)
+    const { run, lease } = await leaseSyntheticRun(setup)
+    expect(await persistClassifierRunOutcomes(setup.adapter, { lease })).toBe('persisted')
+
+    const [completion, supersession] = await raceClassifierSupersessionWithCompletion({
+      runId: run.runId,
+      complete: () => completeClassifierRun(setup.adapter, lease),
+      makeCurrentUnavailable: async () => {
+        await setTestPostClearanceStatus(setup.post.id, 'pending')
+      },
+      supersede: () => supersedeStaleClassifierRun(setup.adapter, target(run)),
+    })
+
+    expect(completion.kind).toBe('completed')
+    expect(supersession).toBeNull()
+    const facts = await getClassifierRunFacts(setup.post.id, setup.slug)
+    expect(facts).toHaveLength(1)
+    expect(facts[0]).toMatchObject({
+      id: run.runId,
+      completed_at: expect.any(Date),
+      superseded_at: null,
+    })
+    const requests = await getClassifierRunRequestFacts(setup.post.id, setup.slug)
+    expect(requests).toHaveLength(1)
+    expect(requests[0]).toMatchObject({
+      run_identity_id: run.runId,
+      run_settled_at: expect.any(Date),
+      stale_at: null,
+    })
   })
 
   it('supersedes a run for revised content and reserves the replacement in one step', async () => {

@@ -5,7 +5,7 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
 import { discardAwsResponseBody, S3ImagesClient } from '@modules/aws'
-import { isAwsThrottlingError, wrapHttpForRetry } from '@modules/queue-errors'
+import { wrapHttpForRetry } from '@modules/queue-errors'
 import type { Readable } from 'node:stream'
 import {
   SES_INBOUND_FAILED_PREFIX,
@@ -181,7 +181,6 @@ function getCopyrightEvidenceBucket(): string {
 
 // Preserve Smithy's retryable 400s after SDK retries; the generic wrapper sees only status.
 function wrapS3HttpForRetry(error: unknown): never {
-  if (isAwsThrottlingError(error)) return wrapHttpForRetry(error)
   const candidate = error as {
     name?: unknown
     $retryable?: unknown

@@ -17,12 +17,12 @@ import { getSystemUserByUsername, upsertSystemUser } from '@services/users/syste
 import { isPublicHostname } from '@modules/utils/urls'
 import type { ProviderGate, WebRiskState } from './state.mts'
 import { isWebRiskEnabled } from './config.mts'
+import type { WebRiskLookupResult } from '@vouchington/utils/web-risk'
 import {
   checkWebRiskUrl,
+  getWebRiskApiKey,
   hasWebRiskApiKey,
   SHORT_FAILURE_COOLDOWN_SECONDS,
-  WebRiskRateLimitError,
-  type WebRiskThreat,
 } from './provider.mts'
 
 type PrecomputedHostnamePolicies = ReadonlyMap<string, HostnamePolicy>
@@ -64,26 +64,24 @@ export async function decideWebRiskUrl(
   if (policy.is_blocked) {
     throw createHttpError(400, `Domain is blocked: ${parsed.hostname}`)
   }
-  if (!isWebRiskEnabled() || !hasWebRiskApiKey()) return false
+  const apiKey = getWebRiskApiKey()
+  if (!isWebRiskEnabled() || !apiKey) return false
   if (policy.should_skip_web_risk) return false
   if (gate.cleanCached || gate.coolingDown) return false
   if (await state.isLocallyRateLimited()) return false
 
-  let threat: WebRiskThreat | null
-  try {
-    threat = await checkWebRiskUrl(parsed, state, options.signal)
-  } catch (err) {
-    if (options.signal?.aborted) throw err
-    if (err instanceof WebRiskRateLimitError) {
-      onError(err)
-      return true
-    }
-    await state.setProviderCooldown(SHORT_FAILURE_COOLDOWN_SECONDS)
-    onError(err instanceof Error ? err : new Error(String(err)))
+  // A caller abort is rethrown by the client; every provider failure fails open with a cooldown.
+  const threat = await checkWebRiskUrl(parsed, apiKey, options.signal)
+  if (threat.status === 'error') {
+    const { failure } = threat
+    await (failure.kind === 'rate-limited'
+      ? state.setProviderCooldownFromRetryAfter(failure.retryAfterMs)
+      : state.setProviderCooldown(SHORT_FAILURE_COOLDOWN_SECONDS))
+    onError(new Error(failure.message, { cause: failure.cause }))
     return true
   }
 
-  if (!threat) {
+  if (threat.status === 'clean') {
     await state.cacheCleanVerdict(parsed)
     return false
   }
@@ -172,7 +170,7 @@ export async function blockedUrlsFromWebRiskScreenWithState(
 async function blockWebRiskDomain(
   hostname: string,
   checkedUrl: string,
-  threat: WebRiskThreat,
+  threat: Extract<WebRiskLookupResult, { status: 'threat' }>,
 ): Promise<void> {
   const systemUser = (await getSystemUserByUsername('system')) ?? (await upsertSystemUser('system'))
   const hostnameMap = await upsertUrlHostnames(systemUser.id, [hostname])
@@ -182,7 +180,7 @@ async function blockWebRiskDomain(
     blockedSource: 'google_web_risk',
     penalizeCreators: false,
     webRiskCheckedUrl: checkedUrl,
-    webRiskThreatTypes: threat.threatTypes,
+    webRiskThreatTypes: [...threat.threatTypes],
     webRiskExpireAt: threat.expireTime,
   })
 }

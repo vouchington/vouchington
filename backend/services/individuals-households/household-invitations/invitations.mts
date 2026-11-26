@@ -54,7 +54,7 @@ export async function createHouseholdInvitation(
   await using transaction = await beginTransaction()
   const options = { query: transaction }
   // Read the household. This transaction writes household_invitations, so it does not lock
-  // the household row. See docs/development/postgresql/reference-transactions.md#lock-scope.
+  // the household row. See the vouchington-postgres skill (lock scope).
   const access = await readHouseholdMemberManageAccess(currentUser, householdId, null, options)
   assertManageAccess(access)
   const ownerUserId = access.ownerUserId

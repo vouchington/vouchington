@@ -1,6 +1,11 @@
 import { randomBytes } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { beginTransaction, createTestUser, insertTestUrlHostname } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestUser,
+  getTestPenaltiesByHostnameId,
+  insertTestUrlHostname,
+} from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { blockHostname } from './block-hostname.mts'
 import {
@@ -13,7 +18,7 @@ import { lockHostnameBlockSubdomainCandidatePage } from './lock-subdomain-candid
 import { insertVoteWeightPenalty } from '@services/vote-integrity/insert-vote-weight-penalty'
 
 describe('hostname block lock ordering', () => {
-  it('lets a root-lock owner advance and insert penalty provenance while a repeat waits', async () => {
+  it('preserves the root and penalty provenance during repeat admission', async () => {
     const [administrator, creator] = await Promise.all([
       createTestUser({ administrator: true }),
       createTestUser({ username: `hostname-lock-creator-${randomToken()}` }),
@@ -29,16 +34,16 @@ describe('hostname block lock ordering', () => {
     expect(operation).not.toBeNull()
 
     await using blockTransaction = await beginTransaction()
-    const rootLockDispatched = Promise.withResolvers<void>()
+    const hostnameUpdateDispatched = Promise.withResolvers<void>()
     const barrieredBlockQuery = queryProxy(blockTransaction, statement => {
-      if (statement.includes('/* ensureHostnameBlockCleanupOperation:findExisting */')) {
-        rootLockDispatched.resolve()
+      if (statement.includes('/* blockHostname_introduceTarget */')) {
+        hostnameUpdateDispatched.resolve()
       }
     })
     const repeatedBlock = blockHostname(administrator.id, hostnameId, {
       query: barrieredBlockQuery,
     })
-    await rootLockDispatched.promise
+    await hostnameUpdateDispatched.promise
 
     await expect(
       advanceHostnameBlockCleanupProgress(cleanupTransaction, admission.operation_id, 0),
@@ -58,9 +63,10 @@ describe('hostname block lock ordering', () => {
 
     await expect(repeatedBlock).resolves.toEqual(admission)
     await blockTransaction.commit()
+    await expect(getTestPenaltiesByHostnameId(hostnameId)).resolves.toHaveLength(1)
   })
 
-  it('locks projected children before the cleanup root used by a concurrent child block', async () => {
+  it('preserves cleanup ownership when a direct child block overlaps projection', async () => {
     const administrator = await createTestUser({ administrator: true })
     const rootHostname = randomHostname('child-order')
     const [rootId, childId] = await Promise.all([
@@ -89,14 +95,14 @@ describe('hostname block lock ordering', () => {
     expect(candidates.map(candidate => candidate.id)).toContain(childId)
 
     await using childTransaction = await beginTransaction()
-    const childLockDispatched = Promise.withResolvers<void>()
+    const childUpdateDispatched = Promise.withResolvers<void>()
     const barrieredChildQuery = queryProxy(childTransaction, statement => {
-      if (statement.includes('/* blockHostname_lockAndGetHostname */')) {
-        childLockDispatched.resolve()
+      if (statement.includes('/* blockHostname_introduceTarget */')) {
+        childUpdateDispatched.resolve()
       }
     })
     const childBlock = blockHostname(administrator.id, childId, { query: barrieredChildQuery })
-    await childLockDispatched.promise
+    await childUpdateDispatched.promise
 
     await expect(
       lockHostnameBlockCleanupOperation(projectionTransaction, admission.operation_id),

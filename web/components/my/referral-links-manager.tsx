@@ -153,6 +153,24 @@ export function ReferralLinksManager({ initialLinks, initialPageInfo, hasPlusTie
     }
   }
 
+  const list = (
+    <ReferralLinkGroups
+      confirmingDeleteId={confirmingDeleteId}
+      editLabel={editLabel}
+      editingId={editingId}
+      groups={groups}
+      hasPlusTier={hasPlusTier}
+      loadingIds={loadingIds}
+      onDelete={handleDelete}
+      onSaveLabel={handleSaveLabel}
+      onToggleActive={handleToggleActive}
+      onUnfurl={handleUnfurl}
+      setConfirmingDeleteId={setConfirmingDeleteId}
+      setEditLabel={setEditLabel}
+      setEditingId={setEditingId}
+    />
+  )
+
   return (
     <div className='space-y-4'>
       <InfiniteScroll
@@ -163,22 +181,10 @@ export function ReferralLinksManager({ initialLinks, initialPageInfo, hasPlusTie
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
+        itemCount={groups.length}
+        emptyState={list}
       >
-        <ReferralLinkGroups
-          confirmingDeleteId={confirmingDeleteId}
-          editLabel={editLabel}
-          editingId={editingId}
-          groups={groups}
-          hasPlusTier={hasPlusTier}
-          loadingIds={loadingIds}
-          onDelete={handleDelete}
-          onSaveLabel={handleSaveLabel}
-          onToggleActive={handleToggleActive}
-          onUnfurl={handleUnfurl}
-          setConfirmingDeleteId={setConfirmingDeleteId}
-          setEditLabel={setEditLabel}
-          setEditingId={setEditingId}
-        />
+        {list}
       </InfiniteScroll>
 
       <AddReferralLink

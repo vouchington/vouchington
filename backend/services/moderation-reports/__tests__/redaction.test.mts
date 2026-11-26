@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { acquireReportPaginationTestLock } from '@voucha/test-helpers/report-pagination-lock'
-import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { getMinUuidv7ForDate } from '@vouchington/uuid-v7'
 import {
   createTestUser,
   deleteTestPost,
@@ -153,7 +153,7 @@ describe('moderation-reports/redaction', () => {
       const options = {
         limit: 1000,
         sort: 'created_at_desc' as const,
-        beforeCursor: { id: timestampToUuidv7LowerBound(createdAt.getTime() + 1) },
+        beforeCursor: { id: getMinUuidv7ForDate(new Date(createdAt.getTime() + 1)) },
       }
       const staff = await listModerationReports(options)
       const member = await listRedactedModerationReports(options)

@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 2 # the baseline check diffs a pull request against HEAD^1
         timeout-minutes: 3
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -91,7 +91,7 @@ jobs:
         run: pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json
         timeout-minutes: 2
       - name: Install CI tools via mise
-        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+        uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
         # Keep mise-action's implicit cache disabled under the hosted CI cache policy.
         with:
           cache: false
@@ -180,12 +180,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.checkout-2.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
       - name: Install CI tools via mise
-        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+        uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
         # Keep mise-action's implicit cache disabled under the hosted CI cache policy.
         with:
           cache: false

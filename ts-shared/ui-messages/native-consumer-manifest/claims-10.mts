@@ -83,7 +83,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_10 = [
   { key: 'native.swift.chat.chooseLocalModel', consumers: ['swift'] },
   { key: 'native.swift.chat.conversationTitle', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.chat.enterLocalResponsesEndpoint', consumers: ['swift'] },
-  { key: 'native.swift.chat.generateTitle', consumers: ['swift'] },
+  { key: 'native.swift.chat.generateTitle', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.chat.local', consumers: ['swift'] },
   { key: 'native.swift.chat.localModelSettingsOff', consumers: ['swift'] },
   { key: 'native.swift.chat.localModelsUnavailablePlatform', consumers: ['swift'] },

@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes, processedRows } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult, processedRows } from '@vouchington/explain-plan'
 
 /** Generic plans must keep the ordered pending-evidence page independent of other providers. */
 export function assertAppleNotificationRecoveryPlan(result: ExplainResult): void {

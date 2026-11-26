@@ -19,7 +19,7 @@ import {
 } from '@queues/psql/config'
 import type { PsqlJob } from '@queues/psql/types'
 import { createWorker } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { getWorkerConcurrency } from '@vouchington/utils/worker-concurrency'
 import processPsql from './processors.mts'
 import { processModerationRetentionCleanup } from './processors/moderation-retention.mts'
 import { createAIRetentionContinuationProcessor } from './processors/retention-continuation.mts'

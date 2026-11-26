@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
-    "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/topic-labels": "workspace:^",
@@ -32,7 +31,8 @@
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/domain-verification": "^0.0.0",
-    "@vouchington/pagination": "^0.0.4",
+    "@vouchington/http-transport": "^0.1.2",
+    "@vouchington/pagination": "^0.0.5",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",
     "ssrf-guard": "^1.0.0"

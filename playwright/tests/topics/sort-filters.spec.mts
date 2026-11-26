@@ -95,7 +95,7 @@ test.describe('Topic sort filters', () => {
       .filter({ hasText: `Playwright Best ${unique}` })
       .allTextContents()
 
-    expect(headings.slice(0, 3)).toEqual([
+    expect(headings.slice(0, 3)).toStrictEqual([
       `Playwright Best ${unique} Alpha`,
       `Playwright Best ${unique} Beta`,
       `Playwright Best ${unique} Gamma`,

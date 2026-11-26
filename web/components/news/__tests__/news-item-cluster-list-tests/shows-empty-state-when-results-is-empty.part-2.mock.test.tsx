@@ -20,18 +20,6 @@ vi.mock(
     }) as unknown as typeof import('next/navigation'),
 )
 
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({
-    children,
-  }: {
-    children: React.ReactNode
-    hasNextPage: boolean
-    endCursor: string | null
-    onLoadMore: () => Promise<void | boolean>
-    resetKey?: unknown
-  }) => <div>{children}</div>,
-}))
-
 vi.mock(import('@/lib/api/client'), () => ({
   getPaginatedPage: vi.fn<VitestLooseMock>(),
 }))

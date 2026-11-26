@@ -1,5 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult } from '@vouchington/explain-plan'
 
 /** Relocated original unit plan obligations, with the original realistic fixture scale. */
 export function assertDispatchWorkPlan(

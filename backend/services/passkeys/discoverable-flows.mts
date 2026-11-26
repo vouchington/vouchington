@@ -1,6 +1,6 @@
 import createHttpError from 'http-errors'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import { getPasskeyByCredentialIdForUpdate } from './get.mts'
+import { getPasskeyByCredentialId } from './get.mts'
 import { AuthError } from '@vouchington/auth'
 import { passkeyProtocol } from './protocol.mts'
 import { toPasskeyAuthenticationOptions } from './options.mts'
@@ -91,6 +91,7 @@ async function readAdmittedPasskey(
   credentialId: string,
   query: TransactionQuery,
 ) {
+  // lock-reason: prevents: admitting a passkey session after erasure starts; writer: account deletion and passkey removal.
   await query(
     '/* admitDiscoverablePasskeyLogin:userFence */ SELECT fn_lock_active_user_for_mutation($1)',
     [verification.userId],
@@ -98,9 +99,9 @@ async function readAdmittedPasskey(
   await query('/* admitDiscoverablePasskeyLogin:userRow */ SELECT id FROM users WHERE id = $1', [
     verification.userId,
   ])
-  return getPasskeyByCredentialIdForUpdate(query, credentialId, {
-    currentUserId: verification.userId,
-    passkeyId: verification.passkeyId,
+  return getPasskeyByCredentialId(credentialId, {
+    query,
+    owner: { currentUserId: verification.userId, passkeyId: verification.passkeyId },
   })
 }
 

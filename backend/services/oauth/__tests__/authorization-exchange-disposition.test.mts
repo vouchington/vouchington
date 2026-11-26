@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { v7 as uuidv7 } from 'uuid'
 import { createTestUserWithId, createTestUsername } from '@voucha/test-helpers/entities/users'
 import {
@@ -11,7 +12,10 @@ import {
   getTestOAuthAuthorization,
   insertTestOAuthAuthorization,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
-import { claimOAuthAuthorizationExchange } from '../authorization-exchange-state.mts'
+import {
+  claimOAuthAuthorizationExchange,
+  releaseOAuthAuthorizationExchangeClaim,
+} from '../authorization-exchange-state.mts'
 import { settleOAuthAuthorizationExchangeClaim } from '../authorization-exchange-disposition.mts'
 
 describe('OAuth recorded claim temporal disposition', () => {
@@ -37,6 +41,44 @@ describe('OAuth recorded claim temporal disposition', () => {
       exchange_claim_id: null,
       callback_code_ciphertext: null,
       completion_token_ciphertext: null,
+    })
+  })
+
+  it('cannot settle a successor claim after observing its predecessor', async () => {
+    const claimId = randomUUID()
+    const authorizationId = await insertTestOAuthAuthorization({
+      provider: 'github',
+      status: 'exchanging',
+      exchangeClaimId: claimId,
+      exchangeAttempts: 1,
+      callbackReceivedAt: new Date(),
+      callbackCodeCiphertext: 'owned-callback-code',
+    })
+    onTestFinished(() =>
+      deleteTestOAuthAuthorizationFixtures({ authorizationIds: [authorizationId] }),
+    )
+    let successorId: string | undefined
+    onTestFinished(
+      runBeforePostgresStatementForTest(
+        'settleOAuthAuthorizationExchangeClaim:dispose',
+        async () => {
+          await releaseOAuthAuthorizationExchangeClaim(authorizationId, claimId)
+          const successor = await claimOAuthAuthorizationExchange(authorizationId)
+          successorId = successor?.exchange_claim_id
+          expect(successorId).toBeTypeOf('string')
+          expect(successorId).not.toBe(claimId)
+        },
+      ),
+    )
+
+    await expect(
+      settleOAuthAuthorizationExchangeClaim(authorizationId, claimId, true),
+    ).rejects.toThrow('Owned OAuth exchange disposition did not update exactly one authorization')
+    expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
+      status: 'exchanging',
+      exchange_claim_id: successorId,
+      callback_code_ciphertext: 'owned-callback-code',
+      callback_error: null,
     })
   })
 

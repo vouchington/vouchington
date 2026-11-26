@@ -56,17 +56,25 @@ export async function onVerificationSessionCanceled(
   if (!sessionId) return
 
   await using transaction = await beginTransaction()
-  const { rows } = await transaction(sql`/* onVerificationSessionCanceled */
+  // Redacted sessions can omit metadata. The consumed attempt records the owner.
+  const {
+    rows: [user],
+  } = await transaction<{ id: string }>(sql`/* onVerificationSessionCanceled */
       UPDATE users
       SET verification_status = 'unverified',
           verification_provider = NULL,
           pending_verification_session_id = NULL,
           pending_checkout_session_id = NULL
-      WHERE deleted_at IS NULL
+      WHERE id = (
+        SELECT user_id
+        FROM identity_verification_attempts
+        WHERE provider_session_id = ${sessionId}
+      )
+        AND deleted_at IS NULL
         AND verification_status = 'identity_pending'
         AND pending_verification_session_id = ${sessionId}
       RETURNING id
     `)
   await transaction.commit()
-  await Promise.all((rows as { id: string }[]).map(row => invalidate.users(row.id)))
+  if (user) await invalidate.users(user.id)
 }

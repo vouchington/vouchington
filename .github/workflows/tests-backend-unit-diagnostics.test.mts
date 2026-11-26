@@ -51,11 +51,12 @@ describe('backend-unit console filter', () => {
     runScript.indexOf('console_filter() {'),
     runScript.indexOf('| console_filter\n') + '| console_filter'.length,
   )
-  const fakeVitest = `{ printf '%s\\n' '${profileLine}' '${failure}' '${workerLine}'; exit 3; }`
-  const script = `set -o pipefail\n${pipeline.replace(/pnpm exec [^\n]*?--shard "\$CI_SHARD"/u, fakeVitest)}`
+  const script = `set -e -o pipefail
+node() { printf '3\\n'; }
+pnpm() { printf '%s\\n' '${profileLine}' '${failure}' '${workerLine}'; return 3; }
+${pipeline}`
 
   it('keeps profile lines in the collector file, off the console, and preserves the exit status', () => {
-    expect(script).toContain(fakeVitest)
     for (const diagnostics of ['0', '1']) {
       const dir = mkdtempSync(path.join(tmpdir(), 'console-filter-'))
       try {
@@ -65,6 +66,7 @@ describe('backend-unit console filter', () => {
           env: { ...process.env, VITEST_DIAGNOSTICS: diagnostics },
         })
         expect(result.status).toBe(3)
+        expect(result.stderr).toBe('')
         expect(readFileSync(path.join(dir, 'backend-unit-output.log'), 'utf8')).toBe(
           `${profileLine}\n${failure}\n${workerLine}\n`,
         )

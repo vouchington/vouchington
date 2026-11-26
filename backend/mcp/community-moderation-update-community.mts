@@ -40,7 +40,7 @@ export const updateCommunitySettings: CommunityModerationHandler = async (user, 
       : null
   }
 
-  let updated = community
+  let updated: typeof community
   if (archive !== undefined && hasUpdateFields) {
     updated = await updateCommunityAndSetArchiveState(
       user,

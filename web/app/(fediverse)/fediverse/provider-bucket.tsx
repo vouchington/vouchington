@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ExternalLinkIcon } from 'lucide-react'
 import { appendUtm, isHttpHref, OUTBOUND_UTM } from '@/lib/url/utm'
+import { ThirdPartyText } from '@/components/shared/third-party-text'
 import type { FediverseProvider, FediverseSearchBucket } from '@/types/fediverse-search'
 
 export function ProviderBucket({ bucket }: { bucket: FediverseSearchBucket }) {
@@ -30,17 +31,28 @@ export function ProviderBucket({ bucket }: { bucket: FediverseSearchBucket }) {
                     target='_blank'
                     rel='noreferrer'
                   >
-                    {item.title}
+                    <ThirdPartyText
+                      as='span'
+                      text={item.title}
+                    />
                     <ExternalLinkIcon className='size-3.5' />
                   </Link>
                 ) : (
-                  <span className='font-medium'>{item.title}</span>
+                  <ThirdPartyText
+                    as='span'
+                    className='font-medium'
+                    text={item.title}
+                  />
                 )}
                 <div className='mt-1 text-xs text-muted-foreground'>
                   {item.result_type} · {item.source_hostname}
                 </div>
                 {item.summary ? (
-                  <p className='mt-2 text-sm text-muted-foreground'>{item.summary}</p>
+                  <ThirdPartyText
+                    as='p'
+                    className='mt-2 text-sm text-muted-foreground'
+                    text={item.summary}
+                  />
                 ) : null}
               </article>
             )

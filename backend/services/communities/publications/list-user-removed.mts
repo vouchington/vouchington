@@ -5,9 +5,11 @@ import {
   decodeScopedTierPreciseUuidCursor,
   encodeScopedPreciseTimestampCursor,
   encodeScopedTierPreciseUuidCursor,
-  type ScopedPreciseTimestampCursor,
-  type ScopedTierPreciseUuidCursor,
 } from '@modules/pagination'
+import type {
+  ScopedPreciseTimestampCursor,
+  ScopedTierPreciseUuidCursor,
+} from '@vouchington/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
 import { buildUserRemovedPostsQuery } from './list-user-removed-query.mts'

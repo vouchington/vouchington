@@ -1,5 +1,6 @@
 import { runCommunityAgentPromptPageScenarios } from './community-agent-prompt-pages.mts'
 import { runCommunityMembershipCapScenarios } from './community-membership-caps.mts'
+import { runApplicationQuestionListScenario } from './community-application-question-list.mts'
 import { runCommunityBanPageScenarios } from './community-ban-pages.mts'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, read } from '@data-stores/psql'
@@ -7,11 +8,7 @@ import { createCommunityLifecycleNotifications } from '@services/notifications'
 import { createCommunityPostReview } from '@services/communities/publications/add'
 import { insertCommunity } from '@services/communities/create-insert'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import {
-  runApplicationQuestions,
-  runInviteRedeem,
-  runParticipantRead,
-} from './community-write-round-trips.mts'
+import { runInviteRedeem, runParticipantRead } from './community-write-round-trips.mts'
 import { runModmailFirstReplyScenario } from './modmail-first-reply.mts'
 import { runModmailOpeningScenario } from './modmail-option-a.mts'
 import { runConversationParticipantAdmission } from './conversation-participant-admission.mts'
@@ -134,5 +131,5 @@ export async function runCommunityRoundTripScenarios(): Promise<void> {
   await runModmailOpeningScenario()
   await runModmailFirstReplyScenario()
   await runInviteRedeem(communityId)
-  await runApplicationQuestions(communityId)
+  await runApplicationQuestionListScenario()
 }

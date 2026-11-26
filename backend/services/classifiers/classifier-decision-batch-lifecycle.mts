@@ -4,10 +4,24 @@ import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.
 import type { LockedClassifierDecisionBatch } from './classifier-decision-batch-types.mts'
 export type { LockedClassifierDecisionBatch } from './classifier-decision-batch-types.mts'
 
-export async function lockClassifierDecisionBatch(
+export async function getClassifierDecisionBatch(
   query: OwnedTransaction,
   batchId: string,
+  state: 'pending' | 'completed',
 ): Promise<LockedClassifierDecisionBatch | null> {
+  const statement = sql`
+    /* getClassifierDecisionBatch */
+    SELECT classifier_id, prompt_version_id, post_id, rss_feed_item_id, scope_category,
+      scope_community_id, input_sha256, completed_at
+    FROM classifier_decision_batches
+    WHERE id = ${batchId}`
+  statement.append(
+    state === 'pending'
+      ? sql` AND completed_at IS NULL
+        -- lock-reason: prevents: concurrent completions of a reserved batch both writing decision calls and outcomes; writer: persistClassifierDecision
+        FOR UPDATE`
+      : sql` AND completed_at IS NOT NULL`,
+  )
   const { rows } = await query<{
     classifier_id: string
     prompt_version_id: string
@@ -17,14 +31,7 @@ export async function lockClassifierDecisionBatch(
     scope_community_id: string | null
     input_sha256: Buffer | null
     completed_at: Date | null
-  }>(sql`
-    /* lockClassifierDecisionBatch */
-    SELECT classifier_id, prompt_version_id, post_id, rss_feed_item_id, scope_category,
-      scope_community_id, input_sha256, completed_at
-    FROM classifier_decision_batches
-    WHERE id = ${batchId}
-    FOR UPDATE
-  `)
+  }>(statement)
   const row = rows[0]
   if (!row) return null
   return {

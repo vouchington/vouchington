@@ -57,6 +57,8 @@ export const backgroundWorkEntries3 = [
     label: 'Admin Imports',
     maxValues: adminImportsWorkMaxValues,
     descriptions: {
+      max_rows_per_batch: 'Maximum rows accepted by one admin import batch.',
+      max_parent_slugs_per_row: 'Maximum parent topic slugs accepted by one admin import row.',
       insert_chunk_size: 'Insert chunk size for admin imports processing.',
       dispatch_page_size: 'Pending rows one admin import dispatcher page puts on the queue.',
       recovery_batch_size: 'Stalled admin import batches one recovery sweep re-dispatches.',

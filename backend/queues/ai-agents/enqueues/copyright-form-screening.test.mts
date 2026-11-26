@@ -1,16 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   enqueueCopyrightFormScreening,
-  enqueueOrRetryCopyrightFormScreening,
+  enqueueCopyrightFormScreenings,
 } from './copyright-form-screening.mts'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS } from '../config.mts'
 import { ai_agents } from '../queues.mts'
-import {
-  completedCopyrightAgentEnqueueRecovery,
-  failedCopyrightAgentEnqueueRecovery,
-} from '../../../test-helpers/copyright-agent-enqueue-recovery-tests.mts'
 
-describe('copyright form screening enqueue recovery', () => {
+describe('copyright form screening enqueue', () => {
   it('persists an ordered, deduplicated anti-spam screening job', async () => {
     const submissionId = crypto.randomUUID()
     const jobId = `copyright_form_screening_${submissionId}`
@@ -26,8 +22,9 @@ describe('copyright form screening enqueue recovery', () => {
           attempts: AI_AGENTS_DEFAULTS.attempts,
           backoff: AI_AGENTS_DEFAULTS.backoff,
           priority: AGENT_PRIORITY['copyright-form-screening'],
-          removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-          removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
+          // No run row exists, so both terminal states release the id for the next sweep.
+          removeOnComplete: true,
+          removeOnFail: true,
           deduplication: { id: jobId, mode: 'simple' },
           ordering: { key: jobId, concurrency: 1 },
         },
@@ -37,21 +34,15 @@ describe('copyright form screening enqueue recovery', () => {
     }
   })
 
-  it('removes a completed job before recovering its missing result', async () => {
-    const { remove, enqueue, dependencies } = completedCopyrightAgentEnqueueRecovery(
-      'copyright-form-screening',
-    )
-    await enqueueOrRetryCopyrightFormScreening('submission-id', dependencies)
-    expect(remove).toHaveBeenCalledOnce()
-    expect(enqueue).toHaveBeenCalledWith('submission-id')
-  })
-
-  it('retries a failed screening job without creating another screening request', async () => {
-    const { retry, enqueue, dependencies } = failedCopyrightAgentEnqueueRecovery(
-      'copyright-form-screening',
-    )
-    await enqueueOrRetryCopyrightFormScreening('submission-id', dependencies)
-    expect(retry).toHaveBeenCalledOnce()
-    expect(enqueue).not.toHaveBeenCalled()
+  it('adds a page of submissions in one call', async () => {
+    const submissionIds = [crypto.randomUUID(), crypto.randomUUID()]
+    const jobIds = submissionIds.map(id => `copyright_form_screening_${id}`)
+    try {
+      await enqueueCopyrightFormScreenings(submissionIds)
+      const jobs = await Promise.all(jobIds.map(id => ai_agents.getJob(id)))
+      expect(jobs.map(job => job?.data)).toEqual(submissionIds.map(id => ({ submission_id: id })))
+    } finally {
+      await Promise.all(jobIds.map(async id => (await ai_agents.getJob(id))?.remove()))
+    }
   })
 })

@@ -10,10 +10,12 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+const visiblePosts = posts.slice(0, 3)
+
 function PostList() {
   return (
     <ul className='space-y-2'>
-      {posts.slice(0, 3).map(post => (
+      {visiblePosts.map(post => (
         <li
           key={post.id}
           className='rounded-md border p-3 text-sm'
@@ -29,6 +31,7 @@ export const EndOfResults: Story = {
   render: () => (
     <StoryFrame>
       <InfiniteScroll
+        itemCount={visiblePosts.length}
         hasNextPage={false}
         endCursor={null}
         loadingMore={false}
@@ -46,6 +49,7 @@ export const MoreAvailable: Story = {
   render: () => (
     <StoryFrame>
       <InfiniteScroll
+        itemCount={visiblePosts.length}
         hasNextPage
         endCursor='cursor-discussions'
         loadingMore={false}

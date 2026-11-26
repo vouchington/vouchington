@@ -34,10 +34,11 @@ export function useReviewTopicState({
   }
 
   const addReviewTopic = () => {
-    setReviewTopics(prev => {
-      pendingFocusIndexRef.current = prev.length
-      return [...prev, { key: crypto.randomUUID(), topicId: '', topicName: '', rating: 0 }]
-    })
+    pendingFocusIndexRef.current = reviewTopics.length
+    setReviewTopics(prev => [
+      ...prev,
+      { key: crypto.randomUUID(), topicId: '', topicName: '', rating: 0 },
+    ])
   }
 
   const removeReviewTopic = (index: number) => {

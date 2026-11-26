@@ -1,12 +1,11 @@
 import {
-  Environment,
   InAppOwnershipType,
   SignedDataVerifier,
   type JWSTransactionDecodedPayload,
 } from '@apple/app-store-server-library'
 import type { MembershipVerificationReasonCode } from '../verification-contract.mts'
+import { toAppleEnvironment } from './environment.mts'
 import type {
-  AppleMembershipProviderEnvironment,
   AppleSignedTransactionEvidence,
   AppleSignedTransactionExpectation,
   AppleSignedTransactionVerificationResult,
@@ -154,8 +153,4 @@ function rejected(
   reasonCode: MembershipVerificationReasonCode,
 ): RejectedAppleSignedTransactionVerification {
   return { accepted: false, reasonCode }
-}
-
-function toAppleEnvironment(environment: AppleMembershipProviderEnvironment): Environment {
-  return environment === 'test' ? Environment.SANDBOX : Environment.PRODUCTION
 }

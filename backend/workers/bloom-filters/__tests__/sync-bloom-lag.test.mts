@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as urlBlocklistBatches from '@services/urls-domains-blacklist/bloom-filter-batches'
 import { bloomValkeyClient } from '@data-stores/valkey/clients'
 import { blocklistBloomReadyKey } from '@services/urls-domains-blacklist/ready-marker'
-import { wrapSingleProcessor } from '@data-stores/valkey-glide-mq/guarded-worker-processors'
+import { guardedProcessors } from '@data-stores/valkey-glide-mq/guarded-worker-processors'
 import {
   BLOOM_FILTER_DEFAULTS,
   blocklistBloomRebuildFollowUpJobId,
@@ -99,11 +99,11 @@ describe('sync bloom lag', () => {
         committedSecond = true
         await syncDomainsWithDatabase(secondSourceId, new Response(`${second}\n`))
       })
-      const run = wrapSingleProcessor(
-        QUEUE_NAME,
+      const run = guardedProcessors.wrapSingleProcessor(
         async () => {
           await processRebuildBloomFilter({ filter: 'url-blocklist' })
         },
+        QUEUE_NAME,
         {},
       )
       await run({ id: URL_BLOCKLIST_REBUILD_JOB_ID, opts: {} } as Job)

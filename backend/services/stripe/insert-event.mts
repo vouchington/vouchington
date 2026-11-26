@@ -15,8 +15,6 @@ export async function insertStripeEvent(
   const payload = JSON.stringify(event)
   await using query = await beginTransaction()
 
-  // Retention takes FOR UPDATE on an expired row. Hold a conflicting key-share lock
-  // through the replay read so the row cannot disappear before we return it.
   const existing = await findStripeEventForReplay(event.id, query)
   if (existing) {
     await query.commit()
@@ -84,9 +82,7 @@ export async function insertStripeEvent(
   // stripe_event_id, but READ COMMITTED fixes each statement's snapshot at that statement's
   // start -- a fallback SELECT folded into the same statement as the INSERT (e.g. a CTE) can
   // still miss the winner's just-committed row and return zero rows. Running the fallback as
-  // its own statement gives it a fresh snapshot that is guaranteed to see the committed winner.
-  // A concurrent insert can win after the first read. Its insert and work row
-  // commit together; this fresh statement locks the winner for the replay.
+  // its own statement gives it a fresh snapshot of the winning event and its work item.
   const raced = await findStripeEventForReplay(event.id, query)
   assert(raced, 500, `stripe_events row missing after conflict: ${event.id}`)
   await query.commit()
@@ -105,7 +101,6 @@ async function findStripeEventForReplay(
       LEFT JOIN stripe_event_processing_work_items work ON work.stripe_event_id = event.id
       JOIN stripe_event_types event_type ON event_type.id = event.stripe_event_type_id
       WHERE event.stripe_event_id = ${stripeEventId}
-
     `),
   )
   return (existing.rows[0] as StripeEventRow | undefined) ?? null

@@ -1,5 +1,5 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
 import { assertMediaDeliveryReplayPlan } from './media-delivery-replay.mts'
 
 const prefix = 'replayFailedMediaDeliveryRegistryRecords'

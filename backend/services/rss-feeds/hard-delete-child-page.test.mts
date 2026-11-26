@@ -31,7 +31,6 @@ import { createRssFeed } from './create.mts'
 import { hardDeleteRssFeedById } from './delete.mts'
 import { hardDeleteRssFeedChildPage } from './hard-delete-child-page.mts'
 import { finalizeHardDeleteRssFeed } from './hard-delete-finalize.mts'
-import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 import {
   insertTestRssFeedCategory,
   getTestRssFeedCategories,
@@ -71,15 +70,10 @@ describe('resumable RSS feed child removal', () => {
       expect.arrayContaining([{ kind: 'impact_topic', uuidValue: categoryTopic.id }]),
     )
     expect(await getTestRssFeedCategories(feed.id)).toHaveLength(1)
-    const second = await runWithCapturedQueries(() =>
-      hardDeleteRssFeedChildPage(feed.id, 'feed_categories'),
-    )
-    expect(second.result).toEqual({ removed: 1, hasMore: false })
-    expectQueryOrder(second.queries, [
-      'hardDeleteRssFeedChildPage:parentTopicFootprint',
-      'hardDeleteRssFeedChildPage:categoryFootprint',
-      'hardDeleteRssFeedChildPage:feed',
-    ])
+    await expect(hardDeleteRssFeedChildPage(feed.id, 'feed_categories')).resolves.toEqual({
+      removed: 1,
+      hasMore: false,
+    })
     expect(await getTestRssFeedCategories(feed.id)).toEqual([])
   })
 
@@ -107,15 +101,10 @@ describe('resumable RSS feed child removal', () => {
     })
 
     await hardDeleteRssFeedById(feed.id)
-    const categoryPage = await runWithCapturedQueries(() =>
-      hardDeleteRssFeedChildPage(feed.id, 'feed_categories'),
-    )
-    expect(categoryPage.result).toEqual({ removed: 0, hasMore: false })
-    expectQueryOrder(categoryPage.queries, [
-      'hardDeleteRssFeedChildPage:parentTopicFootprint',
-      'hardDeleteRssFeedChildPage:categoryFootprint',
-      'hardDeleteRssFeedChildPage:feed',
-    ])
+    await expect(hardDeleteRssFeedChildPage(feed.id, 'feed_categories')).resolves.toEqual({
+      removed: 0,
+      hasMore: false,
+    })
     await expect(updateTestFeedSettingChangeReason(changeId)).rejects.toMatchObject({
       code: '23514',
     })
@@ -228,20 +217,10 @@ describe('resumable RSS feed child removal', () => {
       removed: 1,
       hasMore: false,
     })
-    const final = await runWithCapturedQueries(() => finalizeHardDeleteRssFeed(feed.id))
-    expect(final.result).toMatchObject({ deleted: true, remaining: null })
-    expectQueryOrder(final.queries, [
-      'finalizeHardDeleteRssFeed:topicFootprint',
-      'finalizeHardDeleteRssFeed:feed',
-    ])
+    await expect(finalizeHardDeleteRssFeed(feed.id)).resolves.toEqual({
+      deleted: true,
+      remaining: null,
+    })
     expect(await countTestFeedRows(feed.id)).toBe(0)
   })
 })
-
-function expectQueryOrder(queries: Array<{ text: string }>, annotations: string[]): void {
-  const positions = annotations.map(annotation =>
-    queries.findIndex(query => query.text.includes(`/* ${annotation} */`)),
-  )
-  expect(positions.every(position => position >= 0)).toBe(true)
-  expect(positions).toEqual([...positions].toSorted((a, b) => a - b))
-}

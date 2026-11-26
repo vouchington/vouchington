@@ -36,7 +36,7 @@ export async function recordEuCopyrightSupervisedComplaint(
   const { rows: receipts } = await transaction<{ requester_user_id: string | null }>(
     sql`/* recordEuCopyrightSupervisedComplaint:receipt */
     SELECT requester_user_id FROM copyright_territorial_notice_receipts
-    WHERE copyright_notice_id = ${noticeId} AND jurisdiction = ${JURISDICTION} FOR UPDATE
+    WHERE copyright_notice_id = ${noticeId} AND jurisdiction = ${JURISDICTION}
   `,
   )
   const receipt = receipts[0]

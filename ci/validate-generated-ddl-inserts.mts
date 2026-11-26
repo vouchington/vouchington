@@ -19,11 +19,15 @@ const configDrivenDir = fileURLToPath(
 const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
 const schemaFacts = await createSchemaSnapshotFacts(schema)
 const generatedSql = await loadGeneratedConfigDrivenSql(configDrivenDir)
-const failures: string[] = []
-for (const { file, sql } of generatedSql) {
-  const violation = await findFirstUnguardedInsertViolation(sql, schemaFacts)
-  if (violation !== null) failures.push(`${file}: ${violation}`)
-}
+const violations = await Promise.all(
+  generatedSql.map(async ({ file, sql }) => ({
+    file,
+    violation: await findFirstUnguardedInsertViolation(sql, schemaFacts),
+  })),
+)
+const failures = violations.flatMap(({ file, violation }) =>
+  violation === null ? [] : [`${file}: ${violation}`],
+)
 if (failures.length > 0) {
   console.error(failures.join('\n'))
   process.exit(1)

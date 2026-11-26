@@ -86,8 +86,14 @@ describe('backend uncredentialed Docker test workflow', () => {
 
   it('combines service-backed backend Vitest projects in one sharded command', () => {
     const backendCommand =
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD"'
+      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-partition-retirement --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD"'
     expect(runBackendTestsScript).toContain(backendCommand)
+    expect(runBackendTestsScript).toContain(
+      'console.log(parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS))',
+    )
+    expect(runBackendTestsScript).toContain(
+      `(\n  unset VITEST_MAX_WORKERS\n  export VITEST_BACKEND_MAX_WORKERS="$vitest_workers"\n  export VITEST_AI_USAGE_DDL_MAX_WORKERS=1\n  ${backendCommand}\n)`,
+    )
     expect(
       runBackendTestsScript?.match(/--project backend-migration-initializers\b/g),
     ).toHaveLength(1)
@@ -98,6 +104,9 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(vitestConfig).not.toContain("name: 'backend-seed-csvs'")
     expect(vitestConfig).toContain("name: 'backend-real-glide-mq'")
     expect(vitestConfig).not.toContain('fileParallelism: false')
+    expect(vitestConfig).toContain(
+      "name: 'backend-ai-usage-monthly-ddl',\n      sequence: { groupOrder: 1 },\n      maxWorkers: resolveAiUsageDdlMaxWorkers()",
+    )
     expect(vitestConfig).not.toContain("name: 'backend-activitypub-capacity'")
     for (const project of backendCredentialedProjectNames) {
       expect(workflow).not.toContain(`--project ${project}`)

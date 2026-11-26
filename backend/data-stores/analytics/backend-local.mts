@@ -1,103 +1,56 @@
-import fs from 'node:fs'
 import path from 'node:path'
+import {
+  createJsonlPartitionWriter,
+  type JsonlPartitionWriter,
+} from '@vouchington/server-utils/jsonl-partition-writer'
 import onError from '@modules/on-error'
+import { getAnalyticsLocalDir } from './query-files.mts'
 import type { AnalyticsTableName, AnalyticsTableRegistry } from './tables.mts'
 
-function getLocalDir(): string {
-  return process.env.ANALYTICS_LOCAL_DIR ?? './tmp/analytics'
-}
-
-const MAX_RECORDS = 500
-const MAX_BYTES = 4 * 1024 * 1024 // 4 MB
-const FLUSH_INTERVAL_MS = 1000
-
-interface BufferedRecord {
+interface BufferedAnalyticsRecord {
   table: AnalyticsTableName
   record: AnalyticsTableRegistry[AnalyticsTableName]
-  serialized: string
+  toJSON(): AnalyticsTableRegistry[AnalyticsTableName]
 }
 
-const buffer: BufferedRecord[] = []
-let bufferedBytes = 0
-let flushTimer: ReturnType<typeof setTimeout> | null = null
-let activeFlushPromise: Promise<void> | null = null
-function scheduleFlush() {
-  if (flushTimer !== null) return
-  flushTimer = setTimeout(() => {
-    flushTimer = null
-    flush().catch(onError)
-  }, FLUSH_INTERVAL_MS)
-  flushTimer.unref()
-}
+const writers = new Map<string, JsonlPartitionWriter<BufferedAnalyticsRecord>>()
 
-/** Returns the partition path for the given table and date string (YYYY-MM-DD). */
-export function getPartitionPath(table: AnalyticsTableName, eventDate: string): string {
-  return path.join(getLocalDir(), table, `${eventDate}.jsonl`)
+function getWriter(directory: string): JsonlPartitionWriter<BufferedAnalyticsRecord> {
+  let writer = writers.get(directory)
+  if (!writer) {
+    writer = createJsonlPartitionWriter<BufferedAnalyticsRecord>({
+      directory,
+      partition: entry => path.join(entry.table, `${entry.record.event_date}.jsonl`),
+      onError: error => {
+        onError(error instanceof Error ? error : new Error(String(error), { cause: error }))
+      },
+    })
+    writers.set(directory, writer)
+  }
+  return writer
 }
 
 export function writeRecord<T extends AnalyticsTableName>(
   table: T,
   record: AnalyticsTableRegistry[T],
 ): void {
-  const serialized = JSON.stringify(record)
-  buffer.push({ table, record, serialized })
-  bufferedBytes += serialized.length + 1 // +1 for newline
+  getWriter(getAnalyticsLocalDir()).write({
+    table,
+    record,
+    toJSON() {
+      return this.record
+    },
+  })
+}
 
-  if (buffer.length >= MAX_RECORDS || bufferedBytes >= MAX_BYTES) {
-    // Flush immediately when thresholds exceeded
-    if (flushTimer !== null) clearTimeout(flushTimer)
-    flushTimer = null
-    flush().catch(onError)
-    return
+export async function flush(): Promise<void> {
+  if (writers.size === 0) return
+  const entries = [...writers.entries()]
+  const results = await Promise.allSettled(entries.map(([, writer]) => writer.flush()))
+  const currentDir = getAnalyticsLocalDir()
+  for (const [directory] of entries) {
+    if (directory !== currentDir) writers.delete(directory)
   }
-
-  scheduleFlush()
-}
-
-export function flush(): Promise<void> {
-  if (activeFlushPromise) return activeFlushPromise
-  if (buffer.length === 0) return Promise.resolve()
-  if (flushTimer !== null) clearTimeout(flushTimer)
-  flushTimer = null
-  activeFlushPromise = Promise.resolve().then(drainBufferedRecords)
-  return activeFlushPromise
-}
-
-async function drainBufferedRecords(): Promise<void> {
-  let firstError: unknown
-  let hasError = false
-  while (buffer.length > 0) {
-    try {
-      // eslint-disable-next-line no-await-in-loop -- each append may add the next batch to this shared drain
-      await flushBufferedRecords()
-    } catch (err) {
-      if (!hasError) firstError = err
-      hasError = true
-    }
-  }
-  activeFlushPromise = null
-  if (hasError) throw firstError
-}
-
-async function flushBufferedRecords(): Promise<void> {
-  const records = buffer.splice(0)
-  bufferedBytes = 0
-  const groups = Map.groupBy(
-    records,
-    item => `${item.table}:${(item.record as { event_date: string }).event_date}`,
-  )
-
-  await Promise.all(
-    Array.from(groups.values()).map(async items => {
-      const first = items[0]!
-      const lines = items.map(item => item.serialized)
-      const filePath = getPartitionPath(
-        first.table,
-        (first.record as { event_date: string }).event_date,
-      )
-      const dir = path.dirname(filePath)
-      await fs.promises.mkdir(dir, { recursive: true })
-      await fs.promises.appendFile(filePath, `${lines.join('\n')}\n`, 'utf8')
-    }),
-  )
+  const failure = results.find(result => result.status === 'rejected')
+  if (failure) throw failure.reason
 }

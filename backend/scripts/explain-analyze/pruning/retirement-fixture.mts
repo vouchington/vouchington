@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { randomUUID } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 import {

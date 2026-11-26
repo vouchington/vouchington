@@ -87,8 +87,9 @@ describe('handler.cache-format', () => {
         expect(result.headers?.['Content-Type']).toBe('image/webp')
 
         // Both the cache lookup and the cache write should use the same webp key
-        const cacheReadKey = mockFetchImageFromS3.mock.calls[0][2]
-        const cacheWriteKey = mockPutImageToCache.mock.calls[0][2]
+        // `calls[0]!`: the handler under test has just run, so the mock was called at least once.
+        const cacheReadKey = mockFetchImageFromS3.mock.calls[0]![2]
+        const cacheWriteKey = mockPutImageToCache.mock.calls[0]![2]
 
         expect(cacheReadKey).toContain('-fwebp-')
         expect(cacheWriteKey).toContain('-fwebp-')
@@ -104,7 +105,7 @@ describe('handler.cache-format', () => {
           createS3Event({ key: 'photo.jpg', w: '400' }, { Accept: 'image/avif,image/webp;q=0.9' }),
         )
 
-        const [, , , , contentType] = mockPutImageToCache.mock.calls[0]
+        const [, , , , contentType] = mockPutImageToCache.mock.calls[0]!
         expect(contentType).toBe('image/avif')
       })
 

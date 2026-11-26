@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { readCanonicalMarkdownChildren } from './canonical-markdown-children.mts'
+import { readCanonicalMarkdownChildren } from 'vouchington-tooling/markdown-canonical-children'
 import { parseClientParityMatrix, type ParsedMatrixRow } from './client-parity-matrix-parser.mts'
 import type { MatrixSourceLocation } from './client-parity-matrix-source.mts'
 

@@ -19,6 +19,8 @@ import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
 import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-attempts.mts'
 import { runImportRequestRetentionScenarios } from './run-scenarios/import-request-retention.mts'
+import { runOrphanedOAuthBatchScenarios } from './run-scenarios/orphaned-oauth-batch.mts'
+import { runRetentionBatchPickOnceScenarios } from './run-scenarios/retention-batch-pick-once.mts'
 import { runSearchAndFacetScenarios } from './run-scenarios/search-and-facets.mts'
 import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-client-verification.mts'
 import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
@@ -67,6 +69,8 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runViewDrivenReadScenarios,
   runTopicImportAttemptScenarios,
   runImportRequestRetentionScenarios,
+  runOrphanedOAuthBatchScenarios,
+  runRetentionBatchPickOnceScenarios,
   runPostModerationRetentionScenarios,
   seedAndAnalyzeAgentModerationRetention,
   runAgentModerationRetentionScenarios,

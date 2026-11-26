@@ -1,6 +1,7 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
+import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 const DESKTOP_VIEWPORT = { width: 1280, height: 720 }
 
@@ -37,7 +38,7 @@ async function openPaletteAndNavigate(
   const escapedLabel = RegExp.escape(label)
   const pageOptions = href
     ? pagesGroup.locator(`[role="option"][href="${href}"]`)
-    : pagesGroup.locator('[role="option"]')
+    : pagesGroup.getByRole('option')
   const matchingItem = pageOptions.filter({
     has: page.locator('span').filter({ hasText: new RegExp(`^${escapedLabel}$`) }),
   })
@@ -140,7 +141,7 @@ test.describe('Admin command palette navigation', () => {
     await expect(input).toBeVisible()
     await input.pressSequentially('Create Topic')
     await expect(page.getByTestId('search-page-shortcut-topics-create')).toBeVisible({
-      timeout: 5000,
+      timeout: SHORT_WAIT_TIMEOUT_MS,
     })
     await expect(page.getByTestId('search-page-shortcut-topics-create')).toHaveAttribute(
       'href',

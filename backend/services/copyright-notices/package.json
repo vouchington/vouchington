@@ -20,7 +20,7 @@
     "./*/__tests__/*": null
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1169.0",
+    "@aws-sdk/client-s3": "^3.1172.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/aws": "workspace:^",
@@ -48,8 +48,8 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/postgres": "^0.6.1",
-    "@vouchington/sentry": "^0.6.0",
+    "@vouchington/postgres": "^0.6.2",
+    "@vouchington/sentry": "^0.7.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
@@ -61,6 +61,6 @@
     "@ts-shared/url-signing": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }

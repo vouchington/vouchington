@@ -2,7 +2,7 @@ import { createSlugFromTitle, normalizeUrlForUrlTable } from '@modules/utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
-import { loadSqlParserModule, splitSqlStatements } from '../../migration-runner/sql-statements.mts'
+import { loadSqlParserModule, splitSqlStatements } from '@vouchington/postgres'
 import { findFirstUnguardedInsertViolation as findUnguardedInsertViolation } from '../../../../../ci/generated-ddl-inserts/generated-ddl-insert-invariants.mts'
 import { findFirstGeneratedDdlViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
 import { fixtureInsertFacts } from '../../../../test-helpers/data-stores/psql/config-driven/schema-snapshot-facts.mts'

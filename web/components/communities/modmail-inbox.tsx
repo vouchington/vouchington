@@ -98,12 +98,16 @@ export function ModmailInbox({ communitySlug, initialData }: Props) {
         fetchError={hasLoadedFirstPage ? loadError : null}
         clearError={() => setLoadError(null)}
         resetKey={communitySlug}
+        itemCount={threads.length}
+        emptyState={
+          hasLoadedFirstPage ? (
+            <p className='text-sm text-muted-foreground'>
+              {t('extracted.communities.modmailInbox.noModmailThreadsYet_2115a287')}
+            </p>
+          ) : undefined
+        }
       >
-        {hasLoadedFirstPage && threads.length === 0 ? (
-          <p className='text-sm text-muted-foreground'>
-            {t('extracted.communities.modmailInbox.noModmailThreadsYet_2115a287')}
-          </p>
-        ) : threads.length > 0 ? (
+        {threads.length > 0 ? (
           <div className='divide-y rounded-lg border bg-card'>
             {threads.map(thread => (
               <Link

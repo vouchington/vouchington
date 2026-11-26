@@ -62,9 +62,6 @@ Raising a worker's `maxStalledCount` hides a job that keeps crashing; fix the jo
 
 ## External calls
 
-Timeouts on external fetches are sized to the peer's real latency: lowering risks spurious
-failures against a slow-but-healthy peer, raising risks a hung call holding a worker slot.
-
 - Crawler phase budgets (DNS/SSRF resolution, request to headers, body download) are independent
   and re-armed per redirect hop; only the total crawl deadline is absolute.
 - A DNS timeout bounds only the caller's wait. The underlying lookup can keep holding a libuv

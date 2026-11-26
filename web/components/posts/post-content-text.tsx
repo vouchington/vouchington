@@ -40,7 +40,7 @@ export function PostContentText<T extends ElementType>({
     as,
     {
       ...props,
-      lang: language,
+      lang: authoredContent ? (language ?? '') : undefined,
       dir: authoredContent ? getContentLanguageDir(language) : undefined,
     },
     authoredContent ? authoredContent.text : fallback,

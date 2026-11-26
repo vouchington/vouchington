@@ -18,9 +18,9 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@queues/heartbeat": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
+    "@vouchington/utils": "^0.13.0",
     "glide-mq": "^0.20.0"
   }
 }

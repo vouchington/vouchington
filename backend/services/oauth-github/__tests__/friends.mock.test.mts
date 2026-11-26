@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
+  createRandomTestProviderUserId,
   insertTestOAuthAccount,
   connectTestOAuthAccount,
   createTestUserDirect,
@@ -18,8 +19,8 @@ vi.mock<typeof import('undici')>(import('undici'), async () => {
 })
 
 describe('syncGithubFriends', () => {
-  const githubUserId = String(Math.floor(Math.random() * 1_000_000) + 200_000)
-  const friendGithubUserId = String(Math.floor(Math.random() * 1_000_000) + 300_000)
+  const githubUserId = createRandomTestProviderUserId()
+  const friendGithubUserId = createRandomTestProviderUserId()
 
   beforeAll(async () => {
     await insertTestOAuthAccount('github', githubUserId, null)
@@ -122,7 +123,7 @@ describe('syncGithubFriends', () => {
   })
 
   it('removes unfollowed users on re-sync', async () => {
-    const unfollowedId = String(Math.floor(Math.random() * 1_000_000) + 600_000)
+    const unfollowedId = createRandomTestProviderUserId()
 
     // First sync: follow two users
     fetchSpy.mockResolvedValueOnce(
@@ -152,7 +153,7 @@ describe('syncGithubFriends', () => {
   })
 
   it('preserves friends inserted by a newer overlapping sync', async () => {
-    const concurrentFriendId = String(Math.floor(Math.random() * 1_000_000) + 700_000)
+    const concurrentFriendId = createRandomTestProviderUserId()
 
     fetchSpy.mockResolvedValueOnce({
       ok: true,
@@ -182,7 +183,7 @@ describe('syncGithubFriends', () => {
   })
 
   it('does nothing if account has no access token', async () => {
-    const noTokenId = String(Math.floor(Math.random() * 1_000_000) + 500_000)
+    const noTokenId = createRandomTestProviderUserId()
     await insertTestOAuthAccount('github', noTokenId, null)
 
     await syncGithubFriends(noTokenId)
@@ -191,7 +192,7 @@ describe('syncGithubFriends', () => {
   })
 
   it('does not repopulate friends for a detached account', async () => {
-    const detachedId = String(Math.floor(Math.random() * 1_000_000) + 800_000)
+    const detachedId = createRandomTestProviderUserId()
     await insertTestOAuthAccount('github', detachedId, null)
     await setTestOAuthAccountAccessToken('github', detachedId, 'fake-access-token')
     fetchSpy.mockResolvedValueOnce(

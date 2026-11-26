@@ -71,6 +71,7 @@ async function cleanupOAuthFriendEdgePage(
   const accountFilter = accountId ? 'AND id = $2::uuid' : ''
   const accountParameters = accountId ? [now, accountId] : [now]
   await using query = await beginTransaction()
+  // lock-reason: prevents: retaining or erasing edges from the wrong linkage generation; writer: OAuth provider unlink and relink.
   if (phase === 'erase') {
     const { rows } = await query<{ id: string; cutoff: string }>(
       `/* lockUnlinkedFriendEdgeAccount */
@@ -132,12 +133,12 @@ async function cleanupOAuthFriendEdgePage(
 
   const { rows } = await query<{ id: string }>(
     `/* lockFriendReferenceResolution */
-     /* deadlock-safe: one target account lock by pending clock and id; reference rows use SKIP LOCKED. */
+     /* deadlock-safe: the non-key target marker lock is compatible with importer FK KEY SHARE. */
      SELECT id
      FROM ${accountTable}
      WHERE user_id IS NOT NULL AND friend_references_resolve_pending_at < $1::timestamptz
        ${accountFilter}
-     ORDER BY friend_references_resolve_pending_at, id LIMIT 1 FOR UPDATE SKIP LOCKED`,
+     ORDER BY friend_references_resolve_pending_at, id LIMIT 1 FOR NO KEY UPDATE SKIP LOCKED`,
     accountParameters,
   )
   const account = rows[0]

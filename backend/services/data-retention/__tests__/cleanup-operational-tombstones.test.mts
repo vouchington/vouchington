@@ -8,6 +8,7 @@ import {
   insertOperationalAttestationKeyForTest,
   insertOperationalHostnameBlockForTest,
   markDeletedConversationPushIntentTerminalForTest,
+  getOperationalRetentionCursorForTest,
   operationalRowExistsForTest,
   resetOperationalRetentionCursorForTest,
 } from '@voucha/test-helpers'
@@ -50,11 +51,17 @@ describe('operational tombstone retention', () => {
       hasMore: true,
       continuation: { id: first.id },
     })
+    expect(
+      await cleanupOperationalTombstonesForTest('feed_hostname_blocks', options),
+    ).toMatchObject({ deleted: 1, hasMore: true, continuation: { id: second.id } })
     expect(await cleanupOperationalTombstonesForTest('feed_hostname_blocks', options)).toEqual({
-      deleted: 1,
+      deleted: 0,
       hasMore: false,
       continuation: null,
     })
+    expect(
+      (await getOperationalRetentionCursorForTest(query, 'feed_hostname_blocks')).cursor_record_id,
+    ).toBeNull()
     expect(await operationalRowExistsForTest(query, 'url_hostname_blocks', second.id)).toBe(false)
     expect(await operationalRowExistsForTest(query, 'url_hostname_blocks', recent.id)).toBe(true)
     expect(await operationalRowExistsForTest(query, 'url_hostname_blocks', active.id)).toBe(true)
@@ -76,14 +83,19 @@ describe('operational tombstone retention', () => {
       feed: false,
       liftedAt: new Date(cutoff.getTime() + 60_000),
     })
-    const result = await cleanupOperationalTombstonesForTest('other_hostname_blocks', {
+    const options = {
       batchSize: 1,
       maxBatches: 1,
       now,
       ids: [old.id, recent.id],
       borrowedQuery: query,
-    })
-    expect(result).toMatchObject({ deleted: 1, hasMore: false })
+    }
+    expect(
+      await cleanupOperationalTombstonesForTest('other_hostname_blocks', options),
+    ).toMatchObject({ deleted: 1, hasMore: true })
+    expect(
+      await cleanupOperationalTombstonesForTest('other_hostname_blocks', options),
+    ).toMatchObject({ deleted: 0, hasMore: false, continuation: null })
     expect(await operationalRowExistsForTest(query, 'url_hostname_blocks', old.id)).toBe(false)
     expect(await operationalRowExistsForTest(query, 'url_hostname_blocks', recent.id)).toBe(true)
   })
@@ -117,10 +129,10 @@ describe('operational tombstone retention', () => {
     })
     expect(
       await cleanupOperationalTombstonesForTest('app_attestation_keys', options),
-    ).toMatchObject({
-      deleted: 1,
-      hasMore: false,
-    })
+    ).toMatchObject({ deleted: 1, hasMore: true })
+    expect(
+      await cleanupOperationalTombstonesForTest('app_attestation_keys', options),
+    ).toMatchObject({ deleted: 0, hasMore: false, continuation: null })
     expect(await operationalRowExistsForTest(query, 'app_attestation_keys', neverUsed)).toBe(false)
     expect(await operationalRowExistsForTest(query, 'app_attestation_keys', recent)).toBe(true)
   })

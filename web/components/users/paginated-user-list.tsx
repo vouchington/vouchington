@@ -24,6 +24,16 @@ export function PaginatedUserList({
   const muted = mergeRecords(state.pages, page => page.muted ?? {})
   const handleLoadMore = state.loadMore
 
+  const list = (
+    <UserList
+      users={users}
+      emptyTitle={emptyTitle}
+      emptyDescription={emptyDescription}
+      currentUserId={currentUserId}
+      muted={muted}
+    />
+  )
+
   return (
     <InfiniteScroll
       hasNextPage={state.hasNextPage}
@@ -33,14 +43,10 @@ export function PaginatedUserList({
       fetchError={state.fetchError}
       clearError={state.clearError}
       resetKey={state.resetKey}
+      itemCount={users.length}
+      emptyState={list}
     >
-      <UserList
-        users={users}
-        emptyTitle={emptyTitle}
-        emptyDescription={emptyDescription}
-        currentUserId={currentUserId}
-        muted={muted}
-      />
+      {list}
     </InfiniteScroll>
   )
 }

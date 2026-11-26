@@ -14,7 +14,7 @@ import {
   type SearchPageInfo,
 } from './paged-search.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = { limit?: number; after?: string }
@@ -42,7 +42,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     requiredScopes: ['notifications:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/my/notifications' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       ...notificationOutputProperties(),
       page_info: pageInfoSchema(),
     }),

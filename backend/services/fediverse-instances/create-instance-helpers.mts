@@ -1,4 +1,5 @@
-import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
 import type { BasicUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { createSlugFromTitle } from '@modules/utils'

@@ -1,6 +1,7 @@
 import net from 'node:net'
 import { updateReferralLinkAfterCrawl } from '@services/crawler-referral-links'
-import { crawlWithBrowser, type BrowserCrawlResult } from '@services/browser-crawl'
+import { crawlWithBrowser } from '@services/browser-crawl'
+import type { BrowserCrawlResult } from '@vouchington/browser-crawl'
 import { isUrlCrawlable } from '@services/urls-domains-robots'
 import { isPrivateIp } from 'ssrf-guard'
 import { CRAWLER_USER_AGENT } from '@voucha/config'

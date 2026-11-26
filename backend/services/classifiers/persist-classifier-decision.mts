@@ -13,7 +13,7 @@ import { readPersistedClassifierDecision } from './classifier-decision-readback.
 import { insertClassifierDecisionBatch } from './classifier-decision-batch-insert.mts'
 import { persistAndCompleteClassifierDecision } from './classifier-decision-completion.mts'
 import {
-  lockClassifierDecisionBatch,
+  getClassifierDecisionBatch,
   readClassifierDecisionStoredCandidateSnapshots,
 } from './classifier-decision-batch-lifecycle.mts'
 import type { PersistClassifierDecisionInput, PersistClassifierDecisionResult } from './types.mts'
@@ -75,7 +75,9 @@ async function persistClassifierDecisionWithQuery(
   const normalizedInput = omitInactiveTopicInput(originalInput, inactive)
   const inserted = await insertClassifierDecisionBatch(query, normalizedInput, activeRunId)
   if (!inserted) {
-    const batch = await lockClassifierDecisionBatch(query, normalizedInput.batchId)
+    const batch =
+      (await getClassifierDecisionBatch(query, normalizedInput.batchId, 'pending')) ??
+      (await getClassifierDecisionBatch(query, normalizedInput.batchId, 'completed'))
     if (!batch) throw new Error('Classifier decision batch disappeared while persisting')
     assertBatchMatchesInput(batch, normalizedInput)
     if (batch.completedAt !== null) {

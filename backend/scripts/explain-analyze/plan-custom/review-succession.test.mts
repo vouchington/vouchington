@@ -1,6 +1,5 @@
+import type { ExplainResult, PlanNode } from '@vouchington/explain-plan'
 import { describe, expect, it } from 'vitest'
-import type { ExplainResult } from '@data-stores/psql'
-import type { PlanNode } from '../plan-nodes.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './review-succession.mts'
 
 const interval =

@@ -61,9 +61,9 @@ async function cleanupRetainedMediaBindingsPage(
   const progress = trackCursor
     ? (
         await query<{ cursor_placement_id: string | null }>(
-          `/* lockRetainedMediaBindingCleanupProgress */
+          `/* readRetainedMediaBindingCleanupProgress */
            SELECT cursor_placement_id FROM retained_image_placement_binding_cleanup_cursors
-           WHERE is_singleton FOR UPDATE`,
+           WHERE is_singleton`,
         )
       ).rows[0]
     : null

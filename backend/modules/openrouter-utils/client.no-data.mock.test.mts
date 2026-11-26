@@ -20,9 +20,9 @@ describe('openrouter client', () => {
   it('requires a key before construction, then configures the guarded SDK client', async () => {
     vi.stubEnv('OPENROUTER_API_KEY', '')
     try {
-      expect(() => void (openRouterClient as unknown as Record<string, unknown>).apiKey).toThrow(
-        MissingModelClientCredentialError,
-      )
+      expect(() => {
+        void (openRouterClient as unknown as Record<string, unknown>).apiKey
+      }).toThrow(MissingModelClientCredentialError)
       expect(openAIConstructorMock).not.toHaveBeenCalled()
       vi.stubEnv('OPENROUTER_API_KEY', 'test-key')
       void (openRouterClient as unknown as Record<string, unknown>).apiKey

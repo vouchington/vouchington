@@ -89,51 +89,17 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
       ON account_state.account_user_id = identity.account_user_id
       AND account_state.current_open_review_identity_id = identity.id
     WHERE identity.id = ${input.reviewId}
+    -- lock-reason: prevents: a waiting outcome using an incident count from before it acquired account state;
+    -- writer: competing review outcomes, reinstatement, and incident sync opening an account review.
     FOR UPDATE OF account_state
   `)
   const review = rows[0]
   assert(review, 409, 'Copyright repeat-infringer review is already decided')
-  let shouldSuspendActiveAccount = false
-  if (suspendingOutcome) {
-    const { rows: operativeIncidents } = await transaction<{
-      id: string
-      account_is_active: boolean
-    }>(sql`
-      /* recordCopyrightRepeatInfringerReviewOutcome:is_operative */
-      SELECT id, EXISTS (
-        SELECT 1 FROM users WHERE id = ${review.account_user_id} AND deleted_at IS NULL
-      ) AS account_is_active
-      FROM copyright_repeat_infringer_incidents
-      WHERE account_user_id = ${review.account_user_id} AND is_operative
-      LIMIT 2
-      FOR UPDATE
-    `)
-    assert(
-      operativeIncidents.length >= 2,
-      409,
-      'Restrict and terminate require two is_operative incidents',
-    )
-    shouldSuspendActiveAccount = operativeIncidents[0]?.account_is_active ?? false
-  }
   const rationaleCiphertext = encryptSecret(
     input.rationale,
     `copyright-repeat-infringer-review:${input.reviewId}`,
   )
-  const { rows: updated } = await transaction<{ account_user_id: string }>(sql`
-    /* recordCopyrightRepeatInfringerReviewOutcome:history */
-    INSERT INTO copyright_repeat_infringer_reviews (
-      copyright_repeat_infringer_review_identity_id,
-      account_user_id, opened_at, outcome, outcome_at, outcome_by_id,
-      rationale_ciphertext
-    ) VALUES (
-      ${input.reviewId}, ${review.account_user_id}, ${review.opened_at},
-      ${input.outcome}, ${input.recordedAt}, ${input.currentUser.id},
-      ${rationaleCiphertext}
-    )
-    RETURNING account_user_id
-  `)
-  assert(updated[0], 409, 'Copyright repeat-infringer review is already decided')
-  await transaction(sql`
+  const { rows: updated } = await transaction<{ account_is_active: boolean }>(sql`
     /* recordCopyrightRepeatInfringerReviewOutcome:current */
     UPDATE copyright_repeat_infringer_account_states
     SET current_open_review_identity_id = NULL,
@@ -164,9 +130,37 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
       END
     WHERE account_user_id = ${review.account_user_id}
       AND current_open_review_identity_id = ${input.reviewId}
+      AND (
+        ${suspendingOutcome === null} OR (
+          SELECT COUNT(*) FROM (
+            SELECT 1 FROM copyright_repeat_infringer_incidents
+            WHERE account_user_id = ${review.account_user_id} AND is_operative
+            LIMIT 2
+          ) operative_incidents
+        ) = 2
+      )
+    RETURNING EXISTS (
+      SELECT 1 FROM users WHERE id = ${review.account_user_id} AND deleted_at IS NULL
+    ) AS account_is_active
   `)
+  const current = updated[0]
+  assert(current, 409, 'Restrict and terminate require two is_operative incidents')
+  const { rows: history } = await transaction<{ account_user_id: string }>(sql`
+    /* recordCopyrightRepeatInfringerReviewOutcome:history */
+    INSERT INTO copyright_repeat_infringer_reviews (
+      copyright_repeat_infringer_review_identity_id,
+      account_user_id, opened_at, outcome, outcome_at, outcome_by_id,
+      rationale_ciphertext
+    ) VALUES (
+      ${input.reviewId}, ${review.account_user_id}, ${review.opened_at},
+      ${input.outcome}, ${input.recordedAt}, ${input.currentUser.id},
+      ${rationaleCiphertext}
+    )
+    RETURNING account_user_id
+  `)
+  assert(history[0], 409, 'Copyright repeat-infringer review is already decided')
   let newlySuspended = false
-  if (suspendingOutcome && shouldSuspendActiveAccount) {
+  if (suspendingOutcome && current.account_is_active) {
     const suspension = await ensureUserSuspendedInTransaction(transaction, {
       actorId: input.currentUser.id,
       userId: review.account_user_id,

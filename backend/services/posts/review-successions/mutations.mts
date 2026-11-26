@@ -98,44 +98,35 @@ async function archiveAutomaticPredecessors(
       FROM jsonb_to_recordset($1::jsonb) AS input(
         predecessor_post_id uuid, successor_post_id uuid, author_user_id uuid, topic_ids uuid[]
       )
-    ), archive_epochs AS (
-      SELECT requested.*, CURRENT_TIMESTAMP AS predecessor_archived_at
+    ), archived AS (
+      UPDATE posts
+      SET archived_at = CURRENT_TIMESTAMP, archived_by_id = NULL
       FROM requested
-      JOIN posts predecessor ON predecessor.id = requested.predecessor_post_id
-        AND predecessor.archived_at IS NULL
+      WHERE posts.id = requested.predecessor_post_id
+        AND posts.archived_at IS NULL
+      RETURNING posts.id, posts.archived_at, requested.successor_post_id,
+        requested.author_user_id, requested.topic_ids
     ), inserted AS (
       INSERT INTO review_successions (
         predecessor_post_id, successor_post_id, author_user_id, predecessor_archived_at
       )
-      SELECT predecessor_post_id, successor_post_id, author_user_id, predecessor_archived_at
-      FROM archive_epochs
-      ORDER BY predecessor_post_id ASC NULLS LAST, predecessor_archived_at ASC NULLS LAST
-      ON CONFLICT (predecessor_post_id, predecessor_archived_at) DO NOTHING
-      RETURNING id, predecessor_post_id, predecessor_archived_at
+      SELECT id, successor_post_id, author_user_id, archived_at
+      FROM archived
+      ORDER BY id ASC NULLS LAST, archived_at ASC NULLS LAST
+      RETURNING id, predecessor_post_id
     ), inserted_topics AS (
       INSERT INTO review_succession_topics (review_succession_id, topic_id)
       SELECT inserted.id, topic_id
       FROM inserted
-      JOIN archive_epochs
-        ON archive_epochs.predecessor_post_id = inserted.predecessor_post_id
-        AND archive_epochs.predecessor_archived_at = inserted.predecessor_archived_at
-      CROSS JOIN LATERAL unnest(archive_epochs.topic_ids) AS topic_id
-      RETURNING review_succession_id
-    ), archived AS (
-      UPDATE posts
-      SET archived_at = inserted.predecessor_archived_at, archived_by_id = NULL
-      FROM inserted
-      WHERE posts.id = inserted.predecessor_post_id
-        AND posts.archived_at IS NULL
-      RETURNING posts.id
+      JOIN archived ON archived.id = inserted.predecessor_post_id
+      CROSS JOIN LATERAL unnest(archived.topic_ids) AS topic_id
     ), revised AS (
       INSERT INTO post_revisions (post_id, revision_type, revised_by_id, changes)
       SELECT archived.id, 'update', NULL,
         jsonb_build_object('archived_at', jsonb_build_object(
-          'before', NULL, 'after', to_jsonb(inserted.predecessor_archived_at)
+          'before', NULL, 'after', to_jsonb(archived.archived_at)
         ))
       FROM archived
-      JOIN inserted ON inserted.predecessor_post_id = archived.id
     )
     SELECT archived.id AS predecessor_post_id
     FROM archived

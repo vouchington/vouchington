@@ -22,10 +22,10 @@
     "@queues/background-cpu": "workspace:^",
     "@queues/bedrock-embeddings-batch": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
-    "@vouchington/worker-runtime": "^0.3.1"
+    "@vouchington/worker-runtime": "^0.3.2"
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1169.0",
+    "@aws-sdk/client-sqs": "^3.1172.0",
     "@voucha/test-helpers": "workspace:^"
   }
 }

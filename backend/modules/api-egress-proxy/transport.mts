@@ -1,21 +1,17 @@
 import { addGracefulShutdownDrainCallback } from '@data-stores/graceful-shutdown'
-import onError from '@modules/on-error'
 import {
   getExternalFetch,
   getExternalRequestDispatcher,
   getLongRunningExternalFetch,
   getLongRunningExternalRequestDispatcher,
+  reportHttpTransportError,
 } from '@modules/utils'
 import {
-  EXTERNAL_DISPATCHER_BODY_TIMEOUT_MS,
-  EXTERNAL_DISPATCHER_CONNECT_TIMEOUT_MS,
-  EXTERNAL_DISPATCHER_HEADERS_TIMEOUT_MS,
-  EXTERNAL_DISPATCHER_KEEP_ALIVE_MAX_TIMEOUT_MS,
-  EXTERNAL_DISPATCHER_KEEP_ALIVE_TIMEOUT_MS,
-  LONG_RUNNING_EXTERNAL_DISPATCHER_HEADERS_TIMEOUT_MS,
+  createProxyRoutedDispatchers,
+  type ProxyRoutedDispatchers,
 } from '@vouchington/http-transport/dispatchers'
 import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
-import { ProxyAgent, fetch as undiciFetch, type Dispatcher } from 'undici'
+
 export type ApiEgressProxyProvider =
   | 'stripe_enabled'
   | 'openai_moderation_enabled'
@@ -26,122 +22,23 @@ export type ApiEgressProxyProvider =
   | 'fediverse_search_enabled'
   | 'bedrock_embeddings_enabled'
 
-export type ProviderFetchProfile = 'routine' | 'long-running'
-
-type ProviderFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>
-
-type DirectTransport = {
-  getExternalFetch: typeof getExternalFetch
-  getLongRunningExternalFetch: typeof getLongRunningExternalFetch
-  getExternalRequestDispatcher: typeof getExternalRequestDispatcher
-  getLongRunningExternalRequestDispatcher: typeof getLongRunningExternalRequestDispatcher
-}
-
-export function createApiEgressProxyTransport(
-  directTransport: DirectTransport = {
+const apiEgressProxyTransport = createProxyRoutedDispatchers<ApiEgressProxyProvider>({
+  direct: {
     getExternalFetch,
     getLongRunningExternalFetch,
     getExternalRequestDispatcher,
     getLongRunningExternalRequestDispatcher,
   },
-) {
-  const proxyDispatchers: Partial<Record<ProviderFetchProfile, ProxyAgent>> = {}
-  let closePromise: Promise<void> | undefined
-  let providerRoutingResolver: ((provider: ApiEgressProxyProvider) => boolean) | undefined
+  getProxyUrl: getApiEgressProxyUrl,
+  onError: reportHttpTransportError,
+})
 
-  function installApiEgressProxyRoutingResolver(
-    resolver: (provider: ApiEgressProxyProvider) => boolean,
-  ): void {
-    providerRoutingResolver = resolver
-  }
-
-  function isApiEgressProxyRouteEnabled(provider: ApiEgressProxyProvider): boolean {
-    return providerRoutingResolver?.(provider) === true
-  }
-
-  /**
-   * Returns a stable fetch seam whose dispatcher is selected at request time, so a DynamicConfig
-   * change applies to an already-created provider SDK client without a process restart.
-   */
-  function getProviderFetch(
-    provider: ApiEgressProxyProvider,
-    profile: ProviderFetchProfile = 'routine',
-  ): ProviderFetch {
-    return async (input, init) => {
-      const dispatcher = isApiEgressProxyRouteEnabled(provider)
-        ? getProxyDispatcher(profile)
-        : undefined
-      if (!dispatcher) {
-        return profile === 'long-running'
-          ? directTransport.getLongRunningExternalFetch()(input, init)
-          : directTransport.getExternalFetch()(input, init)
-      }
-      return undiciFetch(input as Parameters<typeof undiciFetch>[0], {
-        ...(init as Parameters<typeof undiciFetch>[1]),
-        dispatcher,
-      }) as unknown as Promise<Response>
-    }
-  }
-
-  function getProxyDispatcher(profile: ProviderFetchProfile = 'routine'): Dispatcher {
-    const existing = proxyDispatchers[profile]
-    if (existing) return existing
-    const proxyUrl = getApiEgressProxyUrl()
-    const dispatcher = new ProxyAgent({
-      uri: proxyUrl,
-      connections: 5,
-      headersTimeout:
-        profile === 'long-running'
-          ? LONG_RUNNING_EXTERNAL_DISPATCHER_HEADERS_TIMEOUT_MS
-          : EXTERNAL_DISPATCHER_HEADERS_TIMEOUT_MS,
-      bodyTimeout: EXTERNAL_DISPATCHER_BODY_TIMEOUT_MS,
-      keepAliveTimeout: EXTERNAL_DISPATCHER_KEEP_ALIVE_TIMEOUT_MS,
-      keepAliveMaxTimeout: EXTERNAL_DISPATCHER_KEEP_ALIVE_MAX_TIMEOUT_MS,
-      connect: { timeout: EXTERNAL_DISPATCHER_CONNECT_TIMEOUT_MS },
-    })
-    proxyDispatchers[profile] = dispatcher
-    return dispatcher
-  }
-
-  function getProviderRequestDispatcher(
-    provider: ApiEgressProxyProvider,
-    profile: ProviderFetchProfile = 'routine',
-  ): Dispatcher {
-    return isApiEgressProxyRouteEnabled(provider)
-      ? getProxyDispatcher(profile)
-      : profile === 'long-running'
-        ? directTransport.getLongRunningExternalRequestDispatcher()
-        : directTransport.getExternalRequestDispatcher()
-  }
-
-  async function closeApiEgressProxyTransport(): Promise<void> {
-    if (closePromise) return closePromise
-    closePromise = Promise.all(
-      Object.values(proxyDispatchers).map(dispatcher => dispatcher.close().catch(onError)),
-    ).then(() => undefined)
-    return closePromise
-  }
-
-  return {
-    getApiEgressProxyUrl,
-    installApiEgressProxyRoutingResolver,
-    isApiEgressProxyRouteEnabled,
-    getProviderFetch,
-    getProviderRequestDispatcher,
-    closeApiEgressProxyTransport,
-    [Symbol.asyncDispose]: closeApiEgressProxyTransport,
-  }
-}
-
-const apiEgressProxyTransport = createApiEgressProxyTransport()
-
-export const {
-  installApiEgressProxyRoutingResolver,
-  isApiEgressProxyRouteEnabled,
-  getProviderFetch,
-  getProviderRequestDispatcher,
-  closeApiEgressProxyTransport,
-} = apiEgressProxyTransport
+export const installApiEgressProxyRoutingResolver = apiEgressProxyTransport.setRoutingResolver
+export const isApiEgressProxyRouteEnabled = apiEgressProxyTransport.isProxyRouteEnabled
+export const getProviderFetch = apiEgressProxyTransport.getRoutedFetch
+export const getProviderRequestDispatcher: ProxyRoutedDispatchers<ApiEgressProxyProvider>['getRoutedRequestDispatcher'] =
+  apiEgressProxyTransport.getRoutedRequestDispatcher
+export const closeApiEgressProxyTransport = apiEgressProxyTransport.closeProxyDispatchers
 
 export function getApiEgressProxyUrl(): string {
   const rawUrl = process.env.API_EGRESS_PROXY_URL?.trim()

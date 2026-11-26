@@ -12,9 +12,18 @@ and Renovate sets `automerge: false`; neither bot arms GitHub auto-merge. This d
 CI trust boundary: a human who queues a same-repository dependency-bot PR still causes a merge-group
 run with the existing CI credential policy. Review the PR before placing it in the merge queue.
 
-Dependabot waits seven days after a release (`cooldown`), except for first-party packages. pnpm's own
-`minimumReleaseAge` stays at two days for now because the lockfile pins releases younger than seven
-days; it can rise to match once those age out. Dependabot's cooldown must never be shorter than pnpm's age.
+Dependabot waits seven days after a release (`cooldown`), except for first-party packages. pnpm's
+`minimumReleaseAge` is 10080 minutes (seven days) with the same first-party exclusions, so both gates
+match. List first-party exclusions by exact package name, not globs: the `pnpm-release-age-policy`
+rule rejects a glob that is not in its registry.
+
+Renovate applies the same gate: a global `minimumReleaseAge` of `7 days` with
+`internalChecksFilter: "strict"`, so a version younger than seven days is skipped instead of opening
+a pending PR. Packages published by this repository (the `ghcr.io/vouchington/dependency-*` images)
+set `minimumReleaseAge: null` and wait zero days. The third-party images tracked in
+`ci/dependency-mirror/images.json` get the 7 day gate.
+Third-party tools that float on their own (for example `PNPM_VERSION=12` in the Dockerfiles and the
+`.nvmrc` major) have no gate of their own; see the PR that introduced this policy for the list.
 
 `engines.node` is a floor, not the runtime pin. Dependabot's hosted updater runs the active Node LTS
 and cannot be configured, and `engineStrict` makes every pnpm call there fail when the floor is above
@@ -56,9 +65,6 @@ Native dependency policy and automation are owned by the
 - <a id="manually-maintained-pins"></a>[Manually maintained pins](reference-dependency-updates-manually-maintained-pins.md)
 - <a id="adding-a-new-pinned-binary"></a>[Adding a new pinned binary](reference-dependency-updates-adding-a-new-pinned-binary.md)
 - <a id="supply-chain-policy"></a>[Supply-chain policy](reference-dependency-updates-supply-chain-policy.md)
-
-Remote GitHub Actions must be pinned to a 40-hex commit SHA with a version comment, so a re-pointed
-tag cannot silently change what runs; no-mistakes `github-actions-pinned-hash` enforces it.
 
 ### <a id="docs-pinning-policy"></a>Docs pinning policy
 

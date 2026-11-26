@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import serverApp from '../../../backend/entrypoints/api/index.mts'
@@ -23,20 +23,17 @@ import {
 } from '../routes.mts'
 import type { CookieHeader } from '../routes-extended.mts'
 
+import {
+  closeWebApiClientRuntime,
+  withWebApiClientRuntime,
+} from '../../test-helpers/web-api-client-runtime.mts'
+
 const integrationClientReads = createIntegrationClientReads(clientRoutes.clientApi)
 
 describe('routes-extended', () => {
   let backendServer: http.Server
 
-  let previousApiBaseUrl: string | undefined
-
-  let previousPublicApiBaseUrl: string | undefined
-
   let previousFetch: typeof globalThis.fetch
-
-  let hadWindow: boolean
-
-  let previousWindow: unknown
 
   let backendBaseUrl: string
 
@@ -53,17 +50,12 @@ describe('routes-extended', () => {
   let topicRecPostId: string
 
   beforeAll(async () => {
-    previousApiBaseUrl = process.env.API_BASE_URL
-    previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-
     backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
-    process.env.API_BASE_URL = backendBaseUrl
-    process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
+    vi.stubEnv('API_BASE_URL', backendBaseUrl)
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', backendBaseUrl)
 
     previousFetch = globalThis.fetch
-    hadWindow = Object.hasOwn(globalThis, 'window')
-    previousWindow = (globalThis as { window?: unknown }).window
     globalThis.fetch = (input, init) => {
       if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
         return previousFetch(input, init)
@@ -116,50 +108,25 @@ describe('routes-extended', () => {
     topicRecPostId = topicRec.post.id
   })
 
-  afterAll(async () => {
-    await new Promise<void>(resolve => {
-      backendServer.close(() => resolve())
-    })
-    if (previousApiBaseUrl === undefined) {
-      delete process.env.API_BASE_URL
-    } else {
-      process.env.API_BASE_URL = previousApiBaseUrl
-    }
+  afterAll(() =>
+    closeWebApiClientRuntime({
+      backendServer,
+      previousFetch,
+    }),
+  )
 
-    if (previousPublicApiBaseUrl === undefined) {
-      delete process.env.NEXT_PUBLIC_API_BASE_URL
-    } else {
-      process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
-    }
-
-    globalThis.fetch = previousFetch
-    if (hadWindow) {
-      ;(globalThis as { window?: unknown }).window = previousWindow
-    } else {
-      delete (globalThis as { window?: unknown }).window
-    }
-  })
-
-  async function withClientRuntime<T>(
+  function withClientRuntime<T>(
     run: () => Promise<T>,
     cookieHeader?: Record<string, string>,
   ): Promise<T> {
-    clientRuntimeActive = true
-    clientCookieValue = cookieHeader?.Cookie
-    ;(globalThis as { window?: unknown }).window = {}
-
-    try {
-      return await run()
-    } finally {
-      clientRuntimeActive = false
-      clientCookieValue = undefined
-
-      if (hadWindow) {
-        ;(globalThis as { window?: unknown }).window = previousWindow
-      } else {
-        delete (globalThis as { window?: unknown }).window
-      }
-    }
+    return withWebApiClientRuntime({
+      cookieHeader,
+      setActive: (active, cookie) => {
+        clientRuntimeActive = active
+        clientCookieValue = cookie
+      },
+      run,
+    })
   }
 
   describe('users client routes', () => {

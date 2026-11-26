@@ -51,6 +51,7 @@ export async function cleanupOrphanedUserAgentStrings(
     [cutoffId, userAgentStringIds ?? null, batchSize + 1],
   )
   const page = candidates.slice(0, batchSize)
+  // lock-reason: prevents: losing orphan work when a reference release requeues it; writer: session and ballot reference writers.
   const { rows: locked } = await query<{ id: string }>(
     `/* lockUserAgentStringCleanupCandidates */
      SELECT id FROM user_agent_strings WHERE id = ANY($1::uuid[])

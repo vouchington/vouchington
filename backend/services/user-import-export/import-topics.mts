@@ -3,7 +3,6 @@ import { TopicImportInProgressError } from './topic-import-errors.mts'
 export { TopicImportInProgressError } from './topic-import-errors.mts'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@services/users/types'
-import assert from 'http-assert'
 import onError from '@modules/on-error'
 import {
   findTopicsBySlugOrName,
@@ -18,7 +17,6 @@ import type { ImportTopicResult } from './import-topics-types.mts'
 export type { ImportTopicResult } from './import-topics-types.mts'
 export { claimTopicImportAttempt } from './topic-import-attempts.mts'
 
-const MAX_IMPORT_ITEMS = 500
 export async function importTopics(
   currentUser: PrivateUser,
   provenance: ContentProvenance,
@@ -26,13 +24,18 @@ export async function importTopics(
   options: {
     assertCanCreateTopicRecommendations: () => Promise<void>
     importAttemptId: string
+    newAdmissionRejection?: string
     callerCanReplayIdempotencyIdentity?: boolean
     membershipPlan?: ContributionLimitMembershipPlan
     recordImportRequests?: typeof recordTopicImportRequests
   },
 ): Promise<ImportTopicResult[]> {
-  assert(names.length <= MAX_IMPORT_ITEMS, 400, 'At most 500 topics')
-  const attempt = await claimTopicImportAttempt(currentUser.id, options.importAttemptId, names)
+  const attempt = await claimTopicImportAttempt(
+    currentUser.id,
+    options.importAttemptId,
+    names,
+    options.newAdmissionRejection,
+  )
   if (attempt.response) return attempt.response
   const inputs = names.map((rawName, index) => prepareTopicInput(rawName, index))
   const resultEntries: Array<readonly [number, ImportTopicResult]> = inputs.flatMap(input =>

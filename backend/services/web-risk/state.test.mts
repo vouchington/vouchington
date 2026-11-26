@@ -158,20 +158,14 @@ describe('web-risk state', () => {
     }))
 
   it.each([
-    ['numeric', '2', 2000],
-    ['date rounded up', 'Tue, 01 Jan 2030 00:00:02 GMT', 2000],
-    ['past date', 'Mon, 31 Dec 2029 23:59:59 GMT', 1000],
-    ['invalid', 'invalid', 60_000],
+    ['provider delay', 2000, 2000],
+    ['sub-second delay rounded up', 1, 1000],
+    ['elapsed delay', 0, 1000],
     ['absent', null, 60_000],
-  ])('preserves Retry-After policy for %s', async (_label, retryAfter, milliseconds) => {
-    const fixture = createOwnedWebRiskFixture({
-      now: () => Date.UTC(2030, 0, 1, 0, 0, 0, 500),
-    })
+  ])('cools down for the provider Retry-After (%s)', async (_label, retryAfterMs, milliseconds) => {
+    const fixture = createOwnedWebRiskFixture()
     try {
-      const headers = retryAfter === null ? undefined : { 'retry-after': retryAfter }
-      await fixture.own(
-        fixture.state.setProviderCooldownFromResponse(new Response(null, { headers })),
-      )
+      await fixture.own(fixture.state.setProviderCooldownFromRetryAfter(retryAfterMs))
 
       expect(await fixture.ttl(fixture.cooldownKey())).toBeGreaterThan(milliseconds - 500)
       expect(await fixture.ttl(fixture.cooldownKey())).toBeLessThanOrEqual(milliseconds)

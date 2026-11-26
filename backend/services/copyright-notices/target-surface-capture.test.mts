@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { beginTransaction } from '@voucha/test-helpers'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { insertCopyrightNoticeTargetsInTransaction } from './notice-targets.mts'
+import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { insertTestCommunityMember } from '@voucha/test-helpers/entities/community-members'
 import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
@@ -78,5 +82,32 @@ describe('copyright target surface activation capture', () => {
     expect(await readTestCopyrightPlacementParties(originalNotice.targetId, 'respond')).toEqual([
       fixture.actorUserId,
     ])
+  })
+  it('rolls back the target batch when a resolved surface retires before capture', async () => {
+    const [existing, retiring, other] = await Promise.all([
+      createTestCopyrightImageFixture('post-image'),
+      createTestCopyrightImageFixture('community-banner-image'),
+      createTestCopyrightImageFixture('post-image'),
+    ])
+    const notice = await createTestCopyrightRestrictionForImage(existing)
+    const [staleTarget, liveTarget] = await Promise.all([
+      resolveCopyrightImagePlacement(retiring.selector),
+      resolveCopyrightImagePlacement(other.selector),
+    ])
+    await retiring.detach()
+
+    await expect(
+      (async () => {
+        await using transaction = await beginTransaction()
+        await insertCopyrightNoticeTargetsInTransaction(
+          notice.noticeId,
+          [liveTarget, staleTarget],
+          transaction,
+        )
+        await transaction.commit()
+      })(),
+    ).rejects.toMatchObject({ status: 409 })
+    const aggregate = await getCopyrightNoticePrivateAggregate(notice.noticeId)
+    expect(aggregate?.targets.map(target => target.id)).toEqual([notice.targetId])
   })
 })

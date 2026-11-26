@@ -46,13 +46,12 @@ export async function cleanupSoftDeletedUserBatch(
       )
       AND NOT EXISTS (
         SELECT 1
-        FROM memberships membership
-        INNER JOIN membership_administrator_refund_operation_requests request
-          ON request.membership_id = membership.id
+        FROM membership_administrator_refund_operation_requests refund_request
         INNER JOIN membership_operations operation
-          ON operation.id = request.membership_operation_id
-        WHERE membership.user_id = users.id
-          AND operation.completed_at IS NULL
+          ON operation.id = refund_request.membership_operation_id
+        INNER JOIN membership_lineage_bindings binding
+          ON binding.id = operation.membership_lineage_binding_id
+        WHERE binding.user_id = users.id AND operation.completed_at IS NULL
       )
       AND NOT EXISTS (
         SELECT 1 FROM user_legal_preservation_holds preservation_hold
@@ -118,7 +117,7 @@ export async function deleteOrphanedOAuthAccountBatch(
     DELETE FROM `
     .append(validatedTable)
     .append(sql`
-    WHERE id IN (
+    WHERE id = ANY(ARRAY(
       SELECT id FROM `)
     .append(validatedTable).append(sql`
       WHERE user_id IS NULL
@@ -172,8 +171,9 @@ export async function deleteOrphanedOAuthAccountBatch(
   query.append(sql`
       ORDER BY unlinked_at ASC, id ASC
       LIMIT ${batchSize}
+      -- lock-reason: prevents: account removal cascading OAuth authorizations or clearing friend references during cleanup; writer: OAuth authorization and friend-edge admission.
       FOR UPDATE SKIP LOCKED
-    )`)
+    ))`)
 
   const { rowCount } = await write(query)
   return rowCount ?? 0

@@ -7,6 +7,7 @@ import { createCodedError } from '@vouchington/sentry'
 import { CONTRIBUTION_ADMISSION_IN_PROGRESS } from '@modules/on-error/error-codes'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import { isUUID } from '@modules/utils'
+import { bookmarksWorkMaxValues, getBookmarksWorkLimit } from '@services/bookmarks/work-limits'
 import { assertCanContribute } from '@services/contribution-gating/assert'
 import {
   upsertPreparedBookmarkActions,
@@ -22,8 +23,6 @@ import {
 import assert from 'http-assert'
 import { withRelationLimitAdmission } from '@services/entity-relations/relation-limits'
 import { prepareBookmarkTargets } from './set-bookmark-prepare.mts'
-
-export const SET_BOOKMARK_LIMIT = 500
 
 // The structured MCP result cap is 512 KiB. Echoed targets stay under half of that.
 const MAX_ECHOED_TARGET_BYTES = 256 * 1024
@@ -48,13 +47,17 @@ export async function setBookmarkTargets(
   authority: EntityRelationActionAuthority,
   args: SetBookmarkArgs,
 ): Promise<BookmarkTargetResult[]> {
-  assert(args.targets.length <= SET_BOOKMARK_LIMIT, 400, 'At most 500 targets')
+  const hardMax = bookmarksWorkMaxValues.set_bookmark_max_targets
+  assert(args.targets.length <= hardMax, 400, `At most ${hardMax} targets`)
+  const limit = getBookmarksWorkLimit('set_bookmark_max_targets')
+  const admissionRejection = args.targets.length > limit ? `At most ${limit} targets` : undefined
   assert(
     Buffer.byteLength(JSON.stringify(args.targets), 'utf8') <= MAX_ECHOED_TARGET_BYTES,
     400,
     'Targets are too large to return',
   )
   const recommend = args.recommend_unknown_topics === true && args.predicate === 'follow'
+  if (admissionRejection !== undefined) assert(recommend, 400, admissionRejection)
   if (args.recommend_unknown_topics === true) {
     assert(
       authority.kind === 'delegated' && authority.grantedScopes.includes('posts:write'),
@@ -77,11 +80,20 @@ export async function setBookmarkTargets(
           : [],
       )
     : []
-  // Check the import's stored response before current capacity can reject an exact replay.
+  if (admissionRejection !== undefined)
+    assert(topicIndexes.length === args.targets.length, 400, admissionRejection)
+  // Check the existing topic import before refusing a new over-limit batch.
   const names = topicIndexes.map(index => args.targets[index]!.entity)
   const replay =
     names.length > 0
-      ? (await claimTopicImportAttempt(currentUser.id, args.idempotency_key!, names)).response
+      ? (
+          await claimTopicImportAttempt(
+            currentUser.id,
+            args.idempotency_key!,
+            names,
+            admissionRejection,
+          )
+        ).response
       : undefined
   const imported = new Map<number, BookmarkTargetResult>()
   if (replay)
@@ -108,6 +120,7 @@ export async function setBookmarkTargets(
               membershipPlan: currentUser.membership_plan ?? null,
             }),
           importAttemptId: args.idempotency_key!,
+          newAdmissionRejection: admissionRejection,
           callerCanReplayIdempotencyIdentity: true,
           membershipPlan: currentUser.membership_plan ?? null,
         })

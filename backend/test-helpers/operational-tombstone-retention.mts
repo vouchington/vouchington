@@ -109,3 +109,52 @@ export async function insertOperationalAttestationKeyForTest(
   )
   return rows[0]!.id
 }
+
+export async function refreshOperationalAttestationKeyForTest(
+  query: TransactionQuery,
+  keyId: string,
+  usedAt: Date,
+): Promise<void> {
+  await query(
+    `/* refreshOperationalAttestationKeyForTest */
+     UPDATE app_attestation_keys SET last_used_at = $2::timestamptz WHERE id = $1::uuid`,
+    [keyId, usedAt],
+  )
+}
+
+export async function insertTestHostnamePenalty(
+  query: TransactionQuery,
+  userId: string,
+  blockId: string,
+): Promise<string> {
+  const { rows } = await query<{ id: string }>(
+    `/* insertTestHostnamePenalty */
+     INSERT INTO vote_weight_penalties
+       (user_id, penalty_multiplier, reason, source_hostname_block_id)
+     VALUES ($1::uuid, 0.5, 'retention fixture', $2::uuid) RETURNING id`,
+    [userId, blockId],
+  )
+  return rows[0]!.id
+}
+
+export async function lockTestHostnamePenalty(
+  query: TransactionQuery,
+  penaltyId: string,
+): Promise<void> {
+  await query(
+    '/* lockTestHostnamePenalty */ SELECT id FROM vote_weight_penalties WHERE id = $1::uuid FOR UPDATE',
+    [penaltyId],
+  )
+}
+
+export async function getTestHostnamePenaltySources(
+  query: TransactionQuery,
+  ids: readonly string[],
+): Promise<Record<string, string | null>> {
+  const { rows } = await query<{ id: string; source_hostname_block_id: string | null }>(
+    `/* getTestHostnamePenaltySources */ SELECT id, source_hostname_block_id
+     FROM vote_weight_penalties WHERE id = ANY($1::uuid[])`,
+    [ids],
+  )
+  return Object.fromEntries(rows.map(row => [row.id, row.source_hostname_block_id]))
+}

@@ -2,8 +2,10 @@ import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createMembershipLockDiagnosticReporter } from './membership-lock-diagnostics.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
-import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
-import type { TestOwnedPostgresWaitOptions } from './postgres-client-lock-identity.mts'
+import {
+  withTestOwnedPostgresWait,
+  type TestOwnedPostgresWaitOptions,
+} from './postgres-client-lock-observer.mts'
 
 /** Archive a community only after a delegated reply waits on its live row. */
 export function withConcurrentCommunityArchiveForTest<T>(

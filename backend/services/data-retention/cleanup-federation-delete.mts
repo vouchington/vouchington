@@ -17,8 +17,9 @@ export async function deleteRetentionCandidates(
        SELECT id FROM follower_distributions
        WHERE id = ANY($1::uuid[]) AND id < $2::uuid
          AND (completed_at IS NOT NULL OR failed_at IS NOT NULL)
-       ORDER BY id LIMIT $3 FOR UPDATE
-     ) DELETE FROM follower_distributions target USING page WHERE target.id = page.id`,
+       ORDER BY id LIMIT $3
+     ) DELETE FROM follower_distributions target USING page WHERE target.id = page.id
+       AND (target.completed_at IS NOT NULL OR target.failed_at IS NOT NULL)`,
     [ids, getMinUuidv7ForDate(cutoffAt), batchSize],
   )
   return rowCount ?? 0

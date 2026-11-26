@@ -1,5 +1,7 @@
-import { VitestNoSkipsReporter } from './vitest-no-skips-reporter.mts'
-import { createVitestTeardownOverrunReporter } from './vitest-teardown-overrun-reporter.mts'
+import {
+  VitestNoSkipsReporter,
+  createVitestTeardownOverrunReporter,
+} from 'vouchington-tooling/vitest-diagnostics'
 
 export const vitestCiReporterOptions = {
   fileProgressPrefix: '[backend-unit-file]',

@@ -1,14 +1,14 @@
 'use client'
 
-/**
- * Infinite scroll component using Intersection Observer
- * Automatically loads next page when user scrolls near bottom
- */
-
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { PaginatedListFooter } from './paginated-list-footer'
+import { useConsecutiveEmptyPages } from './use-consecutive-empty-pages'
 
 interface InfiniteScrollProps {
+  /** Count of visible rows after filtering and deduplication. */
+  itemCount: number
+  emptyState?: React.ReactNode
   hasNextPage: boolean
   endCursor: string | null
   onLoadMore: () => Promise<void | boolean>
@@ -35,9 +35,15 @@ export function InfiniteScroll({
   clearError = NOOP_CLEAR_ERROR,
   children,
   resetKey,
+  itemCount,
+  emptyState,
 }: InfiniteScrollProps) {
+  const canContinue = pageHasContinuation({ has_next_page: hasNextPage, end_cursor: endCursor })
+  const isEmpty = itemCount === 0
+  const { autoLoadPaused, restart } = useConsecutiveEmptyPages(itemCount, endCursor, resetKey)
   const observerRef = useRef<HTMLDivElement>(null)
-  const loadingRef = useRef(false)
+  const pendingRequest = useRef<{ cursor: string | null; generation: number } | null>(null)
+  const reobserveAfterLoad = useRef<(() => void) | null>(null)
   const attemptedCursorRef = useRef<string | null>(null)
   const requestLoadRef = useRef<(manual: boolean) => void>(() => undefined)
   // Bumped whenever resetKey changes so a stale request's completion (see below) can tell
@@ -46,15 +52,18 @@ export function InfiniteScroll({
 
   function requestLoad(manual: boolean) {
     const retryingFailure = manual && fetchError !== null
-    if ((!hasNextPage || !endCursor) && !retryingFailure) return
-    if (loadingMore || loadingRef.current) return
+    if (!canContinue && !retryingFailure) return
+    if (loadingMore || pendingRequest.current) return
     if (attemptedCursorRef.current === endCursor && !retryingFailure) return
+    // After MAX_CONSECUTIVE_EMPTY_PAGES empty pages only an explicit "Load more" continues.
+    if (!manual && (autoLoadPaused || fetchError)) return
+    if (manual) restart()
 
-    loadingRef.current = true
     // Only stamp the guard once onLoadMore confirms it actually started a request — an
     // explicit `false` means it no-opped (e.g. a stale query token or an in-flight request
     // already owns this cursor), and the next trigger for this cursor must get a real attempt.
     const generationAtRequestStart = resetGenerationRef.current
+    pendingRequest.current = { cursor: endCursor, generation: generationAtRequestStart }
     let loadStarted = true
     void onLoadMore()
       .then(started => {
@@ -68,18 +77,20 @@ export function InfiniteScroll({
         if (loadStarted && resetGenerationRef.current === generationAtRequestStart) {
           attemptedCursorRef.current = endCursor
         }
-        loadingRef.current = false
+        pendingRequest.current = null
+        reobserveAfterLoad.current?.()
+        reobserveAfterLoad.current = null
       })
   }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     requestLoadRef.current = requestLoad
   })
 
   // Reset the loaded-cursor guard when the caller signals a full reset (e.g. filter change).
   // Without this, a new initialData whose endCursor coincidentally matches the previously
   // loaded cursor would be silently skipped by the intersection observer.
-  useEffect(() => {
+  useLayoutEffect(() => {
     resetGenerationRef.current += 1
     attemptedCursorRef.current = null
   }, [resetKey])
@@ -91,25 +102,42 @@ export function InfiniteScroll({
   const hasScrolledRef = useRef(false)
 
   useEffect(() => {
-    if (!hasNextPage || !endCursor || !observerRef.current) return undefined
+    if (!canContinue || loadingMore || autoLoadPaused || fetchError || !observerRef.current)
+      return undefined
 
     const element = observerRef.current
+    // An empty list has nothing to scroll, so the next page is requested without a scroll.
+    if (isEmpty) hasScrolledRef.current = true
+    let active = true
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0]!.isIntersecting && !fetchError && hasScrolledRef.current) {
-          requestLoadRef.current(false)
+        if (!active || !entries[0]?.isIntersecting || !hasScrolledRef.current) return
+        const pending = pendingRequest.current
+        if (
+          pending &&
+          (pending.cursor !== endCursor || pending.generation !== resetGenerationRef.current)
+        ) {
+          reobserveAfterLoad.current = reobserve
+          return
         }
+        requestLoadRef.current(false)
       },
       { threshold: 0.1 },
     )
+
+    // The sentinel can intersect for a new cursor before the previous load promise settles.
+    // Ask the observer for a fresh measurement when that promise releases the request guard.
+    function reobserve() {
+      observer.unobserve(element)
+      observer.observe(element)
+    }
 
     // One-shot scroll listener: open the gate on first user scroll, then re-observe
     // so the IO callback fires immediately with the current intersection state.
     const onScroll = () => {
       hasScrolledRef.current = true
       window.removeEventListener('scroll', onScroll, true)
-      observer.unobserve(element)
-      observer.observe(element)
+      reobserve()
     }
     window.addEventListener('scroll', onScroll, { capture: true, passive: true })
 
@@ -130,32 +158,35 @@ export function InfiniteScroll({
     })
 
     return () => {
+      active = false
+      reobserveAfterLoad.current = null
       cancelAnimationFrame(rafId)
       window.removeEventListener('scroll', onScroll, true)
       observer.unobserve(element)
       observer.disconnect()
     }
-    // resetKey is included so a filter/sort change re-observes even when hasNextPage,
-    // endCursor, and fetchError are all unchanged (the coincidental-same-cursor case) —
-    // observe() delivers a fresh intersection callback for the current DOM state, which is
-    // the only thing that can retrigger a scroll-gated load once the guard above is cleared.
-  }, [hasNextPage, endCursor, fetchError, resetKey])
+    // A query reset needs a fresh intersection check even if it reuses the previous cursor.
+  }, [canContinue, endCursor, fetchError, resetKey, isEmpty, autoLoadPaused, loadingMore])
 
   return (
     <>
-      {children}
-      {((hasNextPage && endCursor) || fetchError) && (
+      {isEmpty && emptyState !== undefined
+        ? !canContinue && !fetchError
+          ? emptyState
+          : null
+        : children}
+      {(canContinue || fetchError) && (
         <div
           ref={observerRef}
           data-pw='infinite-scroll-sentinel'
         >
           <PaginatedListFooter
             fetchError={fetchError}
-            canLoadMore={Boolean((hasNextPage && endCursor) || fetchError)}
+            canLoadMore={canContinue || Boolean(fetchError)}
             loadingMore={loadingMore}
             clearError={clearError}
             loadMore={() => requestLoad(true)}
-            mode={hasNextPage && endCursor ? 'continuation' : 'retry-only'}
+            mode={canContinue ? 'continuation' : 'retry-only'}
           />
         </div>
       )}

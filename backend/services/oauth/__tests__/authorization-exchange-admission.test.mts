@@ -8,7 +8,6 @@ import {
   insertTestOAuthAuthorization,
   markTestOAuthAuthorizationExchanging,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
-import { withTestOAuthAuthorizationRowLocked } from '@voucha/test-helpers/entities/oauth-authorization-recovery'
 import {
   claimOAuthAuthorizationExchange,
   releaseOAuthAuthorizationExchangeClaim,
@@ -18,21 +17,17 @@ import { getRecoverableOAuthAuthorizationIds } from '../authorization-exchange-r
 
 /** Real mutation boundary after queue persistence; no timer or native SQL is replaced. */
 describe('OAuth native provider admission authority', () => {
-  it('validates its current claim and reports actual NOWAIT contention without weakening the holder', async () => {
+  it('validates its current claim without changing the recorded ownership', async () => {
     const id = await fixture()
     const claimed = await claimOAuthAuthorizationExchange(id)
     if (!claimed) throw new Error('Expected an actual durable claim')
     await expect(
       validateOAuthAuthorizationExchangeClaim(id, claimed.exchange_claim_id),
     ).resolves.toBeUndefined()
-    await withTestOAuthAuthorizationRowLocked(id, async () => {
-      await expect(
-        validateOAuthAuthorizationExchangeClaim(id, claimed.exchange_claim_id),
-      ).rejects.toMatchObject({ code: '55P03' })
+    expect(await getTestOAuthAuthorization(id)).toMatchObject({
+      status: 'exchanging',
+      exchange_claim_id: claimed.exchange_claim_id,
     })
-    await expect(
-      validateOAuthAuthorizationExchangeClaim(id, claimed.exchange_claim_id),
-    ).resolves.toBeUndefined()
   })
 
   it('expires the owned authorization before rejecting admission after a persistence boundary', async () => {

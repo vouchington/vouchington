@@ -1,5 +1,10 @@
-import { extractQueryName, type ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes, processedRows, type PlanNode } from '../plan-nodes.mts'
+import {
+  collectPlanNodes,
+  type ExplainResult,
+  type PlanNode,
+  processedRows,
+} from '@vouchington/explain-plan'
+import { extractQueryName } from '@voucha/test-helpers/explain-analyze'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function assertReviewSuccessionCandidatePlanIfApplicable(result: ExplainResult): void {

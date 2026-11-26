@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 
 // Seeded hostname: example.com (019c64e6-1000-7000-b000-000000000001)

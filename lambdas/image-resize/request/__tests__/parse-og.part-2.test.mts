@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import type { APIGatewayProxyEvent } from 'aws-lambda'
 import { parseOgRequest } from '../parse-og.mts'
 import { RequestParseError } from '../../errors.mts'
 import { toBase64Url } from '../../../test-helpers/image-resize/index.mts'
-import { signPath } from '@vouchington/utils/url-signing'
+import { signPath } from '@vouchington/server-utils/url-signing'
 import { SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
 import { TEST_SIDELOAD_SIGNING_KEY } from '@ts-shared/url-signing/test-key'
 
@@ -30,32 +30,14 @@ function createMockEvent(
 }
 
 describe('parseOgRequest — signature verification', () => {
-  const savedEnv = process.env[SIDELOAD_SIGNING_KEYS_ENV]
-  const savedEnvironment = process.env.ENVIRONMENT
-  const savedNodeEnv = process.env.NODE_ENV
-
   beforeEach(() => {
-    process.env[SIDELOAD_SIGNING_KEYS_ENV] = TEST_SIDELOAD_SIGNING_KEY
-    process.env.NODE_ENV = 'test'
-    delete process.env.ENVIRONMENT
+    vi.stubEnv(SIDELOAD_SIGNING_KEYS_ENV, TEST_SIDELOAD_SIGNING_KEY)
+    vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('ENVIRONMENT', undefined)
   })
 
   afterEach(() => {
-    if (savedEnv === undefined) {
-      delete process.env[SIDELOAD_SIGNING_KEYS_ENV]
-    } else {
-      process.env[SIDELOAD_SIGNING_KEYS_ENV] = savedEnv
-    }
-    if (savedEnvironment === undefined) {
-      delete process.env.ENVIRONMENT
-    } else {
-      process.env.ENVIRONMENT = savedEnvironment
-    }
-    if (savedNodeEnv === undefined) {
-      delete process.env.NODE_ENV
-    } else {
-      process.env.NODE_ENV = savedNodeEnv
-    }
+    vi.unstubAllEnvs()
   })
 
   function makeSignedEvent(payload: unknown = GENERIC_PARAMS) {
@@ -111,15 +93,15 @@ describe('parseOgRequest — signature verification', () => {
     const base64url = toOgBase64url(GENERIC_PARAMS)
     const path = `/og/${base64url}`
     const sig = signPath(path, [oldKey])
-    process.env[SIDELOAD_SIGNING_KEYS_ENV] = `${TEST_SIDELOAD_SIGNING_KEY},${oldKey}`
+    vi.stubEnv(SIDELOAD_SIGNING_KEYS_ENV, `${TEST_SIDELOAD_SIGNING_KEY},${oldKey}`)
     const event = createMockEvent(base64url, { sig })
     const result = parseOgRequest(event)
     expect(result.params).toEqual(GENERIC_PARAMS)
   })
 
   it('rejects unsigned OG requests in staging when signing keys are missing', () => {
-    delete process.env[SIDELOAD_SIGNING_KEYS_ENV]
-    process.env.ENVIRONMENT = 'staging'
+    vi.stubEnv(SIDELOAD_SIGNING_KEYS_ENV, undefined)
+    vi.stubEnv('ENVIRONMENT', 'staging')
     const base64url = toOgBase64url(GENERIC_PARAMS)
     const event = createMockEvent(base64url)
     let expectedErr: RequestParseError | undefined
@@ -133,8 +115,8 @@ describe('parseOgRequest — signature verification', () => {
   })
 
   it('keeps unsigned OG requests available outside deployed environments', () => {
-    delete process.env[SIDELOAD_SIGNING_KEYS_ENV]
-    process.env.NODE_ENV = 'test'
+    vi.stubEnv(SIDELOAD_SIGNING_KEYS_ENV, undefined)
+    vi.stubEnv('NODE_ENV', 'test')
     const base64url = toOgBase64url(GENERIC_PARAMS)
     const event = createMockEvent(base64url)
     expect(parseOgRequest(event).params).toEqual(GENERIC_PARAMS)

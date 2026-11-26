@@ -4,6 +4,7 @@ import {
   withMonitoredPage,
   protectPlaywrightHookTimeouts,
 } from '../../helpers/test.mts'
+import { apiRequest } from '../../helpers/api-request.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsTestUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
@@ -37,26 +38,15 @@ test.describe('Community Join/Leave', () => {
       await loginAsTestUser(page)
       // Create a second community owned by the test user
       // The test user will already be a member (owner), so we test a different scenario
-      await page.evaluate(
-        async ({ name, slug }) => {
-          const res = await fetch('/api/v1/communities', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ name, slug }),
-          })
-          if (!res.ok && res.status !== 409)
-            throw new Error(`Failed to create community: ${res.status}`)
-          // Owner leaves so they can re-join as a regular member
-          const leaveRes = await fetch(`/api/v1/communities/${slug}/members`, {
-            method: 'DELETE',
-            credentials: 'include',
-          })
-          // Ignore leave failure — owners may not be able to leave
-          return leaveRes
-        },
-        { name: COMMUNITY_NAME, slug: COMMUNITY_SLUG },
-      )
+      const res = await apiRequest(page, 'POST', '/api/v1/communities', {
+        name: COMMUNITY_NAME,
+        slug: COMMUNITY_SLUG,
+      })
+      if (!res.ok() && res.status() !== 409)
+        throw new Error(`Failed to create community: ${res.status()}`)
+      // Owner leaves so they can re-join as a regular member; ignore failure because
+      // owners may not be able to leave.
+      await apiRequest(page, 'DELETE', `/api/v1/communities/${COMMUNITY_SLUG}/members`)
     })
   })
 

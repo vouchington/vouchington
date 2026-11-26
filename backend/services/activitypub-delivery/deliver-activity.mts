@@ -1,16 +1,8 @@
 import { validateUrl, UnsafeUrlError } from 'ssrf-guard/node'
-import onError from '@modules/on-error'
-import {
-  getExternalRequestDispatcher,
-  getPinnedRequestDispatcher,
-  handleHttpErrors,
-} from '@modules/utils/http'
+import { cancelResponseBody, fetchWithTimeout, handleHttpErrors } from '@modules/utils/http'
 import { buildSignatureHeaders, withSignatureHeaders } from '@modules/http-signatures'
 import createHttpError from 'http-errors'
-import undici from 'undici'
 import type { OutboundActivityJson } from './types.mts'
-
-type UndiciResponse = Awaited<ReturnType<typeof undici.fetch>>
 
 const DELIVERY_TIMEOUT_MS = 10000
 // ssrf-guard@1.0.0's validateUrl short-circuits to no timeout when both `signal` and `timeoutMs`
@@ -26,14 +18,6 @@ type DeliverActivityToInboxInput = {
   privateKeyPem: string
 }
 
-function cancelResponseBody(response: UndiciResponse): void {
-  const cancellation = response.body?.cancel()
-  if (cancellation) {
-    // Cancellation is best-effort cleanup; preserve the HTTP error outcome.
-    void cancellation.catch(onError)
-  }
-}
-
 // Delivers a signed AS2 activity to a remote inbox (Phase C4). SSRF-guarded exactly like
 // @services/remote-actors/fetch-remote-actor-document.mts: the inbox hostname is resolved and
 // validated before any request, and the connection is pinned to the validated addresses (no
@@ -41,10 +25,8 @@ function cancelResponseBody(response: UndiciResponse): void {
 // @modules/http-signatures — callers must decrypt the sending user's actor private key immediately
 // before this call and let it go out of scope immediately after, per that module's README contract.
 //
-// @modules/utils/http's fetchWithTimeout is GET-only, so delivery hand-rolls its own POST-with-body
-// fetch rather than extending a shared GET-only helper — same dispatcher/timeout/redirect pattern.
-// `redirect: 'manual'` is load-bearing SSRF protection: silently following a redirect would
-// deliver to a target host that was never validated.
+// `fetchWithTimeout` enforces `redirect: 'manual'` as load-bearing SSRF protection: silently
+// following a redirect would deliver to a target host that was never validated.
 /* no-mistakes: integration=activitypub */
 export async function deliverActivityToInbox(input: DeliverActivityToInboxInput): Promise<void> {
   let resolvedAddresses
@@ -73,25 +55,15 @@ export async function deliverActivityToInbox(input: DeliverActivityToInboxInput)
     signatureHeaders,
   )
 
-  const abortController = new AbortController()
-  const timeoutId = setTimeout(() => abortController.abort(), DELIVERY_TIMEOUT_MS)
-  const dispatcher = resolvedAddresses.length
-    ? getPinnedRequestDispatcher(resolvedAddresses)
-    : getExternalRequestDispatcher()
-
-  let response: UndiciResponse
-  try {
-    response = await undici.fetch(input.inboxUrl, {
-      method: 'POST',
-      dispatcher,
-      headers,
-      body,
-      signal: abortController.signal,
-      redirect: 'manual',
-    })
-  } finally {
-    clearTimeout(timeoutId)
-  }
+  const { response } = await fetchWithTimeout({
+    url: input.inboxUrl,
+    method: 'POST',
+    headers,
+    body,
+    requestTimeoutMs: DELIVERY_TIMEOUT_MS,
+    responseTimeoutMs: DELIVERY_TIMEOUT_MS,
+    resolvedAddresses,
+  })
 
   // Throws typed, retry-classified errors for 429/5xx (matches @modules/queue-errors's
   // wrapHttpForRetry semantics, which the worker processor wraps this call with). A 429 carries the

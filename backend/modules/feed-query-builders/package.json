@@ -23,8 +23,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/uuid-v7": "^0.0.0",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {}

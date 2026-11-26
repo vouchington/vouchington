@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createProviderReplay } from '../../test-helpers/provider-replay.mts'
+import { createProviderReplay } from 'vouchington-tooling/provider-replay'
 import { STRIPE_REPLAY_SECRET_KEY, loadStripeFixture } from '../../test-helpers/stripe-replay.mts'
 
 // The recorded Stripe response is served through the `fetch` that `getStripeClient()` asks the

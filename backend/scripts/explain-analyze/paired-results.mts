@@ -1,6 +1,6 @@
+import type { ExplainResult } from '@vouchington/explain-plan'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { ExplainResult } from '@data-stores/psql'
 
 export function loadLatestPairedResults(outputDir: string): {
   filePath: string

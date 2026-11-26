@@ -164,9 +164,9 @@ within the same cleanup cycle.
 An active delivery lease is preserved until a later sweep. Endpoint receipts follow their intent's
 deletion through the foreign key.
 The ActivityPub inbox replay ledger expires through bounded oldest-eligible pages after the
-configured maximum activity age. Each page locks its admission floor, deletes its rows, advances the
-monotonic floor and commits before the next page. Inbound signed-date admission serializes with
-that short transaction, and no floor lock crosses queue admission or external HTTP.
+configured maximum activity age. Each page commits its deletes and any advance of the monotonic
+rejection floor together. Inbox admission checks the committed floor in the statement that records
+an activity.
 
 Outbound activities carry no ledger or floor: their UUIDv7 age is checked when a distribution or
 delivery job runs. An expired activity completes distribution, which settles its Follow or Like row
@@ -228,7 +228,7 @@ moderation findings while their identifying details are time-limited by the priv
   invariant of the moderation workflow, not a convenience, and the services enforce it in SQL.
 - **Retained identities.** Audit and money rows (memberships, refunds, moderation history) point at
   `retained_user_identities`, so they survive account deletion without authorizing the deleted
-  user. See the [PostgreSQL schema rules](../../../development/postgres-schema-rules.md).
+  user. See the [relational storage rules](../../../../backend/data-stores/psql/AGENTS.md#relational-storage).
 - **Classifier runs share one receipt table.** Every fixed classifier uses one lifecycle (receipt,
   lease, attempt cap, completion, sweep) so a new classifier is an adapter plus a row, not a table.
   See the [AI platform](../ai-platform.md).

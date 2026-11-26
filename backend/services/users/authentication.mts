@@ -2,11 +2,12 @@ import { hashToken as hashSecretToken } from '@modules/token-secrets'
 import { awaitReportedEnqueueAdmission } from '@data-stores/valkey-glide-mq'
 import { validateEmailAddress } from '@services/email-address-validator'
 import { withTransactionOptions, type QueryOptions } from '@data-stores/psql'
+import { isUniqueViolation } from '@vouchington/postgres'
+import createHttpError from 'http-errors'
 import {
   lockEmailAuthenticationScope,
   type EmailAuthenticationScope,
 } from './email-authentication-scope.mts'
-import type { QueryExecutor } from '@data-stores/psql/types'
 import {
   enqueueSendEmailAddressLoginToken,
   enqueueSendReauthenticationToken,
@@ -27,23 +28,20 @@ function hashEmailLoginToken(token: string, scope: EmailAuthenticationScope): st
   )
 }
 
-export const createEmailAddressLoginToken = async (
-  emailAddress: string,
+/** Issues a code for an address that `validateEmailAddress` already accepted. */
+export const issueEmailAddressLoginToken = async (
+  validatedEmailAddress: string,
   scope: EmailAuthenticationScope = { purpose: 'login' },
   options: QueryOptions = {},
 ) => {
-  const validatedEmailAddress = await validateEmailAddress(emailAddress)
   const token = createLoginToken()
-  return withTransactionOptions(options, async query => {
-    await lockEmailAuthenticationScope(validatedEmailAddress, scope, query)
-    const sessionId = scope.purpose === 're_auth' ? scope.session.sid : null
-    const currentUserId = scope.purpose === 're_auth' ? scope.currentUserId : null
-    await lockAuthenticationCodeIssuance(
-      query,
-      sessionId ? `email-token:re_auth:${sessionId}` : `email-token:login:${validatedEmailAddress}`,
-    )
-    await query(
-      `/* createEmailAddressLoginToken */
+  try {
+    return await withTransactionOptions(options, async query => {
+      await lockEmailAuthenticationScope(validatedEmailAddress, scope, query)
+      const sessionId = scope.purpose === 're_auth' ? scope.session.sid : null
+      const currentUserId = scope.purpose === 're_auth' ? scope.currentUserId : null
+      await query(
+        `/* createEmailAddressLoginToken */
        WITH invalidated_tokens AS (
          UPDATE email_address_login_tokens SET invalidated_at = CURRENT_TIMESTAMP
          WHERE purpose = $3 AND consumed_at IS NULL AND invalidated_at IS NULL
@@ -53,17 +51,36 @@ export const createEmailAddressLoginToken = async (
        )
        INSERT INTO email_address_login_tokens (email_address, token, purpose, reauthentication_session_id, user_id)
        SELECT $1, $2, $3, $4, $5 FROM (SELECT COUNT(*) FROM invalidated_tokens) AS completed_invalidation`,
-      [
-        validatedEmailAddress,
-        hashEmailLoginToken(token, scope),
-        scope.purpose,
-        sessionId,
-        currentUserId,
-      ],
-    )
-    return { token, emailAddress: validatedEmailAddress }
-  })
+        [
+          validatedEmailAddress,
+          hashEmailLoginToken(token, scope),
+          scope.purpose,
+          sessionId,
+          currentUserId,
+        ],
+      )
+      return { token, emailAddress: validatedEmailAddress }
+    })
+  } catch (err) {
+    if (
+      isUniqueViolation(err) &&
+      'constraint' in err &&
+      (err.constraint === 'idx_email_address_login_tokens__pending_login' ||
+        err.constraint === 'idx_email_address_login_tokens__pending_reauthentication')
+    ) {
+      throw createHttpError(409, 'An email authentication code was issued concurrently', {
+        cause: err,
+      })
+    }
+    throw err
+  }
 }
+
+export const createEmailAddressLoginToken = async (
+  emailAddress: string,
+  scope: EmailAuthenticationScope = { purpose: 'login' },
+  options: QueryOptions = {},
+) => issueEmailAddressLoginToken(await validateEmailAddress(emailAddress), scope, options)
 
 export const verifyEmailAddressLoginToken = async (
   emailAddress: string,
@@ -110,11 +127,11 @@ export const enqueueEmailAddressLoginToken = (
 }
 
 export async function createAndEnqueueEmailAddressReAuthToken(
-  emailAddress: string,
+  validatedEmailAddress: string,
   uiLocale: string | null,
   scope: Extract<EmailAuthenticationScope, { purpose: 're_auth' }>,
 ): Promise<string> {
-  const result = await createEmailAddressLoginToken(emailAddress, scope)
+  const result = await issueEmailAddressLoginToken(validatedEmailAddress, scope)
   await awaitReportedEnqueueAdmission(async () => {
     await enqueueSendReauthenticationToken(
       { emailAddress: result.emailAddress, uiLocale },
@@ -122,14 +139,4 @@ export async function createAndEnqueueEmailAddressReAuthToken(
     )
   })
   return result.emailAddress
-}
-
-async function lockAuthenticationCodeIssuance(
-  query: QueryExecutor,
-  identity: string,
-): Promise<void> {
-  await query(
-    '/* lockAuthenticationCodeIssuance */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
-    [identity],
-  )
 }

@@ -55,6 +55,7 @@ async function readRelationPage(
   if (child.after) {
     const tsIdx = ++paramIdx
     params.push(child.after.timestamp)
+    // oxlint-disable-next-line no-useless-assignment -- keeps paramIdx equal to params.length so the next filter's ++paramIdx gets a fresh placeholder
     const idIdx = ++paramIdx
     params.push(child.after.id)
     conditions.push(

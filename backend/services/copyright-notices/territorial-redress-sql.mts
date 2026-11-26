@@ -15,8 +15,7 @@ export function selectTerritorialRedressParent(
     JOIN copyright_territorial_notice_receipts receipt
       ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction
     WHERE notice.id = ${noticeId} AND notice.jurisdiction = ${jurisdiction}
-      AND notice.current_territorial_decision_identity_id IS NOT NULL
-    FOR UPDATE OF notice`
+      AND notice.current_territorial_decision_identity_id IS NOT NULL`
 }
 
 export function selectExistingTerritorialRedressRequest(
@@ -69,7 +68,7 @@ export function selectTerritorialRedressRequest(
     FROM copyright_territorial_redress_requests request
     JOIN copyright_notices notice ON notice.id = request.copyright_notice_id
     WHERE request.id = ${redressId} AND request.copyright_notice_id = ${noticeId}
-      AND request.jurisdiction = ${jurisdiction} FOR UPDATE OF request`
+      AND request.jurisdiction = ${jurisdiction}`
 }
 
 export function selectExistingTerritorialRedressDecision(redressId: string) {

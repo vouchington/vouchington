@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 import { hackerNewsVisibilityConfig } from '@services/urls/hacker-news-visibility-config'
-import {
-  CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY,
-  CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS,
-} from '@services/captcha'
+import { getTurnstileSecretKey, isTurnstileTestSecretKey } from '@services/captcha/secret-keys'
 import app from './index.mts'
 import {
   shouldRejectSkipCaptchaVerification,
@@ -38,9 +35,7 @@ installApiEgressProxyRoutingResolver(isApiEgressProxyEnabled)
 // On a deployed environment (staging or production), the Turnstile secret must be a real key —
 // never any of Cloudflare's public test secrets (always-pass, always-fail, token-already-spent).
 // Dev/test fall back to the always-pass test secret automatically (see @services/captcha).
-const turnstileSecretKey =
-  process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY?.trim() || CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY
-if (shouldRejectTurnstileTestSecret(turnstileSecretKey, CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS)) {
+if (shouldRejectTurnstileTestSecret(getTurnstileSecretKey(), isTurnstileTestSecretKey)) {
   /* v8 ignore next 4 -- fatal deployed-only bootstrap guard exits the process. */
   console.error(
     'FATAL: CLOUDFLARE_TURNSTILE_SECRET_KEY is unset, blank, or a public Cloudflare test secret on a deployed environment. Set a real Cloudflare Turnstile secret key.',

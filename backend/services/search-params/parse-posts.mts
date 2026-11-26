@@ -1,3 +1,4 @@
+import { getTopicSearchTermLimit, searchParamsMaxValues } from './config.mts'
 import { postDataPointFilters } from './post-data-point-filters.mts'
 import { postRecommendationFilters, isRecommendationOnly } from './post-recommendation-filters.mts'
 import { isUUID } from '@modules/utils'
@@ -18,11 +19,7 @@ import {
   extractRssFeedItemId,
   checkShouldReturnEmpty,
 } from './resolve.mts'
-import {
-  resolveHashtagTopicSearch,
-  validateTopicSearchTerms,
-  MAX_TOPIC_SEARCH_TERMS,
-} from './hashtag-topic-search.mts'
+import { resolveHashtagTopicSearch, validateTopicSearchTerms } from './hashtag-topic-search.mts'
 import { postsParser, postsQueryContract } from './parse-posts-contract.mts'
 import { prepareQueryForValidation } from './prepare-query.mts'
 import { withInternalOmitLimit } from './types.mts'
@@ -32,8 +29,9 @@ export function preparePostsSearchParams(
 ) {
   const postTypes = validatePostTypes(query.post_types, VALID_SEARCH_POST_TYPES)
   const literalQuery = isRecommendationOnly(postTypes)
-  validateTopicSearchTerms(query, ['topic', 'topics'], !literalQuery)
-  validateTopicSearchTerms(query, ['category', 'categories'])
+  const topicLimit = getTopicSearchTermLimit()
+  validateTopicSearchTerms(query, ['topic', 'topics'], !literalQuery, topicLimit)
+  validateTopicSearchTerms(query, ['category', 'categories'], false, topicLimit)
   const validationQuery = prepareQueryForValidation(query, {
     ...postsParser.queryContract,
     ...postsQueryContract.queryContract,
@@ -53,12 +51,8 @@ export function preparePostsSearchParams(
     reviewTopicIdentifier: extractIdentifier(query, 'review_topic'),
     dataPointTopicIdentifier: extractIdentifier(query, 'data_point_topic'),
     similarRssFeedItemIdentifier: extractRssFeedItemId(query, 'similar_rss_feed_item'),
-    uniqueTopicIdentifiers: extractIdentifiers(query, ['topic', 'topics'], MAX_TOPIC_SEARCH_TERMS),
-    uniqueCategoryIdentifiers: extractIdentifiers(
-      query,
-      ['category', 'categories'],
-      MAX_TOPIC_SEARCH_TERMS,
-    ),
+    uniqueTopicIdentifiers: extractIdentifiers(query, ['topic', 'topics'], topicLimit),
+    uniqueCategoryIdentifiers: extractIdentifiers(query, ['category', 'categories'], topicLimit),
     storyIdRaw: typeof query.story_id === 'string' ? query.story_id : undefined,
     drafts: query.drafts,
     hasHackerNewsReferences: query.has_hacker_news_references,
@@ -97,7 +91,7 @@ export async function resolvePostsSearchParams(
   } = prepared
   const hashtagSearch = await resolveHashtagTopicSearch(
     isRecommendationOnly(postTypes) ? undefined : q,
-    { maxMentions: MAX_TOPIC_SEARCH_TERMS, limitStatus: 400 },
+    { maxMentions: searchParamsMaxValues.max_topic_search_terms, limitStatus: 400 },
   )
   const [
     creatorId,

@@ -1,18 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createReporter } from '../playwright/config/web-server-command.mts'
 
-const ORIGINAL_PORT = process.env.PORT
-const ORIGINAL_WORKER_PORT = process.env.WORKER_PORT
-const ORIGINAL_WEB_PORT = process.env.WEB_PORT
-const ORIGINAL_NEXT_PORT = process.env.NEXT_PORT
-const ORIGINAL_IMAGE_LAMBDA_PORT = process.env.IMAGE_LAMBDA_PORT
-const ORIGINAL_S3_BUCKET_IMAGES = process.env.S3_BUCKET_IMAGES
-const ORIGINAL_S3_BUCKET_RENDERS = process.env.S3_BUCKET_RENDERS
-const ORIGINAL_ALLOW_TURNSTILE_TEST_KEY = process.env.ALLOW_TURNSTILE_TEST_KEY
-const ORIGINAL_NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY = process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY
-const ORIGINAL_NEXT_PUBLIC_ASSET_PREFIX = process.env.NEXT_PUBLIC_ASSET_PREFIX
-const ORIGINAL_GTM_ID = process.env.GTM_ID
-const ORIGINAL_NEXT_PUBLIC_GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
+const TRACKED_ENV_KEYS = [
+  'PORT',
+  'WORKER_PORT',
+  'WEB_PORT',
+  'NEXT_PORT',
+  'IMAGE_LAMBDA_PORT',
+  'S3_BUCKET_IMAGES',
+  'S3_BUCKET_RENDERS',
+  'ALLOW_TURNSTILE_TEST_KEY',
+  'NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY',
+  'NEXT_PUBLIC_ASSET_PREFIX',
+  'GTM_ID',
+  'NEXT_PUBLIC_GTM_ID',
+] as const
+
+const ORIGINAL_ENV = Object.fromEntries(TRACKED_ENV_KEYS.map(key => [key, process.env[key]]))
 
 function loadPlaywrightConfig() {
   vi.resetModules()
@@ -22,65 +25,10 @@ function loadPlaywrightConfig() {
 describe('Playwright shared config', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
-    if (ORIGINAL_PORT === undefined) {
-      delete process.env.PORT
-    } else {
-      process.env.PORT = ORIGINAL_PORT
-    }
-    if (ORIGINAL_WORKER_PORT === undefined) {
-      delete process.env.WORKER_PORT
-    } else {
-      process.env.WORKER_PORT = ORIGINAL_WORKER_PORT
-    }
-    if (ORIGINAL_WEB_PORT === undefined) {
-      delete process.env.WEB_PORT
-    } else {
-      process.env.WEB_PORT = ORIGINAL_WEB_PORT
-    }
-    if (ORIGINAL_NEXT_PORT === undefined) {
-      delete process.env.NEXT_PORT
-    } else {
-      process.env.NEXT_PORT = ORIGINAL_NEXT_PORT
-    }
-    if (ORIGINAL_IMAGE_LAMBDA_PORT === undefined) {
-      delete process.env.IMAGE_LAMBDA_PORT
-    } else {
-      process.env.IMAGE_LAMBDA_PORT = ORIGINAL_IMAGE_LAMBDA_PORT
-    }
-    if (ORIGINAL_S3_BUCKET_IMAGES === undefined) {
-      delete process.env.S3_BUCKET_IMAGES
-    } else {
-      process.env.S3_BUCKET_IMAGES = ORIGINAL_S3_BUCKET_IMAGES
-    }
-    if (ORIGINAL_S3_BUCKET_RENDERS === undefined) {
-      delete process.env.S3_BUCKET_RENDERS
-    } else {
-      process.env.S3_BUCKET_RENDERS = ORIGINAL_S3_BUCKET_RENDERS
-    }
-    if (ORIGINAL_ALLOW_TURNSTILE_TEST_KEY === undefined) {
-      delete process.env.ALLOW_TURNSTILE_TEST_KEY
-    } else {
-      process.env.ALLOW_TURNSTILE_TEST_KEY = ORIGINAL_ALLOW_TURNSTILE_TEST_KEY
-    }
-    if (ORIGINAL_NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY === undefined) {
-      delete process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY
-    } else {
-      process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY = ORIGINAL_NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY
-    }
-    if (ORIGINAL_NEXT_PUBLIC_ASSET_PREFIX === undefined) {
-      delete process.env.NEXT_PUBLIC_ASSET_PREFIX
-    } else {
-      process.env.NEXT_PUBLIC_ASSET_PREFIX = ORIGINAL_NEXT_PUBLIC_ASSET_PREFIX
-    }
-    if (ORIGINAL_GTM_ID === undefined) {
-      delete process.env.GTM_ID
-    } else {
-      process.env.GTM_ID = ORIGINAL_GTM_ID
-    }
-    if (ORIGINAL_NEXT_PUBLIC_GTM_ID === undefined) {
-      delete process.env.NEXT_PUBLIC_GTM_ID
-    } else {
-      process.env.NEXT_PUBLIC_GTM_ID = ORIGINAL_NEXT_PUBLIC_GTM_ID
+    for (const key of TRACKED_ENV_KEYS) {
+      const value = ORIGINAL_ENV[key]
+      if (value === undefined) Reflect.deleteProperty(process.env, key)
+      else process.env[key] = value
     }
     vi.resetModules()
   })
@@ -127,9 +75,9 @@ describe('Playwright shared config', () => {
       delete process.env.GTM_ID
       delete process.env.NEXT_PUBLIC_GTM_ID
       Object.assign(process.env, envOverrides)
-      const { CHROMIUM_USE, createPlaywrightConfig } = await loadPlaywrightConfig()
+      const { CHROMIUM_USE, createVouchaPlaywrightConfig } = await loadPlaywrightConfig()
 
-      const config = createPlaywrightConfig({
+      const config = createVouchaPlaywrightConfig({
         backendCommand: 'node backend/entrypoints/api/serve.mts',
         junitOutputFile: 'test-report.junit.xml',
         projects: [{ name: 'chromium', use: CHROMIUM_USE }],
@@ -161,9 +109,9 @@ describe('Playwright shared config', () => {
 
   it('preserves an explicit Turnstile test-key opt-out for the Playwright web server', async () => {
     process.env.ALLOW_TURNSTILE_TEST_KEY = 'false'
-    const { CHROMIUM_USE, createPlaywrightConfig } = await loadPlaywrightConfig()
+    const { CHROMIUM_USE, createVouchaPlaywrightConfig } = await loadPlaywrightConfig()
 
-    const config = createPlaywrightConfig({
+    const config = createVouchaPlaywrightConfig({
       backendCommand: 'node backend/entrypoints/api/serve.mts',
       junitOutputFile: 'test-report.junit.xml',
       projects: [{ name: 'chromium', use: CHROMIUM_USE }],
@@ -179,9 +127,9 @@ describe('Playwright shared config', () => {
 
   it('preserves an explicit GTM id for the Playwright web server', async () => {
     process.env.GTM_ID = 'GTM-EXPLICIT'
-    const { CHROMIUM_USE, createPlaywrightConfig } = await loadPlaywrightConfig()
+    const { CHROMIUM_USE, createVouchaPlaywrightConfig } = await loadPlaywrightConfig()
 
-    const config = createPlaywrightConfig({
+    const config = createVouchaPlaywrightConfig({
       backendCommand: 'node backend/entrypoints/api/serve.mts',
       junitOutputFile: 'test-report.junit.xml',
       projects: [{ name: 'chromium', use: CHROMIUM_USE }],
@@ -197,9 +145,9 @@ describe('Playwright shared config', () => {
 
   it('preserves an explicit web push public key for the Playwright web server', async () => {
     process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY = 'explicit-push-key'
-    const { CHROMIUM_USE, createPlaywrightConfig } = await loadPlaywrightConfig()
+    const { CHROMIUM_USE, createVouchaPlaywrightConfig } = await loadPlaywrightConfig()
 
-    const config = createPlaywrightConfig({
+    const config = createVouchaPlaywrightConfig({
       backendCommand: 'node backend/entrypoints/api/serve.mts',
       junitOutputFile: 'test-report.junit.xml',
       projects: [{ name: 'chromium', use: CHROMIUM_USE }],
@@ -249,8 +197,8 @@ describe('Playwright shared config', () => {
     delete process.env.NEXT_PORT
     delete process.env.WEB_PORT
 
-    const { CHROMIUM_USE, createPlaywrightConfig } = await loadPlaywrightConfig()
-    const config = createPlaywrightConfig({
+    const { CHROMIUM_USE, createVouchaPlaywrightConfig } = await loadPlaywrightConfig()
+    const config = createVouchaPlaywrightConfig({
       backendCommand: 'node backend/entrypoints/api/serve.mts',
       junitOutputFile: 'test-report.junit.xml',
       projects: [{ name: 'chromium', use: CHROMIUM_USE }],
@@ -289,8 +237,18 @@ describe('Playwright shared config', () => {
     },
   )
 
-  it('preserves the existing local HTML reporter selection', () => {
-    expect(createReporter('local-results.xml', false)).toEqual([
+  it('preserves the existing local HTML reporter selection', async () => {
+    vi.stubEnv('CI', '')
+    const { CHROMIUM_USE, createVouchaPlaywrightConfig } = await loadPlaywrightConfig()
+    const config = createVouchaPlaywrightConfig({
+      backendCommand: 'node backend/entrypoints/api/serve.mts',
+      junitOutputFile: 'local-results.xml',
+      projects: [{ name: 'chromium', use: CHROMIUM_USE }],
+      reuseExistingServer: false,
+      testDir: './playwright/tests',
+      timeout: 30_000,
+    })
+    expect(config.reporter).toEqual([
       ['html', { open: 'never' }],
       [expect.stringMatching(/api-test-server-guard-reporter\.mts$/u)],
     ])

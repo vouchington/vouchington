@@ -11,10 +11,6 @@ vi.mock(
   () => navMockModule as unknown as typeof import('next/navigation'),
 )
 
-vi.mock(import('@/components/shared/infinite-scroll'), () => ({
-  InfiniteScroll: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-}))
-
 vi.mock(
   import('@/components/ui/select'),
   () =>

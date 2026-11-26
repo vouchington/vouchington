@@ -11,6 +11,7 @@ import {
   getMyHouseholdInvitationsClient,
   revokeHouseholdInvitation,
 } from '@/lib/api/client/household-invitations'
+import { pageHasContinuation } from '@vouchington/api-client'
 import { householdLimitDisplayMessages } from '@/lib/api/household-limit-messages'
 import onError, { onSuccess } from '@/lib/on-error'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -149,7 +150,10 @@ export function HouseholdInvitations(props: Props) {
       invitations={[...invitations.values()].toSorted((a, b) => b.id.localeCompare(a.id))}
       pending={saving || refreshing}
       loadError={props.initialPage.loadError && !retryPage}
-      hasMore={pagination.hasNextPage}
+      hasMore={pageHasContinuation({
+        has_next_page: pagination.hasNextPage,
+        end_cursor: pagination.endCursor,
+      })}
       loadingMore={pagination.loadingMore}
       pageError={pagination.fetchError !== null}
       selectedUserId={selectedUserId}

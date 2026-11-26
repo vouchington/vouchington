@@ -40,9 +40,6 @@ export async function reviewCopyrightAppeal(
   )
 
   await using transaction = await beginTransaction(transactionOptions)
-  await transaction(sql`/* reviewCopyrightAppeal:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-appeal-review:${input.submissionId}`}, 0))
-  `)
   const { rows: appealNotices } = await transaction<{ copyright_notice_id: string }>(sql`
     /* reviewCopyrightAppeal:notice */
     SELECT copyright_notice_id FROM copyright_notice_submissions
@@ -89,7 +86,6 @@ export async function reviewCopyrightAppeal(
     SELECT id, copyright_restriction_id, action, copyright_notice_appeal_recommendation_id
     FROM copyright_notice_appeal_reviews
     WHERE copyright_notice_submission_id = ${input.submissionId}
-    FOR UPDATE
   `)
   if (existingRows.length > 0) {
     const expected = new Map(

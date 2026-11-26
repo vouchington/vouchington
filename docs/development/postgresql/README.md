@@ -4,17 +4,15 @@ This package is the Vouchington adapter over
 [`@vouchington/postgres`](https://github.com/vouchington/vouchington-platform/tree/main/packages/postgres).
 It constructs the process singleton after local worktree connection guards, and keeps product
 migrations, views, snapshots, and EXPLAIN ANALYZE capture here. Agent-only migration and query-change
-rules live in [AGENTS.md](../../../backend/data-stores/psql/AGENTS.md); the schema rationale is in
-[PostgreSQL Schema Quality Rules](../postgres-schema-rules.md).
+and schema rules live in [AGENTS.md](../../../backend/data-stores/psql/AGENTS.md); query rules are in
+the `vouchington-postgres` skill (queries, locks, views).
 
 ## Contents
 
 - [Connection Model](reference-connection-model.md)
 - [Transactions](reference-transactions.md)
 - [Cursors](reference-cursors.md)
-- [Read-Then-Write Lookup Upserts](reference-read-then-write-lookup-upserts.md)
 - [Migrations, Views, and Config-Driven](reference-migrations-views-and-config-driven.md)
-- [Views](reference-views.md)
 - [EXPLAIN ANALYZE Framework](explain-analyze/README.md)
 - [Schema snapshot](schema-snapshot/README.md)
 - [Generated schema index](../../generated/postgresql/schema-snapshot/README.md)

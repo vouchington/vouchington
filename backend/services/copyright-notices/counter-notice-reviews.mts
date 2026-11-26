@@ -27,9 +27,6 @@ export async function reviewCopyrightCounterNotice(input: {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assertBoundedRationale(input.rationale)
   await using transaction = await beginTransaction()
-  await transaction(sql`/* reviewCopyrightCounterNotice:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-counter-review:${input.submissionId}`}, 0))
-  `)
   const { rows: counterNotices } = await transaction<{ copyright_notice_id: string }>(sql`
     /* reviewCopyrightCounterNotice:notice */
     SELECT copyright_notice_id FROM copyright_notice_submissions
@@ -54,7 +51,6 @@ export async function reviewCopyrightCounterNotice(input: {
     JOIN copyright_notice_submissions submission
       ON submission.id = review.copyright_notice_submission_id
     WHERE review.copyright_notice_submission_id = ${input.submissionId}
-    FOR UPDATE OF review, submission
   `)
   const existing = existingRows[0]
   if (existing) {

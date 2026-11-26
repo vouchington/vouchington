@@ -11544,7 +11544,7 @@
                                 "description": "User id or username"
                               },
                               "minItems": 1,
-                              "maxItems": 500,
+                              "maxItems": 256,
                               "uniqueItems": true
                             }
                           },
@@ -13282,7 +13282,7 @@
                                 "description": "User id or username"
                               },
                               "minItems": 1,
-                              "maxItems": 500,
+                              "maxItems": 256,
                               "uniqueItems": true
                             }
                           },

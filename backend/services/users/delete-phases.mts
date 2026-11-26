@@ -98,10 +98,11 @@ async function processUserRelations(userId: string, batchSize: number) {
       WITH candidates AS (
         SELECT id FROM user_lists
         WHERE owner_user_id = ${userId} AND removed_at IS NULL
-        ORDER BY id LIMIT ${batchSize} FOR UPDATE
+        ORDER BY id LIMIT ${batchSize}
       )
       UPDATE user_lists SET removed_at = CURRENT_TIMESTAMP
       FROM candidates WHERE user_lists.id = candidates.id
+        AND user_lists.owner_user_id = ${userId} AND user_lists.removed_at IS NULL
     `)
     if ((lists.rowCount ?? 0) > 0) return { hasMore: true }
     for (const table of userRelationTables) {

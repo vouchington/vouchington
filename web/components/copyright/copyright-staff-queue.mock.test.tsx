@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   listCopyrightReviewQueue,
@@ -6,6 +6,7 @@ import {
   replayCopyrightDeliveryIntent,
 } from '@/lib/api/client/copyright-notices'
 import { makeBusyUsStaffCase } from '@/test-helpers/api-responses/copyright-staff-case'
+import { setupInfiniteScrollObserverHarness } from '@/test-helpers/infinite-scroll-observer-harness'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffQueue } from './copyright-staff-queue'
 
@@ -21,6 +22,8 @@ const mockList = vi.mocked(listCopyrightReviewQueue)
 const originalWindowLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
 
 describe('CopyrightStaffQueue recovery actions', () => {
+  const observer = setupInfiniteScrollObserverHarness()
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockReplayAction.mockResolvedValue(undefined)
@@ -149,7 +152,7 @@ describe('CopyrightStaffQueue recovery actions', () => {
     expect(within(usCase).queryByText('EU/UK notice details')).toBeNull()
   })
 
-  it('loads a subsequent page from the staff cursor and renders its cases', async () => {
+  it('automatically loads a subsequent page when the staff queue starts empty', async () => {
     mockList.mockResolvedValue({
       copyright_notices: [{ ...makeNotice(), id: 'case-456' }],
       page_info: { has_next_page: false, start_cursor: 'next', end_cursor: 'next' },
@@ -157,15 +160,19 @@ describe('CopyrightStaffQueue recovery actions', () => {
     render(
       <CopyrightStaffQueue
         data={{
-          copyright_notices: [makeNotice()],
+          copyright_notices: [],
           page_info: { has_next_page: true, start_cursor: 'first', end_cursor: 'next' },
         }}
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
-    await waitFor(() => expect(mockList).toHaveBeenCalledWith({ after: 'next' }))
-    await waitFor(() => expect(screen.getAllByText('Original photograph.')).toHaveLength(2))
+    expect(screen.queryByText('No copyright cases need review.')).not.toBeInTheDocument()
+    await act(async () => {
+      observer.flushRaf()
+      observer.triggerIntersection(true)
+    })
+    expect(mockList).toHaveBeenCalledWith({ after: 'next' })
+    expect(await screen.findByText('Original photograph.')).toBeVisible()
   })
 })
 

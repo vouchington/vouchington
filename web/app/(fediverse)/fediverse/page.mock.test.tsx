@@ -127,7 +127,7 @@ describe('FediversePage', () => {
     const ui = await FediversePage({
       searchParams: Promise.resolve({ q: '  test  ', provider: 'peertube' }),
     })
-    render(ui)
+    render(<div lang='en'>{ui}</div>)
 
     expect(mockGetFediverseSearch).toHaveBeenCalledWith({
       q: 'test',
@@ -139,6 +139,10 @@ describe('FediversePage', () => {
       expect.stringContaining('https://videos.example/watch/1?utm_source=voucha'),
     )
     expect(screen.getByText('A useful video.')).toBeInTheDocument()
+    expect(screen.getByText('Test Video')).toHaveAttribute('dir', 'auto')
+    expect(screen.getByText('Test Video')).toHaveAttribute('lang', '')
+    expect(screen.getByText('A useful video.')).toHaveAttribute('dir', 'auto')
+    expect(screen.getByText('A useful video.')).toHaveAttribute('lang', '')
     expect(screen.getByText('error')).toBeInTheDocument()
     expect(screen.getByText('No results from this provider.')).toBeInTheDocument()
   })
@@ -186,6 +190,8 @@ describe('FediversePage', () => {
     render(ui)
 
     expect(screen.getByText('Unsafe Post')).toBeInTheDocument()
+    expect(screen.getByText('Unsafe Post')).toHaveAttribute('dir', 'auto')
+    expect(screen.getByText('Unsafe Post')).toHaveAttribute('lang', '')
     expect(screen.queryByRole('link', { name: /unsafe post/i })).not.toBeInTheDocument()
   })
 

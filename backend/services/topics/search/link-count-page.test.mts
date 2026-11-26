@@ -59,10 +59,13 @@ describe('referral program link-count ranking', () => {
     expect(await firstAfter(ranked, 1)).toBe(ranked)
     const page = await getTopicIds({ sort: 'link_count', limit: 1, after: cursorBefore(ranked, 1) })
     expect(page.results[0]?.id).toBe(ranked)
+    // end_cursor is null on the last page (an isolated database has no other ranked row), so
+    // resume from the cursor of the returned row itself.
+    expect(page.page_info.start_cursor).not.toBeNull()
     const next = await getTopicIds({
       sort: 'link_count',
       limit: 1,
-      after: page.page_info.end_cursor ?? undefined,
+      after: page.page_info.start_cursor ?? undefined,
     })
     expect(next.results.some(row => row.id === ranked)).toBe(false)
   })

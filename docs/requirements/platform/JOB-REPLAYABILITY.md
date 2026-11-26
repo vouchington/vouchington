@@ -22,7 +22,7 @@ truth. Two requirements enforce this.
 - A backfill only counts if its re-enqueue really succeeds. A stable custom `jobId` on a queue with
   numeric retention silently no-ops the re-enqueue once the prior job finished, because the id's
   uniqueness claim outlives the job. Let deduplication collapse in-flight duplicates instead. See
-  [define a replay-safe job](../../checklists/reference-backend-queues-define-a-replay-safe-job.md#define-a-replay-safe-job).
+  the `glide-mq` skill (references/job-design.md).
 - The registry test validates structure, not completeness against the queue list; keeping the
   registry complete is a review responsibility.
 
@@ -60,13 +60,28 @@ contains only unfinished families. Retained child jobs collapse ordinary admissi
 trimming or a crash before the receipt can replay bounded, idempotent cleanup. A scheduled or
 operator seed restarts from durable cursor state after queue loss or a terminal failure.
 
+AI agent jobs keep no failed record: `removeOnFail` is `true`, and PostgreSQL owns every failure. A
+job on its last attempt (or throwing `UnrecoverableError`) persists the failure in its run row from
+the worker before it fails, for report-judgement reruns, appeal and dispute resolution, and the
+copyright recommendation runs. A crash or a stall past the limit skips that path, so an active run
+is never inferred from the queue.
+
 Automatic moderation-appeal and review-dispute resolution runs commit with their parent row, and the
-queue job is admitted after the commit. If that admission fails, the error is only logged. No failed
-job exists for `reconcile-ai-agent-failures` to find, so the run stays active and no AI draft is
-produced until a sweep ends it. Two scheduled jobs, `expire-stuck-appeal-resolution-runs` and
+queue job is admitted after the commit. If that admission fails, the error is only logged, and a
+manual report-judgement rerun can lose its job to a crash the same way, so the run stays active and
+no AI draft is produced until a sweep ends it. Three scheduled jobs,
+`expire-stuck-report-judgement-runs`, `expire-stuck-appeal-resolution-runs` and
 `expire-stuck-dispute-resolution-runs`, each expire the active runs older than a configured age in
 bounded pages. Each reads an active-run partial index below a UUIDv7 bound computed once per run and
 expires only rows still active, so a run that finished meanwhile is untouched. The age, page size,
 and page cap live in the `stuck-resolution-run-expiry-config` namespace. Expiring a run records its
 outcome and releases the next admission; it does not recover the draft. Staff rerun the resolution
 manually, which admits a new run and enqueues it again.
+
+Copyright AI runs (email intake, appeal recommendation, submission guidance) are re-driven from SQL by
+their dispatch sweeps, one bulk add per page. A job that crashes or stalls past its attempts leaves
+its run active, and the queue keeps no failed record. Three more scheduled jobs,
+`expire-stuck-copyright-email-runs`, `expire-stuck-copyright-appeal-runs` and
+`expire-stuck-copyright-guidance-runs`, mark each such run `failed` in one bounded statement per
+page once it is older than `stuck_age_hours`, so the next sweep admits a fresh run with a new id.
+Form screening has no run row; its pending state in SQL is the record.

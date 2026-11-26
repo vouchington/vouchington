@@ -54,26 +54,23 @@ export function CommandSearch({
   const postContinuation = usePostContinuation(query, activeTab, results, setResults)
 
   // Reset query and tab when dialog closes. Focus the input when it opens.
-  useEffect(() => {
+  const [wasOpen, setWasOpen] = useState(open)
+  if (wasOpen !== open) {
+    setWasOpen(open)
     if (!open) {
-      queueMicrotask(() => {
-        setQuery('')
-        setActiveTab('all')
-      })
-      return
+      setQuery('')
+      setActiveTab('all')
     }
-    inputRef.current?.focus()
+  }
+  useEffect(() => {
+    if (open) inputRef.current?.focus()
   }, [inputRef, open])
 
   const matchedShortcuts = getMatchingShortcuts(t, query, isAdmin, isAuthenticated, featureFlags)
   const visibleResults = results.searchKey === `${activeTab}\0${query}` ? results : EMPTY_RESULTS
   const showResults = hasVisibleSearchResults(activeTab, visibleResults, matchedShortcuts.length)
 
-  useEffect(() => {
-    if (!searchTabs.some(tab => tab.value === activeTab)) {
-      queueMicrotask(() => setActiveTab('all'))
-    }
-  }, [activeTab, searchTabs])
+  if (!searchTabs.some(tab => tab.value === activeTab)) setActiveTab('all')
 
   function handleTabKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return

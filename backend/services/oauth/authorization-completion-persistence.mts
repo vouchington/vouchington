@@ -4,7 +4,8 @@ import createHttpError from 'http-errors'
 import type { OAuthAccount } from '@services/oauth-accounts'
 import { getPrivateUserByAny } from '@services/users'
 import { getAuthorizationAccount } from './authorization-account-lookup.mts'
-import { assertCompletionProof, safeEqual } from './authorization-completion-proof.mts'
+import { safeEqual } from '@vouchington/oauth-server'
+import { assertCompletionProof } from './authorization-completion-proof.mts'
 import type {
   CompletionRow,
   OAuthAuthorizationCompletionOptions,
@@ -16,15 +17,40 @@ export { getAuthorizationAccount }
 
 const COMPLETION_TOKEN_HASH_PURPOSE = 'oauth-authorization-broker:completion'
 
+export function getAuthorizationForCompletion(
+  flowId: string,
+  query: TransactionQuery,
+): Promise<CompletionRow>
+export function getAuthorizationForCompletion(
+  flowId: string,
+  query: TransactionQuery,
+  readyAt: Date,
+): Promise<CompletionRow | null>
 export async function getAuthorizationForCompletion(
+  flowId: string,
+  query: TransactionQuery,
+  readyAt?: Date,
+): Promise<CompletionRow | null> {
+  const { rows } = await query<CompletionRow>(
+    `/* getAuthorizationForCompletion */ SELECT *
+     FROM view_oauth_authorization_current_records
+     WHERE id = $1
+       AND ($2::timestamptz IS NULL OR (status = 'completion_ready' AND expires_at > $2))
+     FOR UPDATE`,
+    [flowId, readyAt ?? null],
+  )
+  const row = rows[0]
+  if (!row && !readyAt) throw createHttpError(404, 'OAuth authorization not found')
+  return row ?? null
+}
+
+export async function readAuthorizationForCompletion(
   flowId: string,
   query: TransactionQuery,
 ): Promise<CompletionRow> {
   const { rows } = await query(
-    `/* getAuthorizationForCompletion */ SELECT *
-     FROM view_oauth_authorization_current_records
-     WHERE id = $1
-     FOR UPDATE`,
+    `/* readAuthorizationForCompletion */ SELECT *
+     FROM view_oauth_authorization_current_records WHERE id = $1`,
     [flowId],
   )
   const authorization = rows[0] as CompletionRow | undefined
@@ -81,6 +107,22 @@ function isAuthenticatedCompletionReplay(
     authorization.result_user_id === options.currentUserId &&
     authorization.result_device_id === options.deviceId &&
     authorization.result_session_id === options.sessionId
+  )
+}
+
+export async function expireUncompletedAuthorization(
+  authorizationId: string,
+  decisionAt: Date,
+  query: TransactionQuery,
+): Promise<void> {
+  await query(
+    `/* expireUncompletedOAuthAuthorization */ UPDATE oauth_authorizations
+     SET expired_at = CASE WHEN rejected_at IS NULL THEN COALESCE(expired_at, clock_timestamp()) ELSE expired_at END,
+         callback_code_ciphertext = NULL,
+         completion_token_ciphertext = NULL,
+         exchange_claim_id = NULL
+     WHERE id = $1 AND expires_at <= $2 AND status <> 'completed'`,
+    [authorizationId, decisionAt],
   )
 }
 

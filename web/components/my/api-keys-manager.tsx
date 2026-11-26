@@ -88,6 +88,14 @@ export function ApiKeysManager({
             fetchError={pagination.fetchError}
             clearError={pagination.clearError}
             resetKey={pagination.resetKey}
+            itemCount={activeKeys.length}
+            emptyState={
+              !creating && !loadError ? (
+                <p className='text-sm text-muted-foreground'>
+                  {t('extracted.my.apiKeysManager.noActiveApiKeys_de64e83d')}
+                </p>
+              ) : undefined
+            }
           >
             <ActiveApiKeysList
               confirmingRevokeId={confirmingRevokeId}
@@ -101,12 +109,6 @@ export function ApiKeysManager({
               onStartRevoke={setConfirmingRevokeId}
             />
           </InfiniteScroll>
-
-          {activeKeys.length === 0 && !creating && !loadError && (
-            <p className='text-sm text-muted-foreground'>
-              {t('extracted.my.apiKeysManager.noActiveApiKeys_de64e83d')}
-            </p>
-          )}
 
           {loadError && (
             <p className='text-sm text-destructive'>

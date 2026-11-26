@@ -20,17 +20,6 @@ export function MyBansClient({ initialData }: MyBansClientProps) {
     usePaginatedList(initialData, '/api/v1/my/bans', {}, { loadPage: listMyBans })
   const bans = uniqueBans(pages.flatMap(page => page.bans))
 
-  if (bans.length === 0) {
-    return (
-      <p
-        className='text-sm text-muted-foreground'
-        data-pw='my-bans-empty'
-      >
-        {t('extracted.bans.myBansClient.youHaveNoActiveCommunityBans_058f05ed')}
-      </p>
-    )
-  }
-
   return (
     <InfiniteScroll
       hasNextPage={hasNextPage}
@@ -40,6 +29,15 @@ export function MyBansClient({ initialData }: MyBansClientProps) {
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      itemCount={bans.length}
+      emptyState={
+        <p
+          className='text-sm text-muted-foreground'
+          data-pw='my-bans-empty'
+        >
+          {t('extracted.bans.myBansClient.youHaveNoActiveCommunityBans_058f05ed')}
+        </p>
+      }
     >
       <ul
         className='space-y-4'

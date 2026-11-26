@@ -16,7 +16,9 @@ export function MfaReauthDialogMock({
   const verify = (
     <Button
       type='button'
-      onClick={() => void onVerified('reauth-token')}
+      onClick={() => {
+        void onVerified('reauth-token')
+      }}
     >
       Verify MFA
     </Button>

@@ -47,26 +47,19 @@ export async function blockHostnameInTransaction(
   query: TransactionQuery,
   options: BlockHostnameOptions = {},
 ): Promise<BlockHostnameResult> {
-  const { rows } = await query<{ hostname: string }>(
-    `/* blockHostname_lockAndGetHostname */
-      SELECT hostname
-      FROM url_hostnames
-      WHERE id = $1::uuid
-      FOR NO KEY UPDATE`,
-    [hostnameId],
-  )
-  if (!rows[0]) throw createHttpError(404, 'Hostname not found')
-
-  await query(sql`/* blockHostname_introduceTarget */
+  const { rows } = await query<{ hostname: string }>(sql`/* blockHostname_introduceTarget */
     UPDATE url_hostnames
     SET publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
     WHERE id = ${hostnameId}
+    RETURNING hostname
   `)
+  const target = rows[0]
+  if (!target) throw createHttpError(404, 'Hostname not found')
 
   const operation = await ensureHostnameBlockCleanupOperation(
     query,
     hostnameId,
-    rows[0].hostname,
+    target.hostname,
     adminUserId,
     options.blockedSource ?? 'admin',
     options.penalizeCreators !== false,

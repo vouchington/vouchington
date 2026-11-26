@@ -60,7 +60,7 @@ test.describe('bounded related story articles', () => {
     try {
       await expect(loadMore).toBeDisabled()
       await expect(cards).toHaveCount(initialCount)
-      expect(await cards.first().boundingBox()).toEqual(beforeBounds)
+      expect(await cards.first().boundingBox()).toStrictEqual(beforeBounds)
       expect(await page.evaluate(() => window.scrollY)).toBe(beforeScroll)
     } finally {
       responseGate.resolve()
@@ -71,7 +71,7 @@ test.describe('bounded related story articles', () => {
     expect(storyRequests).toHaveLength(1)
     expect(new URL(storyRequests[0]!).searchParams.get('limit')).toBe('25')
     expect(await firstCard?.evaluate(element => element.isConnected)).toBe(true)
-    expect(await cards.first().boundingBox()).toEqual(beforeBounds)
+    expect(await cards.first().boundingBox()).toStrictEqual(beforeBounds)
     expect(await page.evaluate(() => window.scrollY)).toBe(beforeScroll)
   })
 })

@@ -1,8 +1,11 @@
 import { revokeOtherAuthenticatedSessions } from '@services/jwt-session/user-session-revocation'
+import { readSessionDeviceAuthority } from '@services/jwt-session/device-authority'
+import { clearTestDeviceAuthority } from '@voucha/test-helpers/entities/device-authority'
 import { describe, expect, it } from 'vitest'
 import { captureTestAccountSecurityEmail } from '@voucha/test-helpers/account-security-email'
 import { v7 } from 'uuid'
 import {
+  beginTransaction,
   createTestUser,
   getTestPrivateUserById,
   insertTestPasskey,
@@ -19,6 +22,7 @@ import {
   consumeTestAccountChangeProof,
 } from '@voucha/test-helpers/account-change'
 import { withReauthenticatedAccountChange } from './account-change.mts'
+import { assertReadableAccountSession } from './active-account-session.mts'
 import {
   deletePasskeyWithMfaProtection,
   deleteTotpAuthenticatorWithMfaProtection,
@@ -26,6 +30,23 @@ import {
 
 // Exercise the shared mutation boundary with the real stores and email queue.
 describe('account settings changes', () => {
+  it('requires relogin for an active account session without durable device authority', async () => {
+    const user = await createTestUser()
+    const { session } = await createTestAccountChangeActor(user.id)
+    await clearTestDeviceAuthority(user.id, session.sid)
+
+    await using query = await beginTransaction()
+    await expect(assertReadableAccountSession(user.id, session, query, true)).rejects.toMatchObject(
+      {
+        code: 'SESSION_RELOGIN_REQUIRED',
+      },
+    )
+    expect(await readSessionDeviceAuthority(session.sid, query)).toMatchObject({
+      revoked_at: null,
+      device_token_digest: null,
+    })
+  })
+
   it('notifies the old primary, revokes the other session and consumes its proof once', async () => {
     const user = await createTestUser()
     const actor = await createTestAccountChangeActor(user.id)

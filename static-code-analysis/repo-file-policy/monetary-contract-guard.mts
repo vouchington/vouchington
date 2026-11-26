@@ -88,6 +88,7 @@ export async function checkMonetaryContracts(
     if (!statSync(path).isFile()) continue
     const content = readTrackedFile?.(file) ?? readFileSync(path, 'utf8')
     if (content === null) continue
+    // oxlint-disable-next-line no-await-in-loop -- tracked file count is unbounded; serial checks keep error order deterministic
     if (needsMigrationCheck) await checkMonetaryMigration(file, content, errors)
     if (needsContractCheck) checkMonetaryContractFile(file, content, errors)
   }

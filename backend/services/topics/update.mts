@@ -19,8 +19,6 @@ import {
   hasTopicFieldUpdates,
 } from './update-fields.mts'
 import { createTopicAliases, finalizeClaimedTopicAliases } from './aliases.mts'
-import { lockExistingTopicAliasPublicationScopes } from './alias-publication-locks.mts'
-import { prepareTopicAliasInput } from './alias-preflight.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import {
   syncImageSurfacePlacement,
@@ -54,16 +52,6 @@ export const updateTopic = async (
           query,
         )
       }
-      const preparedPublicationScopes =
-        changes.slug === undefined
-          ? undefined
-          : {
-              query: options.query,
-              aliasIds: await lockExistingTopicAliasPublicationScopes(
-                options.query,
-                prepareTopicAliasInput([topic.slug, changes.slug]),
-              ),
-            }
       const references: (ImageSurfaceReference & { nextImageId?: string | null })[] = []
       if (changes.logo_image_id !== undefined)
         references.push({
@@ -80,6 +68,7 @@ export const updateTopic = async (
       if (references.length) {
         const imageQuery = options.query ?? write
         assertImageDeliveryTransaction(imageQuery)
+        // lock-reason: prevents: concurrent image edits making conflicting placement decisions on the same topic; writer: updateTopic
         const { rows: activeTopics } = await imageQuery<{ id: string }>(sql`
           /* updateTopic:lockActiveImageOwner */
           SELECT id FROM topics
@@ -111,7 +100,6 @@ export const updateTopic = async (
         claimedAliases = await createTopicAliases(topic.id, [topic.slug, changes.slug], {
           ...options,
           skipSideEffects: true,
-          preparedPublicationScopes,
         })
       }
 

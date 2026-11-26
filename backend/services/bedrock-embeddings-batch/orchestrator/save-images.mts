@@ -11,7 +11,6 @@ export async function applyImageBatchUpdates(items: ImageBatchUpdateItem[]): Pro
   if (items.length === 0) return []
 
   const tempTable = `temp_image_embedding_updates_${randomUUID().replaceAll('-', '')}`
-  let updatedIds: string[] = []
   await using query = await beginTransaction()
 
   await query(
@@ -50,7 +49,7 @@ export async function applyImageBatchUpdates(items: ImageBatchUpdateItem[]): Pro
       RETURNING images.id`,
     { query },
   )
-  updatedIds = rows.map((r: { id: string }) => r.id)
+  const updatedIds = rows.map((r: { id: string }) => r.id)
 
   await query.commit()
 

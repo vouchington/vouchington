@@ -5,21 +5,25 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  DEFAULT_PLAYWRIGHT_USER_AGENT,
   assetHostResolverRule,
-  originOrFallback,
-  parseMaxWorkers,
-  withOptionalLaunchOptionArg,
-  withNodeOption,
-} from './config-helpers.mts'
-import {
-  createReporter,
-  imageLambdaEnv,
+  createPlaywrightConfig,
+  loggedShellCommand,
   nodeServerCommand,
-  shellQuote,
+  originOrFallback,
+  playwrightWebServerLogDir,
+  withNodeOption,
+  withOptionalLaunchOptionArg,
   withOtelNodeOptions,
+} from 'vouchington-tooling/playwright-config'
+import {
+  apiTestServerGuardReporter,
+  imageLambdaEnv,
+  otelRegisterPreload,
 } from './web-server-command.mts'
-import { playwrightTestTimeout } from './test-timeout.mts'
+import { vouchaTimeoutGuard } from './test-timeout.mts'
 import { playwrightWebPublicEnv } from './web-public-env.mts'
+
 const __dirname = fileURLToPath(new URL('../..', import.meta.url))
 
 const WEB_PORT = process.env.NEXT_PORT || process.env.WEB_PORT || '3000'
@@ -38,25 +42,22 @@ const WORKER_URL = `${WORKER_PROTOCOL}://localhost:${WORKER_PORT}`
 const IMAGE_LAMBDA_URL = `http://localhost:${IMAGE_LAMBDA_PORT}`
 const ASSET_ORIGIN = originOrFallback(process.env.NEXT_PUBLIC_ASSET_PREFIX || WEB_URL, WEB_URL)
 const TEMP_ROOT = process.env.RUNNER_TEMP || process.env.TMPDIR || '/tmp'
-export const PLAYWRIGHT_WEB_SERVER_LOG_DIR = join(TEMP_ROOT, 'playwright-web-server-logs')
-const PLAYWRIGHT_HUMAN_USER_AGENT =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
+const webServerLogDir = playwrightWebServerLogDir(process.env)
 export const CI = !!process.env.CI
 const assetResolverRule = assetHostResolverRule(process.env.NEXT_PUBLIC_ASSET_PREFIX, WEB_PORT)
 export const CHROMIUM_USE = withOptionalLaunchOptionArg(
   devices['Desktop Chrome'],
-  PLAYWRIGHT_HUMAN_USER_AGENT,
+  DEFAULT_PLAYWRIGHT_USER_AGENT,
   assetResolverRule,
 )
 const nodeOptions = withNodeOption(process.env.NODE_OPTIONS, '--disable-warning=DEP0205')
 const otelEnabled = process.env.OTEL_ENABLED === '1'
+const otelPreload = otelEnabled ? otelRegisterPreload : undefined
 const otelGracefulShutdown = otelEnabled
   ? { signal: 'SIGTERM' as const, timeout: 10_000 }
   : undefined
-const defaultWorkers = CI ? 3 : '30%'
-const workers = parseMaxWorkers(process.env.PLAYWRIGHT_MAX_WORKERS, defaultWorkers)
-interface CreatePlaywrightConfigOptions {
+
+interface CreateVouchaPlaywrightConfigOptions {
   testDir: string
   timeout: number
   junitOutputFile: string
@@ -65,7 +66,8 @@ interface CreatePlaywrightConfigOptions {
   reuseExistingServer: boolean
   globalSetup?: string
 }
-export function createPlaywrightConfig({
+
+export function createVouchaPlaywrightConfig({
   testDir,
   timeout,
   junitOutputFile,
@@ -73,35 +75,19 @@ export function createPlaywrightConfig({
   backendCommand,
   reuseExistingServer,
   globalSetup = './playwright/global-setup.mts',
-}: CreatePlaywrightConfigOptions): PlaywrightTestConfig {
-  playwrightTestTimeout(timeout, 'Playwright test timeout')
-  for (const project of projects ?? []) {
-    if (project.timeout !== undefined) {
-      playwrightTestTimeout(
-        project.timeout,
-        `Playwright project ${project.name ?? '<unnamed>'} timeout`,
-      )
-    }
-  }
+}: CreateVouchaPlaywrightConfigOptions): PlaywrightTestConfig {
   const workerLogDir = CI ? join(TEMP_ROOT, 'wrangler-logs', randomUUID()) : undefined
-  return {
+  return createPlaywrightConfig({
     testDir,
-    fullyParallel: true,
-    workers,
-    forbidOnly: CI,
-    retries: CI ? 1 : 0,
-    reporter: createReporter(junitOutputFile, CI),
-    globalSetup,
-    maxFailures: CI ? 3 : undefined,
     timeout,
-    expect: { timeout: 10_000 },
+    timeoutGuard: vouchaTimeoutGuard,
+    junitOutputFile,
+    ci: CI,
+    env: process.env,
+    extraReporters: [[apiTestServerGuardReporter]],
+    globalSetup,
+    baseURL: WORKER_URL,
     use: {
-      baseURL: WORKER_URL,
-      testIdAttribute: 'data-pw',
-      ignoreHTTPSErrors: true,
-      actionTimeout: 10_000,
-      navigationTimeout: 15_000,
-      trace: 'on-first-retry',
       storageState: {
         cookies: [],
         origins: [
@@ -116,8 +102,8 @@ export function createPlaywrightConfig({
           name: 'backend',
           serviceName: 'voucha-api-e2e',
           command: backendCommand,
-          logDir: PLAYWRIGHT_WEB_SERVER_LOG_DIR,
-          otelEnabled,
+          logDir: webServerLogDir,
+          otelPreload,
         }),
         name: 'backend',
         url: `${BACKEND_URL}/infra/ping`,
@@ -133,8 +119,8 @@ export function createPlaywrightConfig({
           name: 'lambdas',
           serviceName: 'voucha-lambdas-e2e',
           command: `IMAGE_LAMBDA_PORT=${IMAGE_LAMBDA_PORT} node lambdas/dev-server.mts`,
-          logDir: PLAYWRIGHT_WEB_SERVER_LOG_DIR,
-          otelEnabled,
+          logDir: webServerLogDir,
+          otelPreload,
         }),
         name: 'lambdas',
         url: `${IMAGE_LAMBDA_URL}/health`,
@@ -146,7 +132,11 @@ export function createPlaywrightConfig({
         gracefulShutdown: otelGracefulShutdown,
       },
       {
-        command: `bash -lc ${shellQuote(`set -o pipefail; mkdir -p ${shellQuote(PLAYWRIGHT_WEB_SERVER_LOG_DIR)}; node server.js 2>&1 | tee ${shellQuote(join(PLAYWRIGHT_WEB_SERVER_LOG_DIR, 'web.log'))}`)}`,
+        command: loggedShellCommand({
+          name: 'web',
+          command: 'node server.js',
+          logDir: webServerLogDir,
+        }),
         name: 'web',
         cwd: join(__dirname, 'web', '.next', 'standalone', 'web'),
         url: WEB_URL,
@@ -163,7 +153,7 @@ export function createPlaywrightConfig({
           ALLOW_TURNSTILE_TEST_KEY: process.env.ALLOW_TURNSTILE_TEST_KEY ?? 'true',
           IMAGE_ORIGIN: process.env.IMAGE_ORIGIN ?? IMAGE_LAMBDA_URL,
           GTM_ID: process.env.GTM_ID || process.env.NEXT_PUBLIC_GTM_ID || 'GTM-PLAYWRIGHT',
-          NODE_OPTIONS: withOtelNodeOptions(nodeOptions, otelEnabled),
+          NODE_OPTIONS: withOtelNodeOptions(nodeOptions, otelPreload),
           ...(otelEnabled ? { OTEL_LOGS_EXPORTER: 'otlp', OTEL_SERVICE_NAME: 'voucha-web' } : {}),
         },
         gracefulShutdown: otelGracefulShutdown,
@@ -194,5 +184,5 @@ export function createPlaywrightConfig({
         },
       },
     ],
-  }
+  })
 }

@@ -88989,7 +88989,7 @@
     },
     "POST:/api/v1/auth/mfa/re-auth/email/tokens": {
       "bodyKind": "content",
-      "hash": "1d959628b69bf9859504da182ef94992ef3b63138df348a9b1b4d028c64e7779",
+      "hash": "9aaa9d22fd9abdb3770ed0ce46ccdc8592d23c2e22237fcf783baf12a861ac73",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -89004,6 +89004,12 @@
               "schema": {
                 "type": "string"
               }
+            },
+            "resend_after_seconds": {
+              "required": true,
+              "schema": {
+                "type": "number"
+              }
             }
           },
           "type": "object"
@@ -89011,6 +89017,45 @@
       },
       "source": "backend/api/v1/sessions-authentication/auth-mfa-routes/auth-mfa-re-auth-email-tokens-post.mts",
       "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/auth/mfa/re-auth/email/tokens#email-code-recently-sent": {
+      "bodyKind": "content",
+      "hash": "188fddc5aa3f1dc4f9b3bd521e2da9baaa2d25ee7b72a4e4cfe6fe716b3325bd",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/mfa/re-auth/email/tokens",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": "email_code_recently_sent"
+              }
+            },
+            "message": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "request_id": {
+              "required": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/services/users/email-auth-rate-limits.mts",
+      "statusCodes": [429],
       "statusKnowledge": "explicit"
     },
     "POST:/api/v1/auth/mfa/re-auth/email/verification": {
@@ -89257,7 +89302,7 @@
     },
     "POST:/api/v1/auth/native/email-address/tokens": {
       "bodyKind": "content",
-      "hash": "1d959628b69bf9859504da182ef94992ef3b63138df348a9b1b4d028c64e7779",
+      "hash": "9aaa9d22fd9abdb3770ed0ce46ccdc8592d23c2e22237fcf783baf12a861ac73",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -89272,6 +89317,12 @@
               "schema": {
                 "type": "string"
               }
+            },
+            "resend_after_seconds": {
+              "required": true,
+              "schema": {
+                "type": "number"
+              }
             }
           },
           "type": "object"
@@ -89279,6 +89330,45 @@
       },
       "source": "backend/api/v1/sessions-authentication/auth-email-addresses.mts",
       "statusKnowledge": "default"
+    },
+    "POST:/api/v1/auth/native/email-address/tokens#email-code-recently-sent": {
+      "bodyKind": "content",
+      "hash": "188fddc5aa3f1dc4f9b3bd521e2da9baaa2d25ee7b72a4e4cfe6fe716b3325bd",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/native/email-address/tokens",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": "email_code_recently_sent"
+              }
+            },
+            "message": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "request_id": {
+              "required": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/services/users/email-auth-rate-limits.mts",
+      "statusCodes": [429],
+      "statusKnowledge": "explicit"
     },
     "POST:/api/v1/auth/oauth/:provider/authorizations": {
       "bodyKind": "content",
@@ -104565,6 +104655,7 @@
       "method": "POST",
       "migratedFrom": [],
       "path": "/api/v1/auth/native/email-address/tokens",
+      "pending": true,
       "requestBody": {
         "emailAddress": "fixture@example.test"
       },
@@ -104575,7 +104666,7 @@
         "x-voucha-platform": "windows"
       },
       "responseSchema": {
-        "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d",
+        "hash": "36d6b94061c5bf866969a0a40a0809664628a1306fcaaee22bdbf801804f360b",
         "key": "native.auth.email-address.tokens"
       },
       "route": {
@@ -104585,6 +104676,59 @@
         "caseFile": "backend/test-helpers/api-fixtures/native-session-mcp-cases.mts"
       },
       "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "POST:/api/v1/auth/native/email-address/tokens#email-code-recently-sent",
+      "bodyFile": "responses/native.auth.email-address.tokens.recently-sent.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.email-address.tokens.recently-sent",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/native/email-address/tokens",
+      "pending": true,
+      "requestBody": {
+        "emailAddress": "fixture@example.test"
+      },
+      "requestHeaders": {
+        "Content-Type": "application/json",
+        "x-voucha-app-version": "test",
+        "x-voucha-client": "dotnet",
+        "x-voucha-platform": "windows"
+      },
+      "responseSchema": {
+        "hash": "99bf708cb0cedd797029293ae07734fc205fce184be19bae21179cf98d8ece1f",
+        "key": "native.auth.email-address.tokens.recently-sent"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/native/email-address/tokens"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-session-mcp-cases.mts"
+      },
+      "status": 429
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/auth/mfa/re-auth/email/tokens#email-code-recently-sent",
+      "bodyFile": "responses/native.auth.re-auth.email.tokens.recently-sent.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.re-auth.email.tokens.recently-sent",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/mfa/re-auth/email/tokens",
+      "pending": true,
+      "responseSchema": {
+        "hash": "99bf708cb0cedd797029293ae07734fc205fce184be19bae21179cf98d8ece1f",
+        "key": "native.auth.re-auth.email.tokens.recently-sent"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/mfa/re-auth/email/tokens"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-session-mcp-cases.mts"
+      },
+      "status": 429
     },
     {
       "auth": "none",
@@ -104730,8 +104874,9 @@
       "method": "POST",
       "migratedFrom": [],
       "path": "/api/v1/auth/mfa/re-auth/email/tokens",
+      "pending": true,
       "responseSchema": {
-        "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d",
+        "hash": "36d6b94061c5bf866969a0a40a0809664628a1306fcaaee22bdbf801804f360b",
         "key": "native.auth.re-auth.email.tokens"
       },
       "route": {

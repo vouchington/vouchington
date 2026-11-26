@@ -1,4 +1,4 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
+import { allowUnannotatedQuery } from '@vouchington/postgres'
 /**
  * Posts semantic search test helpers
  */

@@ -57,9 +57,7 @@ test.describe('Community automod flags panel', () => {
     await navigateTo(page, `/communities/${slug}/settings/moderation`)
 
     await expect(page.getByTestId('community-moderation-heading')).toBeVisible()
-    await expect(page.getByTestId('community-automod-flags-panel')).toBeVisible({
-      timeout: 10_000,
-    })
+    await expect(page.getByTestId('community-automod-flags-panel')).toBeVisible()
     await expect(page.getByTestId('community-automod-flag-row')).toHaveCount(1)
 
     const responsePromise = page.waitForResponse(
@@ -71,9 +69,7 @@ test.describe('Community automod flags panel', () => {
     await page.getByTestId('community-automod-flag-dismiss-button').click()
     await responsePromise
 
-    await expect(page.getByTestId('community-automod-flags-panel')).not.toBeAttached({
-      timeout: 10_000,
-    })
+    await expect(page.getByTestId('community-automod-flags-panel')).not.toBeAttached()
     const state = await getCommunityPostReviewAutomodState(postId)
     expect(state?.automod_dismissed_by_id).toBe(ownerId)
   })

@@ -1,9 +1,36 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { sesInboundWorkConfig } from '@queues/ses-inbound/config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { Readable } from 'node:stream'
 import { parseSesInboundMime, SesInboundTerminalError } from './mime.mts'
 import { boundedBodyStream } from './s3-streams.mts'
 
 describe('SES inbound MIME parsing', () => {
+  it('rejects a valid multipart message after the configured MIME node limit is lowered', async () => {
+    const raw = Buffer.from(
+      [
+        'From: sender@example.test',
+        'Content-Type: multipart/mixed; boundary="node-test"',
+        '',
+        '--node-test',
+        'Content-Type: text/plain; charset=utf-8',
+        '',
+        'Body text',
+        '--node-test--',
+      ].join('\r\n'),
+    )
+    await expect(parseSesInboundMime(Readable.from([raw]))).resolves.toMatchObject({
+      bodyText: 'Body text',
+    })
+
+    await sesInboundWorkConfig.waitForInitialization()
+    onTestFinished(overrideDynamicConfigFieldsForTest(sesInboundWorkConfig, { max_mime_nodes: 1 }))
+
+    await expect(parseSesInboundMime(Readable.from([raw]))).rejects.toMatchObject({
+      cause: { message: 'MIME message exceeds 1 nodes' },
+    })
+  })
+
   it('rejects oversized raw email and closes the upstream object iterator', async () => {
     let sourceClosed = false
     async function* oversizedBody(): AsyncGenerator<Buffer> {

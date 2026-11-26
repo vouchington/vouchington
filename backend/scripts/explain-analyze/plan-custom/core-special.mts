@@ -1,5 +1,5 @@
-import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes, baseRelationName, processedRows } from '../plan-nodes.mts'
+import { collectPlanNodes, type ExplainResult, processedRows } from '@vouchington/explain-plan'
+import { baseRelationName } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function assertCorePlanCheck(name: string, result: ExplainResult): void {

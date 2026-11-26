@@ -41,7 +41,7 @@ jobs:
           fetch-depth: 1
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -87,7 +87,7 @@ jobs:
           fetch-depth: 1
         if: steps.checkout-2.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -112,7 +112,7 @@ jobs:
           overwrite: true
           name: web-test-report-shard-${{ matrix.shard }}
           path: web-shard-${{matrix.shard}}.junit.xml
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: warn
       - name: Preserve full web-shard-${{ matrix.shard }} LCOV
         timeout-minutes: 1
@@ -124,7 +124,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: web-shard-${{ matrix.shard }}
       - name: Upload full web-shard-${{ matrix.shard }} LCOV to GitHub (attempt 2)
@@ -132,7 +132,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@437ba0ced5a5c1f9380d84a606611abd208f1e7b # v3.5.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
         with:
           suite: web-shard-${{ matrix.shard }}
           name-suffix: -retry

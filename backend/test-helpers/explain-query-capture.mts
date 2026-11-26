@@ -1,10 +1,10 @@
+import { writePool } from '@data-stores/psql'
 import {
   clearCapturedQueries,
   disableQueryCapture,
   enableQueryCapture,
   getCapturedQueries,
-  writePool,
-} from '@data-stores/psql'
+} from './explain-analyze.mts'
 
 /** Exercise native pool queries while a caller-owned capture adapter is installed. */
 export async function runRawPoolCaptureProbe(

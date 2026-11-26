@@ -191,6 +191,7 @@ test.describe('public referral-link summaries', () => {
     await expect(summary).toBeVisible()
     await expect(summary).toContainText(programName)
     await summary.click()
-    await expect(page).toHaveURL(new RegExp(`/referral-program/${programSlug}$`))
+    // The topic root redirects to its default subpage (referral-links when no posts).
+    await expect(page).toHaveURL(new RegExp(`/referral-program/${programSlug}/referral-links$`))
   })
 })

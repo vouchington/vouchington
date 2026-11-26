@@ -52,7 +52,8 @@ export async function detachHostnameBlockReferences(
        )
        UPDATE vote_weight_penalties penalty
        SET source_hostname_block_id = NULL
-       WHERE penalty.id = ANY(ARRAY(SELECT id FROM page))`,
+       WHERE penalty.id = ANY(ARRAY(SELECT id FROM page))
+         AND penalty.source_hostname_block_id = $1::uuid`,
           [blockId, remainingBudget],
         )
       : { rowCount: 0 }

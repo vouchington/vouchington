@@ -4,7 +4,7 @@ import { HackerNewsReferencesProvider } from '@/components/hacker-news/hacker-ne
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { getPaginatedQueryKey } from '@vouchington/api-client'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
-import { useQueryScopedRemovals } from '@/hooks/use-query-scoped-removals'
+import { useQueryScopedRemovals } from '@vouchington/api-client/paginated-list'
 import type { PostsListResponseBody } from '@/types/api-responses'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
 import type { RelationManagementActionConfig } from './relation-management-action'
@@ -43,6 +43,18 @@ export function PaginatedUserPostRelationList({
   const hackerNewsReferences = mergeRecords(pages, page => page.post_hacker_news_references ?? {})
   const canLoadMore = hasNextPage && !!endpoint
 
+  const list = (
+    <HackerNewsReferencesProvider references={hackerNewsReferences}>
+      <UserPostRelationList
+        posts={posts}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+        relationAction={relationAction}
+        onRemoved={removePost}
+      />
+    </HackerNewsReferencesProvider>
+  )
+
   return (
     <InfiniteScroll
       hasNextPage={canLoadMore}
@@ -52,16 +64,10 @@ export function PaginatedUserPostRelationList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      itemCount={posts.length}
+      emptyState={list}
     >
-      <HackerNewsReferencesProvider references={hackerNewsReferences}>
-        <UserPostRelationList
-          posts={posts}
-          emptyTitle={emptyTitle}
-          emptyDescription={emptyDescription}
-          relationAction={relationAction}
-          onRemoved={removePost}
-        />
-      </HackerNewsReferencesProvider>
+      {list}
     </InfiniteScroll>
   )
 }

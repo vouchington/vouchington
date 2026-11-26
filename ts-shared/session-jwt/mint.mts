@@ -66,6 +66,6 @@ export async function ensureAnonymousSession(
     session,
     mintedDt,
     mintedSt,
-    dc: mintedDt ? undefined : devicePayload?.dc,
+    ...(mintedDt || devicePayload?.dc === undefined ? {} : { dc: devicePayload.dc }),
   }
 }

@@ -27,6 +27,8 @@
 - `hash`
 - `reference`
 - `newest`
+- `reconcile`
+- `check_newest`
 
 ## `agent_types`
 

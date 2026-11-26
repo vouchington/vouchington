@@ -3,6 +3,9 @@ import type { BrowserContext, Route, TestInfo } from '@playwright/test'
 import { playwrightTimeoutFixture } from '../../config/test-timeout.mts'
 import { browserErrorsFixture } from '../test.mts'
 
+// One millisecond over the 30 s product cap.
+const TIMEOUT_ABOVE_CAP_MS = 30_001
+
 type Listener = (...args: unknown[]) => void
 
 class MockBrowserContext {
@@ -76,7 +79,7 @@ describe('browserErrorsFixture', () => {
 
   it('rejects an effective test timeout above the product cap', async () => {
     const context = new MockBrowserContext()
-    const testInfo = Object.assign(createTestInfo(), { timeout: 30_001 })
+    const testInfo = Object.assign(createTestInfo(), { timeout: TIMEOUT_ABOVE_CAP_MS })
 
     await expect(
       browserErrorsFixture(

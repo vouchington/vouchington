@@ -42,10 +42,11 @@ export function useDiscussionCategoryState(
 
   const addDiscussionCategory = () => {
     setDiscussionCategoriesChanged(true)
-    setDiscussionCategories(prev => {
-      pendingCategoryFocusIndexRef.current = prev.length
-      return [...prev, { key: crypto.randomUUID(), topicId: '', topicName: '', hashtag: '' }]
-    })
+    pendingCategoryFocusIndexRef.current = discussionCategories.length
+    setDiscussionCategories(prev => [
+      ...prev,
+      { key: crypto.randomUUID(), topicId: '', topicName: '', hashtag: '' },
+    ])
   }
 
   const removeDiscussionCategory = (index: number) => {

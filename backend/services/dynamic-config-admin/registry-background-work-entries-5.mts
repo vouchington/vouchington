@@ -1,3 +1,9 @@
+import {
+  disputeAnnotationsConfig,
+  disputeAnnotationsMaxValues,
+} from '@services/review-disputes/annotation-limits'
+import { searchParamsConfig, searchParamsMaxValues } from '@services/search-params/config'
+import { mcpToolsWorkConfig, mcpToolsWorkMaxValues } from '@services/mcp-work-config'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import {
   postPublicationWorkConfig,
@@ -7,6 +13,10 @@ import {
   rssFeedItemsWorkConfig,
   rssFeedItemsWorkMaxValues,
 } from '@services/rss-feed-items/work-limits'
+import {
+  rssFeedItemIngestionConfig,
+  rssFeedItemIngestionMaxValues,
+} from '@services/rss-feed-items/processing-limits'
 import { rssFeedsWorkConfig, rssFeedsWorkMaxValues } from '@services/rss-feeds/work-limits'
 import {
   notificationsWorkConfig,
@@ -23,8 +33,6 @@ export const backgroundWorkRegistryEntries5 = {
     descriptions: {
       capture_batch_size: 'Capture batch size for post publication processing.',
       effect_payload_key_batch_size: 'Maximum captured keys in one direct publication job.',
-      story_lifecycle_lock_batch_size:
-        'Story lifecycle lock batch size for post publication processing.',
       rss_feed_hard_delete_capture_batch_size: 'RSS feed hard delete page size.',
       topic_alias_unlink_page_size: 'Topic alias unlink page size for post publication processing.',
       topic_alias_unlink_page_concurrency:
@@ -54,10 +62,19 @@ export const backgroundWorkRegistryEntries5 = {
       sql_batch_size: 'Sql batch size for rss feed items processing.',
       category_sql_batch_size: 'Category sql batch size for rss feed items processing.',
       enqueue_batch_size: 'Enqueue batch size for rss feed items processing.',
-      story_category_item_batch_size:
-        'Story category item batch size for rss feed items processing.',
       story_category_change_batch_size:
         'Story category change batch size for rss feed items processing.',
+    },
+  }),
+  'rss-feed-item-ingestion-config': defineBoundedWorkNamespace({
+    namespace: 'rss-feed-item-ingestion-config',
+    config: rssFeedItemIngestionConfig,
+    label: 'RSS feed item ingestion',
+    maxValues: rssFeedItemIngestionMaxValues,
+    descriptions: {
+      fetch_max_items: 'Maximum valid items admitted from a feed fetch.',
+      item_max_categories: 'Maximum distinct categories admitted for one RSS feed item.',
+      podcast_chapters_max_count: 'Maximum podcast chapters returned for one item.',
     },
   }),
   'rss-feeds-work-config': defineBoundedWorkNamespace({
@@ -67,6 +84,7 @@ export const backgroundWorkRegistryEntries5 = {
     maxValues: rssFeedsWorkMaxValues,
     descriptions: {
       category_sql_batch_size: 'Category sql batch size for rss feeds processing.',
+      podcast_max_categories: 'Maximum distinct podcast categories extracted for one feed.',
       category_backfill_batch_size: 'Category backfill batch size for rss feeds processing.',
       topic_alias_category_mapping_reconciliation_batch_size:
         'Topic alias category mapping reconciliation batch size for rss feeds processing.',
@@ -102,6 +120,34 @@ export const backgroundWorkRegistryEntries5 = {
     descriptions: {
       bloom_batch_size: 'Bloom batch size for bookmarks processing.',
       bloom_lookup_batch_size: 'Bloom lookup batch size for bookmarks processing.',
+      set_bookmark_max_targets: 'Maximum targets admitted by one MCP bookmark request.',
+    },
+  }),
+  'mcp-tools-work-config': defineBoundedWorkNamespace({
+    namespace: 'mcp-tools-work-config',
+    config: mcpToolsWorkConfig,
+    label: 'MCP audit messages',
+    maxValues: mcpToolsWorkMaxValues,
+    descriptions: {
+      max_audited_messages: 'Maximum JSON-RPC messages admitted on an audited MCP surface.',
+    },
+  }),
+  'search-params-config': defineBoundedWorkNamespace({
+    namespace: 'search-params-config',
+    config: searchParamsConfig,
+    label: 'Topic search inputs',
+    maxValues: searchParamsMaxValues,
+    descriptions: {
+      max_topic_search_terms: 'Maximum raw topic identifiers accepted by one search request.',
+    },
+  }),
+  'dispute-annotations-config': defineBoundedWorkNamespace({
+    namespace: 'dispute-annotations-config',
+    config: disputeAnnotationsConfig,
+    label: 'Dispute annotations',
+    maxValues: disputeAnnotationsMaxValues,
+    descriptions: {
+      max_batch_post_ids: 'Maximum post IDs accepted by one annotation lookup request.',
     },
   }),
 }

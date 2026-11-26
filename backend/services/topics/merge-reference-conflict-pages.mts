@@ -21,8 +21,9 @@ export async function processTopicMergeClaimReferencePage(
   if (row.loser_id) {
     const { rowCount } = await query(
       `/* processTopicMergeClaimPage history */ WITH page AS MATERIALIZED (
-      SELECT id FROM moderator_actions WHERE topic_claim_id = $1::uuid ORDER BY id LIMIT $2 FOR UPDATE
-    ) UPDATE moderator_actions SET topic_claim_id = NULL FROM page WHERE moderator_actions.id = page.id`,
+      SELECT id FROM moderator_actions WHERE topic_claim_id = $1::uuid ORDER BY id LIMIT $2
+    ) UPDATE moderator_actions SET topic_claim_id = NULL FROM page
+      WHERE moderator_actions.id = page.id AND moderator_actions.topic_claim_id = $1::uuid`,
       [row.loser_id, limit],
     )
     if (rowCount) return rowCount
@@ -55,6 +56,7 @@ export async function processTopicMergeBookmarkReferencePage(
     topicColumns.includes(column)
       ? `CASE WHEN s.${column} = $1::uuid THEN $2::uuid ELSE s.${column} END`
       : `s.${column}`
+  // lock-reason: prevents: choosing the surviving bookmark from a superseded source deletion state; writer: bookmarkEntity
   const { rows } = await query<{
     subject_id: string
     object_id: string

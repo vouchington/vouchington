@@ -18,12 +18,12 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
     "@services/friend-recommendations": "workspace:^",
     "@services/oauth-facebook": "workspace:^",
     "@services/oauth-github": "workspace:^",
     "@services/oauth-x": "workspace:^",
+    "@vouchington/utils": "^0.13.0",
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {

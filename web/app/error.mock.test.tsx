@@ -107,6 +107,6 @@ describe('ErrorPage', () => {
       />,
     )
 
-    expect(screen.getByRole('link', { name: /home/i })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: /\bhome\b/i })).toHaveAttribute('href', '/')
   })
 })

@@ -23,6 +23,7 @@ export async function createTotpAuthenticator(
   })
 
   return runWithTransaction(options.query, async query => {
+    // lock-reason: prevents: storing a new authenticator after credential erasure starts; writer: account deletion.
     await query(
       sql`/* createTotpAuthenticator */ SELECT fn_lock_active_user_for_mutation(${userId})`,
     )

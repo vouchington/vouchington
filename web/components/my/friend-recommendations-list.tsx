@@ -92,22 +92,6 @@ export function FriendRecommendationsList({
     recommendation => !dismissed.has(recommendation.id) && !followed.has(recommendation.id),
   )
 
-  if (visibleRecommendations.length === 0 && !hasNextPage) {
-    return (
-      <p className='text-sm text-muted-foreground'>
-        {t('extracted.my.friendRecommendationsList.noFriendRecommendationsAtThisTime_fb21db17')}{' '}
-        <Link
-          href='/my/identity#social'
-          className='underline'
-          data-pw='friend-recommendations-empty-identity-link'
-        >
-          {t('extracted.my.friendRecommendationsList.connectYourFacebookXOrGithub_e3d61a65')}
-        </Link>{' '}
-        {t('extracted.my.friendRecommendationsList.toFindPeopleYouKnow_793a41d7')}
-      </p>
-    )
-  }
-
   return (
     <InfiniteScroll
       hasNextPage={hasNextPage}
@@ -117,6 +101,20 @@ export function FriendRecommendationsList({
       fetchError={fetchError}
       clearError={clearError}
       resetKey={resetKey}
+      itemCount={visibleRecommendations.length}
+      emptyState={
+        <p className='text-sm text-muted-foreground'>
+          {t('extracted.my.friendRecommendationsList.noFriendRecommendationsAtThisTime_fb21db17')}{' '}
+          <Link
+            href='/my/identity#social'
+            className='underline'
+            data-pw='friend-recommendations-empty-identity-link'
+          >
+            {t('extracted.my.friendRecommendationsList.connectYourFacebookXOrGithub_e3d61a65')}
+          </Link>{' '}
+          {t('extracted.my.friendRecommendationsList.toFindPeopleYouKnow_793a41d7')}
+        </p>
+      }
     >
       <div className='space-y-4'>
         <ul className='divide-y'>

@@ -5,11 +5,12 @@
  */
 
 import { clientApi } from './instance'
-import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
+import { returnNullForMissingEntity } from '@vouchington/api-client'
 import { toTopicAliasRecords, type TopicAliasesWireResponse } from '../topic-alias-records'
 import type {
   TopicsSearchResponseBody,
   TopicResponseBody,
+  TopicFollowContextResponseBody,
   TopicMutationResponseBody,
   ListResponse,
 } from '@/types/api-responses'
@@ -44,6 +45,16 @@ export async function fetchTopics(
     },
     signal: options.signal,
   })
+}
+
+export async function fetchTopicFollowContext(
+  idOrSlug: string,
+  after: string,
+): Promise<TopicFollowContextResponseBody> {
+  return clientApi.get<TopicFollowContextResponseBody>(
+    `/api/v1/topics/${encodeURIComponent(idOrSlug)}/follow-context`,
+    { searchParams: { after } },
+  )
 }
 
 export async function fetchTopic(topicId: string): Promise<Topic | null> {

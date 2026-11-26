@@ -21,4 +21,5 @@ export const MODERATION_RERUN_SCENARIO_IDS = [
   'appeal-rerun-retention',
   'review-dispute-rerun-retention',
   'appeal-stuck-run-expiry',
+  'report-stuck-run-expiry',
 ] as const

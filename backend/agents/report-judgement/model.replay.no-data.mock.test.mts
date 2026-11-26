@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-result'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from '../../test-helpers/recorded-response.mts'
 import { callJudgementModel } from './model.mts'
 
 // The recorded Messages API body is served to the real `generateJson` through its `createMessage`

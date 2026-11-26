@@ -21,7 +21,7 @@ export async function claimIneligiblePurchaseCancellationOperation(
     providerApplicationId,
     subscriptionId,
   )
-  // ast-grep-ignore: no-three-sequential-awaits -- the context must exist before the operation insert, which must precede the locked claim reread
+  // ast-grep-ignore: no-three-sequential-awaits -- the context must exist before the operation insert, which must precede the claim lookup
   const providerContextId = await getOrCreateProviderContextId(
     { provider: 'stripe', environment: providerEnvironment, applicationId: providerApplicationId },
     query,
@@ -37,12 +37,11 @@ export async function claimIneligiblePurchaseCancellationOperation(
       'cancel_source', ${idempotencyKey}
     ) ON CONFLICT (membership_provider_context_id, idempotency_key) DO NOTHING
   `)
-  const { rows } = await query(sql`/* claimIneligiblePurchaseCancellation:lock */
+  const { rows } = await query(sql`/* claimIneligiblePurchaseCancellation:find */
     SELECT operation.id, operation.completed_at IS NOT NULL AS completed
     FROM membership_operations operation
     WHERE operation.membership_provider_context_id = ${providerContextId}::UUID AND operation.idempotency_key = ${idempotencyKey}
       AND operation.membership_lineage_binding_id = ${membershipLineageBindingId}
-    FOR UPDATE
   `)
   const row = rows[0] as
     | {
@@ -55,6 +54,9 @@ export async function claimIneligiblePurchaseCancellationOperation(
     return { completed: true, leaseToken: null, id: row.id, idempotencyKey }
   }
   const leaseToken = await claimMembershipOperationExecutionWork(row.id, query)
-  if (!leaseToken) throw new IneligiblePurchaseReversalInProgressError(row.id)
-  return { completed: false, leaseToken, id: row.id, idempotencyKey }
+  if (leaseToken) return { completed: false, leaseToken, id: row.id, idempotencyKey }
+  const { rows: completed } = await query(sql`/* claimIneligiblePurchaseCancellation:completed */
+    SELECT id FROM membership_operations WHERE id = ${row.id} AND completed_at IS NOT NULL`)
+  if (completed[0]) return { completed: true, leaseToken: null, id: row.id, idempotencyKey }
+  throw new IneligiblePurchaseReversalInProgressError(row.id)
 }

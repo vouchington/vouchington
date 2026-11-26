@@ -1,14 +1,13 @@
+import { getMcpAuditMessageLimit } from '@services/mcp-work-config'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import type { ApiScope } from '@modules/scopes'
 import type { McpCallAuditEvent } from './audit.mts'
 import { readCopyrightTarget } from './copyright-audit-target.mts'
 import type { McpServerConfig } from './config.mts'
+import { validateToolArguments } from '@vouchington/mcp-server/schema'
+import { toolRouteCharges } from '@vouchington/mcp-server/tools'
 import { resolveMcpToolCall } from './resolve-tool-call.mts'
-import { toolRouteCharges } from './tool-route-keys.mts'
-import { validateToolArguments } from './validate-tool-arguments.mts'
-
-export { mcpNotificationShapedToolCall, mcpToolCallIsDispatched } from './tool-call-shape.mts'
 
 // Only these methods are ever written to the audit log. Anything else, including text an arbitrary
 // caller chose, is recorded as an invalid request with no method.
@@ -20,10 +19,6 @@ const AUDITED_METHODS: ReadonlySet<string> = new Set([
   'notifications/initialized',
   'notifications/cancelled',
 ])
-
-// A larger JSON-RPC batch is refused on an audited surface instead of writing an unbounded number
-// of audit rows for one request.
-const MAX_AUDITED_MCP_MESSAGES = 25
 
 type UserForClassification = {
   id: string
@@ -56,8 +51,10 @@ type ClassifiedMessage = {
   charge: Pick<McpToolCallCharge, 'requestId' | 'routeCharges'> | null
 }
 
+// A larger JSON-RPC batch is refused on an audited surface instead of writing an unbounded number
+// of audit rows for one request.
 export function exceedsMcpAuditBatchLimit(parsedBody: unknown): boolean {
-  return Array.isArray(parsedBody) && parsedBody.length > MAX_AUDITED_MCP_MESSAGES
+  return Array.isArray(parsedBody) && parsedBody.length > getMcpAuditMessageLimit()
 }
 
 // Predicts, without running anything, how each JSON-RPC message in a request will be authorized, so

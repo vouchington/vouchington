@@ -77,7 +77,8 @@ describe('crashed embedding creation lease holder', () => {
           domains: ['bedrock-embeddings'],
           prefix: connection.prefix,
           concurrency: 1,
-          blockTimeout: 1_000,
+          // A blocked read is only woken by its timeout here, so each queue transition waited ~1s.
+          blockTimeout: 100,
           promotionInterval: 50,
         }),
       )

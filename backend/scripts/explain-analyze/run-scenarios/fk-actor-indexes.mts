@@ -48,7 +48,6 @@ export async function runFkActorIndexScenarios(): Promise<void> {
         { kind: 'maxBitmapIndexRows', max: 2 },
       ],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: three fixed FK equality shapes require separate parameterized custom/generic plan captures
     await runAndCapture(probe.id, async () => {
       const result = await write(`/* runFkActorIndexScenarios */ ${probe.text}`, [...probe.values])
       assert.equal(result.rows.length, 0, `${probe.relation} actor probe must remain a no-match`)

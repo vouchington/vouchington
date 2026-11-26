@@ -26,7 +26,6 @@ export async function runRssFeedWeeklyFilterScenarios(): Promise<void> {
     ['rss-feed-item-feed-1y', '1y'],
     ['rss-feed-item-feed-all-time', 'all'],
   ] as const) {
-    // no-mistakes-disable-next-line query-reached-per-item: three fixed range contracts need independent first/cursor custom and generic captures.
     await runRssFeedFirstAndContinuationScenarios(scenarioId, heavyFollowUser, {
       feed_type: 'all',
       limit: 25,
@@ -34,7 +33,6 @@ export async function runRssFeedWeeklyFilterScenarios(): Promise<void> {
     })
     const outsideScenarioId = `${scenarioId}-outside-window`
     registerRssFeedPageScenario(outsideScenarioId, true)
-    // no-mistakes-disable-next-line query-reached-per-item: each fixed range needs its own captured outside-window witness.
     await runAndCapture(outsideScenarioId, async () => {
       const page = await getRssFeedItemFeedIds(heavyFollowUser, {
         feed_type: 'all',

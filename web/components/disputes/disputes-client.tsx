@@ -53,6 +53,16 @@ export function DisputesClient({
   const { handleRerunAI, pendingRerunIds } = useDisputeAiReruns(state.disputeOverrides, dispatch)
   const actions = useDisputeActions(state, dispatch)
 
+  const list = (
+    <DisputesTable
+      viewerTier={viewerTier}
+      disputes={disputes}
+      loadingId={state.loadingId}
+      pendingRerunIds={pendingRerunIds}
+      onOpen={actions.handleOpen}
+    />
+  )
+
   return (
     <div
       className='space-y-4'
@@ -69,14 +79,10 @@ export function DisputesClient({
         fetchError={fetchError}
         clearError={clearError}
         resetKey={resetKey}
+        itemCount={disputes.length}
+        emptyState={list}
       >
-        <DisputesTable
-          viewerTier={viewerTier}
-          disputes={disputes}
-          loadingId={state.loadingId}
-          pendingRerunIds={pendingRerunIds}
-          onOpen={actions.handleOpen}
-        />
+        {list}
       </InfiniteScroll>
       {viewerTier === 'staff' ? (
         <DisputeDetailDialog

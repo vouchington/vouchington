@@ -130,6 +130,10 @@ export function ActiveSessionsManager({ initialData, initialSessions }: Props) {
         fetchError={pagination.fetchError}
         clearError={pagination.clearError}
         resetKey={pagination.resetKey}
+        itemCount={sessions.length}
+        emptyState={
+          <p className='text-sm text-muted-foreground'>{t('settings.activeSessions.empty')}</p>
+        }
       >
         <ul className='space-y-2'>
           {sessions.map(session => (
@@ -153,10 +157,6 @@ export function ActiveSessionsManager({ initialData, initialSessions }: Props) {
           ))}
         </ul>
       </InfiniteScroll>
-
-      {sessions.length === 0 ? (
-        <p className='text-sm text-muted-foreground'>{t('settings.activeSessions.empty')}</p>
-      ) : null}
 
       <ActiveSessionsConfirmationDialog
         confirmation={confirmation}

@@ -19,7 +19,7 @@ export async function deleteChildPage(
         -- no-mistakes-disable-next-line postgres-required-predicates: one receipt-indexed raw candidate page is capped before review eligibility; UUID age does not define intake ownership
         SELECT id FROM copyright_notice_email_intake_recommendations
         WHERE copyright_notice_email_intake_receipt_id = (SELECT intake_id FROM owner)
-        ORDER BY id LIMIT ${remaining + 1} FOR UPDATE
+        ORDER BY id LIMIT ${remaining + 1}
       ), deletable AS MATERIALIZED (
         SELECT candidate.id FROM candidates candidate
         WHERE NOT EXISTS (
@@ -46,7 +46,7 @@ export async function deleteChildPage(
       .append(sql` = (SELECT intake_id FROM owner)`)
       .append(sql` ORDER BY `)
       .append(orderBy)
-      .append(sql` LIMIT ${remaining} FOR UPDATE)`),
+      .append(sql` LIMIT ${remaining})`),
   )
   return rowCount ?? 0
 }

@@ -1,5 +1,5 @@
 import { createWorker, type NamedQueueJob, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { getWorkerConcurrency } from '@vouchington/utils/worker-concurrency'
 import { IMAGE_UPLOADS_QUEUE_NAME } from '@queues/image-uploads/config'
 import type { ImageUploadJobPayloads } from '@queues/image-uploads/types'
 import type { Worker, WorkerOptions } from 'glide-mq'

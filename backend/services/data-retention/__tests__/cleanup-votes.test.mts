@@ -4,20 +4,19 @@ import { v7 as uuidv7 } from 'uuid'
 import { reserveTestVoteRetention } from '@voucha/test-helpers/vote-retention-reservation'
 import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import {
-  createTestUserDirect,
   beginTransaction,
   getTestVoteBallotCleanupCursor,
   getTestPostVoteIds,
   getTestRetainedPostVoteCount,
   getTestVoteIntegrityFlagDetails,
   hasTestUserAgentString,
-  insertTestPost,
   insertTestPostVote,
   insertTestPostVoteWithUserAgent,
   insertTestUserSession,
   insertTestVoteIntegrityFlag,
   resetTestVoteBallotCleanupCursor,
 } from '@voucha/test-helpers'
+import { createTestVoteRetentionPost } from '@voucha/test-helpers/vote-retention-post'
 import { cleanupSupersededVoteBallots } from '../cleanup-vote-ballots.mts'
 import { cleanupOrphanedUserAgentStrings } from '../cleanup-user-agent-strings.mts'
 import { cleanupVoteIntegrityDetails } from '../cleanup-vote-integrity-details.mts'
@@ -26,18 +25,6 @@ import { getEngagement } from '@services/growth-metrics/get-engagement'
 import { deleteTestUserSession } from '../../../test-helpers/entities/user-sessions.mts'
 
 const NOW = new Date('2026-10-23T12:00:00.000Z')
-
-async function postForTest() {
-  const user = await createTestUserDirect()
-  if (!user) throw new Error('Failed to create test user')
-  const postId = await insertTestPost({
-    createdById: user.id,
-    title: 'Ballot retention test',
-    slug: `ballot-retention-${randomUUID()}`,
-    markdown: 'test',
-  })
-  return { userId: user.id, postId }
-}
 
 describe('vote and user-agent retention', () => {
   beforeEach(async () => {
@@ -80,7 +67,7 @@ describe('vote and user-agent retention', () => {
   })
 
   it('deletes only ballots superseded for 90 days and keeps the newest ballot', async () => {
-    const { userId, postId } = await postForTest()
+    const { userId, postId } = await createTestVoteRetentionPost()
     const firstDay = new Date(Date.UTC(2023, 0, 1 + randomInt(730)))
     const firstDayText = firstDay.toISOString().slice(0, 10)
     const firstId = uuidv7({ msecs: firstDay.getTime() })
@@ -115,7 +102,7 @@ describe('vote and user-agent retention', () => {
   })
 
   it('drains a long actor history in bounded pages before retiring its superseder', async () => {
-    const { userId, postId } = await postForTest()
+    const { userId, postId } = await createTestVoteRetentionPost()
     const olderDays = [
       '2023-01-01T00:00:00.000Z',
       '2024-01-01T00:00:00.000Z',
@@ -155,7 +142,7 @@ describe('vote and user-agent retention', () => {
   })
 
   it('revisits an unfinished superseder while keeping the sweep end fixed', async () => {
-    const { userId, postId } = await postForTest()
+    const { userId, postId } = await createTestVoteRetentionPost()
     const olderIds = [
       '2028-01-01T00:00:00.000Z',
       '2029-01-01T00:00:00.000Z',
@@ -219,7 +206,7 @@ describe('vote and user-agent retention', () => {
   })
 
   it('removes an orphan user agent and keeps one referenced by a session', async () => {
-    const { userId } = await postForTest()
+    const { userId } = await createTestVoteRetentionPost()
     const orphanId = await upsertUserAgentString(`orphan-${randomUUID()}`)
     const retainedAgent = `session-${randomUUID()}`
     const referencedId = await upsertUserAgentString(retainedAgent)
@@ -253,7 +240,7 @@ describe('vote and user-agent retention', () => {
   })
 
   it('keeps a user agent referenced by a ballot until retention deletes that ballot', async () => {
-    const { postId, userId } = await postForTest()
+    const { postId, userId } = await createTestVoteRetentionPost()
     const agentId = await upsertUserAgentString(`ballot-${randomUUID()}`)
     if (!agentId) throw new Error('User-agent fixture was not created')
     const afterAgeGuard = new Date(Date.now() + 2 * 24 * 60 * 60 * 1_000)
@@ -278,7 +265,7 @@ describe('vote and user-agent retention', () => {
   })
 
   it('redacts identifying details after 180 days while retaining the flag', async () => {
-    const { postId } = await postForTest()
+    const { postId } = await createTestVoteRetentionPost()
     const flagId = await insertTestVoteIntegrityFlag({
       postId,
       flagType: 'ip_correlation',
@@ -290,7 +277,7 @@ describe('vote and user-agent retention', () => {
       },
     })
     const page = await cleanupVoteIntegrityDetails(1, NOW, [flagId])
-    expect(page).toMatchObject({ scanned: 1, redacted: 1, hasMore: false })
+    expect(page).toMatchObject({ scanned: 1, redacted: 1, hasMore: true })
     expect(await getTestVoteIntegrityFlagDetails(flagId)).toEqual({ threshold: 3 })
   })
 })

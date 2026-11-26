@@ -12,13 +12,14 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { requestReAuthEmail, verifyReAuthEmail, verifyReAuthTotp } from '@/lib/api/client'
+import { verifyReAuthEmail, verifyReAuthTotp } from '@/lib/api/client'
 import { ApiError } from '@vouchington/api-client'
 import type { MfaStatus } from '@/types/user'
 import { MethodSelector } from './mfa-reauth-dialog/method-selector'
 import { availableReAuthMethods, type ReauthMethod } from './mfa-reauth-dialog/methods'
 import { EmailVerificationPane, TotpVerificationPane } from './mfa-reauth-dialog/verification-panes'
 import { useReAuthMethods } from './mfa-reauth-dialog/use-reauth-methods'
+import { useReAuthEmailSend } from './mfa-reauth-dialog/use-reauth-email-send'
 import { ReAuthDiscoveryStatus } from './mfa-reauth-dialog/discovery-status'
 import { AlternativeReAuthPane } from './mfa-reauth-dialog/alternative-pane'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -39,6 +40,15 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
   const [emailSent, setEmailSent] = useState(false)
   const [sentToEmail, setSentToEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const { resendSecondsLeft, sendEmail: handleSendEmail } = useReAuthEmailSend({
+    setLoading,
+    onRecentlySent: () => setEmailSent(true),
+    onSent: emailAddress => {
+      setEmailCode('')
+      setSentToEmail(emailAddress)
+      setEmailSent(true)
+    },
+  })
   const discovery = useReAuthMethods(open)
   const methods = discovery.methods ? availableReAuthMethods(discovery.methods) : []
   const activeMethod = methods.includes(method) ? method : methods[0]
@@ -73,29 +83,6 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
     } finally {
       setLoading(false)
     }
-  }
-
-  async function handleSendEmail() {
-    setLoading(true)
-    try {
-      const result = await requestReAuthEmail()
-      setSentToEmail(result.email_address)
-      setEmailSent(true)
-      toast.success('Verification code sent')
-    } catch (err) {
-      /* c8 ignore next 2 -- error path requires injecting a send email failure */
-      const message = err instanceof ApiError ? err.message : 'Failed to send code'
-      toast.error(message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleResendEmail() {
-    setEmailCode('')
-    setEmailSent(false)
-    setSentToEmail('')
-    await handleSendEmail()
   }
 
   async function handleEmailVerify(code: string) {
@@ -165,11 +152,11 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
           {activeMethod === 'email' && (
             <EmailVerificationPane
               emailCode={emailCode}
-              emailSent={emailSent}
+              emailSent={emailSent || resendSecondsLeft > 0}
               loading={loading}
+              resendSecondsLeft={resendSecondsLeft}
               sentToEmail={sentToEmail}
               handleEmailVerify={handleEmailVerify}
-              handleResendEmail={handleResendEmail}
               handleSendEmail={handleSendEmail}
               setEmailCode={setEmailCode}
             />

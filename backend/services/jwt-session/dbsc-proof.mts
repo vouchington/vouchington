@@ -143,7 +143,7 @@ export async function authorizeDbscProof(options: {
   return authorization
 }
 
-/** Call while holding the same authority row lock used for device credential rotation. */
+/** Consumes the proof for the observed authority. Credential writes recheck that authority in SQL. */
 export function assertDeviceBoundRefreshAllowed(
   row: SessionDeviceAuthorityRow,
   presentedDigest: string,

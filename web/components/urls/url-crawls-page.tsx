@@ -30,6 +30,7 @@ export function UrlCrawlsPage({ data, urlId, url }: UrlCrawlsPageProps) {
 
   return (
     <InfiniteScroll
+      itemCount={results.length}
       hasNextPage={hasNextPage}
       endCursor={endCursor}
       onLoadMore={loadMore}

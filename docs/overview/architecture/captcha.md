@@ -47,7 +47,7 @@ can proceed; production never honors that field. See
 ## Turnstile token parsing
 
 Protected routes should read Turnstile tokens with
-`extractTurnstileTokenFromBody()` from `@services/captcha`, then pass the result to
+`extractTurnstileToken()` from `@vouchington/utils/turnstile-siteverify`, then pass the result to
 `verifyCaptchaToken(token, ctx.ip)`.
 
 - The canonical request body field is `cf_turnstile_response`.

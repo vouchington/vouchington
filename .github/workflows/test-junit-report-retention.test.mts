@@ -100,7 +100,7 @@ describe('JUnit report retention', () => {
       with: {
         'if-no-files-found': 'ignore',
         name: report.artifact,
-        'retention-days': 1,
+        'retention-days': 7,
         path: report.report,
       },
     })

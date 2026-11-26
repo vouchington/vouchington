@@ -38,7 +38,7 @@ async function recomputeLockedRssHackerNewsFlags(
   query: TransactionQuery,
   ids: string[],
 ): Promise<void> {
-  // Upserts lock these rows before changing URLs; recompute after acquiring the same locks.
+  // lock-reason: prevents: recomputing Hacker News flags from URLs changed by a concurrent upsert; writer: upsertRssFeedItems
   await query(
     `/* lockRssHackerNewsFlagItems */ SELECT id FROM rss_feed_items WHERE id = ANY($1::uuid[]) ORDER BY id FOR NO KEY UPDATE`,
     [ids],

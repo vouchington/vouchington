@@ -57,7 +57,7 @@ describe('URL embed response contract', () => {
       itemData: { title: 'Thumbnail fallback item' },
       contentSha256: createHash('sha256').update(randomUUID()).digest(),
     })
-    const thumbnailUrl = `https://images.example.com/${randomUUID()}.jpg`
+    const thumbnailUrl = `https://thumbnail-source.example.net/${randomUUID()}.jpg`
     await setRssFeedItemMediaDetails(itemId, {
       mediaType: 'article',
       enclosureUrl: null,
@@ -75,7 +75,11 @@ describe('URL embed response contract', () => {
       },
       embedMetadata: {
         ...EMBED,
-        thumbnail: { url: 'ftp://images.example.com/invalid.jpg', width: null, height: null },
+        thumbnail: {
+          url: 'ftp://thumbnail-source.example.net/invalid.jpg',
+          width: null,
+          height: null,
+        },
       },
     })
 

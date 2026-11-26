@@ -76,6 +76,7 @@ export async function runAutotaggerAgentLoop(
     params.signal?.throwIfAborted()
     const remaining = bounds.maxOutputTokens - outputTokens
     if (remaining <= 0) return result('output-budget-exhausted', turn - 1)
+    // oxlint-disable-next-line no-await-in-loop -- each model turn depends on the previous turn messages and tool results
     const response = await params.callTurn(
       {
         instructions: AUTOTAGGER_AGENT_INSTRUCTIONS,
@@ -115,6 +116,7 @@ export async function runAutotaggerAgentLoop(
         continue
       }
       toolCallCount++
+      // oxlint-disable-next-line no-await-in-loop -- tool calls run in order against a shared tool-call budget and stop on the first valid submission
       const output = await runSearchTopicsTool(call.input, candidates, params.search)
       results.push({ callId: call.id, content: output.content, isError: output.isError })
     }

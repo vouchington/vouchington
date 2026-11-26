@@ -68,6 +68,7 @@ async function deleteCompletedImportPage(
   const batchColumn = family === 'admin' ? 'admin_batch_id' : 'rss_batch_id'
   const batchTable = family === 'admin' ? 'admin_import_batches' : 'user_rss_feed_import_batches'
   let batchId = cursor[batchColumn]
+  // lock-reason: prevents: an import batch cascade or cursor SET NULL midway through the capped child drain; writer: account purge and import batch cleanup.
   if (batchId) {
     const { rows } = await query<{ id: string }>(
       `/* lockCurrentImportRetentionBatch */
@@ -96,7 +97,6 @@ async function deleteCompletedImportPage(
     cursor.cursor_discovery_url_id = null
     await updateCursor(query, family, batchColumn, batchId, cursor)
   }
-
   let deleted = 0
   if (cursor.phase === 'discoveries') {
     const { rows } = await query<{ import_row_id: string; discovery_url_id: string }>(
@@ -105,7 +105,7 @@ async function deleteCompletedImportPage(
        FROM user_rss_feed_import_row_discoveries
        WHERE batch_id = $1
          AND (import_row_id, discovery_url_id) > ($2::uuid, $3::uuid)
-       ORDER BY import_row_id, discovery_url_id LIMIT $4 FOR UPDATE`,
+       ORDER BY import_row_id, discovery_url_id LIMIT $4`,
       [
         batchId,
         cursor.cursor_row_id ?? MIN_UUIDV7,
@@ -139,7 +139,7 @@ async function deleteCompletedImportPage(
       `/* selectImportRowRetentionPage */
        SELECT id FROM ${rowTable} WHERE batch_id = $1
          AND id > $2::uuid
-       ORDER BY id LIMIT $3 FOR UPDATE`,
+       ORDER BY id LIMIT $3`,
       [batchId, cursor.cursor_row_id ?? MIN_UUIDV7, batchSize + 1],
     )
     const page = rows.slice(0, batchSize)

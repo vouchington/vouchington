@@ -196,14 +196,18 @@ function PendingVoteControls({
       <button
         type='button'
         disabled={vote.isLoading}
-        onClick={() => void vote.handleVote('like')}
+        onClick={() => {
+          void vote.handleVote('like')
+        }}
       >
         like
       </button>
       <button
         type='button'
         disabled={vote.isLoading}
-        onClick={() => void vote.handleVote('disavow')}
+        onClick={() => {
+          void vote.handleVote('disavow')
+        }}
       >
         disavow
       </button>

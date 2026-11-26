@@ -95,8 +95,12 @@ async function main(): Promise<void> {
   }
   const results = await runImageResizeSmoke({
     imageOrigin: `https://${CLOUDFRONT_HOSTS[environment]}`,
-    testImagePlacementPath: process.env.TEST_IMAGE_PLACEMENT_PATH,
-    lambdaFunctionUrl: process.env.LAMBDA_FUNCTION_URL,
+    ...(process.env.TEST_IMAGE_PLACEMENT_PATH === undefined
+      ? {}
+      : { testImagePlacementPath: process.env.TEST_IMAGE_PLACEMENT_PATH }),
+    ...(process.env.LAMBDA_FUNCTION_URL === undefined
+      ? {}
+      : { lambdaFunctionUrl: process.env.LAMBDA_FUNCTION_URL }),
   })
   for (const result of results) {
     console.log(`${result.passed ? '✓' : '✗'} [${result.name}] ${result.message}`)

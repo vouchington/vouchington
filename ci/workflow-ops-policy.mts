@@ -1,11 +1,14 @@
 const pgvectorImagePattern = /ghcr\.io\/vouchington\/dependency-pgvector:[^\s'"\\)]+/g
 const pgvectorDigestPinnedPattern =
   /^ghcr\.io\/vouchington\/dependency-pgvector:[\w.-]+@sha256:[0-9a-f]{64}$/u
-const requiredPostgresInitdbArgs = '-c max_connections=300 -c log_min_messages=log'
+const postgresMaxConnectionsArg = '-c max_connections=300'
+const requiredPostgresInitdbArgs = `${postgresMaxConnectionsArg} -c log_min_messages=log`
 const explainAnalyzePostgresInitdbArgs = `${requiredPostgresInitdbArgs} -c work_mem=32MB`
 const backendUnitPostgresInitdbArgs =
-  `${requiredPostgresInitdbArgs} -c autovacuum_naptime=1s` +
-  ' -c autovacuum_analyze_threshold=0 -c autovacuum_analyze_scale_factor=0'
+  `${postgresMaxConnectionsArg} -c log_min_messages=error -c autovacuum_naptime=1s` +
+  ' -c autovacuum_analyze_threshold=0 -c autovacuum_analyze_scale_factor=0' +
+  ' -c log_lock_waits=on -c log_min_error_statement=error' +
+  ' -c log_line_prefix=%m_pid%p_app%a_xid%x_'
 const requiredDockerInitdbArgs = `POSTGRES_INITDB_ARGS="${requiredPostgresInitdbArgs}"`
 
 export type OpsWorkflowStep = {

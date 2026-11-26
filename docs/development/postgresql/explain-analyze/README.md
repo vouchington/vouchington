@@ -31,6 +31,9 @@ the timeout as a query-plan failure or rerunning the job.
   comparison). `work_mem` is pinned so a local run reaches the same disk-spill verdict as CI.
 - **Custom and generic plans.** CI runs with `EXPLAIN_PLAN_CACHE_MODE=compare`, forcing both
   prepared-plan modes for every query, because production hits whichever the plan cache picks.
+  The [slowdown gate](../../../../backend/scripts/explain-analyze/generic-plan-regressions.mts)
+  requires a material increase in execution time on both capture passes so a single noisy timing
+  sample or a large ratio on a tiny query does not block CI.
 - **Function calls.** `track_functions` is read before and after the replay to count non-inlined
   user-function calls. Parallel workers keep separate counters, so scenarios with a
   `maxFunctionCalls` cap get a second serial replay for deterministic counts. Set a cap loose enough for small plan changes and tight enough to expose
@@ -225,13 +228,24 @@ segments leave behind, and keep a runner with the predecessor whose writes its p
 that changes because a shard lost a predecessor's writes is fixed by regrouping, never by loosening
 its contract. The partitioned comment fixture plus the pruning proof (`partition`) and the
 million-post Hacker News fixture (`hn-scale`) are additive, so no other scenario reads them and each
-has its own shard. The late fixture writers that must follow every ordinary plan close the last
+has its own shard. Both load their posts on parallel connections, one monthly leaf per task, with a
+single instant captured once for every timestamp, so row ids and values match a serial load and each
+leaf's rows go in the serial order; `EXPLAIN_FIXTURE_LOAD_WORKERS` overrides the worker count (1 is serial). Triggers, indexes
+and foreign keys stay enabled. Each phase commits, so a failed load leaves its leaves behind and the
+disposable database must be recreated. The late fixture writers that must follow every ordinary plan close the last
 ordinary segment. Size the segments from per-runner timings in a recent run so every shard job stays
 within the CI runtime budget in [CI](../../ci.md). A scenario listed in no shard or in two fails the manifest checks. The
 `explain-analyze-gates` job merges the shard artifacts, requires every manifest scenario once, and
 enforces the plan gates, baselines and native coverage over the merged results. It uploads them as
 `explain-analyze-results`; a failed shard leaves only its own `explain-analyze-results-<shard>`
 artifact.
+
+Setup that needs no Node runs beside the Node setup: the seed job restores the prepared dump and
+each shard unpacks the seeded data directory and starts PostgreSQL in a background command
+(`explain-analyze-background.sh`) that a later step waits on. The path through a run is the seed job,
+then the slowest shard, then the gates job; on 2026-11 runs the two fixture loads (`hn-scale`,
+`partition`) set the slowest shard, and each segment repeats about 60s of runner setup, so more
+segments shorten a run only if their fixture loads shrink first.
 
 The [EXPLAIN ANALYZE workflow](../../../../.github/workflows/explain-analyze.yml) owns the seed-step
 timeout. Shrink fixtures or batch seed work to fit it; never raise that timeout to accommodate a

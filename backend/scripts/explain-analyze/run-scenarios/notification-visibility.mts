@@ -80,7 +80,6 @@ async function captureNotificationVisibility(): Promise<void> {
         { kind: 'queryBinds', token: 'LIMIT' },
       ],
     })
-    // no-mistakes-disable-next-line query-reached-per-item: four fixed owning query contracts need independent custom/generic captures with the same live fixture.
     await runAndCapture(
       id,
       async () => {

@@ -1,3 +1,4 @@
+import { withCopyrightCasePurgeIsolation } from '@voucha/test-helpers/services/copyright-notices/retention-case-purge-isolation'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightCasePurgeJobData } from '@queues/psql/types'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
@@ -21,7 +22,10 @@ describe('copyright case purge native conflict', () => {
     const moveToDelayed = vi.fn<(timestamp: number) => Promise<never>>()
     const { result, message, failure } = await commitCopyrightCorrespondenceAfterPurgeSnapshot(
       entry.noticeId,
-      () => processCopyrightCasePurge({ data, updateData, moveToDelayed }),
+      () =>
+        withCopyrightCasePurgeIsolation(() =>
+          processCopyrightCasePurge({ data, updateData, moveToDelayed }),
+        ),
     )
     expect(message).toBeDefined()
     expect(failure).toEqual(expect.objectContaining({ code: '40001' }))

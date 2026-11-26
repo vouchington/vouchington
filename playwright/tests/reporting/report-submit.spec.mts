@@ -29,7 +29,7 @@ test.describe('Report submission', () => {
     await navigateTo(page, `/user/${targetUserId}`)
 
     const reportButton = page.getByTestId('report-inline-button').first()
-    await expect(reportButton).toBeVisible({ timeout: 10_000 })
+    await expect(reportButton).toBeVisible()
     await reportButton.click()
 
     const dialog = page.getByTestId('report-dialog')
@@ -52,7 +52,7 @@ test.describe('Report submission', () => {
     await waitForBelowFoldHydration(page)
     // Open the unified overflow kebab to access the report item
     const overflowTrigger = page.getByTestId('post-detail-overflow-trigger')
-    await expect(overflowTrigger).toBeVisible({ timeout: 10_000 })
+    await expect(overflowTrigger).toBeVisible()
     await overflowTrigger.click()
 
     const reportMenuItem = page.getByTestId('report-menu-item')
