@@ -34,6 +34,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'account-membership-history-at-cap',
   'account-referral-links-at-cap',
   'account-referral-clicks-at-cap',
+  'copyright-statutory-restoration-first',
+  'copyright-statutory-restoration-continuation',
   'copyright-suspended-claimant-recovery-first',
   'copyright-suspended-claimant-recovery-continuation',
   'rss-ingest-content-at-cap',

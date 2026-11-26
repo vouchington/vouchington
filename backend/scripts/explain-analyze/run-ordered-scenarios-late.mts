@@ -1,5 +1,6 @@
 import { runReferralValidationPages } from './run-scenarios/referral-program-validation-pages.mts'
 import { runCopyrightSuspendedClaimantRecoveryCapacityScenarios } from './run-scenarios/copyright-suspended-claimant-recovery.mts'
+import { runCopyrightStatutoryRestorationCapacityScenarios } from './run-scenarios/copyright-statutory-restoration.mts'
 import { runModerationReportDetailScenarios } from './run-scenarios/moderation-report-detail.mts'
 import { runMcpAdmissionScenario } from './run-scenarios/mcp-admission.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
@@ -79,6 +80,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   seedVoteWeightDispatch,
   runVoteWeightDispatchScenarios,
   runCopyrightSuspendedClaimantRecoveryCapacityScenarios,
+  runCopyrightStatutoryRestorationCapacityScenarios,
   runMembershipProviderRecoveryScenarios,
   // The actor probes read the agent moderation and report context corpora seeded earlier in this
   // segment, so they stay in it, ahead of the hot publication fixtures.
