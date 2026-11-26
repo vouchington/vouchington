@@ -50,6 +50,8 @@ import {
   runTopicHostnameCapacityScenario,
 } from './run-scenarios/topic-identity-capacity.mts'
 import { runTopHashtagCapacityScenario } from './run-scenarios/top-hashtag-capacity.mts'
+import { runTopicMergeParentCapacityScenario } from './run-scenarios/topic-merge-parent-capacity.mts'
+import { runRssFeedCollectionHydrationCapacity } from './run-scenarios/rss-feed-collection-hydration-capacity.mts'
 import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capacity.mts'
 import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
 import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
@@ -146,6 +148,8 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runTopHashtagCapacityScenario,
   runTopicChildCapacityScenario,
   runUrlEmbedCapacityScenario,
+  runTopicMergeParentCapacityScenario,
+  runRssFeedCollectionHydrationCapacity,
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,

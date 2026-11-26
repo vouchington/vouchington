@@ -52,6 +52,9 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-additional-hostnames-at-cap',
   'top-hashtags-at-cap',
   'topic-children-at-cap',
+  'topic-merge-parent-preflight-at-cap',
+  'rss-followed-feed-hydration-at-cap',
+  'rss-recent-feed-type-filter-at-cap',
   'url-embeds-at-post-page-cap',
   'copyright-ai-run-retention-at-cap',
 ] as const

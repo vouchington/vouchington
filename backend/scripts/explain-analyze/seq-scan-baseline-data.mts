@@ -28,6 +28,15 @@ export const BASELINE_FINGERPRINTS = [
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_custom_plan|force_custom_plan:notifications',
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_generic_plan|force_generic_plan:notifications',
   'recommended-topics|0|buildRecommendationQuery:force_custom_plan|force_custom_plan:topics',
+  // Paired restored CI fixture for followed-feed hydration. Remove with #6602.
+  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:rss_feeds',
+  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:topics',
+  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:rss_feeds',
+  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:topics',
+  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:rss_feeds',
+  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:topics',
+  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:rss_feeds',
+  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:topics',
   // Hosted artifact 15034796173 repeated both custom RSS category write scans.
   // Remove these entries with #6417.
   'rss-item-category-insert-at-cap|0|insertMissingCategories:force_custom_plan|force_custom_plan:topic_aliases',
