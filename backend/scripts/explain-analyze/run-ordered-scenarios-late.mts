@@ -3,6 +3,7 @@ import { runModerationReportDetailScenarios } from './run-scenarios/moderation-r
 import { runMcpAdmissionScenario } from './run-scenarios/mcp-admission.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runHackerNewsFilterScenarios } from './run-scenarios/hacker-news-filter.mts'
+import { runHackerNewsCardSidecarScenarios } from './run-scenarios/hacker-news-card-sidecars.mts'
 import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
 import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-batches.mts'
 import { runPublicationScopePageScenarios } from './run-scenarios/publication-scope-pages.mts'
@@ -88,6 +89,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runTopicAliasCategoryWorkScenarios,
   runHackerNewsFilterScenarios,
   runRetentionStagePageScenarios,
+  runHackerNewsCardSidecarScenarios,
   runEmbeddingReconciliationScenarios,
   runStripeEventRecoveryScenario,
   runMembershipRenewalSelectionScenario,
