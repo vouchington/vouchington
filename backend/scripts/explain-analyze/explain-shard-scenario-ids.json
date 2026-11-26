@@ -731,6 +731,19 @@
     "api-key-expiry-reminder-first-page",
     "api-key-expiry-reminder-continuation",
     "api-key-expiry-reminder-details",
-    "api-key-expiry-reminder-claim"
+    "api-key-expiry-reminder-claim",
+    "rss-feed-dedup-by-url",
+    "rss-feed-dedup-by-url-id",
+    "rss-crawl-feed-lookup-at-cap",
+    "rss-feed-discoverability-at-cap",
+    "rss-ingest-existing-items-at-cap",
+    "rss-feed-search-trending-first-at-cap",
+    "rss-feed-search-trending-next-at-cap",
+    "rss-feed-search-trending-terminal-at-cap",
+    "notification-rss-reconciliation-snapshot",
+    "notification-post-reconciliation-snapshot",
+    "notification-redirect-target-at-cap",
+    "topic-merge-relation-preflight-at-cap",
+    "topic-merge-alias-move-tail-at-cap"
   ]
 }

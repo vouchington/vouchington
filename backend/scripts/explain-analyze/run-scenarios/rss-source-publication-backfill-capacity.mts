@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import {
   backfillRssFeedItemSourcePublications,
   hasRssFeedItemSourcesMissingPublication,
@@ -115,8 +115,12 @@ export async function runRssSourcePublicationBackfillCapacity(): Promise<void> {
       { afterCapture: () => clearFixturePublications(feedId, initialMissing.slice(limit)) },
     )
   } finally {
-    await write(sql`/* cleanupExplainRssSourceBackfillItems */
+    await using query = await beginTransaction()
+    await query(sql`/* cleanupExplainRssSourceBackfillItems */
       DELETE FROM rss_feed_item_guids WHERE id = ANY(${ids}::uuid[])`)
+    await query(sql`/* cleanupExplainRssSourceBackfillIdentities */
+      DELETE FROM retained_rss_feed_item_identities WHERE id = ANY(${ids}::uuid[])`)
+    await query.commit()
   }
 }
 

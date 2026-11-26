@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import { processTopicMergeAliasPage } from '@services/topics/merge-aliases-page'
+import { processTopicMergeOperationPage } from '@services/topics/merge-operation-page'
 import { getTopicMergeWorkLimit } from '@services/topics/merge-work-limits'
 import sql from 'sql-template-strings'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -42,10 +43,13 @@ export async function runTopicMergeAliasCapacityScenarios(): Promise<void> {
     assert.equal(pending.length, limit + 1)
     const {
       rows: [operation],
-    } = await write<{ id: string }>(sql`/* seedExplainTopicMergeAliasOperation */
+    } = await write<{
+      id: string
+      generation: number
+    }>(sql`/* seedExplainTopicMergeAliasOperation */
       INSERT INTO topic_merge_operations (source_topic_id, destination_topic_id, requested_by_id, stage, alias_phase)
       VALUES (${source.id}, ${destination.id}, ${seedUser.id}, 'aliases', 2)
-      RETURNING id`)
+      RETURNING id, generation`)
     assert.ok(operation)
     operationId = operation.id
     await write('/* analyzeExplainTopicMergeAliases */ ANALYZE topic_aliases')
@@ -96,34 +100,25 @@ export async function runTopicMergeAliasCapacityScenarios(): Promise<void> {
       assert.deepEqual(new Set(retained.map(row => row.alias_id)), liveIds)
     }
 
-    const firstPage = async (query: TransactionQuery) => {
+    const captureFirstPage = async () => {
+      await using query = await beginTransaction()
       await query(sql`/* setExplainTopicMergeAliasOperation */
         SELECT set_config('voucha.topic_merge_operation_id', ${operation.id}, true)`)
       const first = await runPage(query, null)
       assert.deepEqual(first, { phase: 2, cursorAlias: linked[limit - 1]!.alias, hasMore: true })
       await assertPageChanges(query, limit)
-      return first
+      await query.rollback()
     }
     registerScenarioContract('topic-merge-alias-move-at-cap', {
       allowEmptyResult: true,
       expectations: [
         { kind: 'maxProcessedRows', relation: 'topic_aliases', max: limit + 1, captureIndex: 0 },
         { kind: 'maxProcessedRows', relation: 'topic_aliases', max: limit, captureIndex: 1 },
-        // The generic continuation can revisit the prior page. https://github.com/vouchington/vouchington/issues/6627
-        { kind: 'maxProcessedRows', relation: 'topic_aliases', max: limit + 1, captureIndex: 2 },
-        { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 1, captureIndex: 3 },
       ],
     })
     await runAndCapture(
       'topic-merge-alias-move-at-cap',
-      async () => {
-        await using query = await beginTransaction()
-        const first = await firstPage(query)
-        const last = await runPage(query, first.cursorAlias)
-        assert.deepEqual(last, { phase: 2, cursorAlias: linked.at(-1)!.alias, hasMore: false })
-        await assertPageChanges(query, limit + 1)
-        await query.rollback()
-      },
+      captureFirstPage,
       undefined,
       ['processTopicMergeAliasPage', 'processTopicMergeAliasPage move'],
       { localSettings: settings },
@@ -133,13 +128,51 @@ export async function runTopicMergeAliasCapacityScenarios(): Promise<void> {
     })
     await runAndCapture(
       'topic-merge-alias-repoint-unlinks-at-cap',
+      captureFirstPage,
+      undefined,
+      'processTopicMergeAliasPage repointPendingUnlinks',
+      { localSettings: settings },
+    )
+
+    // The worker commits the moves and cursor together before the continuation runs.
+    assert.equal(
+      await processTopicMergeOperationPage(operation.id, operation.generation),
+      operation.generation + 1,
+    )
+    const {
+      rows: [checkpoint],
+    } = await write<{
+      alias_phase: number
+      cursor_alias: string
+    }>(sql`/* readExplainTopicMergeAliasCheckpoint */
+      SELECT alias_phase, cursor_alias FROM topic_merge_operations WHERE id = ${operation.id}`)
+    const cursorAlias = linked[limit - 1]!.alias
+    assert.deepEqual(checkpoint, { alias_phase: 2, cursor_alias: cursorAlias })
+    await assert.rejects(
+      () =>
+        write(sql`/* attemptExplainTopicMergeAliasReattach */
+          UPDATE topic_aliases SET topic_id = ${source.id} WHERE id = ${linked[0]!.id}`),
+      { code: 'topic_merge_in_progress' },
+    )
+    const tailScenario = 'topic-merge-alias-move-tail-at-cap'
+    registerScenarioContract(tailScenario, {
+      allowEmptyResult: true,
+      expectations: [{ kind: 'maxProcessedRows', relation: 'topic_aliases', max: 1 }],
+    })
+    await runAndCapture(
+      tailScenario,
       async () => {
         await using query = await beginTransaction()
-        await firstPage(query)
+        await assertPageChanges(query, limit)
+        await query(sql`/* setExplainTopicMergeAliasOperation */
+          SELECT set_config('voucha.topic_merge_operation_id', ${operation.id}, true)`)
+        const last = await runPage(query, cursorAlias)
+        assert.deepEqual(last, { phase: 2, cursorAlias: linked.at(-1)!.alias, hasMore: false })
+        await assertPageChanges(query, limit + 1)
         await query.rollback()
       },
       undefined,
-      'processTopicMergeAliasPage repointPendingUnlinks',
+      ['processTopicMergeAliasPage', 'processTopicMergeAliasPage move'],
       { localSettings: settings },
     )
   } finally {
