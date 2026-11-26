@@ -1,4 +1,4 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { postSeedTimestampMs, seedUuidAtTimestamp } from './common.mts'
 
 type Kind = 'email' | 'appeal' | 'guidance'
@@ -12,20 +12,39 @@ const cutoffAt = Date.parse('1970-05-01T00:00:00.000Z')
 const kinds = {
   email: {
     relation: 'copyright_notice_email_intake_recommendation_runs',
-    subjectRelation: 'copyright_notice_email_intake_receipts',
     subjectColumn: 'copyright_notice_email_intake_receipt_id',
+    resultRelation: 'copyright_notice_email_intake_recommendation_identities',
+    resultColumn: 'copyright_notice_email_intake_recommendation_id',
+    seedResult: `/* seedCopyrightStuckEmailResult */
+      INSERT INTO copyright_notice_email_intake_recommendation_identities
+        (id, copyright_notice_email_intake_receipt_id, input_sha256, prompt_version)
+      VALUES ($1::uuid, $2::uuid, sha256(convert_to('explain', 'UTF8')), 'explain-v1')`,
     offset: 70_000_000,
   },
   appeal: {
     relation: 'copyright_notice_appeal_recommendation_runs',
-    subjectRelation: 'copyright_notice_submissions',
     subjectColumn: 'copyright_notice_submission_id',
+    resultRelation: 'copyright_notice_appeal_recommendations',
+    resultColumn: 'copyright_notice_appeal_recommendation_id',
+    seedResult: `/* seedCopyrightStuckAppealResult */
+      INSERT INTO copyright_notice_appeal_recommendations
+        (id, copyright_notice_submission_id, input_sha256, prompt_version, model,
+          recommendation, rationale_ciphertext)
+      VALUES ($1::uuid, $2::uuid, sha256(convert_to('explain', 'UTF8')), 'explain-v1',
+        'explain-model', 'uncertain', 'v1:explain-result')`,
     offset: 80_000_000,
   },
   guidance: {
     relation: 'copyright_notice_submission_guidance_runs',
-    subjectRelation: 'copyright_notice_submissions',
     subjectColumn: 'copyright_notice_submission_id',
+    resultRelation: 'copyright_notice_submission_guidance',
+    resultColumn: 'copyright_notice_submission_guidance_id',
+    seedResult: `/* seedCopyrightStuckGuidanceResult */
+      INSERT INTO copyright_notice_submission_guidance
+        (id, copyright_notice_submission_id, input_sha256, prompt_version, model,
+          guidance_ciphertext)
+      VALUES ($1::uuid, $2::uuid, sha256(convert_to('explain', 'UTF8')), 'explain-v1',
+        'explain-model', 'v1:explain-result')`,
     offset: 90_000_000,
   },
 } as const
@@ -44,7 +63,7 @@ export async function seedCopyrightStuckRuns(
 }> {
   if (!Number.isSafeInteger(batchSize) || batchSize < 1)
     throw new Error('Invalid copyright stuck-run batch size')
-  const { relation, subjectRelation, subjectColumn, offset } = kinds[kind]
+  const { relation, subjectColumn, resultRelation, resultColumn, seedResult, offset } = kinds[kind]
   const oldActiveIds = Array.from({ length: batchSize + 1 }, (_, index) =>
     seedUuidAtTimestamp(activeAt, offset + index),
   )
@@ -65,10 +84,13 @@ export async function seedCopyrightStuckRuns(
   ]
   const cutoffId = seedUuidAtTimestamp(cutoffAt, 0)
   const noticeId = seedUuidAtTimestamp(terminalAt, offset + 20_000)
+  const resultId = seedUuidAtTimestamp(terminalAt, offset + 30_000)
+  const completedRunId = terminalIds[0]
 
   // This early cutoff isolates the page from every other EXPLAIN fixture. Verify that assumption
   // before the unscoped production query runs, so an unrelated old row cannot be changed.
-  const { rows: existing } = await read<{ count: number }>(
+  await using transaction = await beginTransaction()
+  const { rows: existing } = await transaction<{ count: number }>(
     `/* checkCopyrightStuckRunCutoff */ SELECT count(*)::integer AS count FROM ${relation}
      WHERE id < $1::uuid AND completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL`,
     [cutoffId],
@@ -76,7 +98,6 @@ export async function seedCopyrightStuckRuns(
   if (existing[0]?.count !== 0)
     throw new Error(`Older active ${kind} run exists below fixture cutoff`)
 
-  await using transaction = await beginTransaction()
   if (kind === 'email') {
     await transaction(
       `/* seedCopyrightStuckEmailSubjects */
@@ -100,7 +121,7 @@ export async function seedCopyrightStuckRuns(
     )
     await transaction(
       `/* seedCopyrightStuckSubmissions */
-       INSERT INTO ${subjectRelation}
+       INSERT INTO copyright_notice_submissions
          (id, copyright_notice_id, kind, received_at, source_kind, body_ciphertext)
        SELECT id, $2::uuid, $3::copyright_notice_submission_kinds,
          '1970-03-01'::timestamptz, 'staff', 'v1:explain-body'
@@ -108,12 +129,16 @@ export async function seedCopyrightStuckRuns(
       [subjectIds, noticeId, kind === 'appeal' ? 'appeal' : 'counter_notice'],
     )
   }
+  await transaction(seedResult, [resultId, subjectIds[0]])
   await transaction(
     `/* seedCopyrightStuckRuns */
-     INSERT INTO ${relation} (id, ${subjectColumn}, expired_at)
-     SELECT id, subject_id, CASE WHEN id = ANY($3::uuid[]) THEN now() END
+     INSERT INTO ${relation} (id, ${subjectColumn}, expired_at, completed_at, ${resultColumn})
+     SELECT id, subject_id,
+       CASE WHEN id <> $4::uuid AND id = ANY($3::uuid[]) THEN now() END,
+       CASE WHEN id = $4::uuid THEN now() END,
+       CASE WHEN id = $4::uuid THEN $5::uuid END
      FROM unnest($1::uuid[], $2::uuid[]) AS runs(id, subject_id)`,
-    [runIds, runSubjectIds, terminalIds],
+    [runIds, runSubjectIds, terminalIds, completedRunId, resultId],
   )
   await transaction.commit()
 
@@ -129,12 +154,20 @@ export async function seedCopyrightStuckRuns(
         `/* cleanupCopyrightStuckRuns */ DELETE FROM ${relation} WHERE id = ANY($1::uuid[])`,
         [runIds],
       )
+      await cleanupTransaction(
+        `/* cleanupCopyrightStuckResult:permit */
+         SELECT set_config('app.copyright_case_purge_notice_id', $1::text, true),
+           set_config('app.copyright_case_purge_table', $2::text, true)`,
+        [noticeId, resultRelation],
+      )
+      await cleanupTransaction(
+        `/* cleanupCopyrightStuckResult */ DELETE FROM ${resultRelation} WHERE id = $1::uuid`,
+        [resultId],
+      )
       if (kind !== 'email') {
         await cleanupTransaction(
           `/* cleanupCopyrightStuckSubmissions:permit */
-           SELECT set_config('app.copyright_case_purge_notice_id', $1::text, true),
-             set_config('app.copyright_case_purge_table', 'copyright_notice_submissions', true)`,
-          [noticeId],
+           SELECT set_config('app.copyright_case_purge_table', 'copyright_notice_submissions', true)`,
         )
         await cleanupTransaction(
           `/* cleanupCopyrightStuckSubmissions */

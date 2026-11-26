@@ -65,6 +65,7 @@ async function runCopyrightStuckRunCapacityScenario(scenario: (typeof scenarios)
     assert.equal(before.find(row => row.id === fixture.nextId)?.status, 'active')
     assert(before.some(row => row.id > fixture.cutoffId && row.status === 'active'))
     assert(before.some(row => row.id < fixture.cutoffId && row.status === 'expired'))
+    assert(before.some(row => row.id < fixture.cutoffId && row.status === 'succeeded'))
     registerScenarioContract(scenario.id, {
       seededRows: { [relation]: fixture.seededRows },
       expectations: [{ kind: 'queryBinds', token: 'LIMIT' }],
