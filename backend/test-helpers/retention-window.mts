@@ -23,10 +23,12 @@ export function createIsolatedRetentionWindow(spanDays = 150) {
  * `aged + 1ms` and the lower bound is `aged`, so the production cleanup can only see rows stamped
  * with this fixture's own `aged` millisecond. Leftover committed rows from other fixtures would
  * need the same millisecond to be seen, unlike a 60-day window that any of them can land in.
- * Pass the same `retentionDays` to the cleanup so its cutoff matches.
+ * Pass the same `retentionDays` to the cleanup so its cutoff matches. A fixture that needs
+ * several ordered completion times passes `spanMs`: the window then covers
+ * `[aged, aged + spanMs)`, still a few milliseconds wide.
  */
-export function createExactRetentionWindow(retentionDays: number) {
+export function createExactRetentionWindow(retentionDays: number, spanMs = 1) {
   const aged = new Date(FAR_FUTURE_START_MS + randomInt(0, PLACEMENT_SPAN_MS))
-  const now = new Date(aged.getTime() + retentionDays * DAY_MS + 1)
+  const now = new Date(aged.getTime() + retentionDays * DAY_MS + spanMs)
   return { aged, now, retentionDays, lowerBoundDate: aged }
 }
