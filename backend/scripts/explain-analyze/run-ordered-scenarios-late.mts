@@ -1,5 +1,6 @@
 import { runReferralValidationPages } from './run-scenarios/referral-program-validation-pages.mts'
 import { runModerationReportDetailScenarios } from './run-scenarios/moderation-report-detail.mts'
+import { runFeedPostHydrationCapacityScenario } from './run-scenarios/feed-post-hydration-capacity.mts'
 import { runMcpAdmissionScenario } from './run-scenarios/mcp-admission.mts'
 import { runFkActorIndexScenarios } from './run-scenarios/fk-actor-indexes.mts'
 import { runHackerNewsFilterScenarios } from './run-scenarios/hacker-news-filter.mts'
@@ -37,6 +38,7 @@ import { runCommunityRoundTripScenarios } from './run-scenarios/community-round-
 import { runSessionLimitScenarios } from './run-scenarios/session-limits.mts'
 import { runImageDeliveryFoldScenarios } from './run-scenarios/image-delivery-folds.mts'
 import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
+import { runPostProvenanceCapacityScenario } from './run-scenarios/post-provenance-capacity.mts'
 import { runRequestContextFoldScenarios } from './run-scenarios/request-context-folds.mts'
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
 import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-dispatch.mts'
@@ -62,6 +64,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runMediaDeliveryGlobalPageScenarios,
   runMediaDeliveryPopularImageScenario,
   runRoundTripShapeScenarios,
+  runPostProvenanceCapacityScenario,
   runRequestContextFoldScenarios,
   runCommunityRoundTripScenarios,
   runSessionLimitScenarios,
@@ -72,6 +75,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runDispatchWorkPlanScenarios,
   runModerationReportContextScenarios,
   runModerationReportDetailScenarios,
+  runFeedPostHydrationCapacityScenario,
   runMcpAdmissionScenario,
   runRssFeedStateChangeScenarios,
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.

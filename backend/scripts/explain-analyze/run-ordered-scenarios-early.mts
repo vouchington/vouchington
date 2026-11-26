@@ -14,6 +14,7 @@ import { runHotPathLoaderScenarios } from './run-scenarios/hot-path-loaders.mts'
 import { runPublicRssPostSnapshotScenarios } from './run-scenarios/public-rss-post-snapshots.mts'
 import { runStorySearchScenarios } from './run-scenarios/story-search.mts'
 import { runMembershipWorkSelectionScenarios } from './run-scenarios/membership-work-selection.mts'
+import { runFeedSharerHydrationCapacityScenario } from './run-scenarios/feed-sharer-hydration-capacity.mts'
 import { runEngagementEmailRecipientScenarios } from './run-scenarios/engagement-email-recipients.mts'
 import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts'
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
@@ -41,6 +42,8 @@ import {
   runAgentModerationRetentionScenarios,
   runModerationTransparencyReleaseScenario,
 } from './run-scenarios/agent-moderation-retention.mts'
+
+import { runPostElectionReadCapacityScenario } from './run-scenarios/post-election-read-capacity.mts'
 
 export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightAcceptedPageScenarios,
@@ -78,11 +81,13 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runPostModerationHistoryPageScenarios,
   runHotPathLoaderScenarios,
   runPublicRssPostSnapshotScenarios,
+  runPostElectionReadCapacityScenario,
   // Hidden-feed story search leaves 240 story_posts rows. Profile collection pages join
   // that table, and the generic plan sorts once those rows exist.
   runStorySearchScenarios,
   runSharedLoaderScenarios,
   runMembershipWorkSelectionScenarios,
+  runFeedSharerHydrationCapacityScenario,
   runEngagementEmailRecipientScenarios,
   runRemoteFollowerScenarios,
   runReviewSuccessionScenarios,
