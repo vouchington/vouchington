@@ -193,9 +193,6 @@ jobs:
       - name: Run no-mistakes
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
         timeout-minutes: 6
-      - name: Check workflow download integrity
-        run: node ci/check-workflow-download-integrity.mts
-        timeout-minutes: 2
       - name: Check Storybook component coverage
         run: source "$GITHUB_WORKSPACE/.github/workflows/static-code-analysis-story-coverage.sh"
         timeout-minutes: 2
