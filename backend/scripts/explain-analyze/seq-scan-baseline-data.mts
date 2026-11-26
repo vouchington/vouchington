@@ -36,6 +36,9 @@ export const BASELINE_FINGERPRINTS = [
   'search-admin-users-email|0|searchAdminUsers:email:force_generic_plan|force_generic_plan:users',
   'search-admin-users-uuid|0|searchAdminUsers:uuid:force_generic_plan|force_generic_plan:users',
   'search-admin-users|0|searchAdminUsers:prefix:force_generic_plan|force_generic_plan:users',
+  // Hosted pair 45776788119, main-4 artifact 15097307795. Remove with #6551.
+  'topic-import-reference-resolution-at-cap|0|getTopicsByReferenceBatch:force_custom_plan|force_custom_plan:topic_aliases',
+  'topic-import-reference-resolution-at-cap|0|getTopicsByReferenceBatch:force_custom_plan|force_custom_plan:topics',
   'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_custom_plan|force_custom_plan:rss_feeds',
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
