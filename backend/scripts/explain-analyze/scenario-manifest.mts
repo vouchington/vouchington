@@ -24,6 +24,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-stuck-email-runs-at-cap',
   'copyright-stuck-appeal-runs-at-cap',
   'copyright-stuck-guidance-runs-at-cap',
+  'copyright-staff-email-queue-at-cap',
   'copyright-expired-guest-capabilities-at-cap',
   'related-posts-by-url-at-cap',
   'account-modmail-threads-at-cap',
