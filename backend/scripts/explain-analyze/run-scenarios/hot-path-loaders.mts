@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import { SEED_PREFIX, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { runProfileLinksAtCapacityScenario } from './profile-links-at-cap.mts'
 import { runUserProfileMetricsScenario } from './hot-path-profile-metrics.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -51,6 +52,7 @@ export async function runHotPathLoaderScenarios() {
 
   // Author/profile links: loaded by both the post-detail and user-profile routes.
   await runAndCapture('profile-links', () => listProfileLinks(seedUser.id))
+  await runProfileLinksAtCapacityScenario()
 
   registerScenarioContract('post-and-creator-bookmarks', {
     // Both plan-cache modes read 25 saved-post rows and one creator-follow row; budgets add 20%.
