@@ -250,6 +250,9 @@ BEGIN
   ELSE
     notice_id := NEW.copyright_notice_id;
   END IF;
+  -- lock-reason: prevents: closing evidence erasure or deleting the notice while a party-generation update is in flight.
+  -- writer: runLockedPage takes FOR UPDATE on copyright_notices for evidence closeout. deleteCopyrightCaseFinalTail deletes the notice.
+  -- The proof read relies on SERIALIZABLE. The final pointer UPDATE is a non-key update compatible with KEY SHARE.
   PERFORM 1 FROM copyright_notices WHERE id = notice_id FOR KEY SHARE;
   INSERT INTO copyright_notice_thread_party_generations (copyright_notice_id, generation)
   VALUES (notice_id, 1)
@@ -935,6 +938,7 @@ BEGIN
   IF TG_OP = 'UPDATE' THEN
     old_object_id := NULLIF(to_jsonb(OLD) ->> TG_ARGV[0], '')::uuid;
     IF old_object_id IS NOT NULL AND object_id IS DISTINCT FROM old_object_id THEN
+      -- lock-reason: prevents: losing an evidence reference during physical deletion; writer: eraseCopyrightCaseEvidencePage claims copyright_notice_storage_objects.
       SELECT is_deletion_claimed INTO claimed FROM copyright_notice_storage_objects
       WHERE id = old_object_id FOR UPDATE;
       IF claimed AND NOT fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN
@@ -945,6 +949,7 @@ BEGIN
   END IF;
   IF object_id IS NOT NULL THEN
     IF TG_OP = 'INSERT' OR object_id IS DISTINCT FROM old_object_id THEN
+      -- lock-reason: prevents: attaching evidence already claimed for physical deletion; writer: eraseCopyrightCaseEvidencePage claims copyright_notice_storage_objects.
       SELECT is_deletion_claimed INTO claimed FROM copyright_notice_storage_objects
       WHERE id = object_id FOR UPDATE;
       IF claimed THEN
@@ -970,6 +975,7 @@ DECLARE
   claimed boolean;
 BEGIN
   IF object_id IS NULL THEN RETURN OLD; END IF;
+  -- lock-reason: prevents: a reference deletion crossing the physical deletion claim; writer: eraseCopyrightCaseEvidencePage claims copyright_notice_storage_objects.
   SELECT is_deletion_claimed INTO claimed FROM copyright_notice_storage_objects
     WHERE id = object_id FOR UPDATE;
   IF claimed AND NOT fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN

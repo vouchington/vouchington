@@ -67,8 +67,8 @@ BEGIN
       RETURN NULL;
     END IF;
   END IF;
-  -- Keep the parent locked through the releasing transaction even if the candidate already
-  -- exists. Cleanup must not consume that candidate while this release is uncommitted.
+  -- lock-reason: prevents: cleanup consuming the only orphan candidate while a session or ballot release is uncommitted.
+  -- Writer: cleanupOrphanedUserAgentStrings processes user_agent_string_cleanup_candidates.
   PERFORM 1 FROM user_agent_strings
   WHERE id = OLD.user_agent_string_id FOR KEY SHARE;
   INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)

@@ -187,6 +187,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id')
 CREATE FUNCTION fn_update_media_delivery_change_authority() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE current_generation bigint; current_desired_state media_delivery_desired_states;
 BEGIN
+  -- lock-reason: prevents: admitting delivery history for a superseded generation; writer: reconcileUnauthorizedMediaDeliveryRecord advances media_delivery_registry_records.
   SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records
     WHERE id = NEW.media_delivery_registry_record_id FOR NO KEY UPDATE;
   IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;

@@ -110,9 +110,9 @@ CREATE INDEX idx_url_hostname_blocks__other_retention
 CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_insert()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-  -- Lock every affected hostname even when it is already blocked. A concurrent
-  -- source removal must wait, then evaluate the remaining blocks in a fresh
-  -- READ COMMITTED statement.
+  -- lock-reason: prevents: a concurrent lift or delete clearing the hostname block flag despite a new active block.
+  -- Writers: fn_update_url_hostname_blocked_after_update and fn_update_url_hostname_blocked_after_delete update url_hostnames.
+  -- Lock even when the flag is already true so removal re-reads committed active blocks.
   PERFORM host.id FROM url_hostnames host
   JOIN (
     SELECT DISTINCT url_hostname_id AS id FROM inserted_blocks
@@ -138,6 +138,8 @@ CREATE OR REPLACE TRIGGER trigger_update_url_hostname_blocked_after_insert
 CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_update()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  -- lock-reason: prevents: publishing a block flag computed before a concurrent active-block change commits.
+  -- Writers: the other url_hostname_blocks projection triggers update url_hostnames.
   PERFORM host.id FROM url_hostnames host
   JOIN (WITH prior_active AS (
     SELECT DISTINCT url_hostname_id AS id FROM prior_blocks
@@ -183,6 +185,8 @@ CREATE OR REPLACE TRIGGER trigger_update_url_hostname_blocked_after_update
 CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_delete()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  -- lock-reason: prevents: clearing the hostname block flag while another transaction adds or retains an active block.
+  -- Writers: fn_update_url_hostname_blocked_after_insert and fn_update_url_hostname_blocked_after_update update url_hostnames.
   PERFORM host.id FROM url_hostnames host
   JOIN (
     SELECT DISTINCT url_hostname_id AS id FROM deleted_blocks

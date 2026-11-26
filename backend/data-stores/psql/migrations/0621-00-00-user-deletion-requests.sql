@@ -7,6 +7,8 @@ AS $$
 DECLARE
   user_deleted_at TIMESTAMPTZ;
 BEGIN
+  -- lock-reason: prevents: committing a user-owned write after that account has entered erasure.
+  -- Writer: deleteUser sets users.deleted_at under the account-deletion privacy fence.
   -- Lock by id only and branch on the locked row version: a writer that waited on deletion must
   -- see the committed deleted_at, which a filtered or EXISTS-wrapped lock would not re-evaluate.
   -- Writers that also UPDATE the users row pass for_update so two same-user transactions cannot

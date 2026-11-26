@@ -279,8 +279,8 @@ BEGIN
       OR OLD.reported_user_id IS DISTINCT FROM NEW.reported_user_id
       OR OLD.hostname_id IS DISTINCT FROM NEW.hostname_id
       OR OLD.rss_feed_item_id IS DISTINCT FROM NEW.rss_feed_item_id THEN
-      -- Both existing clusters will be written. Lock them in one order before the OLD
-      -- removal and NEW upsert, so opposite status/target moves cannot form ABBA.
+      -- lock-reason: prevents: opposite report moves from deadlocking while writing the old and new clusters.
+      -- Writer: another fn_update_moderation_report_cluster invocation on moderation_report_clusters.
       PERFORM cluster.id FROM moderation_report_clusters cluster
       WHERE (cluster.resolution_action IS NOT DISTINCT FROM OLD.resolution_action
           AND (cluster.post_id = OLD.post_id
@@ -297,6 +297,8 @@ BEGIN
   END IF;
 
   IF TG_OP IN ('DELETE', 'UPDATE') THEN
+    -- lock-reason: prevents: concurrent removals leaving an empty cluster or stale report time bounds.
+    -- Writer: another fn_update_moderation_report_cluster invocation on moderation_report_clusters.
     SELECT cluster.id, cluster.first_reported_at,
       cluster.last_reported_at INTO prior_cluster
     FROM moderation_report_clusters cluster
