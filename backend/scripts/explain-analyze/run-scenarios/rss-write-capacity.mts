@@ -9,6 +9,7 @@ import { runRssItemCategoryWriteScenarios } from './rss-write-capacity-item-cate
 import { runRssItemCategoryClearScenario } from './rss-item-category-clear.mts'
 import { runRecentlyViewedRssTypeScenarios } from './recently-viewed-rss-types.mts'
 import { runRssStoryProjectionRefreshScenario } from './rss-story-projection-refresh.mts'
+import { runRssCategorySnapshotWriteScenario } from './rss-category-snapshot-write.mts'
 import { runRssFeedCategoryWriteScenario } from './rss-write-capacity-feed-categories.mts'
 import {
   cleanupRssWriteCapacity,
@@ -22,6 +23,7 @@ export async function runRssWriteCapacityScenarios(): Promise<void> {
     await runIdentityWrite(fixture)
     await runSourceWrite(fixture)
     await runRssStoryProjectionRefreshScenario(fixture)
+    await runRssCategorySnapshotWriteScenario(fixture)
     await runRssItemCategoryWriteScenarios(fixture)
     await runRssItemCategoryClearScenario(fixture)
     await runRssFeedCategoryWriteScenario(fixture)
