@@ -14,7 +14,7 @@ type CommunityHotPostStats = Readonly<{
   votesCountDown: number
 }>
 
-function communityHotPostStats(): CommunityHotPostStats[] {
+export function communityHotPostStats(): CommunityHotPostStats[] {
   return Array.from({ length: APPROVED_HOT_POST_COUNT }, (_, index) => {
     const postIndex = FIRST_APPROVED_POST_INDEX + index * APPROVED_POST_STRIDE
     const [votesScoreUp, votesScoreDown, votesCountUp, votesCountDown] =
