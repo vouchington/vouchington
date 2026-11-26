@@ -130,8 +130,14 @@ async function runParticipantPage(fixture: Fixture) {
   const name = 'deleteConversationParticipantPage'
   registerScenarioContract(scenario, {
     allowEmptyResult: true,
-    // Main's custom plan scans unrelated participants. Tighten in #6420.
-    expectations: [{ kind: 'maxProcessedRows', relation: 'conversation_participants', max: 4_100 }],
+    expectations: [
+      {
+        kind: 'maxProcessedRows',
+        relation: 'conversation_participants',
+        max: 2 * fixture.participantIds.length,
+      },
+      { kind: 'usesIndexes', indexes: ['conversation_participants_pkey'], noSort: true },
+    ],
     seededRows: fixture.seededRows,
   })
   await runAndCapture(
@@ -144,7 +150,7 @@ async function runParticipantPage(fixture: Fixture) {
       const { rows } = await query<{ id: string }>(sql`
         /* inspectConversationRetentionCapacity:participants */
         SELECT id FROM conversation_participants
-        WHERE conversation_id IN (${fixture.participantConversation}, ${fixture.backgroundId})
+        WHERE conversation_id = ANY(${[fixture.participantConversation, ...fixture.otherConversationIds]}::uuid[])
         ORDER BY id
       `)
       assert.deepEqual(

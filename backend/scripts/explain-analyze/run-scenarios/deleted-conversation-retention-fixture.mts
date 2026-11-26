@@ -91,11 +91,15 @@ export async function seedDeletedConversationRetentionCapacity() {
     participantConversation,
     notificationId,
     backgroundId,
+    otherConversationIds: otherConversations,
     backgroundNotification: notifications.find(row => row.conversation_id === backgroundId)!.id,
     messageIds: ownedIds(messages, messageConversation),
     participantIds: ownedIds(participants, participantConversation),
     otherMessageIds: ownedIds(messages, backgroundId),
-    otherParticipantIds: ownedIds(participants, backgroundId),
+    otherParticipantIds: participants
+      .filter(row => row.conversation_id !== participantConversation)
+      .map(row => row.id)
+      .toSorted(),
     receiptIds: subscriptions.map(row => row.id).toSorted(),
     otherReceiptIds: subscriptions
       .slice(0, 100)
