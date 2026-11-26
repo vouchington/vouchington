@@ -57,7 +57,6 @@ export async function runUserActiveCommunityBanCapacityScenarios(): Promise<void
     const { rows } = await write<{ count: number }>(
       '/* countUserActiveCommunityBanCapacity */ SELECT COUNT(*)::int AS count FROM community_bans',
     )
-    const ownBanCount = fixture.filter(ban => ban.kind !== 'other-user').length
 
     const cursor = (id: string) =>
       encodeScopedUuidCursor(id, `user-community-bans:${userId}:active:id-desc`)
@@ -74,13 +73,9 @@ export async function runUserActiveCommunityBanCapacityScenarios(): Promise<void
       const after = start === 0 ? undefined : cursor(active[start - 1]!.id)
       registerScenarioContract(scenario, {
         expectations: [
-          {
-            kind: 'usesIndexes',
-            indexes: ['idx_community_bans__user', 'idx_community_bans__user_id'],
-            anyOf: true,
-          },
-          // The custom plan can scan the user's full history before sorting the active rows.
-          { kind: 'maxProcessedRows', relation: 'community_bans', max: ownBanCount },
+          { kind: 'usesIndexes', indexes: ['idx_community_bans__user'], noSort: true },
+          // The ordered index visits the page, its lookahead, and five interleaved expired bans.
+          { kind: 'maxProcessedRows', relation: 'community_bans', max: limit + 1 + 5 },
         ],
         seededRows: { community_bans: rows[0]!.count },
       })
