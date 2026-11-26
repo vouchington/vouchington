@@ -33,6 +33,7 @@ import {
 import { runTopicClaimCapacityScenarios } from './run-scenarios/topic-claim-capacity.mts'
 import { runRssFeedCrawlCapacityScenario } from './run-scenarios/rss-feed-crawl-capacity.mts'
 import { runAdminReviewAndGuestReadScenarios } from './run-scenarios/admin-review-and-guest-reads.mts'
+import { runHackerNewsPostFlagPages } from './run-scenarios/hacker-news-post-flag-pages.mts'
 import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
 import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacity.mts'
 import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard-delete-source-capacity.mts'
@@ -134,6 +135,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runAdminReviewAndGuestReadScenarios,
   runMessageNotificationWriteCapacity,
   runRelatedPostUrlCapacityScenario,
+  runHackerNewsPostFlagPages,
   runAccountMessagingScenarios,
   runRssIngestCapacityScenario,
   runRssHardDeleteSourceCapacityScenario,
