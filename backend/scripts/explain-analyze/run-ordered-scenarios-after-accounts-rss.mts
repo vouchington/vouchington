@@ -4,12 +4,14 @@ import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard
 import { runAccountListCapacityScenarios } from './run-scenarios/account-lists-at-cap.mts'
 import { runRssWriteCapacityScenarios } from './run-scenarios/rss-write-capacity.mts'
 import { runAccountHistoryScenarios } from './run-scenarios/account-history-pages.mts'
+import { runRecentAutomodActionCapacityScenario } from './run-scenarios/recent-automod-action-capacity.mts'
 
 export const AFTER_ACCOUNTS_RSS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runAccountMessagingScenarios,
   runRssIngestCapacityScenario,
   runRssHardDeleteSourceCapacityScenario,
   runAccountListCapacityScenarios,
+  runRecentAutomodActionCapacityScenario,
   runRssWriteCapacityScenarios,
   runAccountHistoryScenarios,
 ]

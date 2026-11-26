@@ -4052,6 +4052,9 @@ importers:
       '@services/content-provenance':
         specifier: workspace:^
         version: link:../services/content-provenance
+      '@services/moderation-training':
+        specifier: workspace:^
+        version: link:../services/moderation-training
       '@services/notifications-push':
         specifier: workspace:^
         version: link:../services/notifications-push

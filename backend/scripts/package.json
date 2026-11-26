@@ -150,6 +150,7 @@
   },
   "devDependencies": {
     "@services/content-provenance": "workspace:^",
+    "@services/moderation-training": "workspace:^",
     "@services/notifications-push": "workspace:^",
     "@services/openai-agents": "workspace:^",
     "@services/post-content-limits": "workspace:^",

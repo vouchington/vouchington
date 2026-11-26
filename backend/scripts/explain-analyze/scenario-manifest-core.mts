@@ -55,6 +55,7 @@ export const CORE_SCENARIOS = [
   'moderation-reports-staff-unclustered-at-cap',
   'moderation-reports-member-unclustered-at-cap',
   'community-agent-moderations-cap',
+  'recent-automod-actions-at-cap',
   'community-pinned-posts-cap',
   'search-community-applications-at-cap',
   'community-saved-replies-at-cap',
