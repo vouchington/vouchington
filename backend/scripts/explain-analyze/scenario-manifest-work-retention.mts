@@ -58,6 +58,7 @@ export const RETENTION_WORK_SCENARIOS = [
   'account-data-export-expiry',
   'account-data-export-recovery',
   'story-projection-global-claim',
+  'story-projection-stale-receipts-at-cap',
   'crawl-invalid-retention',
   'crawler-boilerplate-candidates',
   'crawler-refresh-candidates',
