@@ -11,6 +11,7 @@ import { executingPartitionLeaves } from './pruning/plan-gate.mts'
 import { getScenarioContract, type PlanExpectation } from './plan-expectations.mts'
 import { assertCustomPlanCheck } from './plan-custom-checks.mts'
 import { assertFunctionCallCap } from './plan-function-calls.mts'
+import { assertMaxProcessedRows } from './plan-max-processed-rows.mts'
 import { assertUniversalPlanShape } from './plan-universal-shape.mts'
 export { assertScenarioFunctionCalls } from './plan-function-calls.mts'
 
@@ -44,16 +45,9 @@ function evaluateExpectation(
   expectation: PlanExpectation,
 ): void {
   switch (expectation.kind) {
-    case 'maxProcessedRows': {
-      const total = nodes
-        .filter(node => baseRelationName(node) === expectation.relation)
-        .reduce((sum, node) => sum + processedRows(node), 0)
-      if (total > expectation.max)
-        throw new Error(
-          `${result.name} processed ${total} rows from ${expectation.relation}; expected at most ${expectation.max}`,
-        )
+    case 'maxProcessedRows':
+      assertMaxProcessedRows(result, nodes, expectation)
       return
-    }
     case 'maxBitmapIndexRows': {
       // Bitmap Index Scan nodes have no Relation Name, so maxProcessedRows on a table misses
       // a broad index read whose bitmap heap intersection ultimately returns only one row.

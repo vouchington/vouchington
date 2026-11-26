@@ -29,9 +29,13 @@ export async function runTopicChildCapacityScenario(): Promise<void> {
           kind: 'usesIndexes',
           indexes: ['idx_relation__topic__parent__topic__reverse_index'],
         },
-        // The generic continuation scans and filters the earlier child edges.
-        // https://github.com/vouchington/vouchington/issues/6397
         { kind: 'maxProcessedRows', relation: 'relation__topic__parent__topic', max: ids.length },
+        {
+          kind: 'maxProcessedRows',
+          relation: 'relation__topic__parent__topic',
+          max: 1,
+          captureIndex: 1,
+        },
       ],
     })
     const scope = `topic-children:${parentId}:id-asc`
@@ -63,6 +67,14 @@ export async function runTopicChildCapacityScenario(): Promise<void> {
       },
       undefined,
       'getTopicChildIdPage',
+      {
+        exactCapturedNames: [
+          'getTopicChildIdPage',
+          'getTopicsByAnyBatch',
+          'getTopicChildIdPage',
+          'getTopicsByAnyBatch',
+        ],
+      },
     )
   } finally {
     await write(
