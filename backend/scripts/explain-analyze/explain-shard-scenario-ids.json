@@ -44,6 +44,7 @@
     "delegated-write-context-deep",
     "delegated-write-lock-target",
     "delegated-write-lock-missing",
+    "rss-item-elections-batch-at-cap",
     "topic-redirect-batch",
     "posts-with-roots-batch",
     "delegated-post-access-batch",

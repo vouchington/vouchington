@@ -1,3 +1,4 @@
+import { runRssItemElectionsBatchScenario } from './rss-item-elections-batch.mts'
 import { getTopicsByAnyWithRedirectBatch } from '@services/topics/get-with-redirect-batch'
 import { getPostsWithRootsByAnyBatch } from '@services/posts/get-with-roots-batch'
 import { canViewDelegatedPostsBatch } from '@services/posts/check-delegated-access-batch'
@@ -13,6 +14,7 @@ import {
 
 export async function runSharedLoaderScenarios(): Promise<void> {
   await runDelegatedWriteContextScenarios()
+  await runRssItemElectionsBatchScenario()
   registerScenarioContract('topic-redirect-batch', sharedLoaderContract('topic-redirect-batch'))
   await runAndCapture('topic-redirect-batch', async () => {
     const results = await getTopicsByAnyWithRedirectBatch([
