@@ -1,4 +1,5 @@
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
+import { CAPACITY_AUDIT_RUNNERS } from './run-capacity-audit-scenarios.mts'
 import {
   getCompletedScenarioIds,
   getResults,
@@ -85,6 +86,7 @@ async function main() {
         runDeletedConversationRetentionCapacityScenarios.name,
         runDeletedConversationRetentionCapacityScenarios,
       )
+      await runOrderedRunners(CAPACITY_AUDIT_RUNNERS)
     }
     // The million-post fixture comes last in a full run so its future leaves never touch ordinary plans.
     if (shard === undefined || shard === 'hn-scale')
