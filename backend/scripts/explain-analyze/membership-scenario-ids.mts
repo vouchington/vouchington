@@ -12,4 +12,6 @@ export const MEMBERSHIP_SCENARIO_IDS = [
   'membership-outstanding-grants-at-cap',
   'membership-active-catalog-near-cap',
   'membership-pending-state-at-default',
+  'membership-entitlement-effect-claim-at-default',
+  'membership-entitlement-effect-complete-at-default',
 ] as const
