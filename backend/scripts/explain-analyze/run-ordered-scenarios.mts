@@ -38,6 +38,7 @@ import { runRssIngestCapacityScenario } from './run-scenarios/rss-ingest-capacit
 import { runRssHardDeleteSourceCapacityScenario } from './run-scenarios/rss-hard-delete-source-capacity.mts'
 import { runRssWriteCapacityScenarios } from './run-scenarios/rss-write-capacity.mts'
 import { runCopyrightExecutionRetentionScenarios } from './run-scenarios/copyright-execution-retention.mts'
+import { runCopyrightUnlinkedEmailRetentionScenario } from './run-scenarios/copyright-unlinked-email-retention.mts'
 import {
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
@@ -154,6 +155,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
   runCopyrightExecutionRetentionScenarios,
+  runCopyrightUnlinkedEmailRetentionScenario,
 ]
 
 /**

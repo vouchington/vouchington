@@ -56,4 +56,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-ai-run-retention-at-cap',
   'copyright-action-attempt-retention-at-cap',
   'copyright-delivery-attempt-retention-at-cap',
+  'copyright-unlinked-email-intake-attachment-retention-at-cap',
 ] as const
