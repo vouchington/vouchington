@@ -53,9 +53,8 @@ import { runTopHashtagCapacityScenario } from './run-scenarios/top-hashtag-capac
 import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capacity.mts'
 import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
 import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
-import { runRssUnmappedCategoryCapacityScenario } from './run-scenarios/rss-unmapped-category-capacity.mts'
-import { runRssLatestCrawlCapacityScenario } from './run-scenarios/rss-latest-crawl-capacity.mts'
-import { runRssHackerNewsFlagPagesCapacity } from './run-scenarios/rss-hacker-news-flag-pages-capacity.mts'
+
+import { CAPACITY_AUDIT_RUNNERS } from './run-capacity-audit-scenarios.mts'
 
 export type OrderedRunner = () => Promise<unknown>
 
@@ -155,9 +154,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
-  runRssUnmappedCategoryCapacityScenario,
-  runRssLatestCrawlCapacityScenario,
-  runRssHackerNewsFlagPagesCapacity,
+  ...CAPACITY_AUDIT_RUNNERS,
 ]
 
 /**

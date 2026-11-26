@@ -58,4 +58,9 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-latest-successful-crawl-at-cap',
   'rss-hacker-news-url-flag-page-at-cap',
   'rss-hacker-news-repair-flag-page-at-cap',
+  'rss-followed-feed-hydration-at-cap',
+  'rss-recent-feed-type-filter-at-cap',
+  'rss-item-feed-hydration-at-cap',
+  'rss-story-preview-feed-batch-at-cap',
+  'rss-semantic-search-at-cap',
 ] as const

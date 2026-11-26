@@ -46,4 +46,13 @@ export const BASELINE_FINGERPRINTS = [
   'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_custom_plan|force_custom_plan:topics',
   'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_generic_plan|force_generic_plan:rss_feeds',
   'url-embeds-at-post-page-cap|0|getUrlEmbedsByUrlIds:force_generic_plan|force_generic_plan:topics',
+  // Paired restored CI fixture for followed-feed hydration. Remove with #6602.
+  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:rss_feeds',
+  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:topics',
+  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:rss_feeds',
+  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:topics',
+  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:rss_feeds',
+  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:topics',
+  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:rss_feeds',
+  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:topics',
 ] as const
