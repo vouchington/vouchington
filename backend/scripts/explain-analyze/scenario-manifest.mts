@@ -67,6 +67,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-merge-parent-preflight-at-cap',
   'notification-push-recovery-at-cap',
   'web-push-subscriptions-at-cap',
+  'rss-hard-delete-crawls-at-cap',
   'account-email-addresses-at-cap',
   'account-api-keys-at-cap',
   'account-oauth-apps-at-cap',
