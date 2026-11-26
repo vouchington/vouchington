@@ -29,17 +29,24 @@ export async function* streamEntitiesMissingJudgementBatches(): AsyncGenerator<
     sql`/* streamEntitiesMissingJudgementBatches */
     SELECT entity_type, entity_id, triggering_report_id FROM (
       (
-        SELECT DISTINCT ON (mr.post_id)
+        SELECT
           CASE WHEN p.post_type = 'comment' THEN 'comment' ELSE 'post' END AS entity_type,
-          mr.post_id::text AS entity_id,
-          mr.id AS triggering_report_id
-        FROM moderation_reports mr
-        JOIN posts p ON p.id = mr.post_id AND p.deleted_at IS NULL
-        WHERE mr.post_id IS NOT NULL
-          AND NOT EXISTS (
-            SELECT 1 FROM moderation_report_judgements j WHERE j.post_id = mr.post_id
-          )
-        ORDER BY mr.post_id, mr.id DESC
+          head.post_id::text AS entity_id,
+          head.triggering_report_id
+        FROM (
+          SELECT DISTINCT ON (mr.post_id) mr.post_id, mr.id AS triggering_report_id
+          FROM moderation_reports mr
+          WHERE mr.post_id IS NOT NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM moderation_report_judgements j WHERE j.post_id = mr.post_id
+            )
+          ORDER BY mr.post_id, mr.id DESC
+        ) head
+        JOIN LATERAL (
+          SELECT post_type FROM posts
+          WHERE id = head.post_id AND deleted_at IS NULL
+          LIMIT 1
+        ) p ON TRUE
       )
 
       UNION ALL

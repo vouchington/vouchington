@@ -158,14 +158,18 @@ async function captureBackfill(
     entityType: 'user',
     triggeringReportId,
   })).toSorted((a, b) => a.entityId.localeCompare(b.entityId))
-  const { rows } = await write<{ reports: number; posts: number }>(
+  const { rows } = await write<{
+    reports: number
+    reported_posts: number
+    non_post_reports: number
+  }>(
     `/* boundModerationJudgementBackfillPlan */
-    SELECT (SELECT (count(*) + count(*) FILTER (WHERE post_id IS NULL))::int
-            FROM moderation_reports) AS reports,
-           (SELECT count(*)::int FROM posts) AS posts`,
+    SELECT count(*)::int AS reports,
+           count(DISTINCT post_id)::int AS reported_posts,
+           (count(*) FILTER (WHERE post_id IS NULL))::int AS non_post_reports
+    FROM moderation_reports`,
   )
   const corpus = rows[0]!
-  // https://github.com/vouchington/vouchington/issues/6565 tracks bounding the full post walk and the report corpus plus non-post branch reads.
   registerScenarioContract(scenario, {
     crossPartition: {
       posts: 'The backfill streams reported targets across all creation months.',
@@ -173,7 +177,9 @@ async function captureBackfill(
     },
     expectations: [
       { kind: 'maxProcessedRows', relation: 'moderation_reports', max: corpus.reports },
-      { kind: 'maxProcessedRows', relation: 'posts', max: corpus.posts },
+      { kind: 'maxProcessedRows', relation: 'posts', max: corpus.reported_posts },
+      { kind: 'usesIndexes', indexes: ['idx_moderation_reports__post_id_id'] },
+      { kind: 'maxInputRows', nodeType: 'Sort', max: corpus.non_post_reports },
     ],
   })
   const owned = new Set(targetIds)

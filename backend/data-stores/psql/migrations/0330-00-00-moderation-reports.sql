@@ -112,6 +112,10 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__resolution_id
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__post_id
   ON moderation_reports (post_id, resolution_action, id DESC) WHERE post_id IS NOT NULL;
 
+-- The judgement backfill selects the newest report for each post across all resolutions.
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__post_id_id
+  ON moderation_reports (post_id, id DESC) WHERE post_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__reported_user_id
   ON moderation_reports (reported_user_id, resolution_action, id DESC)
