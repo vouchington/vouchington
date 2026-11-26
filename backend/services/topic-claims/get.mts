@@ -81,7 +81,12 @@ export async function listTopicClaimsForTopic(
   if (options.claimantUserId)
     query.append(sql` AND tc.claimant_user_id = ${options.claimantUserId}`)
   if (options.activeOnly) query.append(sql` AND tc.rejected_at IS NULL AND tc.revoked_at IS NULL`)
-  if (afterId) query.append(sql` AND tc.id < ${afterId}`)
+  if (afterId) {
+    if (options.activeOnly) {
+      // With topic_id fixed, the tuple bound seeks the same page through the live-topic index.
+      query.append(sql` AND (tc.topic_id, tc.id) < (${topicId}::uuid, ${afterId}::uuid)`)
+    } else query.append(sql` AND tc.id < ${afterId}`)
+  }
   query.append(sql` ORDER BY tc.id DESC LIMIT ${limit + 1}`)
   const { rows } = await read<TopicClaim>(query)
   return buildClaimPage(rows, limit, scope)
