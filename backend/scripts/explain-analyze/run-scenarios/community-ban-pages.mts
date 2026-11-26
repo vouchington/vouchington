@@ -4,6 +4,7 @@ import { listActiveCommunityBans, searchCommunityBans } from '@services/communit
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { runCommunityBanLiftScenarios } from './community-ban-lifts.mts'
+import { runUserActiveCommunityBanCapacityScenarios } from './user-active-community-bans.mts'
 import {
   BAN_ACTIVE_COUNT,
   BAN_BULK_COUNT,
@@ -146,4 +147,5 @@ export async function runCommunityBanPageScenarios(): Promise<void> {
     undefined,
     'searchCommunityBans',
   )
+  await runUserActiveCommunityBanCapacityScenarios()
 }

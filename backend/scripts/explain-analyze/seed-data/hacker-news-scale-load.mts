@@ -7,6 +7,8 @@ import {
 } from './hacker-news-scale-storage.mts'
 import { runInParallelTransactions, type FixtureTransaction } from './parallel-fixture-load.mts'
 
+const POSTS_PER_STATEMENT = 5_000
+
 export async function createHackerNewsScalePartitions(
   query: FixtureTransaction,
   fixture: HackerNewsScaleFixture,
@@ -47,6 +49,22 @@ async function insertHackerNewsScalePosts(
   instant: string,
   partition: HackerNewsScalePartition,
 ): Promise<void> {
+  // A whole leaf in one statement ran 12-14 s on a healthy runner and hit the pool's 30 s
+  // statement_timeout on a slow one: every post fires the identity, FK and actor triggers.
+  // Chunks stay far below the timeout and keep the leaf's serial insert order.
+  for (let offset = 0; offset < partition.count; offset += POSTS_PER_STATEMENT) {
+    await insertHackerNewsScalePostChunk(query, actorId, hash, instant, partition, offset)
+  }
+}
+
+async function insertHackerNewsScalePostChunk(
+  query: FixtureTransaction,
+  actorId: string,
+  hash: Buffer,
+  instant: string,
+  partition: HackerNewsScalePartition,
+  offset: number,
+): Promise<void> {
   await query(
     `/* insertHackerNewsScalePosts */ INSERT INTO posts (
       id, created_via, post_type, markdown, created_by_id, approved_at, updated_at,
@@ -56,6 +74,14 @@ async function insertHackerNewsScalePosts(
       'system', 'discussion', 'HN scale fixture', $3, $7::timestamptz, $7::timestamptz,
       1 + (ordinal * 17) % 101, 1 + (ordinal * 17) % 101, $4, $4
       FROM generate_series($5::int, $5::int + $6::int - 1) AS fixture(ordinal)`,
-    [partition.idPrefix, POST_SERIAL, actorId, hash, partition.start, partition.count, instant],
+    [
+      partition.idPrefix,
+      POST_SERIAL,
+      actorId,
+      hash,
+      partition.start + offset,
+      Math.min(POSTS_PER_STATEMENT, partition.count - offset),
+      instant,
+    ],
   )
 }

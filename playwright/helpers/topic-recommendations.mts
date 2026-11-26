@@ -1,4 +1,5 @@
 import { type Browser, type TestInfo, withMonitoredPage } from './test.mts'
+import { apiRequest } from './api-request.mts'
 import { loginAsAdmin } from './auth.mts'
 import { randomSuffix } from 'vouchington-tooling/playwright'
 
@@ -25,96 +26,62 @@ export async function seedTopicRecommendations(browser: Browser, testInfo: TestI
   rejectedTopicTitle = `Playwright Rejected Rec ${rejectedSuffix}`
 
   // Create recommendations as the test user (who is also admin), then approve/reject in same session.
-  // page.evaluate runs fetch in the browser context so the dt/st session cookies are sent correctly.
+  // page.request uses the project baseURL and the dt/st session cookies, so no page load is needed.
   await withMonitoredPage(browser, testInfo, async page => {
     await loginAsAdmin(page)
 
-    // Create pending recommendation
-    await page.evaluate(
-      async data => {
-        const res = await fetch('/api/v1/posts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(data),
-        })
-        if (!res.ok) throw new Error(`Create rec1 failed: ${res.status} ${await res.text()}`)
-      },
-      {
-        post_type: 'topic_recommendation',
-        title: `Recommend ${topicTitle}`,
-        markdown: 'Playwright test recommendation for E2E coverage.',
-        topic_title: topicTitle,
-        topic_slug: topicSlug,
-      },
-    )
+    const post = async (path: string, data: object, label: string) => {
+      const res = await apiRequest(page, 'POST', path, data)
+      if (!res.ok()) throw new Error(`${label} failed: ${res.status()} ${await res.text()}`)
+      return res
+    }
+    const createRecommendation = async (
+      title: string,
+      slug: string,
+      markdown: string,
+      label: string,
+    ) => {
+      const res = await post(
+        '/api/v1/posts',
+        {
+          post_type: 'topic_recommendation',
+          title: `Recommend ${title}`,
+          markdown,
+          topic_title: title,
+          topic_slug: slug,
+        },
+        label,
+      )
+      return ((await res.json()) as { post: { id: string } }).post.id
+    }
 
-    // Create recommendation to be approved
-    const rec2 = await page.evaluate(
-      async data => {
-        const res = await fetch('/api/v1/posts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(data),
-        })
-        if (!res.ok) throw new Error(`Create rec2 failed: ${res.status} ${await res.text()}`)
-        return res.json() as Promise<{ post: { id: string } }>
-      },
-      {
-        post_type: 'topic_recommendation',
-        title: `Recommend ${approvedTopicTitle}`,
-        markdown: 'Playwright approved recommendation.',
-        topic_title: approvedTopicTitle,
-        topic_slug: approvedTopicSlug,
-      },
+    await createRecommendation(
+      topicTitle,
+      topicSlug,
+      'Playwright test recommendation for E2E coverage.',
+      'Create rec1',
     )
-    approvedRecId = rec2.post.id
-
-    // Create recommendation to be rejected
-    const rec3 = await page.evaluate(
-      async data => {
-        const res = await fetch('/api/v1/posts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(data),
-        })
-        if (!res.ok) throw new Error(`Create rec3 failed: ${res.status} ${await res.text()}`)
-        return res.json() as Promise<{ post: { id: string } }>
-      },
-      {
-        post_type: 'topic_recommendation',
-        title: `Recommend ${rejectedTopicTitle}`,
-        markdown: 'Playwright rejected recommendation.',
-        topic_title: rejectedTopicTitle,
-        topic_slug: rejectedTopicSlug,
-      },
+    approvedRecId = await createRecommendation(
+      approvedTopicTitle,
+      approvedTopicSlug,
+      'Playwright approved recommendation.',
+      'Create rec2',
     )
-    rejectedRecId = rec3.post.id
+    rejectedRecId = await createRecommendation(
+      rejectedTopicTitle,
+      rejectedTopicSlug,
+      'Playwright rejected recommendation.',
+      'Create rec3',
+    )
 
     // Approve rec2 (test user is admin)
-    await page.evaluate(async id => {
-      const res = await fetch(`/api/v1/posts/${id}/approvals`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      })
-      if (!res.ok) throw new Error(`Approve rec2 failed: ${res.status} ${await res.text()}`)
-    }, approvedRecId)
+    await post(`/api/v1/posts/${approvedRecId}/approvals`, {}, 'Approve rec2')
 
     // Reject rec3
-    await page.evaluate(
-      async args => {
-        const res = await fetch(`/api/v1/posts/${args.id}/rejections`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ reason: args.reason }),
-        })
-        if (!res.ok) throw new Error(`Reject rec3 failed: ${res.status} ${await res.text()}`)
-      },
-      { id: rejectedRecId, reason: 'Playwright test rejection reason' },
+    await post(
+      `/api/v1/posts/${rejectedRecId}/rejections`,
+      { reason: 'Playwright test rejection reason' },
+      'Reject rec3',
     )
   })
   return {

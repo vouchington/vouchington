@@ -89,9 +89,10 @@ async function cleanupHackerNewsReferenceBatch(
         AND comments.hacker_news_item_id = candidates.hacker_news_item_id`,
     [ids, batchSize * hackerNewsReferenceMaxValues.comments_per_url],
   )
+  // Plan the selected page as one array value so custom plans also use the URL key.
   await query(
     `/* deleteExpiredHackerNewsTotals */
-      DELETE FROM url_hacker_news_totals WHERE url_id = ANY($1::uuid[])`,
+      DELETE FROM url_hacker_news_totals WHERE url_id = ANY((SELECT $1::uuid[])::uuid[])`,
     [ids],
   )
   const changedIds = page.rows.flatMap(row => (row.present ? [row.url_id] : []))
