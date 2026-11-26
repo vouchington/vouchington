@@ -49,6 +49,7 @@ export const CORE_SCENARIOS = [
   'community-pending-reports-cap-severity',
   'community-pending-reports-cap-created_at_desc',
   'community-agent-moderations-cap',
+  'recent-automod-actions-at-cap',
   'community-pinned-posts-cap',
   'search-community-applications-at-cap',
   'community-saved-replies-at-cap',

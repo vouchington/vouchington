@@ -5,6 +5,7 @@ import { runAccountMessagingScenarios } from './run-scenarios/account-messaging-
 import { runConversationListCapacityScenario } from './run-scenarios/conversation-list-capacity.mts'
 import { runAccountListCapacityScenarios } from './run-scenarios/account-lists-at-cap.mts'
 import { runCommunitySearchCapacityScenario } from './run-scenarios/community-search-capacity.mts'
+import { runRecentAutomodActionCapacityScenario } from './run-scenarios/recent-automod-action-capacity.mts'
 import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/community-membership-read-capacity.mts'
 import { runExistenceFilterScenarios } from './run-scenarios/existence-filters.mts'
 import { runMembershipExpiryPageScenarios } from './run-scenarios/membership-expiry-pages.mts'
@@ -138,6 +139,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runRssIngestCapacityScenario,
   runRssHardDeleteSourceCapacityScenario,
   runAccountListCapacityScenarios,
+  runRecentAutomodActionCapacityScenario,
   runRssWriteCapacityScenarios,
   runAccountHistoryScenarios,
   runUserListCapacityScenario,
