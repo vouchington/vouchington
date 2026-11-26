@@ -141,4 +141,10 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-retained-email-lookup-continuation',
   'copyright-staff-case-queue-first',
   'copyright-staff-case-queue-continuation',
+  'copyright-agent-dispatch-email-first',
+  'copyright-agent-dispatch-email-continuation',
+  'copyright-agent-dispatch-form-screening-first',
+  'copyright-agent-dispatch-form-screening-continuation',
+  'copyright-agent-dispatch-form-effect-first',
+  'copyright-agent-dispatch-form-effect-continuation',
 ] as const

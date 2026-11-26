@@ -14,6 +14,7 @@ import { runPostBanEvasionSuccessorCapacity } from './run-scenarios/post-ban-eva
 import { runModerationReportPostSidecars } from './run-scenarios/moderation-report-post-sidecars.mts'
 import { runCopyrightReceiptReviewRetirementCapacity } from './run-scenarios/copyright-receipt-review-retirement-capacity.mts'
 import { runCopyrightRetainedEmailLookupScenarios } from './run-scenarios/copyright-retained-email-lookup.mts'
+import { runCopyrightEmailFormDispatchCapacityScenarios } from './run-scenarios/copyright-email-form-dispatch.mts'
 
 export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
@@ -36,4 +37,5 @@ export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
 export const AFTER_COPYRIGHT_CAPACITY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightReceiptReviewRetirementCapacity,
   runCopyrightRetainedEmailLookupScenarios,
+  runCopyrightEmailFormDispatchCapacityScenarios,
 ]
