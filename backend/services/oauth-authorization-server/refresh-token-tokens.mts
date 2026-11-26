@@ -86,6 +86,7 @@ async function lockRefreshToken(
   query: TransactionQuery,
 ): Promise<RefreshTokenRow | null> {
   const result = await query<RefreshTokenRow>(
+    // lock-reason: prevents: a concurrent reuse hitting the replacement generation key before it can revoke the family; writer: concurrent refresh-token exchange.
     `/* lockRefreshToken */ SELECT
        refresh.id,
        refresh.family_id,

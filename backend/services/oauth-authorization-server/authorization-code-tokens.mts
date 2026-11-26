@@ -103,6 +103,7 @@ async function lockAuthorizationCode(
   query: TransactionQuery,
 ): Promise<AuthorizationCodeRow | null> {
   const result = await query<AuthorizationCodeRow>(
+    // lock-reason: prevents: a second exchange issuing tokens from the same code, or an exchange issuing tokens after grant revocation; writer: concurrent code exchange or user grant revocation.
     `/* lockAuthorizationCode */ SELECT
        code.id,
        code.grant_id,
