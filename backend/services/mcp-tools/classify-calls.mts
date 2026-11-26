@@ -5,11 +5,9 @@ import type { ApiScope } from '@modules/scopes'
 import type { McpCallAuditEvent } from './audit.mts'
 import { readCopyrightTarget } from './copyright-audit-target.mts'
 import type { McpServerConfig } from './config.mts'
+import { validateToolArguments } from '@vouchington/mcp-server/schema'
+import { toolRouteCharges } from '@vouchington/mcp-server/tools'
 import { resolveMcpToolCall } from './resolve-tool-call.mts'
-import { toolRouteCharges } from './tool-route-keys.mts'
-import { validateToolArguments } from './validate-tool-arguments.mts'
-
-export { mcpNotificationShapedToolCall, mcpToolCallIsDispatched } from './tool-call-shape.mts'
 
 // Only these methods are ever written to the audit log. Anything else, including text an arbitrary
 // caller chose, is recorded as an invalid request with no method.

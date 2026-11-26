@@ -2,12 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { ApiScope } from '@modules/scopes'
-import {
-  exceedsMcpAuditBatchLimit,
-  mcpNotificationShapedToolCall,
-  mcpToolCallIsDispatched,
-  planMcpCalls,
-} from './classify-calls.mts'
+import { exceedsMcpAuditBatchLimit, planMcpCalls } from './classify-calls.mts'
 import { ADMIN_MCP_SERVER_CONFIG, LEGAL_MCP_SERVER_CONFIG } from './config.mts'
 
 const admin = { id: 'admin-id', roles: ['administrator'], membership_plan: null } as const
@@ -207,36 +202,5 @@ describe('exceedsMcpAuditBatchLimit', () => {
 
   it('never limits a single message', () => {
     expect(exceedsMcpAuditBatchLimit({ jsonrpc: '2.0', method: 'ping' })).toBe(false)
-  })
-})
-
-describe('mcp tool-call dispatch shape', () => {
-  const toolCall = {
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'tools/call',
-    params: { name: 'classify_read', arguments: { note: 'x' } },
-  }
-
-  it('treats an id-bearing tools/call as a call the server runs', () => {
-    expect(mcpToolCallIsDispatched(toolCall)).toBe(true)
-    expect(mcpToolCallIsDispatched({ ...toolCall, id: 'req-1' })).toBe(true)
-    expect(mcpNotificationShapedToolCall(toolCall)).toBe(false)
-  })
-
-  it('treats a tools/call with no id as a notification', () => {
-    const { id: _id, ...omitted } = toolCall
-    expect(mcpNotificationShapedToolCall(omitted)).toBe(true)
-    expect(mcpToolCallIsDispatched(omitted)).toBe(false)
-    expect(mcpNotificationShapedToolCall({ ...toolCall, id: null })).toBe(true)
-    expect(mcpToolCallIsDispatched({ ...toolCall, id: null })).toBe(false)
-  })
-
-  it('emits at plan time for an invalid envelope or a non-integer id', () => {
-    const invalid = { jsonrpc: '2.0', id: 1, method: 'tools/call' }
-    expect(mcpToolCallIsDispatched(invalid)).toBe(false)
-    expect(mcpNotificationShapedToolCall(invalid)).toBe(false)
-    expect(mcpToolCallIsDispatched({ ...toolCall, id: 1.5 })).toBe(false)
-    expect(mcpNotificationShapedToolCall({ ...toolCall, id: 1.5 })).toBe(false)
   })
 })

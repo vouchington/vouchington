@@ -69,6 +69,7 @@ async function claimIneligiblePurchaseReversal(options: {
       ) ON CONFLICT (membership_provider_context_id, idempotency_key) DO NOTHING
     `)
   }
+  // lock-reason: prevents: claiming a reversal using stale refund amounts or completion state during reconciliation; writer: reconcileFailedIneligiblePurchaseReversal
   const { rows } = await options.query(sql`/* claimIneligiblePurchaseReversal:lock */
     SELECT operation.id,
       EXISTS (

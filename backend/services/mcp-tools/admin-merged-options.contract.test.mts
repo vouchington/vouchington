@@ -5,9 +5,9 @@ import { ALL_TOOLS, getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { ADMIN_MCP_SERVER_CONFIG, ALL_MCP_SERVER_CONFIGS } from './config.mts'
 import { planMcpCalls } from './classify-calls.mts'
 import { listMcpToolsForUser } from './list-tools.mts'
-import { toolRouteCharges } from './tool-route-keys.mts'
+import { toolRouteCharges } from '@vouchington/mcp-server/tools'
 import { toolRouteKeys } from '@voucha/test-helpers/mcp-route-keys'
-import { validateToolArguments } from './validate-tool-arguments.mts'
+import { validateToolArguments } from '@vouchington/mcp-server/schema'
 
 const UUID = '00000000-0000-4000-8000-000000000001'
 const copyrightTargetContracts = {

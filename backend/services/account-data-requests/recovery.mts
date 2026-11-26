@@ -41,7 +41,7 @@ export async function claimRecoverableDataRequests(
     LIMIT ${batchSize}
   `)
   const requestPageIds = workRows.map(row => row.id)
-  // Sorted lifecycle locks fence every candidate before a request-row lock.
+  // lock-reason: prevents: reclaiming an export after account deletion has started draining it; writer: account deletion.
   const candidateUserIds = [...new Set(workRows.flatMap(row => (row.user_id ? [row.user_id] : [])))]
   const activeUsers = await lockUsersForShare(transaction, candidateUserIds)
   const activeUserIds = candidateUserIds.filter(userId => activeUsers.has(userId))

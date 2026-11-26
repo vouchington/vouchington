@@ -26,6 +26,7 @@ const storybookMockAliases = {
   '@/components/moderation/user-mod-notes-panel': 'user-mod-notes-panel.tsx',
   '@/components/notifications/inbox-button': 'inbox-button.tsx',
   '@/components/topics/settings/referral-validations-settings': 'referral-validations-settings.tsx',
+  '@/hooks/use-login-turnstile': 'use-login-turnstile.ts',
   '@/hooks/use-turnstile-token': 'use-turnstile-token.ts',
   '@/lib/i18n/get-resolved-ui-locale': 'get-resolved-ui-locale.ts',
   '@/lib/i18n/get-translations': 'get-translations.ts',

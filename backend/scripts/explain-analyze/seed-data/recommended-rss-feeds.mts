@@ -48,6 +48,23 @@ export async function seedRecommendedRssFeedsPopularFeed(): Promise<void> {
   await write(
     '/* vacuumRecommendedRssFeedsFollows */ VACUUM (ANALYZE) relation__user__follow__rss_feed',
   )
+  // VACUUM cannot mark a page all-visible while another backend (an autovacuum ANALYZE of any
+  // table, for one) holds a snapshot older than the insert, which leaves relallvisible at 0. The
+  // planner then costs the object__newest probe as a bitmap heap scan plus Sort that reads every
+  // co-follower of the popular feed (6,592 rows against the 5,600 cap) instead of the ordered
+  // index-only LIMIT 25. Pin relallvisible to the fully vacuumed state the cap is written for.
+  await write(
+    `/* pinRecommendedRssFeedsFollowsVisibility */
+     SELECT pg_restore_relation_stats(
+       'schemaname', 'public',
+       'relname', 'relation__user__follow__rss_feed',
+       'relpages', relpages,
+       'reltuples', reltuples,
+       'relallvisible', relpages
+     )
+     FROM pg_class
+     WHERE oid = 'public.relation__user__follow__rss_feed'::regclass`,
+  )
 }
 
 /** Removes the cohort so whole-table scenarios (MV refreshes) keep their seeded row counts. */

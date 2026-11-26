@@ -1,4 +1,5 @@
 import type Stripe from 'stripe'
+import { collectStripePages } from '@vouchington/stripe'
 import { mapWithConcurrency } from '@vouchington/utils/async'
 import { getStripeClient } from './client.mts'
 import { listAllStripeInvoicePayments } from './invoice-payments.mts'
@@ -39,42 +40,17 @@ export async function listAllStripeSubscriptionInvoices(
   subscriptionId: string,
   limits: StripeInvoiceLookupLimits,
 ): Promise<StripeInvoiceWithAllPayments[]> {
-  const invoices = await listStripeSubscriptionInvoicePages(
-    subscriptionId,
-    undefined,
-    [],
-    0,
-    limits.invoicePages,
-  )
+  const invoices = await collectStripePages({
+    fetchPage: startingAfter =>
+      listStripeSubscriptionInvoices(subscriptionId, {
+        limit: 100,
+        startingAfter,
+      }),
+    maxPages: limits.invoicePages,
+    label: 'invoice',
+  })
   return mapWithConcurrency(invoices, STRIPE_INVOICE_HYDRATION_CONCURRENCY, invoice =>
     hydrateStripeInvoiceDetails(invoice, limits),
-  )
-}
-
-async function listStripeSubscriptionInvoicePages(
-  subscriptionId: string,
-  startingAfter: string | undefined,
-  invoices: Stripe.Invoice[],
-  pageCount: number,
-  maxPages: number,
-): Promise<Stripe.Invoice[]> {
-  if (pageCount >= maxPages)
-    throw new Error(`Stripe subscription ${subscriptionId} exceeded the invoice page limit`)
-  const page = await listStripeSubscriptionInvoices(subscriptionId, {
-    limit: 100,
-    startingAfter,
-  })
-  const collected = [...invoices, ...page.data]
-  if (!page.has_more) return collected
-  const lastInvoice = page.data.at(-1)
-  if (!lastInvoice)
-    throw new Error(`Stripe returned an empty invoice page for subscription ${subscriptionId}`)
-  return listStripeSubscriptionInvoicePages(
-    subscriptionId,
-    lastInvoice.id,
-    collected,
-    pageCount + 1,
-    maxPages,
   )
 }
 
@@ -102,30 +78,17 @@ export async function getCompleteStripeInvoicePayments(
   return listAllStripeInvoicePayments(invoice.id, maxPages)
 }
 
-export async function getCompleteStripeInvoiceLines(
+export function getCompleteStripeInvoiceLines(
   invoice: Stripe.Invoice,
   maxPages: number,
 ): Promise<Stripe.InvoiceLineItem[]> {
-  return listAllStripeInvoiceLinePages(invoice.id, undefined, [], 0, maxPages)
-}
-
-async function listAllStripeInvoiceLinePages(
-  invoiceId: string,
-  startingAfter: string | undefined,
-  lines: Stripe.InvoiceLineItem[],
-  pageCount: number,
-  maxPages: number,
-): Promise<Stripe.InvoiceLineItem[]> {
-  if (pageCount >= maxPages)
-    throw new Error(`Stripe invoice ${invoiceId} exceeded the line page limit`)
-  const page = await getStripeClient().invoices.listLineItems(invoiceId, {
-    limit: 100,
-    ...(startingAfter ? { starting_after: startingAfter } : {}),
+  return collectStripePages({
+    fetchPage: startingAfter =>
+      getStripeClient().invoices.listLineItems(invoice.id, {
+        limit: 100,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      }),
+    maxPages,
+    label: 'invoice line',
   })
-  const collected = [...lines, ...page.data]
-  if (!page.has_more) return collected
-  const lastLine = page.data.at(-1)
-  if (!lastLine)
-    throw new Error(`Stripe returned an empty invoice line page for invoice ${invoiceId}`)
-  return listAllStripeInvoiceLinePages(invoiceId, lastLine.id, collected, pageCount + 1, maxPages)
 }

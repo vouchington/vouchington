@@ -8,6 +8,7 @@ export async function lockMembershipUser(
   mapMissingToInvalidGrant = false,
 ): Promise<void> {
   try {
+    // lock-reason: prevents: attaching a membership during account erasure; writer: account deletion.
     await query(
       sql`/* lockMembershipUser:active */ SELECT fn_lock_active_user_for_mutation(${userId})`,
     )

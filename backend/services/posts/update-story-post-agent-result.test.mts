@@ -12,9 +12,10 @@ import {
   insertTestImage,
   insertTestPostImage,
   insertTestPost,
-  updatePostTitleMarkdown,
   updatePostModerationData,
 } from '@voucha/test-helpers'
+import { editStoryWhileSummaryStarts } from '@voucha/test-helpers/story-agent-content-race'
+import { getPostByAny } from './get.mts'
 import { updateStoryPostAgentResult } from './update-story-post-agent-result.mts'
 
 describe('updateStoryPostAgentResult', () => {
@@ -75,7 +76,7 @@ describe('updateStoryPostAgentResult', () => {
     })
   })
 
-  it('hashes story agent results with the current locked story title', async () => {
+  it('publishes the summary and hashes the title committed by a concurrent edit', async () => {
     const suffix = randomUUID()
     const staleTitle = `Stale story title ${suffix}`
     const currentTitle = `Current story title ${suffix}`
@@ -90,7 +91,6 @@ describe('updateStoryPostAgentResult', () => {
       postType: 'story',
       clearanceStatus: 'pending',
     })
-    await updatePostTitleMarkdown(postId, currentTitle, '')
     const { content_sha256 } = createPostModerationContent({
       title: currentTitle,
       markdown: '',
@@ -98,8 +98,14 @@ describe('updateStoryPostAgentResult', () => {
       images: [],
     })
 
-    await updateStoryPostAgentResult(postId, staleTitle, aiSummaryMarkdown)
+    await editStoryWhileSummaryStarts(postId, currentTitle, '', () =>
+      updateStoryPostAgentResult(postId, staleTitle, aiSummaryMarkdown),
+    )
 
+    await expect(getPostByAny(postId)).resolves.toMatchObject({
+      title: currentTitle,
+      ai_summary_markdown: aiSummaryMarkdown,
+    })
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       openai_omni_moderation_content_sha256: content_sha256,
     })

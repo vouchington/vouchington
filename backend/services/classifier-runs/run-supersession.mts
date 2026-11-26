@@ -10,14 +10,22 @@ import { reserveLockedClassifierRun, type ReservedClassifierRun } from './run-re
 import type { ClassifierRunTarget } from './run-lock.mts'
 import type { ClassifierRunAdapter } from './types.mts'
 
-async function markSuperseded(query: OwnedTransaction, runId: string) {
-  await query(sql`/* supersedeStaleClassifierRun.mark */
+async function markSuperseded(
+  query: OwnedTransaction,
+  stale: ClassifierRunTarget,
+): Promise<boolean> {
+  const { rowCount } = await query(sql`/* supersedeStaleClassifierRun.mark */
     UPDATE classifier_runs
     SET superseded_at = clock_timestamp(),
       lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
-    WHERE id = ${runId}
+    WHERE id = ${stale.runId}
+      AND input_sha256 = ${stale.inputSha256}
+      AND configuration_sha256 = ${stale.configurationSha256}
+      AND completed_at IS NULL AND superseded_at IS NULL
   `)
-  await reopenClassifierRunRequests(query, runId)
+  if (rowCount !== 1) return false
+  await reopenClassifierRunRequests(query, stale.runId)
+  return true
 }
 
 /**
@@ -49,24 +57,27 @@ async function supersedePrepared<C, L, E>(
 ): Promise<ReservedClassifierRun | null | typeof PREPARE_AGAIN> {
   await using query = await beginTransaction()
   const current = await adapter.lockCurrent(query, stale.subject)
-  const { rows } = await query<{ superseded_at: Date | null; completed_at: Date | null }>(sql`
-    /* supersedeStaleClassifierRun.run */
-    SELECT superseded_at, completed_at FROM classifier_runs
-    WHERE id = ${stale.runId}
-      AND input_sha256 = ${stale.inputSha256}
-      AND configuration_sha256 = ${stale.configurationSha256}
-    FOR UPDATE
-  `)
-  const run = rows[0]
-  if (!run || run.superseded_at !== null || run.completed_at !== null) return null
-  const resolved = current ? await adapter.resolve(stale.subject, current, query) : null
-  if (
-    current?.inputSha256.equals(stale.inputSha256) &&
-    resolved?.configurationSha256.equals(stale.configurationSha256)
-  ) {
-    return null
+  if (current) {
+    const { rows } = await query<{ superseded_at: Date | null; completed_at: Date | null }>(sql`
+      /* supersedeStaleClassifierRun.run */
+      SELECT superseded_at, completed_at FROM classifier_runs
+      WHERE id = ${stale.runId}
+        AND input_sha256 = ${stale.inputSha256}
+        AND configuration_sha256 = ${stale.configurationSha256}
+      -- lock-reason: prevents: reversing run-before-request order when configuration resolution pins request progress; writer: completeClassifierRun
+      FOR UPDATE
+    `)
+    const run = rows[0]
+    if (!run || run.superseded_at !== null || run.completed_at !== null) return null
+    const resolved = await adapter.resolve(stale.subject, current, query)
+    if (
+      current.inputSha256.equals(stale.inputSha256) &&
+      resolved?.configurationSha256.equals(stale.configurationSha256)
+    ) {
+      return null
+    }
   }
-  await markSuperseded(query, stale.runId)
+  if (!(await markSuperseded(query, stale))) return null
   const replacement = await reserveLockedClassifierRun(
     adapter,
     query,

@@ -1,13 +1,8 @@
 import type { PublicUser } from '@services/users/types'
-import {
-  externalText,
-  pageProperties,
-  sanitizedTitle,
-  type McpPage,
-  type McpPageLimit,
-} from './mcp-read-output.mts'
+import { pageProperties, type McpPage, type McpPageLimit } from './mcp-read-output.mts'
 import { componentSchema } from './route-response-schema.mts'
-import { closedObject } from './read-tool-output-schema.mts'
+import { objectSchema } from '@vouchington/mcp-server/schema'
+import { sanitizeTitle, wrapExternalText } from '@vouchington/mcp-server/untrusted'
 
 /** `read_users (option search)` pages like `GET /api/v1/users?q=`: 25 at most, 10 by default. */
 export const USER_PAGE_LIMIT: McpPageLimit = { min: 1, max: 25, default: 10 }
@@ -43,9 +38,9 @@ export type McpUsersPage = McpPage<McpUser>
 
 export async function toMcpUser(user: PublicUser): Promise<McpUser> {
   const [username, markdown, verifiedDisplayName] = await Promise.all([
-    user.username ? sanitizedTitle(user.username) : null,
-    externalText(user.markdown ?? null, 'user', 'user_bio'),
-    user.verified_display_name ? sanitizedTitle(user.verified_display_name) : null,
+    user.username ? sanitizeTitle(user.username) : null,
+    wrapExternalText(user.markdown ?? null, 'user', 'user_bio'),
+    user.verified_display_name ? sanitizeTitle(user.verified_display_name) : null,
   ])
   return {
     id: user.id,
@@ -74,7 +69,7 @@ export function mcpUserSchema() {
     if (!schema) throw new Error(`The PublicUser contract has no "${key}" property.`)
     return schema
   }
-  return closedObject(Object.fromEntries(USER_FIELDS.map(key => [key, pick(key)])))
+  return objectSchema(Object.fromEntries(USER_FIELDS.map(key => [key, pick(key)])))
 }
 
 export const usersPageProperties = () => pageProperties(mcpUserSchema())

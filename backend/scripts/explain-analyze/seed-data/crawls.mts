@@ -1,6 +1,10 @@
 import { beginTransaction } from '@data-stores/psql'
 import { contentHash, crawlSeedUuid, HOSTNAME_COUNT, seedUuid } from './common.mts'
 
+export function seedCrawlMarkdown(id: string, urlIndex: number): string {
+  return `Seed crawl ${id} content for url ${urlIndex}`
+}
+
 export async function seedCrawls(count = 100): Promise<void> {
   console.log(`Seeding ${count} crawls...`)
   {
@@ -13,7 +17,7 @@ export async function seedCrawls(count = 100): Promise<void> {
         const idx = i + j
         const id = crawlSeedUuid(idx, '12')
         const urlId = seedUuid(idx % HOSTNAME_COUNT, '03')
-        const markdown = `Seed crawl content for url ${idx % HOSTNAME_COUNT}`
+        const markdown = seedCrawlMarkdown(id, idx % HOSTNAME_COUNT)
         values.push(id, urlId, markdown, 200)
         const base = values.length - 3
         rows.push(

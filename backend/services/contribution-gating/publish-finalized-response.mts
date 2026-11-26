@@ -16,17 +16,14 @@ export async function publishFinalizedContributionResponse<T>(
 ): Promise<FinalizedContributionResponsePublishResult<T>> {
   await using query = await beginTransaction()
 
-  const owned = await query(sql`/* publishFinalizedContributionResponse.lockClaim */
-      SELECT reservation_id FROM post_admission_claims
-      WHERE reservation_id = ${input.reservationId} AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
-      FOR UPDATE`)
-  if (owned.rowCount !== 1) {
+  const released = await query(sql`/* publishFinalizedContributionResponse.release */
+      DELETE FROM post_admission_claims
+      WHERE reservation_id = ${input.reservationId} AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()`)
+  if (released.rowCount !== 1) {
     await query.commit()
     return { kind: 'lost' }
   }
   const response = await persistFinalizedContributionResponse<T>(query, input.reservationId)
-  await query(sql`/* publishFinalizedContributionResponse.release */
-      DELETE FROM post_admission_claims WHERE reservation_id = ${input.reservationId} AND lease_token = ${input.leaseToken}`)
   await query.commit()
   return { kind: 'published', response }
 }

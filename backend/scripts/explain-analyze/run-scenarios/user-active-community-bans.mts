@@ -98,6 +98,21 @@ export async function runUserActiveCommunityBanCapacityScenarios(): Promise<void
         { exactCapturedNames: ['listUserActiveCommunityBans'] },
       )
     }
+
+    const remaining = active.slice(limit * 2)
+    const finalPage = await listUserActiveCommunityBans(userId, {
+      limit,
+      after: cursor(active[limit * 2 - 1]!.id),
+    })
+    assert.deepEqual(
+      finalPage.results.map(row => [row.id, row.user_id, row.community_slug]),
+      remaining.map(ban => [ban.id, userId, `seed-community-${ban.community}`]),
+    )
+    assert.deepEqual(finalPage.page_info, {
+      has_next_page: false,
+      start_cursor: cursor(remaining[0]!.id),
+      end_cursor: null,
+    })
   } finally {
     await write(sql`/* deleteUserActiveCommunityBanCapacity */
       DELETE FROM moderation_cases WHERE id = ANY(${cases}::uuid[])`)

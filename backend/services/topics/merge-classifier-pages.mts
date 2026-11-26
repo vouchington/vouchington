@@ -22,6 +22,7 @@ export async function processTopicMergeClassifierPage(
   const candidateId = rows[0]!.id
   const table = children[phase]
   if (table) {
+    // lock-reason: prevents: a concurrent threshold update invalidating the selected tuple before deletion; writer: replaceActiveClassifierThreshold
     const { rowCount } = await query(
       `/* processTopicMergeClassifierPage children */ WITH page AS MATERIALIZED (
       SELECT tableoid,ctid FROM ${table} WHERE candidate_id = $1::uuid LIMIT $2 FOR UPDATE

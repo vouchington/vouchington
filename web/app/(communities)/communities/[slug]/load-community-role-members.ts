@@ -1,5 +1,5 @@
 import { getCommunityMembers } from '@/lib/api/server'
-import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
+import { returnNullForMissingEntity } from '@vouchington/api-client'
 import type { CommunityMembersResponseBody } from '@/types/api-responses'
 
 /**

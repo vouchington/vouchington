@@ -50,8 +50,9 @@ async function cleanupHackerNewsReferenceBatch(
   batchSize: number,
   urlIds?: readonly string[],
 ) {
-  // This lock is also taken by the writer before touching children. A refresh that wins
-  // first moves its row beyond the cutoff; one that waits recreates a complete fresh snapshot.
+  // lock-reason: prevents: deleting stories or comments from a newer lookup; writer: replaceHackerNewsReferences locks url_hacker_news_totals before replacing its children.
+  // If refresh takes the totals lock first, retention skips it or sees the newer lookup time.
+  // A refresh that waits for retention recreates a complete fresh snapshot after deletion.
   const page = await query<{ url_id: string; present: boolean }>(
     `/* selectExpiredHackerNewsReferences */
       SELECT url_id, (story_count > 0 OR comment_count > 0) AS present FROM url_hacker_news_totals
@@ -86,9 +87,10 @@ async function cleanupHackerNewsReferenceBatch(
         AND comments.hacker_news_item_id = candidates.hacker_news_item_id`,
     [ids, batchSize * hackerNewsReferenceMaxValues.comments_per_url],
   )
+  // Plan the selected page as one array value so custom plans also use the URL key.
   await query(
     `/* deleteExpiredHackerNewsTotals */
-      DELETE FROM url_hacker_news_totals WHERE url_id = ANY($1::uuid[])`,
+      DELETE FROM url_hacker_news_totals WHERE url_id = ANY((SELECT $1::uuid[])::uuid[])`,
     [ids],
   )
   const changedIds = page.rows.flatMap(row => (row.present ? [row.url_id] : []))

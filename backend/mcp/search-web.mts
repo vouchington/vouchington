@@ -2,14 +2,9 @@ import { toPublicViewHostname } from '@services/urls-hostnames'
 import { searchWeb } from '@services/web-search'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
-import {
-  externalText,
-  pageInfoSchema,
-  pageInputProperties,
-  sanitizedTitle,
-  type McpPageLimit,
-} from './mcp-read-output.mts'
-import { nullable } from '@vouchington/mcp-server/schema'
+import { pageInfoSchema, pageInputProperties, type McpPageLimit } from './mcp-read-output.mts'
+import { nullable, objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
+import { sanitizeTitle, wrapExternalText } from '@vouchington/mcp-server/untrusted'
 import {
   EMPTY_PAGE_INFO,
   findPageOrNull,
@@ -17,7 +12,7 @@ import {
   type InvalidCursorResult,
   type SearchPageInfo,
 } from './paged-search.mts'
-import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
+import { pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
@@ -71,14 +66,14 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: ['web-search:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/web-search' }],
-    outputSchema: foundOrNotFoundSchema({
+    outputSchema: outcomeSchema('success', {
       results: {
         type: 'array',
-        items: closedObject({
-          url: closedObject({
+        items: objectSchema({
+          url: objectSchema({
             ...pickProperties('ViewUrl', ['id', 'url']),
             hostname: nullable(
-              closedObject(pickProperties('PublicViewHostname', ['id', 'hostname', 'topic_id'])),
+              objectSchema(pickProperties('PublicViewHostname', ['id', 'hostname', 'topic_id'])),
             ),
           }),
           snippet: nullable({ type: 'string' }),
@@ -112,16 +107,16 @@ const tool: Tool<ToolArgs, ToolResult> = {
             return {
               url: {
                 id: result.url.id,
-                url: await sanitizedTitle(result.url.url),
+                url: await sanitizeTitle(result.url.url),
                 hostname: hostname
                   ? {
                       id: hostname.id,
-                      hostname: await sanitizedTitle(hostname.hostname),
+                      hostname: await sanitizeTitle(hostname.hostname),
                       topic_id: hostname.topic_id,
                     }
                   : null,
               },
-              snippet: await externalText(result.snippet, 'web_search', 'web_search_snippet'),
+              snippet: await wrapExternalText(result.snippet, 'web_search', 'web_search_snippet'),
               match_type: result.match_type,
             }
           }),

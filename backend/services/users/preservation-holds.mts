@@ -59,8 +59,8 @@ function assertAdmin(currentUser: PrivateUser | null): asserts currentUser is Pr
 }
 
 /**
- * Locks the account row `FOR NO KEY UPDATE`, the lock final purge takes before its DELETE: the purge
- * either deletes first (this reports 404) or sees the committed hold and deletes nothing.
+ * lock-reason: prevents: final purge overtaking hold admission; writer: final account purge.
+ * Final purge takes the same account lock before its DELETE. If it wins, hold admission reports 404.
  */
 async function readPreservationHoldUser(
   query: QueryExecutor,

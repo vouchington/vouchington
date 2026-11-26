@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS, getRegisteredToolByName } from '@voucha/mcp/registry/index'
-import { validateToolArguments } from '../../services/mcp-tools/validate-tool-arguments.mts'
+import { validateToolArguments } from '@vouchington/mcp-server/schema'
 
 const names = [
   'assess_copyright_legal_hold',

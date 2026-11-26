@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import {
   CrawlerHttpClientError,
   CrawlerInvalidContentTypeError,
@@ -7,9 +7,8 @@ import {
   CrawlerResponseSizeExceededError,
   CrawlerServerError,
   CrawlerTimeoutError,
-  isCrawlerNetworkDnsError,
-  isCrawlerNetworkTlsHostnameError,
 } from '@modules/on-error/errors'
+import { isDnsLookupError, isTlsHostnameMismatchError } from '@vouchington/http-transport/fetch'
 import { HttpNoBodyError } from '@vouchington/sentry'
 import { trackNetworkBackoffClosed, trackNetworkBackoffOpened } from '@services/analytics'
 
@@ -34,8 +33,8 @@ export function isHostnameUnreachableError(error: unknown): error is CrawlerNetw
   return (
     error instanceof CrawlerNetworkError &&
     error.responseStatus === null &&
-    !isCrawlerNetworkDnsError(error) &&
-    !isCrawlerNetworkTlsHostnameError(error)
+    !isDnsLookupError(error) &&
+    !isTlsHostnameMismatchError(error)
   )
 }
 
@@ -141,38 +140,56 @@ export async function isOutsideHostnameNetworkBackoff(hostname: {
   return claimHostnameNetworkProbe(hostname.id)
 }
 
+const RESET_FAILURE_FIELDS = `consecutive_dns_failures = CASE WHEN $2 THEN 0 ELSE consecutive_dns_failures END,
+  consecutive_network_failures = 0,
+  network_backoff_ends_at = NULL,
+  network_backoff_probe_claimed_at = NULL`
+
+const HAS_FAILURES_TO_RESET = `(($2 AND consecutive_dns_failures > 0)
+  OR consecutive_network_failures > 0 OR network_backoff_step > 0)`
+
 /**
  * Resets failure state after the hostname answered. Any HTTP response closes the network
- * backoff; only a successful crawl or fetch (includeDns) also resets the DNS counter. The row is
- * locked and written only when there is something to reset.
+ * backoff; only a successful crawl or fetch (includeDns) also resets the DNS counter.
  */
 export async function resetHostnameFailures(
   hostnameId: string,
   options: { crawlerType: BackoffCrawlerType; includeDns: boolean },
 ): Promise<void> {
-  const { rows } = await write<{ hostname: string; closed_step: number }>(
+  // A concurrent opening can defeat the UPDATE while the snapshot still shows counters to reset.
+  const { rows: pending } = await write(
     `/* resetHostnameFailures */
-    UPDATE url_hostnames h SET
-      consecutive_dns_failures = CASE WHEN $2 THEN 0 ELSE h.consecutive_dns_failures END,
-      consecutive_network_failures = 0,
-      network_backoff_step = 0,
-      network_backoff_ends_at = NULL,
-      network_backoff_probe_claimed_at = NULL
-    FROM (
-      SELECT id, network_backoff_step
-      FROM url_hostnames
-      WHERE id = $1
-        AND (($2 AND consecutive_dns_failures > 0)
-          OR consecutive_network_failures > 0
-          OR network_backoff_step > 0)
-      FOR UPDATE
-    ) previous
-    WHERE h.id = previous.id
-    RETURNING h.hostname, previous.network_backoff_step AS closed_step
+    WITH needs_reset AS (
+      SELECT id FROM url_hostnames WHERE id = $1 AND ${HAS_FAILURES_TO_RESET}
+    ), reset_counters AS (
+      UPDATE url_hostnames SET ${RESET_FAILURE_FIELDS}
+      WHERE id = $1 AND network_backoff_step = 0 AND ${HAS_FAILURES_TO_RESET}
+        AND EXISTS (SELECT 1 FROM needs_reset) RETURNING id
+    )
+    SELECT id FROM needs_reset WHERE NOT EXISTS (SELECT 1 FROM reset_counters)`,
+    [hostnameId, options.includeDns],
+  )
+  if (pending.length === 0) return
+  await using transaction = await beginTransaction()
+  // Leave the step intact until RETURNING captures it, then clear it before commit.
+  const { rows } = await transaction<{ hostname: string; closed_step: number }>(
+    `/* resetHostnameFailures:prepareBackoffReset */
+    UPDATE url_hostnames SET ${RESET_FAILURE_FIELDS}
+    WHERE id = $1 AND ${HAS_FAILURES_TO_RESET}
+    RETURNING hostname, network_backoff_step AS closed_step
   `,
     [hostnameId, options.includeDns],
   )
   const row = rows[0]
+  if (row && row.closed_step > 0) {
+    await transaction(
+      `/* resetHostnameFailures:closeBackoff */
+      UPDATE url_hostnames SET network_backoff_step = 0
+      WHERE id = $1 AND network_backoff_step > 0`,
+      [hostnameId],
+    )
+  }
+  await transaction.commit()
   if (!row || row.closed_step === 0) return
   trackNetworkBackoffClosed(
     options.crawlerType,

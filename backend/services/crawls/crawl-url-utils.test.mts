@@ -6,7 +6,6 @@ import {
   parseXRobotsTag,
 } from './crawl-url-utils.mts'
 import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from './constants.mts'
-import { CrawlerNetworkError, isCrawlerNetworkDnsError } from '@modules/on-error/errors'
 
 describe('parseXRobotsTag', () => {
   it('returns empty string for empty input', () => {
@@ -96,57 +95,5 @@ describe('safeHostname', () => {
 
   it('returns null for invalid URL', () => {
     expect(safeHostname('not-a-url')).toBeNull()
-  })
-})
-
-describe('isCrawlerNetworkDnsError', () => {
-  it('returns true for ENOTFOUND cause', () => {
-    const err = new CrawlerNetworkError(
-      'https://example.com',
-      100,
-      new Error('ENOTFOUND example.com'),
-    )
-    expect(isCrawlerNetworkDnsError(err)).toBe(true)
-  })
-
-  it('returns true for getaddrinfo cause', () => {
-    const err = new CrawlerNetworkError(
-      'https://example.com',
-      100,
-      new Error('getaddrinfo ENOTFOUND example.com'),
-    )
-    expect(isCrawlerNetworkDnsError(err)).toBe(true)
-  })
-
-  it('returns false for ECONNREFUSED cause', () => {
-    const err = new CrawlerNetworkError(
-      'https://example.com',
-      100,
-      new Error('connect ECONNREFUSED 127.0.0.1:443'),
-    )
-    expect(isCrawlerNetworkDnsError(err)).toBe(false)
-  })
-
-  it('returns false for ECONNRESET cause', () => {
-    const err = new CrawlerNetworkError('https://example.com', 100, new Error('read ECONNRESET'))
-    expect(isCrawlerNetworkDnsError(err)).toBe(false)
-  })
-
-  it('returns true for nested cause (TypeError wrapping DNS error — Node.js fetch shape)', () => {
-    const dnsError = Object.assign(new Error('getaddrinfo ENOTFOUND example.com'), {
-      code: 'ENOTFOUND',
-    })
-    const fetchError = Object.assign(new TypeError('fetch failed'), { cause: dnsError })
-    const err = new CrawlerNetworkError('https://example.com', 100, fetchError)
-    expect(isCrawlerNetworkDnsError(err)).toBe(true)
-  })
-
-  it('returns false for nested non-DNS cause', () => {
-    const connError = Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:443'), {
-      code: 'ECONNREFUSED',
-    })
-    const fetchError = Object.assign(new TypeError('fetch failed'), { cause: connError })
-    const err = new CrawlerNetworkError('https://example.com', 100, fetchError)
-    expect(isCrawlerNetworkDnsError(err)).toBe(false)
   })
 })

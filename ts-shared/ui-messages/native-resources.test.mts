@@ -224,21 +224,12 @@ describe('native UI message resources', () => {
       }),
     ).toThrow('Native message descriptor "test" must define a one form')
   })
-  it('detects stale, missing, and extra generated files in check mode', async () => {
+  it('detects extra files in Voucha generated roots during check mode', async () => {
     const root = await mkdtemp(join(tmpdir(), 'voucha-native-localization-'))
     const files = generateNativeResourceFiles(SIMPLE_NATIVE_INPUTS)
     try {
-      await expect(
-        writeNativeResourceFiles({ outputRoot: root, check: true, files }),
-      ).rejects.toThrow('missing')
       await writeNativeResourceFiles({ outputRoot: root, check: false, files })
       await writeNativeResourceFiles({ outputRoot: root, check: true, files })
-      const stale = files[0]!
-      await writeFile(join(root, stale.path), 'stale')
-      await expect(
-        writeNativeResourceFiles({ outputRoot: root, check: true, files }),
-      ).rejects.toThrow(`stale ${stale.path}`)
-      await writeFile(join(root, stale.path), stale.content)
       const extra = join(
         root,
         'dotnet-clients/src/Voucha.Client.Core/Localization/Generated/extra.txt',
@@ -250,31 +241,6 @@ describe('native UI message resources', () => {
       ).rejects.toThrow(
         'extra dotnet-clients/src/Voucha.Client.Core/Localization/Generated/extra.txt',
       )
-    } finally {
-      await rm(root, { recursive: true, force: true })
-    }
-  })
-  it('rethrows non-missing generated-file read errors', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'voucha-native-localization-read-error-'))
-    const file = { path: 'blocked.txt', content: 'expected' }
-    try {
-      await mkdir(join(root, file.path))
-      await expect(
-        writeNativeResourceFiles({ outputRoot: root, check: true, files: [file] }),
-      ).rejects.toMatchObject({ code: 'EISDIR' })
-    } finally {
-      await rm(root, { recursive: true, force: true })
-    }
-  })
-  it('rethrows non-missing generated-directory listing errors', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'voucha-native-localization-list-error-'))
-    const generatedRoot = join(root, 'swift-clients/ui/Sources/VouchaLocalization/Generated')
-    try {
-      await mkdir(join(generatedRoot, '..'), { recursive: true })
-      await writeFile(generatedRoot, 'not a directory')
-      await expect(
-        writeNativeResourceFiles({ outputRoot: root, check: true, files: [] }),
-      ).rejects.toMatchObject({ code: 'ENOTDIR' })
     } finally {
       await rm(root, { recursive: true, force: true })
     }

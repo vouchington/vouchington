@@ -128,6 +128,7 @@ async function updateMatchedCategoriesChunk(
   }>,
   query: QueryExecutor,
 ): Promise<CategoryTopicMutation[]> {
+  // lock-reason: prevents: publication using a superseded topic or alias mapping; writer: clearUnlinkedTopicAliasCategoryBatch
   const { rows } = await query<CategoryTopicMutation>(
     `/* updateMatchedCategories */
       WITH updates AS (

@@ -18,13 +18,10 @@ vi.mock<typeof import('react')>(import('react'), async importOriginal => {
   }
 })
 
-vi.mock(
-  import('../return-null-for-missing-entity'),
-  () =>
-    ({
-      returnNullForMissingEntity: mockReturnNull,
-    }) as unknown as typeof import('../return-null-for-missing-entity'),
-)
+vi.mock(import('@vouchington/api-client'), async importOriginal => ({
+  ...(await importOriginal()),
+  returnNullForMissingEntity: mockReturnNull,
+}))
 
 import {
   getCopyrightEmailIntakeReviewQueue,

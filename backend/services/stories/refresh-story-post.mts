@@ -71,14 +71,14 @@ async function refreshStoryPostForStoryInTransaction(
 
   const postId = postStory.post_id
   const topicIdsToLock = await readStoryTopicIds(options.query, storyId)
-
+  // lock-reason: prevents: writing a stale topic projection after a concurrent story source change; writer: story assignment, clustering and category relation writes.
   await options.query(sql`/* refreshStoryPostForStory:lockTopics */
     SELECT id FROM relation__post__category__topic
     WHERE subject_id = ${postId}
       AND (deleted_at IS NULL OR object_id = ANY(${topicIdsToLock}::uuid[]))
     ORDER BY subject_id, object_id FOR UPDATE`)
 
-  // A concurrent manual confirmation must commit before the new generation copies its markers.
+  // lock-reason: prevents: pruning a manually confirmed URL after a membership refresh captures or restarts projection; writer: manual related URL upsert, including confirmation of a projected URL.
   await options.query(sql`/* lockStoryPostRelations:urls */
     SELECT id FROM relation__post__related__url WHERE subject_id = ${postId}
     ORDER BY subject_id, object_id FOR UPDATE`)

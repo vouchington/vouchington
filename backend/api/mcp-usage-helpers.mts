@@ -4,13 +4,8 @@ import {
   type McpToolCallAnalytics,
   type McpToolCallContext,
 } from '@services/analytics'
-import {
-  mcpNotificationShapedToolCall,
-  mcpToolCallIsDispatched,
-  type authenticateMcpBearer,
-  type McpCallAuditEvent,
-  type McpServerConfig,
-} from '@services/mcp-tools'
+import type { authenticateMcpBearer, McpCallAuditEvent, McpServerConfig } from '@services/mcp-tools'
+import { isDispatchedToolCall, isNotificationShapedToolCall } from '@vouchington/mcp-server/http'
 import {
   checkUsageQuota,
   resolveUsagePlan,
@@ -74,8 +69,8 @@ export function startMcpUsageMeter(
   const quota = selectUsageQuota({ surface, plan, scopeClass })
   const messages = createMcpMessageMeter()
   const toolCalls = createMcpToolCallAnalytics(toolCallContext(config, authentication, plan), {
-    isDispatched: mcpToolCallIsDispatched,
-    isNotification: mcpNotificationShapedToolCall,
+    isDispatched: isDispatchedToolCall,
+    isNotification: isNotificationShapedToolCall,
   })
 
   settleUsageOnClose(

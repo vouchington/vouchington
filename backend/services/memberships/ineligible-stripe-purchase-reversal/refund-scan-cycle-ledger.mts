@@ -160,7 +160,7 @@ export async function getOrCreateStripeRefundScan(
   await transaction.commit()
   return registered
 }
-
+// lock-reason: prevents: applying refund history against scan progress changed by a competing page; writer: applyStripeRefundScanPage
 export async function getStripeRefundScanLocked(
   reversalCaseId: string,
   target: StripeRefundScanTarget,

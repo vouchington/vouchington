@@ -18,11 +18,10 @@ import {
   USER_REFERRAL_LINK_PAGE_SCHEMA,
   type UserReferralLinksArgs,
 } from './get-referral-links-user-page.mts'
-import { closedObject } from './read-tool-output-schema.mts'
 
 // The REST twin documents its body inline and carries more per link, so the tool owns this schema.
 // `priority_group` comes from the documented link; `username` and `display_name` flatten its users.
-const TOPIC_PAGE_SCHEMA = closedObject({
+const TOPIC_PAGE_SCHEMA = objectSchema({
   success: { const: true },
   referral_program_id: { type: 'string' },
   links: {
@@ -47,7 +46,7 @@ const OUTPUT_SCHEMA = {
   oneOf: [
     TOPIC_PAGE_SCHEMA,
     USER_REFERRAL_LINK_PAGE_SCHEMA,
-    closedObject({ success: { const: false }, error: { type: 'string' } }),
+    objectSchema({ success: { const: false }, error: { type: 'string' } }),
   ],
 }
 

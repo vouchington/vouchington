@@ -1,12 +1,11 @@
 import type Stripe from 'stripe'
-import { confirmStripeRefundRequestRejection } from './refund-request-errors.mts'
-import { buildRefundParams, buildRefundListParams, parseStripePage } from '@vouchington/stripe'
+import {
+  buildRefundParams,
+  buildRefundListParams,
+  parseStripePage,
+  trackStripeRequestRejection,
+} from '@vouchington/stripe'
 import { getStripeClient } from './client.mts'
-
-const refundRequestsInFlight = new WeakMap<
-  Stripe,
-  Map<string, { active: number; contended: boolean }>
->()
 
 const STRIPE_REFUND_PAGE_LIMIT = 100
 
@@ -17,7 +16,7 @@ export interface StripeRefundPage {
 }
 
 /* no-mistakes: integration=stripe */
-export async function createStripeRefund(
+export function createStripeRefund(
   options: {
     chargeId?: string
     paymentIntentId?: string
@@ -27,39 +26,18 @@ export async function createStripeRefund(
   },
   stripe = getStripeClient(),
 ): Promise<Stripe.Response<Stripe.Refund>> {
-  const requests =
-    refundRequestsInFlight.get(stripe) ?? new Map<string, { active: number; contended: boolean }>()
-  refundRequestsInFlight.set(stripe, requests)
-  const concurrent = requests.get(options.idempotencyKey) ?? { active: 0, contended: false }
-  concurrent.contended ||= concurrent.active > 0
-  concurrent.active++
-  requests.set(options.idempotencyKey, concurrent)
-  let providerRequestCount = 0
-  const observeRequest = (event: Stripe.RequestEvent) => {
-    if (
-      event.idempotency_key === options.idempotencyKey &&
-      event.method === 'POST' &&
-      event.path === '/v1/refunds'
-    )
-      providerRequestCount++
-  }
-  const events: {
-    on(event: 'request', listener: (event: Stripe.RequestEvent) => void): void
-    off(event: 'request', listener: (event: Stripe.RequestEvent) => void): void
-  } = stripe
-  events.on('request', observeRequest)
-  try {
-    return await stripe.refunds.create(buildRefundParams(options), {
+  return trackStripeRequestRejection(
+    {
+      stripe,
+      method: 'POST',
+      path: '/v1/refunds',
       idempotencyKey: options.idempotencyKey,
-    })
-  } catch (err) {
-    confirmStripeRefundRequestRejection(err, concurrent.contended ? 0 : providerRequestCount)
-    throw err
-  } finally {
-    events.off('request', observeRequest)
-    concurrent.active--
-    if (concurrent.active === 0) requests.delete(options.idempotencyKey)
-  }
+    },
+    () =>
+      stripe.refunds.create(buildRefundParams(options), {
+        idempotencyKey: options.idempotencyKey,
+      }),
+  )
 }
 
 /* no-mistakes: integration=stripe */

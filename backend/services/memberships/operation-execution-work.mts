@@ -8,6 +8,7 @@ export async function claimMembershipOperationExecutionWork(
   reconciliation = false,
 ): Promise<string | null> {
   const leaseToken = randomUUID()
+  // lock-reason: prevents: an operation and work-item lock inversion between execution claim and refund completion; writer: markIneligiblePurchaseReversalCompleted
   const { rows } = await query(sql`/* claimMembershipOperationExecutionWork */
     WITH candidate AS (
       SELECT operation.id FROM membership_operations operation

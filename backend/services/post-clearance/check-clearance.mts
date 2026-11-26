@@ -58,6 +58,7 @@ async function applyClearanceDecision(
          AND version.policy_revision = $3
         WHERE post.id = $1
           AND post.deleted_at IS NULL
+        -- lock-reason: prevents: recording a clearance decision for content or an override that changed mid-check; writer: post edits and moderation clearance decisions.
         FOR UPDATE OF post
       ),
       latest_dispositions AS (

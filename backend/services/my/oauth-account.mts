@@ -17,6 +17,7 @@ export async function disconnectOAuthAccount(
   options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   await runWithTransaction(options.query, async query => {
+    // lock-reason: prevents: unlinking credentials and changing the sign-in method during erasure; writer: account deletion.
     await query(
       sql`/* disconnectOAuthAccount */ SELECT fn_lock_active_user_for_mutation(${userId}, TRUE)`,
     )
