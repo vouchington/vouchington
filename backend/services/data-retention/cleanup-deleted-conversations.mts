@@ -104,7 +104,8 @@ export async function cleanupDeletedConversationPage(
         `/* deleteDeletedConversationNotificationReceiptPage */
          DELETE FROM notification_push_intent_subscription_receipts
          WHERE user_id = $1::uuid AND notification_id = $2::uuid
-           AND subscription_id = ANY($3::uuid[])`,
+           -- Cost the lookup without exposing the whole locked page as constants.
+           AND subscription_id = ANY((SELECT $3::uuid[])::uuid[])`,
         [
           firstNotification.user_id,
           firstNotification.id,
