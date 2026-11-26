@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { beginTransaction, write } from '@data-stores/psql'
 import { registerRssCategoryIdentities } from '@services/rss-feed-items/category-identities'
-import { getRssFeedCategories, upsertRssFeedCategories } from '@services/rss-feeds/categories'
+import {
+  deleteRssFeedCategories,
+  getRssFeedCategories,
+  upsertRssFeedCategories,
+} from '@services/rss-feeds/categories'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
@@ -64,6 +68,43 @@ export async function runRssFeedCategoryWriteScenario(fixture: RssWriteCapacityF
       ],
       afterCapture: () => restoreFeedCategoryBaseline(fixture.feedId, existing),
     },
+  )
+  await captureFeedCategoryReadAndDelete(fixture, categories, mapped)
+}
+
+async function captureFeedCategoryReadAndDelete(
+  fixture: RssWriteCapacityFixture,
+  categories: string[],
+  mapped: ReadonlySet<string>,
+): Promise<void> {
+  await upsertRssFeedCategories(fixture.feedId, categories)
+  const expected = categories.map(category_text => ({
+    category_text,
+    topic_id: mapped.has(category_text) ? fixture.topicId : null,
+  }))
+  const readScenario = 'rss-feed-category-read-at-cap'
+  registerScenarioContract(readScenario, { expectations: [] })
+  await runAndCapture(
+    readScenario,
+    async () => assert.deepEqual(await getRssFeedCategories(fixture.feedId), expected),
+    undefined,
+    'getRssFeedCategories',
+  )
+  const otherFeedId = seedUuid(0, '08')
+  const unrelated = await getRssFeedCategories(otherFeedId)
+  assert.ok(unrelated.some(row => row.category_text === categories[0]))
+  const deleteScenario = 'rss-feed-category-delete-at-cap'
+  registerScenarioContract(deleteScenario, { allowEmptyResult: true, expectations: [] })
+  await runAndCapture(
+    deleteScenario,
+    async () => {
+      await deleteRssFeedCategories(fixture.feedId)
+      assert.deepEqual(await getRssFeedCategories(fixture.feedId), [])
+      assert.deepEqual(await getRssFeedCategories(otherFeedId), unrelated)
+    },
+    undefined,
+    'deleteRssFeedCategories',
+    { afterCapture: () => upsertRssFeedCategories(fixture.feedId, categories) },
   )
 }
 
