@@ -39,7 +39,17 @@ export async function runCopyrightStaffEmailQueueScenario(): Promise<void> {
         copyright_notice_email_message_ancestors: 1,
         copyright_notice_thread_retention_activities: 0,
       },
-      expectations: [{ kind: 'queryBinds', token: 'LIMIT' }],
+      expectations: [
+        { kind: 'queryBinds', token: 'LIMIT' },
+        // The full main-2 corpus shows broad intake and notice-link work. Tighten after #6554.
+        { kind: 'maxProcessedRows', relation: intakeRelation, max: 16_409 },
+        {
+          kind: 'maxProcessedRows',
+          relation: 'copyright_notice_email_intake_notice_links',
+          max: 2_030_203,
+        },
+        { kind: 'maxInputRows', nodeType: 'Sort', max: 10_516 },
+      ],
     })
     const moderator = { ...seedUser, roles: ['moderator'] }
     const cursorFor = (id: string) =>
