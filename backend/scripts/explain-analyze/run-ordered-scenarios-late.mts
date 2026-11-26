@@ -1,3 +1,4 @@
+import { runCopyrightAgentDispatchCapacityScenarios } from './run-scenarios/copyright-agent-dispatch.mts'
 import { runReferralValidationPages } from './run-scenarios/referral-program-validation-pages.mts'
 import { runModerationReportDetailScenarios } from './run-scenarios/moderation-report-detail.mts'
 import { runMcpAdmissionScenario } from './run-scenarios/mcp-admission.mts'
@@ -52,6 +53,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightDeliveryBatchScenarios,
   runCopyrightCasePurgeScenarios,
   runCopyrightStuckRunCapacityScenarios,
+  runCopyrightAgentDispatchCapacityScenarios,
   runClaimantMisuseWindowScenarios,
   runCopyrightGuestRetentionScenario,
   seedMediaDeliveryReplay,
