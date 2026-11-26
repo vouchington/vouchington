@@ -133,4 +133,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-receipt-review-retirement-first-page',
   'copyright-receipt-review-retirement-continuation',
   'copyright-blocked-restore-intents-at-cap',
+  'copyright-agent-dispatch-appeal-first',
+  'copyright-agent-dispatch-appeal-continuation',
+  'copyright-agent-dispatch-submission-guidance-first',
+  'copyright-agent-dispatch-submission-guidance-continuation',
 ] as const
