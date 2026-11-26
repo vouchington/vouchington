@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
 import { searchCommunityModerationQueue } from '@services/communities/publications/moderation-queue'
 import { encodeCommunityModerationQueueCursor } from '@services/communities/publications/moderation-queue-cursor'
-import { registerScenarioContract } from '../plan-expectations.mts'
+import { registerScenarioContract, type PlanExpectation } from '../plan-expectations.mts'
 import { SEEDED_ROWS_BY_RELATION } from '../plan-seeded-rows.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedCommunityModerationQueue } from './community-moderation-queue-fixture.mts'
@@ -10,11 +10,9 @@ import { seedCommunityModerationQueue } from './community-moderation-queue-fixtu
 const limit = 100
 const queryName = 'searchCommunityModerationQueue'
 
-// Upper bounds observed across both hosted captures and forced plan modes on main.
+// Page selection and distinct-reporter enrichment together, in both forced modes.
 const reportVisits = {
-  // Tighten after bounding the merged source pages. https://github.com/vouchington/vouchington/issues/6390
-  merged: { first: 56_588_482, continuation: 54_419_103 },
-  // Page selection and distinct-reporter enrichment together, in both forced modes.
+  merged: { first: 1_333, continuation: 1_277 },
   report: { first: 1_333, continuation: 1_221 },
 }
 
@@ -36,20 +34,29 @@ export async function runCommunityModerationQueueCapacityScenarios(): Promise<vo
       const expected = source ? fixture.queue.filter(row => row.source === source) : fixture.queue
       for (const [index, page] of (['first', 'continuation'] as const).entries()) {
         const scenario = `community-moderation-queue-${mode}-${page}`
+        const expectations: PlanExpectation[] = [
+          {
+            kind: 'maxProcessedRows',
+            relation: 'moderation_reports',
+            max: reportVisits[mode][page],
+          },
+          { kind: 'maxProcessedRows', relation: 'moderation_report_judgements', max: 0 },
+          {
+            kind: 'maxProcessedRows',
+            relation: 'community_post_reviews',
+            // This fixture contains pending reviews and approval lookups, with no automod flags.
+            // Merge Append may stop the review stream early; a full stream still visits at most a page.
+            max: source ? limit + 1 : 2 * (limit + 1),
+          },
+        ]
+        if (!source) {
+          expectations.push({
+            kind: 'usesIndexes',
+            indexes: ['idx_comm_post_reviews__queue_pending'],
+          })
+        }
         registerScenarioContract(scenario, {
-          expectations: [
-            {
-              kind: 'maxProcessedRows',
-              relation: 'moderation_reports',
-              max: reportVisits[mode][page],
-            },
-            ...(source
-              ? ([
-                  { kind: 'maxProcessedRows', relation: 'moderation_report_judgements', max: 0 },
-                  { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: limit + 1 },
-                ] as const)
-              : []),
-          ],
+          expectations,
           seededRows: {
             posts: SEEDED_ROWS_BY_RELATION.posts! + fixture.seededRows.posts,
             moderation_reports:

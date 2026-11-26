@@ -24701,6 +24701,47 @@
           "unique": false,
           "valid": true
         },
+        "idx_comm_post_reviews__queue_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_comm_post_reviews__queue_pending ON public.community_post_reviews USING btree (community_id, created_at DESC, post_id DESC) WHERE ((approved_at IS NULL) AND (rejected_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "created_at",
+              "descending": true,
+              "expression": "created_at",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": true,
+              "expression": "post_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((approved_at IS NULL) AND (rejected_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_comm_post_reviews__user_removed": {
           "accessMethod": "btree",
           "constraintBacked": false,

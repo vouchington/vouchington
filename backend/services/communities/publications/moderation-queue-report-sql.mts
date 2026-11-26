@@ -8,17 +8,12 @@ import {
 import type { ModerationReportStatus } from '@services/moderation-reports/config'
 import { appendModerationReportStatusPredicate } from '@services/moderation-reports/sort-sql'
 import { reportAutomaticJudgementEnabledSql } from '@services/moderation-reports/automatic-judgement-eligibility'
-import type { decodeCommunityModerationQueueCursor } from './moderation-queue-cursor.mts'
-
-type ReportQueuePage = {
-  limit: number
-  after: ReturnType<typeof decodeCommunityModerationQueueCursor>
-}
+import type { CommunityModerationQueuePage } from './moderation-queue-cursor.mts'
 
 export function buildCommunityReportQueueQuery(
   communityId: string,
   status: ModerationReportStatus,
-  page: ReportQueuePage,
+  page: CommunityModerationQueuePage,
 ) {
   const reportQuery = sql`/* searchCommunityModerationQueue:reports */
     SELECT
@@ -106,7 +101,7 @@ export function buildCommunityReportQueueQuery(
 function communityReportPageSql(
   communityId: string,
   status: ModerationReportStatus,
-  page: ReportQueuePage,
+  page: CommunityModerationQueuePage,
 ) {
   const query = sql`(
     SELECT mr.id, mr.created_at, mr.reviewed_at, mr.reporter_user_id,

@@ -549,6 +549,12 @@ CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__pending
   ON community_post_reviews (community_id, post_id)
   WHERE approved_at IS NULL AND rejected_at IS NULL AND unpublished_at IS NULL;
 
+-- Community moderation queue order follows review creation time, then post ID.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__queue_pending
+  ON community_post_reviews (community_id, created_at DESC, post_id DESC)
+  WHERE approved_at IS NULL AND rejected_at IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__approved_visible
   ON community_post_reviews (community_id, approved_at DESC, post_id DESC)
