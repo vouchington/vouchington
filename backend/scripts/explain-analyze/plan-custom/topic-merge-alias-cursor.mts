@@ -1,7 +1,8 @@
 import { collectPlanNodes, type ExplainResult } from '@vouchington/explain-plan'
 
 export function assertTopicMergeAliasCursorSeek(result: ExplainResult): void {
-  if (result.capture_index !== 0) return
+  const continuationIndex = result.scenario_id === 'topic-merge-alias-snapshot-tail-at-cap' ? 1 : 0
+  if (result.capture_index !== continuationIndex) return
   const hasCursorSeek = collectPlanNodes(result.plan).some(
     node =>
       node['Index Name'] === 'idx_topic_aliases__topic_id' &&

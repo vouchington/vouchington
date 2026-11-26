@@ -12,43 +12,46 @@ export async function snapshotTopicMergeAliases(
   limit: number,
 ): Promise<{ cursorAlias: string | null; done: boolean }> {
   const sourceSnapshot = phase === 1
+  const parameters = [
+    operationId,
+    sourceSnapshot ? sourceId : destinationId,
+    sourceSlug,
+    sourceSnapshot,
+    limit,
+    phase,
+  ]
+  const afterAlias = cursorAlias === null ? '' : 'AND alias > $7::text'
+  const afterSourceSlug = cursorAlias === null ? '' : 'AND $3::text > $7::text'
+  if (cursorAlias !== null) parameters.push(cursorAlias)
   const { rows } = await query<{ alias: string }>(
     `/* snapshotTopicMergeAliases */ WITH source_page AS MATERIALIZED (
       SELECT id, alias FROM topic_aliases
-      WHERE topic_id = $2::uuid AND ($3::text IS NULL OR alias > $3)
-        AND (NOT $5::boolean OR alias <> $4::text)
-      ORDER BY alias LIMIT $6::integer
+      WHERE topic_id = $2::uuid ${afterAlias}
+        AND (NOT $4::boolean OR alias <> $3::text)
+      ORDER BY alias LIMIT $5::integer
     ), page AS MATERIALIZED (
       SELECT id, alias FROM (
         SELECT id, alias FROM source_page
         UNION ALL
-        SELECT NULL::uuid AS id, $4::text AS alias WHERE $5::boolean AND ($3::text IS NULL OR $4::text > $3)
-      ) candidates ORDER BY alias LIMIT $6::integer
+        SELECT NULL::uuid AS id, $3::text AS alias WHERE $4::boolean ${afterSourceSlug}
+      ) candidates ORDER BY alias LIMIT $5::integer
     ), retained_aliases AS (
       INSERT INTO topic_merge_operation_aliases (operation_id, alias_id)
       SELECT $1::uuid, id FROM page
-      WHERE id IS NOT NULL AND $7::integer = 0
+      WHERE id IS NOT NULL AND $6::integer = 0
       ORDER BY id
       ON CONFLICT (operation_id, alias_id) DO NOTHING RETURNING alias_id
     ), snapshot_update AS (
       UPDATE topic_merge_operations SET
-        source_aliases_before = CASE WHEN $7::integer = 1 THEN source_aliases_before ||
+        source_aliases_before = CASE WHEN $6::integer = 1 THEN source_aliases_before ||
           COALESCE((SELECT JSONB_AGG(alias ORDER BY alias) FROM page), '[]'::jsonb) ELSE source_aliases_before END,
-        destination_aliases_before = CASE WHEN $7::integer = 0 THEN destination_aliases_before ||
+        destination_aliases_before = CASE WHEN $6::integer = 0 THEN destination_aliases_before ||
           COALESCE((SELECT JSONB_AGG(alias ORDER BY alias) FROM page), '[]'::jsonb) ELSE destination_aliases_before END,
-        destination_aliases_after = CASE WHEN $7::integer = 4 THEN destination_aliases_after ||
+        destination_aliases_after = CASE WHEN $6::integer = 4 THEN destination_aliases_after ||
           COALESCE((SELECT JSONB_AGG(alias ORDER BY alias) FROM page), '[]'::jsonb) ELSE destination_aliases_after END
       WHERE id = $1::uuid RETURNING id
     ) SELECT alias FROM page ORDER BY alias`,
-    [
-      operationId,
-      sourceSnapshot ? sourceId : destinationId,
-      cursorAlias,
-      sourceSlug,
-      sourceSnapshot,
-      limit,
-      phase,
-    ],
+    parameters,
   )
   return { cursorAlias: rows.at(-1)?.alias ?? cursorAlias, done: rows.length < limit }
 }

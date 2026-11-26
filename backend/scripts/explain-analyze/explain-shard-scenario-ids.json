@@ -774,6 +774,7 @@
     "notification-redirect-target-at-cap",
     "topic-merge-relation-preflight-at-cap",
     "topic-merge-alias-move-tail-at-cap",
-    "copyright-unlinked-email-recommendation-retention-at-cap"
+    "copyright-unlinked-email-recommendation-retention-at-cap",
+    "topic-merge-alias-snapshot-tail-at-cap"
   ]
 }

@@ -7,6 +7,7 @@ import { getTopicMergeWorkLimit } from '@services/topics/merge-work-limits'
 import sql from 'sql-template-strings'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
+import { runTopicMergeAliasSnapshotCapacity } from './topic-merge-alias-snapshot-capacity.mts'
 
 type Alias = { id: string; alias: string; topic_id: string | null; unlink_topic_id: string | null }
 
@@ -36,7 +37,9 @@ export async function runTopicMergeAliasCapacityScenarios(): Promise<void> {
         ${source.id}::uuid, CURRENT_TIMESTAMP
       FROM generate_series(0, ${limit}::int) position(n)
       RETURNING id, alias, topic_id, unlink_topic_id`)
-    const linked = rows.filter(row => row.topic_id === source.id).toSorted(byAlias)
+    const linked = rows
+      .filter(row => row.topic_id === source.id)
+      .toSorted((a, b) => (a.alias < b.alias ? -1 : Number(a.alias > b.alias)))
     const pending = rows
       .filter(row => row.unlink_topic_id === source.id)
       .toSorted((a, b) => (a.id < b.id ? -1 : Number(a.id > b.id)))
@@ -136,6 +139,8 @@ export async function runTopicMergeAliasCapacityScenarios(): Promise<void> {
       { localSettings: settings },
     )
 
+    await runTopicMergeAliasSnapshotCapacity(operation.id, source, destination.id, linked, limit)
+
     // The worker commits the moves and cursor together before the continuation runs.
     assert.equal(
       await processTopicMergeOperationPage(operation.id, operation.generation),
@@ -192,8 +197,4 @@ export async function runTopicMergeAliasCapacityScenarios(): Promise<void> {
     await write(sql`/* cleanupExplainTopicMergeAliasTopics */
       DELETE FROM topics WHERE id = ANY(${topicIds}::uuid[])`)
   }
-}
-
-function byAlias(a: Alias, b: Alias): number {
-  return a.alias < b.alias ? -1 : Number(a.alias > b.alias)
 }
