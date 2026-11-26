@@ -39,6 +39,12 @@ const capabilityNoticeIds = allCapabilityIds.map(
 )
 export const GUEST_CAPABILITY_SEEDED_ROWS = allCapabilityIds.length
 export const ASSOCIATION_QUERY = 'association-6374-explain-fixture'
+const ASSOCIATION_CLAIMANT_ID = seedUuidAtTimestamp(FIXTURE_TIME, NOTICE_BASE - 1)
+// The association scan is global. Its terminal-page fixture reserves the two lowest UUIDv7 IDs
+// so arbitrary older notices from other scenarios cannot consume its candidate budget.
+export const ASSOCIATION_TERMINAL_CURSOR_ID = seedUuidAtTimestamp(0, 1)
+export const ASSOCIATION_TERMINAL_NOTICE_ID = seedUuidAtTimestamp(0, 0)
+const associationNoticeIds = [...ASSOCIATION_FIXTURE_IDS, ASSOCIATION_TERMINAL_NOTICE_ID]
 export const ASSOCIATION_MATCH_IDS = ASSOCIATION_FIXTURE_IDS.filter((_, index) => index % 5 !== 4)
 
 /** Idempotent, token-free fixtures for explain runs against the disposable analysis database. */
@@ -51,7 +57,7 @@ export async function seedAdminReviewAndGuestReadFixtures(seedUserId: string): P
        LEFT JOIN copyright_notices notice ON notice.id = fixture.id
        WHERE notice.id IS NULL
      ) AS fixture_is_partial`,
-    [ASSOCIATION_FIXTURE_IDS],
+    [associationNoticeIds],
   )
   if (retained[0]?.fixture_is_partial)
     throw new Error('Association search fixture has a retained identity without its notice')
@@ -67,18 +73,28 @@ export async function seedAdminReviewAndGuestReadFixtures(seedUserId: string): P
     [ADMIN_REVIEW_FIXTURE_IDS, seedUserId],
   )
   await transaction(
+    `/* seedAssociationSearchClaimant */ INSERT INTO users (id, username)
+     VALUES ($1, 'seed-association-search-claimant') ON CONFLICT (id) DO NOTHING`,
+    [ASSOCIATION_CLAIMANT_ID],
+  )
+  await transaction(
     `/* seedAssociationSearchNotices */ INSERT INTO copyright_notices (
        id, jurisdiction, legal_basis, received_at, claimant_contact_ciphertext,
-       claimant_display_name, work_description, policy_version
+       claimant_display_name, work_description, policy_version, claimant_user_id
      ) SELECT fixture.id, 'us_dmca', 'copyright', '2098-01-01T00:00:00Z'::timestamptz,
        'explain-fixture-contact',
        CASE WHEN fixture.id = ANY($2::uuid[]) THEN $3 ELSE 'Other notice' END,
-       'Explain association search work', 'explain-v1'
+       'Explain association search work', 'explain-v1', $4::uuid
      FROM unnest($1::uuid[]) AS fixture(id)
      WHERE NOT EXISTS (
        SELECT 1 FROM retained_copyright_notice_identities retained WHERE retained.id = fixture.id
      )`,
-    [ASSOCIATION_FIXTURE_IDS, ASSOCIATION_MATCH_IDS, ASSOCIATION_QUERY],
+    [
+      associationNoticeIds,
+      [...ASSOCIATION_MATCH_IDS, ASSOCIATION_TERMINAL_NOTICE_ID],
+      ASSOCIATION_QUERY,
+      ASSOCIATION_CLAIMANT_ID,
+    ],
   )
   await transaction(
     `/* seedGuestCapabilityReadIdentities */ INSERT INTO copyright_notice_guest_capability_identities (
