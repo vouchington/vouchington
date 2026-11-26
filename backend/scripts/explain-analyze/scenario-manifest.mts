@@ -84,6 +84,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-feed-category-upsert-at-cap',
   'recently-viewed-rss-item-types-at-cap',
   'recently-viewed-rss-feed-types-at-cap',
+  'rss-category-source-first-at-cap',
+  'rss-category-source-after-at-cap',
   'direct-message-notifications-at-cap',
   'modmail-notifications-at-cap',
   'notification-push-intent-claim-at-cap',
