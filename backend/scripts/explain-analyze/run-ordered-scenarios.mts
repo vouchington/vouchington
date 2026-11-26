@@ -42,6 +42,7 @@ import {
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,
+  runRssStorySearchCapacityScenarios,
 } from './run-scenarios/post-topic-write-capacity.mts'
 import { runApplicationQuestions } from './run-scenarios/community-application-question-write.mts'
 
@@ -150,10 +151,10 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
   runDataPointTopicReplaceCapacity,
+  runRssStorySearchCapacityScenarios,
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
-  runRssStorySearchCapacityScenarios,
 ]
 
 /**
