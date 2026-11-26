@@ -5,21 +5,32 @@ import { searchRssFeedCrawls } from '@services/rss-feeds/crawls'
 import sql from 'sql-template-strings'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
-import { crawlSeedUuid, seedUuid } from '../seed-data/common.mts'
+import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 
 const PAGE_SIZE = 100
 const TARGET_CRAWL_COUNT = PAGE_SIZE * 2 + 1
 const BACKGROUND_CRAWL_COUNT = 500
 const CRAWL_ID_BASE = 20_000
-const CRAWL_ID_TABLE_TAG = '41'
+const NEWER_MONTH_TARGET_CRAWLS = 66
 
 export async function runRssFeedCrawlCapacityScenario(): Promise<void> {
   const feedId = seedUuid(0, '08')
+  // The anchor may be in the previous month when CI crosses midnight. Its month and the
+  // following month are both provisioned. The first page must cross that boundary.
+  const anchor = new Date(postSeedTimestampMs(0))
+  const olderMonth = Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1)
+  const newerMonth = Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 1)
   const targetIds = Array.from({ length: TARGET_CRAWL_COUNT }, (_, index) =>
-    crawlSeedUuid(CRAWL_ID_BASE + index, CRAWL_ID_TABLE_TAG),
+    seedUuidAtTimestamp(
+      index < NEWER_MONTH_TARGET_CRAWLS ? newerMonth : olderMonth,
+      CRAWL_ID_BASE + index,
+    ),
   )
   const backgroundIds = Array.from({ length: BACKGROUND_CRAWL_COUNT }, (_, index) =>
-    crawlSeedUuid(CRAWL_ID_BASE + TARGET_CRAWL_COUNT + index, CRAWL_ID_TABLE_TAG),
+    seedUuidAtTimestamp(
+      index % 2 === 0 ? newerMonth : olderMonth,
+      CRAWL_ID_BASE + TARGET_CRAWL_COUNT + index,
+    ),
   )
   const backgroundFeedIds = Array.from({ length: BACKGROUND_CRAWL_COUNT }, (_, index) =>
     seedUuid(1 + (index % 25), '08'),
@@ -42,10 +53,7 @@ export async function runRssFeedCrawlCapacityScenario(): Promise<void> {
     const expectedFirstPage = orderedTargetIds.slice(1, PAGE_SIZE + 1)
     const expectedLastPage = orderedTargetIds.slice(PAGE_SIZE + 1)
     registerScenarioContract('rss-feed-crawls-at-page-cap', {
-      expectations: [
-        // #6413 tracks sorting all in-range crawls before the page limit.
-        { kind: 'maxProcessedRows', relation: 'rss_feed_crawls', max: 200 },
-      ],
+      expectations: [{ kind: 'maxProcessedRows', relation: 'rss_feed_crawls', max: PAGE_SIZE + 1 }],
       seededRows: { rss_feed_crawls: allIds.length },
       crossPartition: {
         rss_feed_crawls: 'A feed can have crawl history in more than one arrival-time partition.',
