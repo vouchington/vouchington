@@ -65,6 +65,7 @@ import { runRssTrendingCapacity } from './run-scenarios/rss-trending-capacity.mt
 import { runNotificationRssSnapshotCapacity } from './run-scenarios/notification-rss-snapshot-capacity.mts'
 import { runNotificationPostSnapshotCapacity } from './run-scenarios/notification-post-snapshot-capacity.mts'
 import { runNotificationRedirectCapacity } from './run-scenarios/notification-redirect-capacity.mts'
+import { runTopicMergeRelationFlagCapacity } from './run-scenarios/topic-merge-relation-flag-capacity.mts'
 
 export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runClassifierHumanVoteComparisonScenarios,
@@ -136,4 +137,5 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runNotificationRssSnapshotCapacity,
   runNotificationPostSnapshotCapacity,
   runNotificationRedirectCapacity,
+  runTopicMergeRelationFlagCapacity,
 ]

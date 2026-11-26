@@ -742,6 +742,8 @@
     "rss-feed-search-trending-terminal-at-cap",
     "notification-rss-reconciliation-snapshot",
     "notification-post-reconciliation-snapshot",
-    "notification-redirect-target-at-cap"
+    "notification-redirect-target-at-cap",
+    "topic-merge-relation-preflight-at-cap",
+    "topic-merge-alias-move-tail-at-cap"
   ]
 }

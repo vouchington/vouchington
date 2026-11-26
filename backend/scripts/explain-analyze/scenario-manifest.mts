@@ -107,4 +107,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'notification-rss-reconciliation-snapshot',
   'notification-post-reconciliation-snapshot',
   'notification-redirect-target-at-cap',
+  'topic-merge-relation-preflight-at-cap',
+  'topic-merge-alias-move-tail-at-cap',
 ] as const
