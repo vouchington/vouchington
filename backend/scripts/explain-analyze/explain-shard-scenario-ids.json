@@ -632,6 +632,8 @@
     "search-posts-for-admin-review-at-cap",
     "search-copyright-association-at-hard-cap",
     "list-copyright-guest-capabilities-at-cap",
+    "moderation-appeals-staff-at-cap",
+    "moderation-appeals-appellant-at-cap",
     "direct-message-notifications-at-cap",
     "modmail-notifications-at-cap",
     "notification-push-intent-claim-at-cap",
