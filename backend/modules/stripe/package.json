@@ -27,7 +27,7 @@
     "@voucha/config": "workspace:^",
     "@vouchington/stripe": "^0.2.1",
     "@vouchington/utils": "^0.13.0",
-    "stripe": "^23.1.0"
+    "stripe": "^23.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.6"
