@@ -26,6 +26,7 @@ export const CHILD_STAGES: readonly ChildStage[] = [
           FROM conversation_messages message
           WHERE message.conversation_id = $1::uuid
           ORDER BY message.conversation_id, message.id
+          -- lock-reason: prevents: waiting on a message while holding its conversation lock, writer: account purge clearing its author through the user FK.
           -- Cost the ordered walk before the runtime page size is known.
           LIMIT (SELECT $2::bigint) FOR UPDATE OF message SKIP LOCKED
         ))`,
@@ -51,6 +52,7 @@ export const CHILD_STAGES: readonly ChildStage[] = [
           FROM conversation_participants participant
           WHERE participant.conversation_id = $1::uuid
           ORDER BY participant.conversation_id, participant.id
+          -- lock-reason: prevents: waiting on a participant while holding its conversation lock, writer: account purge deleting the participant through the user FK.
           -- Cost the ordered walk before the runtime page size is known.
           LIMIT (SELECT $2::bigint) FOR UPDATE OF participant SKIP LOCKED
         ))`,
