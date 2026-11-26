@@ -47,6 +47,7 @@
     "rss-item-elections-batch-at-cap",
     "topic-redirect-batch",
     "posts-with-roots-batch",
+    "rss-item-embeds-at-feed-cap",
     "delegated-post-access-batch",
     "membership-grant-expiry-candidates",
     "membership-pause-collection-due",
