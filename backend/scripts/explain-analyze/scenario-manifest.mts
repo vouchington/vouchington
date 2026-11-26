@@ -64,6 +64,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'search-user-lists-at-cap',
   'topic-alias-records-at-cap',
   'topic-additional-hostnames-at-cap',
+  'topic-merge-alias-move-at-cap',
+  'topic-merge-alias-repoint-unlinks-at-cap',
   'top-hashtags-at-cap',
   'topic-children-at-cap',
   'url-embeds-at-post-page-cap',

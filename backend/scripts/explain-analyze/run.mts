@@ -34,6 +34,7 @@ import { runCommunityPublicationCapacityScenarios } from './run-scenarios/commun
 import { runCommunityModerationQueueCapacityScenarios } from './run-scenarios/community-moderation-queue-capacity.mts'
 import { runDeletedConversationRetentionCapacityScenarios } from './run-scenarios/deleted-conversation-retention-capacity.mts'
 import { runAiUsageRetentionCapacityScenario } from './run-scenarios/ai-usage-retention-capacity.mts'
+import { CAPACITY_AUDIT_NEXT_RUNNERS } from './run-capacity-audit-next.mts'
 import { runTextEmbeddingRetentionCapacityScenario } from './run-scenarios/text-embedding-retention-capacity.mts'
 import { runCommunityRosterReadCapacityScenario } from './run-scenarios/community-roster-read-capacity.mts'
 import { runNotificationUnreadCapacityScenario } from './run-scenarios/notification-unread-capacity.mts'
@@ -77,6 +78,7 @@ async function main() {
         runCommunityModerationQueueCapacityScenarios.name,
         runCommunityModerationQueueCapacityScenarios,
       )
+      await runOrderedRunners(CAPACITY_AUDIT_NEXT_RUNNERS)
       await runStep(
         runTextEmbeddingRetentionCapacityScenario.name,
         runTextEmbeddingRetentionCapacityScenario,
