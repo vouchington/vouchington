@@ -1,5 +1,7 @@
+import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
+import { background } from '@queues/background/queues'
 import { listNotifications } from '@services/notifications/list'
 import { markAllNotificationsRead } from '@services/notifications/mutations'
 import {
@@ -48,21 +50,33 @@ export async function runMarkNotificationInboxCapacityScenario(): Promise<void> 
   `)
   const userId = users[0]!.id
 
+  let continuationJobId: string | undefined
   try {
-    const postIds = Array.from({ length: 2 * pageSize }, (_, index) => seedUuid(index, '05'))
+    const postIds = Array.from({ length: 2 * pageSize + 1 }, (_, index) => seedUuid(index, '05'))
     const { rows } = await write<{ id: string; read_at: Date | null }>(sql`
       /* seedMarkAllReadInbox */
       INSERT INTO notifications (user_id, entity_type, kind, post_id, target_path, read_at)
       SELECT ${userId}, 'post', 'post_new', post_id, '/posts/explain-mark-all-read',
-        CASE WHEN ordinal > ${pageSize} THEN CURRENT_TIMESTAMP END
+        CASE WHEN ordinal > ${pageSize + 1} THEN CURRENT_TIMESTAMP END
       FROM unnest(${postIds}::uuid[]) WITH ORDINALITY AS input(post_id, ordinal)
       RETURNING id, read_at
     `)
-    const unreadIds = rows.filter(row => row.read_at === null).map(row => row.id)
+    const unreadIds = rows
+      .filter(row => row.read_at === null)
+      .map(row => row.id)
+      .toSorted()
+    assert.equal(unreadIds.length, pageSize + 1)
+    const firstPageIds = new Set(unreadIds.slice(0, pageSize))
+    const lastPageId = unreadIds[pageSize - 1]!
+    const throughId = unreadIds[pageSize]!
+    let lateId: string | undefined
+    const alreadyRead = rows.filter(row => row.read_at !== null)
+    const originalReadAt = alreadyRead[0]?.read_at
+    assert(originalReadAt)
     registerScenarioContract(scenario, {
       expectations: [
-        // At most the boundary, the candidate page, and one lookup and update per selected row.
-        { kind: 'maxProcessedRows', relation: 'notifications', max: 3 * pageSize + 1 },
+        // One boundary row, a candidate page plus lookahead, and one lookup and update per marked row.
+        { kind: 'maxProcessedRows', relation: 'notifications', max: 3 * pageSize + 2 },
       ],
       forbidSequentialScans: ['notifications'],
     })
@@ -73,10 +87,46 @@ export async function runMarkNotificationInboxCapacityScenario(): Promise<void> 
           mark_all_read_page_size: pageSize,
         })
         try {
-          const page = await markAllNotificationsRead(userId)
-          if (page.marked_read !== pageSize || page.has_more) {
-            throw new Error('Mark-all-read must process the full page of unread notifications')
-          }
+          const first = await markAllNotificationsRead(userId)
+          assert.deepEqual(first, {
+            marked_read: pageSize,
+            has_more: true,
+            through_id: throughId,
+            last_page_id: lastPageId,
+          })
+          continuationJobId = `notifications-mark-all-read__${userId}__${throughId}__${lastPageId}`
+          const job = await background.getJob(continuationJobId)
+          assert.deepEqual(job?.data, { userId, throughId, lastPageId })
+
+          const firstState = await readNotificationReadState(userId)
+          assert.deepEqual(
+            firstState.filter(row => row.read_at === null).map(row => row.id),
+            [throughId],
+          )
+          assert.deepEqual(
+            firstState.filter(row => firstPageIds.has(row.id)).map(row => row.id),
+            [...firstPageIds],
+          )
+
+          lateId = await insertLateNotification(userId, postIds.length)
+          assert(lateId > throughId)
+          const last = await markAllNotificationsRead(userId, throughId)
+          assert.deepEqual(last, {
+            marked_read: 1,
+            has_more: false,
+            through_id: throughId,
+            last_page_id: throughId,
+          })
+          const lastState = await readNotificationReadState(userId)
+          assert.deepEqual(
+            lastState.filter(row => row.read_at === null).map(row => row.id),
+            [lateId],
+          )
+          const alreadyReadIds = new Set(alreadyRead.map(row => row.id))
+          assert.deepEqual(
+            lastState.filter(row => alreadyReadIds.has(row.id)),
+            alreadyRead.toSorted((a, b) => a.id.localeCompare(b.id)),
+          )
         } finally {
           restore()
         }
@@ -84,16 +134,46 @@ export async function runMarkNotificationInboxCapacityScenario(): Promise<void> 
       undefined,
       'markAllNotificationsRead',
       {
-        exactCapturedNames: ['markAllNotificationsRead'],
-        afterCapture: async () => {
-          // The service call commits; restore the starting state before the rolled-back replays.
+        exactCapturedNames: [
+          'markAllNotificationsRead',
+          'readMarkAllReadState',
+          'seedMarkAllReadLateNotification',
+          'markAllNotificationsRead',
+          'readMarkAllReadState',
+        ],
+        beforeExplain: async ({ values }) => {
+          const isContinuation = values[1] !== null
+          assert(lateId)
+          // Rebuild each statement's starting state, including the continuation's new arrival.
           await write(sql`/* restoreMarkAllReadInbox */
-            UPDATE notifications SET read_at = NULL
-            WHERE user_id = ${userId} AND id = ANY(${unreadIds}::uuid[])`)
+            UPDATE notifications
+            SET read_at = CASE
+              WHEN (${isContinuation} AND id = ANY(${[...firstPageIds]}::uuid[]))
+                OR (NOT ${isContinuation} AND id = ${lateId}::uuid)
+              THEN ${originalReadAt}::timestamptz ELSE NULL
+            END
+            WHERE user_id = ${userId} AND id = ANY(${[...unreadIds, lateId]}::uuid[])`)
         },
       },
     )
   } finally {
+    if (continuationJobId) await (await background.getJob(continuationJobId))?.remove()
     await write(sql`/* deleteMarkAllReadUser */ DELETE FROM users WHERE id = ${userId}`)
   }
+}
+
+async function readNotificationReadState(userId: string) {
+  const { rows } = await write<{ id: string; read_at: Date | null }>(sql`/* readMarkAllReadState */
+    SELECT id, read_at FROM notifications WHERE user_id = ${userId} ORDER BY id
+  `)
+  return rows
+}
+
+async function insertLateNotification(userId: string, postIndex: number) {
+  const { rows } = await write<{ id: string }>(sql`/* seedMarkAllReadLateNotification */
+    INSERT INTO notifications (user_id, entity_type, kind, post_id, target_path)
+    VALUES (${userId}, 'post', 'post_new', ${seedUuid(postIndex, '05')}, '/posts/explain-mark-all-read')
+    RETURNING id
+  `)
+  return rows[0]!.id
 }

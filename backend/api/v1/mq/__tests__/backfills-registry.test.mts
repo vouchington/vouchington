@@ -1,4 +1,5 @@
 import { describe, it, expect, onTestFinished } from 'vitest'
+import { runInsideTestWorkerProcessor as withoutFlush } from '@vouchington/worker-runtime/testing'
 import {
   getPublicBaseTableNamesForTest,
   isDeduplicatedEnqueue,
@@ -11,6 +12,7 @@ import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cp
 import { background } from '@queues/background/queues'
 import { EXISTING_DISPATCHER_BACKFILLS } from '@services/queue-monitoring/backfills-existing-dispatchers'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
+import { holdBackgroundDomain } from '../../../../../test-helpers/shared-background-worker.mts'
 
 const ALLOWED_EXTERNAL_SOURCES = new Set(['external:ses-inbound-s3'])
 const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
@@ -170,13 +172,11 @@ describe('BACKFILL_REGISTRY', () => {
   )
 
   it('recovers relation tally pages even when saved user weights are unchanged', async () => {
-    const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === 'relation-election-updates')
-    if (!entry) throw new Error('Relation election backfill missing')
-    const enqueued = await entry.trigger()
-    if (isDeduplicatedEnqueue(enqueued)) return
-    await expect(readEnqueuedJob(background, enqueued)).resolves.toMatchObject({
-      name: 'vote-aggregation.processRecalculateVoteWeightDispatcher',
-      data: { replayElectionsOnly: true },
+    await triggerHeldVoteAggregationBackfill('relation-election-updates', job => {
+      expect(job).toMatchObject({
+        name: 'vote-aggregation.processRecalculateVoteWeightDispatcher',
+        data: { replayElectionsOnly: true },
+      })
     })
   })
 
@@ -184,28 +184,45 @@ describe('BACKFILL_REGISTRY', () => {
     ['vote-weight-age-milestones', 'processVoteWeightAgeMilestones'],
     ['vote-weight-membership-expirations', 'processVoteWeightMembershipExpirations'],
     ['vote-weight-family-source-changes', 'processVoteWeightFamilySourceChanges'],
+    ['vote-weight-dirty-markers', 'processVoteWeightDirtyMarkers'],
   ])('enqueues the %s backfill', async (id, jobName) => {
-    const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === id)
-    if (!entry) throw new Error(`${id} backfill missing`)
-    const enqueued = await entry.trigger()
-    if (isDeduplicatedEnqueue(enqueued)) return
-    await expect(readEnqueuedJob(background, enqueued)).resolves.toMatchObject({
-      name: `vote-aggregation.${jobName}`,
-      data: {},
-    })
-  })
-
-  it('starts the dirty-marker recovery backfill', async () => {
-    const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === 'vote-weight-dirty-markers')
-    if (!entry) throw new Error('Dirty-marker backfill missing')
-    const enqueued = await entry.trigger()
-    if (isDeduplicatedEnqueue(enqueued)) return
-    await expect(readEnqueuedJob(background, enqueued)).resolves.toMatchObject({
-      name: 'vote-aggregation.processVoteWeightDirtyMarkers',
-      data: {},
+    await triggerHeldVoteAggregationBackfill(id, job => {
+      expect(job).toMatchObject({ name: `vote-aggregation.${jobName}`, data: {} })
     })
   })
 })
+
+type AdmittedJob = NonNullable<Awaited<ReturnType<typeof background.getJob>>>
+
+/**
+ * Starts a vote-aggregation dispatcher backfill without letting its worker run it. A dispatcher
+ * sweeps every user, membership and vote in the one shared database, so letting the shared worker
+ * run it fans out election jobs for rows other test files own; those outlive this test and time out
+ * the fork's per-test queue settle. The enqueue is the contract here, so the job is read, then
+ * removed (a removed held job never runs) before the domain is released.
+ */
+async function triggerHeldVoteAggregationBackfill(
+  id: string,
+  assertJob: (job: AdmittedJob) => void,
+): Promise<void> {
+  const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === id)
+  if (!entry) throw new Error(`${id} backfill missing`)
+  const release = holdBackgroundDomain('vote-aggregation')
+  let job: { remove: () => Promise<unknown> } | undefined
+  try {
+    const enqueued = await withoutFlush(() => entry.trigger())
+    if (isDeduplicatedEnqueue(enqueued)) return
+    const admitted = await readEnqueuedJob(background, enqueued)
+    job = admitted
+    assertJob(admitted)
+  } finally {
+    try {
+      await job?.remove()
+    } finally {
+      await release()
+    }
+  }
+}
 
 function parseSourceTables(sourceTable: string): string[] {
   return sourceTable.split(',').map(source => source.trim())

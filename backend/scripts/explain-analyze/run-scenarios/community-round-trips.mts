@@ -8,11 +8,7 @@ import { createCommunityLifecycleNotifications } from '@services/notifications'
 import { createCommunityPostReview } from '@services/communities/publications/add'
 import { insertCommunity } from '@services/communities/create-insert'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import {
-  runApplicationQuestions,
-  runInviteRedeem,
-  runParticipantRead,
-} from './community-write-round-trips.mts'
+import { runInviteRedeem, runParticipantRead } from './community-write-round-trips.mts'
 import { runModmailFirstReplyScenario } from './modmail-first-reply.mts'
 import { runModmailOpeningScenario } from './modmail-option-a.mts'
 import { runConversationParticipantAdmission } from './conversation-participant-admission.mts'
@@ -135,6 +131,5 @@ export async function runCommunityRoundTripScenarios(): Promise<void> {
   await runModmailOpeningScenario()
   await runModmailFirstReplyScenario()
   await runInviteRedeem(communityId)
-  await runApplicationQuestions(communityId)
   await runApplicationQuestionListScenario()
 }

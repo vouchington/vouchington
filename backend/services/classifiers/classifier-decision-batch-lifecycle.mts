@@ -17,7 +17,9 @@ export async function getClassifierDecisionBatch(
     WHERE id = ${batchId}`
   statement.append(
     state === 'pending'
-      ? sql` AND completed_at IS NULL FOR UPDATE`
+      ? sql` AND completed_at IS NULL
+        -- lock-reason: prevents: concurrent completions of a reserved batch both writing decision calls and outcomes; writer: persistClassifierDecision
+        FOR UPDATE`
       : sql` AND completed_at IS NOT NULL`,
   )
   const { rows } = await query<{

@@ -4,6 +4,7 @@ import {
   withMonitoredPage,
   protectPlaywrightHookTimeouts,
 } from '../../helpers/test.mts'
+import { apiRequest } from '../../helpers/api-request.mts'
 import { loginAsAdmin, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import {
@@ -41,28 +42,22 @@ test.describe('Community Settings', () => {
 
     await withMonitoredPage(browser, testInfo, async page => {
       await loginAsAdmin(page)
-      const communityId = await page.evaluate(
-        async ({ name, slug }) => {
-          const res = await fetch('/api/v1/communities', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ name, slug }),
-          })
-          if (res.status === 409) {
-            const lookupRes = await fetch(`/api/v1/communities/${slug}`, {
-              credentials: 'include',
-            })
-            if (!lookupRes.ok) throw new Error(`Failed to look up community: ${lookupRes.status}`)
-            const lookupData = (await lookupRes.json()) as { community?: { id: string } }
-            return lookupData.community?.id ?? null
-          }
-          if (!res.ok) throw new Error(`Failed to create community: ${res.status}`)
-          const data = (await res.json()) as { community?: { id: string } }
-          return data.community?.id ?? null
-        },
-        { name: COMMUNITY_NAME, slug: COMMUNITY_SLUG },
-      )
+      const res = await apiRequest(page, 'POST', '/api/v1/communities', {
+        name: COMMUNITY_NAME,
+        slug: COMMUNITY_SLUG,
+      })
+      if (res.status() !== 409 && !res.ok()) {
+        throw new Error(`Failed to create community: ${res.status()}`)
+      }
+      const communityResponse =
+        res.status() === 409
+          ? await apiRequest(page, 'GET', `/api/v1/communities/${COMMUNITY_SLUG}`)
+          : res
+      if (!communityResponse.ok()) {
+        throw new Error(`Failed to load community: ${communityResponse.status()}`)
+      }
+      const data = (await communityResponse.json()) as { community?: { id: string } }
+      const communityId = data.community?.id ?? null
       if (!communityId) throw new Error('Failed to create or look up test community')
       COMMUNITY_ID = communityId
     })

@@ -6,6 +6,7 @@ import { PageWithAside } from '@/components/page-with-aside'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { RecipientPicker } from '@/components/messages/recipient-picker'
 import { createDirectConversation, sendDirectMessage } from '@/lib/api/client/messages'
@@ -76,10 +77,11 @@ export function NewMessageClient({ currentUserId }: Props) {
             />
           </div>
           <div className='space-y-1'>
-            <p className='text-sm font-medium'>
+            <Label htmlFor='new-message-body-input'>
               {t('extracted.new.newMessageClient.message_2f77668a')}
-            </p>
+            </Label>
             <Textarea
+              id='new-message-body-input'
               aria-label={t('extracted.new.newMessageClient.messageBody_7136799d')}
               placeholder={t('extracted.new.newMessageClient.writeAMessage_dc9f3f9f')}
               value={body}

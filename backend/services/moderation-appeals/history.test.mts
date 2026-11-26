@@ -6,7 +6,9 @@ import {
   readStaffDraftHistory,
 } from '@voucha/test-helpers/staff-resolution-history'
 import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
+import { beforePostgresTransactionQueryForTest } from '@voucha/test-helpers/injected-postgres-transactions'
 import { searchModeratorActions } from '@services/moderator-actions'
+import { approveModerationAppeal } from './approve-appeal.mts'
 import { resolveModerationAppealAccept, resolveModerationAppealReduce } from './resolve.mts'
 import { dismissModerationAppeal } from './dismiss-appeal.mts'
 import { updateModerationAppealDraft as updateDraft } from './update-appeal-draft.mts'
@@ -77,5 +79,30 @@ describe('moderation-appeals staff history', () => {
       before: { public_response: 'Original response', internal_notes: 'Concurrent note' },
       after: { public_response: 'Revised response', internal_notes: 'Concurrent note' },
     })
+  })
+
+  it('restores approval and draft text when writing the edit and audit entry fails', async () => {
+    const { actorId, id } = await createStaffResolutionFixture('appeal', false)
+    await updateDraft(actorId, id, { publicResponse: 'Approved response' })
+    await approveModerationAppeal(actorId, id)
+    const before = await readStaffResolutionState('appeal', id)
+    const history = await readStaffDraftHistory('appeal', id)
+    const failure = new Error('test draft write failure')
+    const restore = beforePostgresTransactionQueryForTest(
+      '/* updateModerationAppealDraft.applyText */',
+      values => values.includes(id),
+      async () => {
+        throw failure
+      },
+    )
+    try {
+      await expect(
+        updateDraft(actorId, id, { publicResponse: 'Uncommitted response' }),
+      ).rejects.toBe(failure)
+    } finally {
+      restore()
+    }
+    await expect(readStaffResolutionState('appeal', id)).resolves.toEqual(before)
+    await expect(readStaffDraftHistory('appeal', id)).resolves.toEqual(history)
   })
 })
