@@ -36,6 +36,7 @@ import { runCommunityRoundTripScenarios } from './run-scenarios/community-round-
 import { runSessionLimitScenarios } from './run-scenarios/session-limits.mts'
 import { runImageDeliveryFoldScenarios } from './run-scenarios/image-delivery-folds.mts'
 import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
+import { runPostProvenanceCapacityScenario } from './run-scenarios/post-provenance-capacity.mts'
 import { runRequestContextFoldScenarios } from './run-scenarios/request-context-folds.mts'
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
 import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-dispatch.mts'
@@ -61,6 +62,7 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runMediaDeliveryGlobalPageScenarios,
   runMediaDeliveryPopularImageScenario,
   runRoundTripShapeScenarios,
+  runPostProvenanceCapacityScenario,
   runRequestContextFoldScenarios,
   runCommunityRoundTripScenarios,
   runSessionLimitScenarios,

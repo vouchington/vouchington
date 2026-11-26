@@ -125,6 +125,7 @@
     "media-delivery-recovery-image",
     "media-delivery-recovery-mixed",
     "media-delivery-recovery-empty",
+    "post-provenance-facts-at-cap",
     "notification-block-set",
     "community-with-viewer",
     "hostname-policies-batch",

@@ -18,6 +18,7 @@ export const POSTS_AND_FEEDS_SCENARIOS = [
   'post-image-placement-create-child-at-cap',
   'post-metrics-batch',
   'post-metrics-single',
+  'post-provenance-facts-at-cap',
   'post-search-best',
   'post-search-data-point-topic',
   'post-search-following-new-heavy-follows',
