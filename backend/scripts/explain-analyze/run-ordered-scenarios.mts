@@ -48,7 +48,6 @@ import {
   runDataPointTopicReplaceCapacity,
 } from './run-scenarios/post-topic-write-capacity.mts'
 import { runApplicationQuestions } from './run-scenarios/community-application-question-write.mts'
-
 import { runUserListCapacityScenario } from './run-scenarios/user-list-capacity.mts'
 import {
   runTopicAliasCapacityScenario,
@@ -59,7 +58,6 @@ import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capac
 import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
 import { runApiKeyExpiryCapacityScenarios } from './run-scenarios/api-key-expiry-capacity.mts'
 import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
-
 import { runModerationAppealListCapacity } from './run-scenarios/moderation-appeal-list-capacity.mts'
 
 export type OrderedRunner = () => Promise<unknown>
