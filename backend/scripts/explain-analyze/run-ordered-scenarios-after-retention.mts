@@ -4,11 +4,13 @@ import { runCopyrightExecutionRetentionScenarios } from './run-scenarios/copyrig
 import { runCopyrightUnlinkedEmailRetentionScenario } from './run-scenarios/copyright-unlinked-email-retention.mts'
 import { runModerationAppealListCapacity } from './run-scenarios/moderation-appeal-list-capacity.mts'
 import { runApiKeyExpiryCapacityScenarios } from './run-scenarios/api-key-expiry-capacity.mts'
+import { runModerationJudgementMaintenanceScenarios } from './run-scenarios/moderation-judgement-maintenance.mts'
 
 export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
+  runModerationJudgementMaintenanceScenarios,
   runCopyrightExecutionRetentionScenarios,
   runCopyrightUnlinkedEmailRetentionScenario,
   runModerationAppealListCapacity,
