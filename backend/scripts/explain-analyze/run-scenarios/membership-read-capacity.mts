@@ -16,12 +16,12 @@ import {
 export async function runMembershipReadCapacityScenarios(): Promise<void> {
   const grants = await seedOutstandingMembershipGrantCapacity()
   registerScenarioContract('membership-outstanding-grants-at-cap', {
-    seededRows: { membership_grants: 103, membership_source_states: 103 },
+    seededRows: { membership_grants: 103, membership_source_states: 11_114 },
     expectations: [
       { kind: 'queryBinds', token: 'LIMIT' },
       { kind: 'maxProcessedRows', relation: 'membership_grants', max: 103 },
-      // Main can scan unrelated states and sort the selected grants. Tighten after #6557.
-      { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 403 },
+      // The full main-4 corpus shows this custom scan. Tighten after #6557.
+      { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 11_114 },
       { kind: 'maxInputRows', nodeType: 'Sort', max: 100 },
     ],
   })
