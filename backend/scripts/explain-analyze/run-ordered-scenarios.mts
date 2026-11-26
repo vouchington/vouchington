@@ -59,9 +59,7 @@ import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.
 import { runApiKeyExpiryCapacityScenarios } from './run-scenarios/api-key-expiry-capacity.mts'
 import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
 import { runModerationAppealListCapacity } from './run-scenarios/moderation-appeal-list-capacity.mts'
-
 export type OrderedRunner = () => Promise<unknown>
-
 // Order matters: earlier scenarios mutate the one shared corpus. See the comments in the
 // early and late files before moving a runner.
 //
