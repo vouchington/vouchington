@@ -9,11 +9,13 @@ import { runModerationJudgementMaintenanceScenarios } from './run-scenarios/mode
 import { runModerationDigestPageScenarios } from './run-scenarios/moderation-digest-pages.mts'
 import { runModerationTransparencyListCapacity } from './run-scenarios/moderation-transparency-list-capacity.mts'
 import { runPostEmbeddingBanEvasionRecovery } from './run-scenarios/post-embedding-ban-evasion-recovery.mts'
+import { runModerationDigestEvasionCapacity } from './run-scenarios/moderation-digest-evasion-capacity.mts'
 
 export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runModerationTransparencyListCapacity,
+  runModerationDigestEvasionCapacity,
   runCopyrightAiRunRetentionCapacityScenario,
   runModerationJudgementMaintenanceScenarios,
   runModerationDigestPageScenarios,
