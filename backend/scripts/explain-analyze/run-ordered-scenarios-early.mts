@@ -1,100 +1,17 @@
-import { runPostModerationBatchCapacityScenario } from './run-scenarios/post-moderation-batch-capacity.mts'
-import { runPostModerationHistoryPageScenarios } from './run-scenarios/post-moderation-history-page.mts'
-import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
-import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
-import { runCopyrightAcceptedPageScenarios } from './run-scenarios/copyright-accepted-pages.mts'
-import { runSitemapPageScenarios } from './run-scenarios/sitemap-pages.mts'
-import { runBloomReconciliationScenarios } from './run-scenarios/bloom-reconciliation.mts'
-import { runFollowerDistributionScenarios } from './run-scenarios/follower-distributions.mts'
-import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-communities.mts'
-import { runQueryShapeNoOpScenarios } from './run-scenarios/query-shape-no-ops.mts'
-import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
-import { runModerationRerunOutcomeScenarios } from './run-scenarios/moderation-rerun-outcomes.mts'
-import { runHeavyFollowScenarios } from './run-scenarios/heavy-follows.mts'
-import { runRssCardBookmarkCapacityScenario } from './run-scenarios/rss-card-bookmark-capacity.mts'
-import { runHotPathLoaderScenarios } from './run-scenarios/hot-path-loaders.mts'
-import { runPublicRssPostSnapshotScenarios } from './run-scenarios/public-rss-post-snapshots.mts'
-import { runStorySearchScenarios } from './run-scenarios/story-search.mts'
-import { runMembershipWorkSelectionScenarios } from './run-scenarios/membership-work-selection.mts'
-import { runFeedSharerHydrationCapacityScenario } from './run-scenarios/feed-sharer-hydration-capacity.mts'
-import { runEngagementEmailRecipientScenarios } from './run-scenarios/engagement-email-recipients.mts'
-import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts'
-import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
-import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-attempts.mts'
-import { runImportRequestRetentionScenarios } from './run-scenarios/import-request-retention.mts'
-import { runOrphanedOAuthBatchScenarios } from './run-scenarios/orphaned-oauth-batch.mts'
-import { runRetentionBatchPickOnceScenarios } from './run-scenarios/retention-batch-pick-once.mts'
-import { runSearchAndFacetScenarios } from './run-scenarios/search-and-facets.mts'
-import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-client-verification.mts'
-import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
-import { runStoryMemberPageScenarios } from './run-scenarios/story-member-pages.mts'
-import { runStoryByIdScenario } from './run-scenarios/story-by-id.mts'
-import { runUsersByReferenceBatchScenario } from './run-scenarios/users-by-reference-batch.mts'
-import { runHostnameCrawlSweepScenarios } from './run-scenarios/hostname-crawl-sweeps.mts'
-import { runCrawlerBoilerplateScenario } from './run-scenarios/crawler-boilerplate.mts'
-import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
-import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
-import { runIngestionRawPageScenarios } from './run-scenarios/ingestion-raw-pages.mts'
-import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
-import { seedAndAnalyzeAgentModerationRetention } from './seed-data/agent-moderation-retention.mts'
-import { runRssItemEmbedCapacityScenario } from './run-scenarios/rss-item-embed-capacity.mts'
-import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
-import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
-import { runSpamSignalScenarios } from './run-scenarios/spam-signals.mts'
-import {
-  runAgentModerationRetentionScenarios,
-  runModerationTransparencyReleaseScenario,
-} from './run-scenarios/agent-moderation-retention.mts'
-
-import { runPostElectionReadCapacityScenario } from './run-scenarios/post-election-read-capacity.mts'
+import { INGESTION_CRAWL_RUNNERS } from './run-ordered-scenarios-ingestion-crawl.mts'
+import { FEEDS_FOLLOWS_RUNNERS } from './run-ordered-scenarios-feeds-follows.mts'
+import { SEARCH_ENTITIES_RUNNERS } from './run-ordered-scenarios-search-entities.mts'
+import { IMPORTS_RETENTION_RUNNERS } from './run-ordered-scenarios-imports-retention.mts'
+import { MODERATION_RUNNERS } from './run-ordered-scenarios-moderation.mts'
+import { READ_PATHS_RUNNERS } from './run-ordered-scenarios-read-paths.mts'
+import { STORY_ENGAGEMENT_RUNNERS } from './run-ordered-scenarios-story-engagement.mts'
 
 export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
-  runCopyrightAcceptedPageScenarios,
-  runSitemapPageScenarios,
-  runStoryProjectionWorkScenarios,
-  runImageQuarantineScenarios,
-  runBloomReconciliationScenarios,
-  runMaterializedViewRefreshScenarios,
-  runIngestionRawPageScenarios,
-  runHostnameBlocklistScenario,
-  runHostnameCrawlSweepScenarios,
-  runCrawlerBoilerplateScenario,
-  runFeedAndMetricScenarios,
-  runModerationRerunOutcomeScenarios,
-  runHeavyFollowScenarios,
-  runPostFeedShareScenarios,
-  runStoryMemberPageScenarios,
-  runStoryByIdScenario,
-  runUsersByReferenceBatchScenario,
-  runSearchAndFacetScenarios,
-  runSpamSignalScenarios,
-  runOAuthClientVerificationScenarios,
-  runFollowerDistributionScenarios,
-  runEntityAndCommunityScenarios,
-  runQueryShapeNoOpScenarios,
-  runViewDrivenReadScenarios,
-  runTopicImportAttemptScenarios,
-  runImportRequestRetentionScenarios,
-  runOrphanedOAuthBatchScenarios,
-  runRetentionBatchPickOnceScenarios,
-  runPostModerationRetentionScenarios,
-  seedAndAnalyzeAgentModerationRetention,
-  runAgentModerationRetentionScenarios,
-  runModerationTransparencyReleaseScenario,
-  runPostModerationHistoryPageScenarios,
-  runPostModerationBatchCapacityScenario,
-  runHotPathLoaderScenarios,
-  runRssCardBookmarkCapacityScenario,
-  runPublicRssPostSnapshotScenarios,
-  runPostElectionReadCapacityScenario,
-  // Hidden-feed story search leaves 240 story_posts rows. Profile collection pages join
-  // that table, and the generic plan sorts once those rows exist.
-  runStorySearchScenarios,
-  runSharedLoaderScenarios,
-  runRssItemEmbedCapacityScenario,
-  runMembershipWorkSelectionScenarios,
-  runFeedSharerHydrationCapacityScenario,
-  runEngagementEmailRecipientScenarios,
-  runRemoteFollowerScenarios,
-  runReviewSuccessionScenarios,
+  ...INGESTION_CRAWL_RUNNERS,
+  ...FEEDS_FOLLOWS_RUNNERS,
+  ...SEARCH_ENTITIES_RUNNERS,
+  ...IMPORTS_RETENTION_RUNNERS,
+  ...MODERATION_RUNNERS,
+  ...READ_PATHS_RUNNERS,
+  ...STORY_ENGAGEMENT_RUNNERS,
 ]
