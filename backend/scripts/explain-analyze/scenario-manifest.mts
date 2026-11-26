@@ -29,6 +29,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'account-modmail-threads-at-cap',
   'account-modmail-messages-at-cap',
   'account-conversation-participants-at-cap',
+  'copyright-trusted-flaggers-first',
+  'copyright-trusted-flaggers-continuation',
   'copyright-form-review-recovery-first',
   'copyright-form-review-recovery-continuation',
   'copyright-hold-restore-recovery-first',
