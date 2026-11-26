@@ -649,6 +649,9 @@
     "post-review-ratings-write-at-cap",
     "post-data-point-topics-insert-at-cap",
     "post-data-point-topics-replace-at-cap",
-    "community-application-questions-write-at-cap"
+    "community-application-questions-write-at-cap",
+    "copyright-ai-appeal-run-retention",
+    "copyright-ai-guidance-run-retention",
+    "copyright-ai-email-run-retention"
   ]
 }

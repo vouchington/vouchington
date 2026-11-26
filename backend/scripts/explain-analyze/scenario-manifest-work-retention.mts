@@ -10,7 +10,14 @@ import { EXISTENCE_FILTER_SCENARIO_IDS } from './existence-filter-scenario-ids.m
 import { MODERATION_RERUN_SCENARIO_IDS } from './moderation-rerun-scenario-ids.mts'
 import { HOUSEHOLD_LIMIT_SCENARIO_IDS } from './household-limit-scenario-ids.mts'
 
+export const COPYRIGHT_AI_RUN_RETENTION_SCENARIOS = {
+  appeal_recommendation: 'copyright-ai-appeal-run-retention',
+  submission_guidance: 'copyright-ai-guidance-run-retention',
+  email_intake_recommendation: 'copyright-ai-email-run-retention',
+} as const
+
 export const RETENTION_WORK_SCENARIOS = [
+  ...Object.values(COPYRIGHT_AI_RUN_RETENTION_SCENARIOS),
   ...EXISTENCE_FILTER_SCENARIO_IDS,
   ...MODERATION_RERUN_SCENARIO_IDS,
   'ai-usage-month-attached',

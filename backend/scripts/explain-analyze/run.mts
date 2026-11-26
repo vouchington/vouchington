@@ -33,6 +33,7 @@ import { runCommunityPublicationCapacityScenarios } from './run-scenarios/commun
 import { runCommunityModerationQueueCapacityScenarios } from './run-scenarios/community-moderation-queue-capacity.mts'
 import { runCommunityRosterReadCapacityScenario } from './run-scenarios/community-roster-read-capacity.mts'
 import { runNotificationUnreadCapacityScenario } from './run-scenarios/notification-unread-capacity.mts'
+import { runCopyrightAiRunRetentionScenarios } from './run-scenarios/copyright-ai-run-retention.mts'
 
 // EXPLAIN_SHARD splits the CI run (explain-shards.mts); unset runs everything.
 async function main() {
@@ -73,6 +74,8 @@ async function main() {
         runCommunityModerationQueueCapacityScenarios.name,
         runCommunityModerationQueueCapacityScenarios,
       )
+      // These subjects are retained receipts. Add them after all other ordinary scenarios.
+      await runStep(runCopyrightAiRunRetentionScenarios.name, runCopyrightAiRunRetentionScenarios)
     }
     // The million-post fixture comes last in a full run so its future leaves never touch ordinary plans.
     if (shard === undefined || shard === 'hn-scale')
