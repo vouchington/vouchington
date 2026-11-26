@@ -1,4 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 import {
   snapshotTopicMergeAliases,
@@ -39,12 +40,11 @@ export async function processTopicMergeAliasPage(
     await ensureSourceSlugAlias(query, operationId, sourceId, destinationId, mergerId, sourceSlug)
     return { phase, cursorAlias: null, hasMore: false }
   }
-  const { rows } = await query<AliasRow>(
-    `/* processTopicMergeAliasPage */ SELECT id, alias, topic_id FROM topic_aliases
-      WHERE topic_id = $1::uuid AND ($2::text IS NULL OR alias > $2)
-      ORDER BY alias LIMIT $3::integer`,
-    [sourceId, cursorAlias, limit],
-  )
+  const aliasPage = sql`/* processTopicMergeAliasPage */ SELECT id, alias, topic_id FROM topic_aliases
+    WHERE topic_id = ${sourceId}::uuid`
+  if (cursorAlias !== null) aliasPage.append(sql` AND alias > ${cursorAlias}::text`)
+  aliasPage.append(sql` ORDER BY alias LIMIT ${limit}::integer`)
+  const { rows } = await query<AliasRow>(aliasPage)
   const aliasIds = rows.map(row => row.id)
   if (aliasIds.length) {
     await captureAndMoveAliases(query, operationId, rows, destinationId, mergerId)

@@ -37,7 +37,9 @@ export async function runTopicMergeAliasCapacityScenarios(): Promise<void> {
       FROM generate_series(0, ${limit}::int) position(n)
       RETURNING id, alias, topic_id, unlink_topic_id`)
     const linked = rows.filter(row => row.topic_id === source.id).toSorted(byAlias)
-    const pending = rows.filter(row => row.unlink_topic_id === source.id).toSorted(byId)
+    const pending = rows
+      .filter(row => row.unlink_topic_id === source.id)
+      .toSorted((a, b) => (a.id < b.id ? -1 : Number(a.id > b.id)))
     const unrelated = rows.filter(row => row.topic_id === background.id).map(row => row.id)
     assert.equal(linked.length, limit + 1)
     assert.equal(pending.length, limit + 1)
@@ -157,7 +159,10 @@ export async function runTopicMergeAliasCapacityScenarios(): Promise<void> {
     const tailScenario = 'topic-merge-alias-move-tail-at-cap'
     registerScenarioContract(tailScenario, {
       allowEmptyResult: true,
-      expectations: [{ kind: 'maxProcessedRows', relation: 'topic_aliases', max: 1 }],
+      expectations: [
+        { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 1 },
+        { kind: 'custom', name: 'topicMergeAliasCursorSeek' },
+      ],
     })
     await runAndCapture(
       tailScenario,
@@ -191,8 +196,4 @@ export async function runTopicMergeAliasCapacityScenarios(): Promise<void> {
 
 function byAlias(a: Alias, b: Alias): number {
   return a.alias < b.alias ? -1 : Number(a.alias > b.alias)
-}
-
-function byId(a: Alias, b: Alias): number {
-  return a.id < b.id ? -1 : Number(a.id > b.id)
 }
