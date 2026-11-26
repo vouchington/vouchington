@@ -250,6 +250,20 @@ describe('Codex project rules', () => {
   })
 })
 
+describe('Claude pnpm exec allows name installed binaries', () => {
+  it('names a binary the root package installs for every specific `pnpm exec <tool>` allow', () => {
+    // `pnpm exec` runs from the repository root and resolves only node_modules/.bin there. A
+    // mise-pinned binary such as selene is not installed by a dependency, so its entry names nothing.
+    const tools = claudeSettings.permissions.allow.flatMap(entry => {
+      const tool = /^Bash\(pnpm exec ([^\s*)]+)(?: \*)?\)$/u.exec(entry)?.[1]
+      return tool ? [tool] : []
+    })
+    expect(tools).toContain('oxlint')
+    const missing = tools.filter(tool => !repoPathExists(`node_modules/.bin/${tool}`))
+    expect(missing).toEqual([])
+  })
+})
+
 describe('Claude review-skip for pinned search and line-count tools', () => {
   it('keeps rg and scc and does not review-skip unused rga or tokei', () => {
     // .mise.toml pins ripgrep and scc. rga and tokei have no repository command,
