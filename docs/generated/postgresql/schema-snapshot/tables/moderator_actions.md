@@ -82,6 +82,7 @@ _none_
 - `idx_moderator_actions__agent_moderation_id`: `CREATE INDEX idx_moderator_actions__agent_moderation_id ON public.moderator_actions USING btree (agent_moderation_id) WHERE (agent_moderation_id IS NOT NULL)`
 - `idx_moderator_actions__agent_moderation_target`: `CREATE INDEX idx_moderator_actions__agent_moderation_target ON public.moderator_actions USING btree (agent_moderation_post_id, agent_moderation_id)`
 - `idx_moderator_actions__community__id`: `CREATE INDEX idx_moderator_actions__community__id ON public.moderator_actions USING btree (community_id, id DESC)`
+- `idx_moderator_actions__community__type__id`: `CREATE INDEX idx_moderator_actions__community__type__id ON public.moderator_actions USING btree (community_id, action_type, id DESC)`
 - `idx_moderator_actions__community_application_id`: `CREATE INDEX idx_moderator_actions__community_application_id ON public.moderator_actions USING btree (community_application_id) WHERE (community_application_id IS NOT NULL)`
 - `idx_moderator_actions__crawler_id`: `CREATE INDEX idx_moderator_actions__crawler_id ON public.moderator_actions USING btree (hostname_crawler_configuration_id) WHERE (hostname_crawler_configuration_id IS NOT NULL)`
 - `idx_moderator_actions__id`: `CREATE INDEX idx_moderator_actions__id ON public.moderator_actions USING btree (id DESC)`

@@ -108,8 +108,10 @@ async function runModeratorActions({ communityId, actionIds, seededRows }: Fixtu
   const name = 'searchModeratorActions'
   registerScenarioContract(scenario, {
     seededRows,
-    // This is the current main plan's worst observed scan. Tighten in #6394.
-    expectations: [{ kind: 'maxProcessedRows', relation: 'moderator_actions', max: 3_855 }],
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_moderator_actions__community__type__id'] },
+      { kind: 'maxProcessedRows', relation: 'moderator_actions', max: 215 },
+    ],
   })
   await runAndCapture(
     scenario,
