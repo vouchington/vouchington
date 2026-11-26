@@ -145689,6 +145689,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_topic_claims__claimant_verified_page": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_claims__claimant_verified_page ON public.topic_claims USING btree (claimant_user_id, id DESC) WHERE ((verified_at IS NOT NULL) AND (revoked_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "claimant_user_id",
+              "descending": false,
+              "expression": "claimant_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((verified_at IS NOT NULL) AND (revoked_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_topic_claims__pending": {
           "accessMethod": "btree",
           "constraintBacked": false,

@@ -60,6 +60,11 @@ CREATE INDEX IF NOT EXISTS idx_topic_claims__verified
 CREATE INDEX IF NOT EXISTS idx_topic_claims__claimant
   ON topic_claims (claimant_user_id, id DESC);
 
+-- Verified claims by claimant in page order
+CREATE INDEX IF NOT EXISTS idx_topic_claims__claimant_verified_page
+  ON topic_claims (claimant_user_id, id DESC)
+  WHERE verified_at IS NOT NULL AND revoked_at IS NULL;
+
 -- Staff pending-review queue
 CREATE INDEX IF NOT EXISTS idx_topic_claims__pending
   ON topic_claims (submitted_at DESC)

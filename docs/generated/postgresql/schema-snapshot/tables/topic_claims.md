@@ -55,6 +55,7 @@ _none_
 **Indexes:**
 
 - `idx_topic_claims__claimant`: `CREATE INDEX idx_topic_claims__claimant ON public.topic_claims USING btree (claimant_user_id, id DESC)`
+- `idx_topic_claims__claimant_verified_page`: `CREATE INDEX idx_topic_claims__claimant_verified_page ON public.topic_claims USING btree (claimant_user_id, id DESC) WHERE ((verified_at IS NOT NULL) AND (revoked_at IS NULL))`
 - `idx_topic_claims__pending`: `CREATE INDEX idx_topic_claims__pending ON public.topic_claims USING btree (submitted_at DESC) WHERE ((submitted_at IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_topic_claims__rejected_by_id`: `CREATE INDEX idx_topic_claims__rejected_by_id ON public.topic_claims USING btree (rejected_by_id) WHERE (rejected_by_id IS NOT NULL)`
 - `idx_topic_claims__revoked_by_id`: `CREATE INDEX idx_topic_claims__revoked_by_id ON public.topic_claims USING btree (revoked_by_id) WHERE (revoked_by_id IS NOT NULL)`
