@@ -13,6 +13,7 @@ import {
 } from './run-scenarios/post-topic-write-capacity.mts'
 import { runCommunityActiveRestrictionCapacity } from './run-scenarios/community-active-restrictions-at-cap.mts'
 import { runCommunityAutoTaggerCatalogCapacity } from './run-scenarios/community-auto-tagger-catalog-capacity.mts'
+import { runCommunityUrlFeedListCapacity } from './run-scenarios/community-url-feed-list-capacity.mts'
 
 export const AFTER_TOPICS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runUserListCapacityScenario,
@@ -22,6 +23,7 @@ export const AFTER_TOPICS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runTopicChildCapacityScenario,
   runCommunityActiveRestrictionCapacity,
   runCommunityAutoTaggerCatalogCapacity,
+  runCommunityUrlFeedListCapacity,
   runUrlEmbedCapacityScenario,
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,
