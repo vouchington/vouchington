@@ -1,3 +1,4 @@
+import { runModerationQueueClaimCapacity } from './moderation-queue-claim-capacity.mts'
 import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
 import { encodeScopedUuidCursor } from '@modules/pagination'
@@ -19,6 +20,7 @@ export async function runCommunityPublicationCapacityScenarios(): Promise<void> 
     await runPendingReports(fixture)
     await runAgentModerations(fixture)
     await runPinnedPosts(fixture)
+    await runModerationQueueClaimCapacity(fixture.communityId, fixture.reports, fixture.posts)
   } finally {
     await fixture.cleanup()
   }

@@ -49,6 +49,7 @@ export const CORE_SCENARIOS = [
   'list-user-member-communities-at-cap',
   'profile-community-membership-counts-at-cap',
   'community-pending-reports-cap-severity',
+  'moderation-queue-claim-sidecars-at-cap',
   'community-pending-reports-cap-created_at_desc',
   'moderation-reports-staff-unclustered-at-cap',
   'moderation-reports-member-unclustered-at-cap',
