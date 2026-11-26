@@ -34,6 +34,11 @@ export const BASELINE_FINGERPRINTS = [
   'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:topics',
   'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:rss_feeds',
   'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:topics',
+  // Hosted pair 45791592237, main-4 artifact 15103113135. Remove with #6566.
+  'rss-semantic-search-at-cap|0|searchRssFeedItemsBySemantic:force_custom_plan|force_custom_plan:rss_feeds',
+  'rss-semantic-search-at-cap|0|searchRssFeedItemsBySemantic:force_generic_plan|force_generic_plan:rss_feeds',
+  'rss-semantic-search-at-cap|1|searchRssFeedItemsBySemantic:force_custom_plan|force_custom_plan:rss_feeds',
+  'rss-semantic-search-at-cap|1|searchRssFeedItemsBySemantic:force_generic_plan|force_generic_plan:rss_feeds',
   // Hosted pair 45776788119, main-4 artifact 15097307795. Remove with #6551.
   'topic-import-reference-resolution-at-cap|0|getTopicsByReferenceBatch:force_custom_plan|force_custom_plan:topic_aliases',
   'topic-import-reference-resolution-at-cap|0|getTopicsByReferenceBatch:force_custom_plan|force_custom_plan:topics',
