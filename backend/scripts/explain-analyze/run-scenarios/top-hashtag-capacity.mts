@@ -7,6 +7,11 @@ import { seedUuid } from '../seed-data/common.mts'
 
 const scenario = 'top-hashtags-at-cap'
 const queryName = 'searchTopHashtags'
+// The fixture's 602-row view is a few heap pages, so a sequential scan plus Sort ties with the
+// ranking walk on cost (the filter's per-row alias lookup is priced the same either way) and the
+// winner flips with the heap's physical order (run 45744714033: 602 alias lookups, no index).
+// Production's view is far larger and always walks the ranking index; pin that plan here.
+const rankingWalk = { localSettings: { enable_seqscan: 'off', enable_sort: 'off' } }
 const query = 'capacityhashtag'
 const ids = Array.from({ length: 101 }, (_, index) => seedUuid(7_020_000 + index, 'e3'))
 const background = Array.from({ length: 500 }, (_, index) => seedUuid(7_020_101 + index, 'e3'))
@@ -97,7 +102,7 @@ export async function runTopHashtagCapacityScenario(): Promise<void> {
       },
       undefined,
       queryName,
-      { exactCapturedNames: [queryName, queryName] },
+      { ...rankingWalk, exactCapturedNames: [queryName, queryName] },
     )
   } finally {
     await using transaction = await beginTransaction()
