@@ -17,6 +17,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'notifications-mark-all-read-at-cap',
   'topic-claims-for-topic-at-live-cap',
   'topic-claims-for-user-at-live-cap',
+  'topic-import-reference-resolution-at-cap',
   'rss-feed-crawls-at-page-cap',
   'search-posts-for-admin-review-at-cap',
   'search-copyright-association-at-hard-cap',

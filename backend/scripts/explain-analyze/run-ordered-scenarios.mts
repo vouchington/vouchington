@@ -30,6 +30,7 @@ import {
   runMarkNotificationInboxCapacityScenario,
   runNotificationInboxCapacityScenario,
 } from './run-scenarios/notification-inbox-capacity.mts'
+import { runTopicReferenceCapacityScenario } from './run-scenarios/topic-reference-capacity.mts'
 import { runTopicClaimCapacityScenarios } from './run-scenarios/topic-claim-capacity.mts'
 import { runRssFeedCrawlCapacityScenario } from './run-scenarios/rss-feed-crawl-capacity.mts'
 import { runAdminReviewAndGuestReadScenarios } from './run-scenarios/admin-review-and-guest-reads.mts'
@@ -152,6 +153,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
+  runTopicReferenceCapacityScenario,
 ]
 
 /**
