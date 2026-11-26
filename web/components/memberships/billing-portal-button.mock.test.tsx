@@ -47,7 +47,7 @@ describe('BillingPortalButton', () => {
     render(<BillingPortalButton />)
     await clickButton()
     await waitFor(() => {
-      expect(screen.getByText(/failed to open/i)).toBeDefined()
+      expect(screen.getByRole('alert').textContent).toMatch(/failed to open/i)
     })
     expect(mockLocationAssign).not.toHaveBeenCalled()
   })
@@ -59,7 +59,7 @@ describe('BillingPortalButton', () => {
     render(<BillingPortalButton />)
     await clickButton()
     await waitFor(() => {
-      expect(screen.getByText(/not secure/i)).toBeDefined()
+      expect(screen.getByRole('alert').textContent).toMatch(/not secure/i)
     })
     expect(mockLocationAssign).not.toHaveBeenCalled()
   })

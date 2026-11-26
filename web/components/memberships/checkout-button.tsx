@@ -57,7 +57,14 @@ export function CheckoutButton({ planSlug, productId, planName, onCheckout }: Ch
       >
         {loading ? 'Loading...' : `Subscribe to ${planName}`}
       </Button>
-      {error && <p className='mt-2 text-sm text-destructive'>{error}</p>}
+      {error && (
+        <p
+          role='alert'
+          className='mt-2 text-sm text-destructive'
+        >
+          {error}
+        </p>
+      )}
     </div>
   )
 }

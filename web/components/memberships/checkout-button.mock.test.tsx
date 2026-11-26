@@ -70,7 +70,7 @@ describe('CheckoutButton https guard', () => {
     )
     await clickButton()
     await waitFor(() => {
-      expect(screen.getByText(/not secure/i)).toBeDefined()
+      expect(screen.getByRole('alert').textContent).toMatch(/not secure/i)
     })
     expect(mockLocationAssign).not.toHaveBeenCalled()
   })
@@ -90,7 +90,7 @@ describe('CheckoutButton https guard', () => {
     )
     await clickButton()
     await waitFor(() => {
-      expect(screen.getByText(/not secure/i)).toBeDefined()
+      expect(screen.getByRole('alert').textContent).toMatch(/not secure/i)
     })
     expect(mockLocationAssign).not.toHaveBeenCalled()
   })
@@ -110,7 +110,7 @@ describe('CheckoutButton https guard', () => {
     )
     await clickButton()
     await waitFor(() => {
-      expect(screen.getByText(/failed to create/i)).toBeDefined()
+      expect(screen.getByRole('alert').textContent).toMatch(/failed to create/i)
     })
     expect(mockLocationAssign).not.toHaveBeenCalled()
   })
