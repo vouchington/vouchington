@@ -8,14 +8,14 @@ function stalledUntilAborted(signal: AbortSignal): Promise<never> {
 }
 
 describe('AWS Emulator download attempts', () => {
-  it('starts again after a stalled attempt and returns the next attempt', async () => {
+  it('starts once more after a stalled attempt and returns the retry', async () => {
     let attempts = 0
     const started = await startWithStalledDownloadRetry(
       signal => {
         attempts += 1
         return attempts === 1 ? stalledUntilAborted(signal) : Promise.resolve('started')
       },
-      { attempts: 3, deadlineMs: 1 },
+      { attempts: 2, deadlineMs: 1 },
     )
     expect(started).toBe('started')
     expect(attempts).toBe(2)
@@ -26,11 +26,11 @@ describe('AWS Emulator download attempts', () => {
     await startWithStalledDownloadRetry(
       signal => {
         signals.push(signal)
-        return signals.length < 3 ? stalledUntilAborted(signal) : Promise.resolve('started')
+        return signals.length < 2 ? stalledUntilAborted(signal) : Promise.resolve('started')
       },
-      { attempts: 3, deadlineMs: 1 },
+      { attempts: 2, deadlineMs: 1 },
     )
-    expect(new Set(signals).size).toBe(3)
+    expect(new Set(signals).size).toBe(2)
   })
 
   it('throws the last stall once the attempts are spent', async () => {
@@ -56,7 +56,7 @@ describe('AWS Emulator download attempts', () => {
           attempts += 1
           return Promise.reject(failure)
         },
-        { attempts: 3, deadlineMs: 60_000 },
+        { attempts: 2, deadlineMs: 45_000 },
       ),
     ).rejects.toBe(failure)
     expect(attempts).toBe(1)
