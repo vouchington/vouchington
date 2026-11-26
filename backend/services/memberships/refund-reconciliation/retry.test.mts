@@ -207,11 +207,7 @@ describe('refund reconciliation retries', () => {
       .spyOn(stripeRefunds, 'listStripeRefundsForPaymentPage')
       .mockImplementation(async ({ startingAfter }) =>
         startingAfter
-          ? {
-              hasMore: false,
-              nextCursor: undefined,
-              refunds: [recoveredRefund],
-            }
+          ? { hasMore: false, nextCursor: undefined, refunds: [recoveredRefund] }
           : {
               hasMore: true,
               nextCursor: headId,
