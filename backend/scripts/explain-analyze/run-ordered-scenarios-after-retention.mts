@@ -11,6 +11,7 @@ import { runModerationTransparencyListCapacity } from './run-scenarios/moderatio
 import { runPostEmbeddingBanEvasionRecovery } from './run-scenarios/post-embedding-ban-evasion-recovery.mts'
 import { runModerationDigestEvasionCapacity } from './run-scenarios/moderation-digest-evasion-capacity.mts'
 import { runPostBanEvasionSuccessorCapacity } from './run-scenarios/post-ban-evasion-successor-capacity.mts'
+import { runModerationReportPostSidecars } from './run-scenarios/moderation-report-post-sidecars.mts'
 
 export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
@@ -18,6 +19,7 @@ export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runModerationTransparencyListCapacity,
   runModerationDigestEvasionCapacity,
   runPostBanEvasionSuccessorCapacity,
+  runModerationReportPostSidecars,
   runCopyrightAiRunRetentionCapacityScenario,
   runModerationJudgementMaintenanceScenarios,
   runModerationDigestPageScenarios,
