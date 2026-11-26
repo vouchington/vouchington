@@ -12,13 +12,19 @@ import { runAdminReviewAndGuestReadScenarios } from './run-scenarios/admin-revie
 import { runMessageNotificationWriteCapacity } from './run-scenarios/message-notification-write-capacity.mts'
 import { runRelatedPostUrlCapacityScenario } from './run-scenarios/related-post-url-capacity.mts'
 import { runHackerNewsPostFlagPages } from './run-scenarios/hacker-news-post-flag-pages.mts'
+import { runPrivatePostCollectionsCapacityScenarios } from './run-scenarios/private-post-collections-capacity.mts'
+import { runPostCreatedRecoveryCapacity } from './run-scenarios/post-created-recovery-capacity.mts'
+import { runModeratorWorkloadCapacity } from './run-scenarios/moderator-workload-capacity.mts'
 
 export const AFTER_NOTIFICATIONS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // These fixtures change crawler-table statistics; keep them after every existing plan.
   runAggregateExistenceScenarios,
   // Keep the extra communities out of ordinary search and ranking plan captures.
   runAiUsageTotalsScenarios,
+  runModeratorWorkloadCapacity,
   runPostImageWriteScenarios,
+  runPrivatePostCollectionsCapacityScenarios,
+  runPostCreatedRecoveryCapacity,
   runConversationMessageCapacityScenario,
   runNotificationInboxCapacityScenario,
   runMarkNotificationInboxCapacityScenario,
