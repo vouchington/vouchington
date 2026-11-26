@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { paginationMaxima } from '@services/pagination/config'
 import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embeds'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -63,10 +63,6 @@ export async function runUrlEmbedCapacityScenario(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'topics', max: rssCount },
     ],
   })
-  // Earlier seed updates leave rss_feeds between 155 and 198 pages depending on when autovacuum
-  // ran, which flips the generic plan between a hash join over a sequential scan and index probes.
-  // Rewriting the heap makes its sequential-scan cost the same on every run.
-  await write('/* compactUrlEmbedFeeds */ VACUUM (FULL, ANALYZE) rss_feeds')
   await runAndCapture(
     scenario,
     async () => {
