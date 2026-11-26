@@ -63,4 +63,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-item-feed-hydration-at-cap',
   'rss-story-preview-feed-batch-at-cap',
   'rss-semantic-search-at-cap',
+  'topic-import-reference-resolution-at-cap',
+  'topic-merge-parent-preflight-at-cap',
 ] as const

@@ -4,6 +4,8 @@ import { runRssHackerNewsFlagPagesCapacity } from './run-scenarios/rss-hacker-ne
 import { runRssFeedCollectionHydrationCapacity } from './run-scenarios/rss-feed-collection-hydration-capacity.mts'
 import { runRssItemFeedHydrationCapacityScenario } from './run-scenarios/rss-item-feed-hydration-capacity.mts'
 import { runRssStorySearchCapacityScenarios } from './run-scenarios/rss-story-search-capacity.mts'
+import { runTopicReferenceCapacityScenario } from './run-scenarios/topic-reference-capacity.mts'
+import { runTopicMergeParentCapacityScenario } from './run-scenarios/topic-merge-parent-capacity.mts'
 
 export const CAPACITY_AUDIT_RUNNERS = [
   runRssUnmappedCategoryCapacityScenario,
@@ -12,4 +14,6 @@ export const CAPACITY_AUDIT_RUNNERS = [
   runRssFeedCollectionHydrationCapacity,
   runRssItemFeedHydrationCapacityScenario,
   runRssStorySearchCapacityScenarios,
+  runTopicReferenceCapacityScenario,
+  runTopicMergeParentCapacityScenario,
 ] as const
