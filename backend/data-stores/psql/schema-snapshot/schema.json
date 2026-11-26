@@ -132511,7 +132511,7 @@
         "idx_session_referral_attributions__referrer_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_session_referral_attributions__referrer_id ON ONLY public.session_referral_attributions USING btree (referrer_user_id) WHERE (referrer_user_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_session_referral_attributions__referrer_id ON ONLY public.session_referral_attributions USING btree (referrer_user_id, id DESC) WHERE (referrer_user_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -132519,6 +132519,13 @@
               "descending": false,
               "expression": "referrer_user_id",
               "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "uuid_ops"
             }
           ],

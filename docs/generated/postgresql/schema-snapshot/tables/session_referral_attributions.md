@@ -41,7 +41,7 @@ _none_
 
 **Indexes:**
 
-- `idx_session_referral_attributions__referrer_id`: `CREATE INDEX idx_session_referral_attributions__referrer_id ON ONLY public.session_referral_attributions USING btree (referrer_user_id) WHERE (referrer_user_id IS NOT NULL)`
+- `idx_session_referral_attributions__referrer_id`: `CREATE INDEX idx_session_referral_attributions__referrer_id ON ONLY public.session_referral_attributions USING btree (referrer_user_id, id DESC) WHERE (referrer_user_id IS NOT NULL)`
 - `idx_session_referral_attributions__session_id_id`: `CREATE INDEX idx_session_referral_attributions__session_id_id ON ONLY public.session_referral_attributions USING btree (session_id, id)`
 - `idx_session_referral_attributions__session_referrer_id`: `CREATE INDEX idx_session_referral_attributions__session_referrer_id ON ONLY public.session_referral_attributions USING btree (session_id, referrer_user_id, id DESC)`
 - `idx_session_referral_attributions__unconverted_pair`: `CREATE INDEX idx_session_referral_attributions__unconverted_pair ON ONLY public.session_referral_attributions USING btree (session_id, referrer_user_id, id DESC) WHERE (signed_up_at IS NULL)`

@@ -96,8 +96,7 @@ export async function runAccountHistoryScenarios(): Promise<void> {
     registerScenarioContract('account-referral-clicks-at-cap', {
       expectations: [
         { kind: 'noSeqScan', relation: 'session_referral_attributions' },
-        // Generic walks other referrers' clicks in the live leaf. https://github.com/vouchington/vouchington/issues/6406
-        { kind: 'maxProcessedRows', relation: 'session_referral_attributions', max: 4_901 },
+        { kind: 'maxProcessedRows', relation: 'session_referral_attributions', max: LIMIT + 1 },
       ],
       crossPartition: {
         session_referral_attributions:
@@ -108,7 +107,18 @@ export async function runAccountHistoryScenarios(): Promise<void> {
       'account-referral-clicks-at-cap',
       'getReferralClickLog',
       fixture.ownerClickIds,
-      after => getReferralClickLog(fixture.ownerId, { limit: LIMIT, after }),
+      async after => {
+        const page = await getReferralClickLog(fixture.ownerId, { limit: LIMIT, after })
+        let hasConvertedClick = false
+        for (const { id } of page.results) {
+          const converted = fixture.convertedClickIds.has(id)
+          assert.equal(page.clicks[id]?.user_id, converted ? fixture.referredUserId : null)
+          assert.equal(page.clicks[id]?.signed_up_at != null, converted)
+          hasConvertedClick ||= converted
+        }
+        assert.deepEqual(Object.keys(page.users), hasConvertedClick ? [fixture.referredUserId] : [])
+        return page
+      },
     )
   } finally {
     await deleteAccountReferralFixture(fixture)
