@@ -47,6 +47,7 @@ export const POSTS_AND_FEEDS_SCENARIOS = [
   'hacker-news-post-flag-repair-at-cap',
   'remote-follower-inbox-late-cursor',
   'rss-feed-item-feed',
+  'rss-item-embeds-at-feed-cap',
   'rss-feed-item-feed-after',
   'rss-feed-item-feed-sparse-source-filter',
   'rss-feed-item-feed-sparse-source-filter-after',

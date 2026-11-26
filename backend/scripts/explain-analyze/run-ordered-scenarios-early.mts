@@ -35,6 +35,7 @@ import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialize
 import { runIngestionRawPageScenarios } from './run-scenarios/ingestion-raw-pages.mts'
 import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
 import { seedAndAnalyzeAgentModerationRetention } from './seed-data/agent-moderation-retention.mts'
+import { runRssItemEmbedCapacityScenario } from './run-scenarios/rss-item-embed-capacity.mts'
 import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 import { runPostModerationRetentionScenarios } from './run-scenarios/post-moderation-retention.mts'
 import { runSpamSignalScenarios } from './run-scenarios/spam-signals.mts'
@@ -86,6 +87,7 @@ export const EARLY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // that table, and the generic plan sorts once those rows exist.
   runStorySearchScenarios,
   runSharedLoaderScenarios,
+  runRssItemEmbedCapacityScenario,
   runMembershipWorkSelectionScenarios,
   runFeedSharerHydrationCapacityScenario,
   runEngagementEmailRecipientScenarios,

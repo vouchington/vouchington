@@ -1,3 +1,4 @@
+import { runRssStorySidecarsCapacityScenarios } from './rss-story-sidecars-capacity.mts'
 import { seedHiddenFeedStorySearch } from '../seed-data/story-search-hidden-feeds.mts'
 import {
   deleteStoryPostIndexPadding,
@@ -22,6 +23,7 @@ export async function runStorySearchScenarios(): Promise<void> {
     await captureStorySearch('story-search-new', 'new', storyHotLeaves)
     await captureStorySearch('story-search-best', 'best', storyHotLeaves)
     await captureStorySearch('story-search-hot', 'hot', storyHotLeaves)
+    await runRssStorySidecarsCapacityScenarios()
   } finally {
     await deleteStoryPostIndexPadding()
   }

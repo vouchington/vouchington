@@ -12,4 +12,6 @@ export const STORY_SCENARIO_IDS = [
   'story-members-detail-25-after',
   'story-hydration-detail-25-after',
   'story-by-id',
+  'rss-stories-by-id-batch-at-cap',
+  'rss-visible-story-posts-batch-at-cap',
 ] as const

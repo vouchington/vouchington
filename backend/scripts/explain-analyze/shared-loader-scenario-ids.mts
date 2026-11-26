@@ -1,4 +1,5 @@
 export const SHARED_LOADER_SCENARIO_IDS = [
+  'rss-item-elections-batch-at-cap',
   'topic-redirect-batch',
   'posts-with-roots-batch',
   'delegated-post-access-batch',
