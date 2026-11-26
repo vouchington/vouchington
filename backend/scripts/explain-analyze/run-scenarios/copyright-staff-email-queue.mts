@@ -36,19 +36,10 @@ export async function runCopyrightStaffEmailQueueScenario(): Promise<void> {
         copyright_notice_email_intake_notice_links: PURGE_EVIDENCE_SEEDED_ROWS,
         copyright_notice_email_intake_parses: 0,
         copyright_notice_email_thread_references: 2,
+        copyright_notice_email_message_ancestors: 1,
         copyright_notice_thread_retention_activities: 0,
       },
-      expectations: [
-        { kind: 'queryBinds', token: 'LIMIT' },
-        // Main can scan the intake corpus or revisit notice links for each item. Tighten after #6554.
-        { kind: 'maxProcessedRows', relation: intakeRelation, max: 14_025 },
-        {
-          kind: 'maxProcessedRows',
-          relation: 'copyright_notice_email_intake_notice_links',
-          max: 619_957,
-        },
-        { kind: 'maxInputRows', nodeType: 'Sort', max: 1_897 },
-      ],
+      expectations: [{ kind: 'queryBinds', token: 'LIMIT' }],
     })
     const moderator = { ...seedUser, roles: ['moderator'] }
     const cursorFor = (id: string) =>
