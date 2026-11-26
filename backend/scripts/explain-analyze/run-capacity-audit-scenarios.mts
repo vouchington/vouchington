@@ -6,6 +6,9 @@ import { runRssItemFeedHydrationCapacityScenario } from './run-scenarios/rss-ite
 import { runRssStorySearchCapacityScenarios } from './run-scenarios/rss-story-search-capacity.mts'
 import { runTopicReferenceCapacityScenario } from './run-scenarios/topic-reference-capacity.mts'
 import { runTopicMergeParentCapacityScenario } from './run-scenarios/topic-merge-parent-capacity.mts'
+import { runNotificationPushRecoveryCapacityScenario } from './run-scenarios/notification-push-recovery-capacity.mts'
+import { runWebPushSubscriptionCapacityScenario } from './run-scenarios/web-push-subscription-capacity.mts'
+import { runCriticalAlertRecipientCapacityScenario } from './run-scenarios/critical-alert-recipient-capacity.mts'
 
 export const CAPACITY_AUDIT_RUNNERS = [
   runRssUnmappedCategoryCapacityScenario,
@@ -16,4 +19,7 @@ export const CAPACITY_AUDIT_RUNNERS = [
   runRssStorySearchCapacityScenarios,
   runTopicReferenceCapacityScenario,
   runTopicMergeParentCapacityScenario,
+  runNotificationPushRecoveryCapacityScenario,
+  runWebPushSubscriptionCapacityScenario,
+  runCriticalAlertRecipientCapacityScenario,
 ] as const

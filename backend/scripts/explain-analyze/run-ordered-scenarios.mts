@@ -54,8 +54,6 @@ import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capac
 import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
 import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
 
-import { CAPACITY_AUDIT_RUNNERS } from './run-capacity-audit-scenarios.mts'
-
 export type OrderedRunner = () => Promise<unknown>
 
 // Order matters: earlier scenarios mutate the one shared corpus. See the comments in the
@@ -154,7 +152,6 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
   runApplicationQuestions,
   runCopyrightAiRunRetentionCapacityScenario,
-  ...CAPACITY_AUDIT_RUNNERS,
 ]
 
 /**
