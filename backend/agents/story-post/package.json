@@ -28,7 +28,7 @@
     "@modules/model-providers": "workspace:^",
     "@services/stories": "workspace:^",
     "@vouchington/ai": "^0.4.1",
-    "openai": "^7.59.0"
+    "openai": "^7.60.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

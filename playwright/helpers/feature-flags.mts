@@ -6,7 +6,7 @@ import {
   type FeatureFlags,
 } from '@vouchington/utils/feature-flags'
 import { FF_COOKIE } from '../../ts-shared/feature-flags/index.mts'
-import { retryOnConnectionLost } from 'vouchington-tooling/playwright'
+import { cookieOrigin } from './cookie-origin.mts'
 
 const featureFlagCookieCodec: FeatureFlagCookieCodec = {
   encodeBase64: value => Buffer.from(value, 'utf8').toString('base64'),
@@ -14,7 +14,7 @@ const featureFlagCookieCodec: FeatureFlagCookieCodec = {
 }
 
 type SetFeatureFlagsDependencies = {
-  retryOnConnectionLost: typeof retryOnConnectionLost
+  cookieOrigin: typeof cookieOrigin
 }
 
 export async function setFeatureFlags(
@@ -22,20 +22,14 @@ export async function setFeatureFlags(
   overrides: FeatureFlags,
   dependencies?: Partial<SetFeatureFlagsDependencies>,
 ): Promise<void> {
-  const retry = dependencies?.retryOnConnectionLost ?? retryOnConnectionLost
   const value = encodeFeatureFlagCookie(overrides, featureFlagCookieCodec)
 
-  await retry(async () => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
-    const origin = new URL(page.url()).origin
-
-    await page.context().addCookies([
-      {
-        name: FF_COOKIE,
-        value,
-        url: origin,
-        sameSite: 'Lax',
-      },
-    ])
-  })
+  await page.context().addCookies([
+    {
+      name: FF_COOKIE,
+      value,
+      url: (dependencies?.cookieOrigin ?? cookieOrigin)(),
+      sameSite: 'Lax',
+    },
+  ])
 }

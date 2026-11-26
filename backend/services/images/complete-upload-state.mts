@@ -120,6 +120,7 @@ export async function markImageUploadSourcesDeleted(imageIds: readonly string[])
 }
 
 async function acknowledgeImageUploadSources(query: QueryExecutor, ids: string[]): Promise<void> {
+  // The conditional UPDATE is idempotent for one ID and preserves the first acknowledgement.
   // lock-reason: prevents: overlapping acknowledgement batches acquiring image rows in opposite order; writer: abandoned upload cleanup and source acknowledgement.
   if (ids.length > 1) {
     await query(
