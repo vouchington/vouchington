@@ -54,6 +54,7 @@ import {
 import { runTopHashtagCapacityScenario } from './run-scenarios/top-hashtag-capacity.mts'
 import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capacity.mts'
 import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
+import { runApiKeyExpiryCapacityScenarios } from './run-scenarios/api-key-expiry-capacity.mts'
 import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
 
 import { runModerationAppealListCapacity } from './run-scenarios/moderation-appeal-list-capacity.mts'
@@ -159,6 +160,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runCopyrightExecutionRetentionScenarios,
   runCopyrightUnlinkedEmailRetentionScenario,
   runModerationAppealListCapacity,
+  runApiKeyExpiryCapacityScenarios,
 ]
 
 /**

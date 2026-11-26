@@ -62,4 +62,8 @@ export const MAINTENANCE_WORK_SCENARIOS = [
   ...DISPATCH_AND_CRAWL_SCENARIO_IDS,
   ...CRITICAL_ALERT_SCENARIO_IDS,
   ...BLUESKY_FOLLOWER_SCENARIO_IDS,
+  'api-key-expiry-reminder-first-page',
+  'api-key-expiry-reminder-continuation',
+  'api-key-expiry-reminder-details',
+  'api-key-expiry-reminder-claim',
 ] as const
