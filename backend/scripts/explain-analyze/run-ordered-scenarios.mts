@@ -56,6 +56,8 @@ import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capac
 import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
 import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
 
+import { runModerationAppealListCapacity } from './run-scenarios/moderation-appeal-list-capacity.mts'
+
 export type OrderedRunner = () => Promise<unknown>
 
 // Order matters: earlier scenarios mutate the one shared corpus. See the comments in the
@@ -156,6 +158,7 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   runCopyrightAiRunRetentionCapacityScenario,
   runCopyrightExecutionRetentionScenarios,
   runCopyrightUnlinkedEmailRetentionScenario,
+  runModerationAppealListCapacity,
 ]
 
 /**

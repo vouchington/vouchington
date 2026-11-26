@@ -55,6 +55,8 @@ export const CORE_SCENARIOS = [
   'community-agent-prompt-history-at-caller-bound',
   'search-moderator-actions-community-at-cap',
   'list-user-mod-notes-at-cap',
+  'moderation-appeals-staff-at-cap',
+  'moderation-appeals-appellant-at-cap',
   'search-community-invites-at-cap',
   'search-community-restrictions-at-cap',
   'community-moderation-queue-merged-first',
