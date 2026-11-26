@@ -608,6 +608,8 @@
     "rss-category-source-union",
     "rss-category-result-complete",
     "rss-category-exact-acknowledgement",
+    "rss-category-reconciliation-first-at-cap",
+    "rss-category-reconciliation-after-at-cap",
     "rss-feed-search-publisher-page-first",
     "rss-feed-search-publisher-page-after",
     "rss-feed-search-muted-dominant-publisher",

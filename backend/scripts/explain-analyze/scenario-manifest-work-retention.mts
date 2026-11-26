@@ -25,6 +25,8 @@ export const RETENTION_WORK_SCENARIOS = [
   'primary-rss-feeds-by-topic-unique',
   'pending-application-community-unique',
   ...CATEGORY_PROJECTION_SCENARIO_IDS,
+  'rss-category-reconciliation-first-at-cap',
+  'rss-category-reconciliation-after-at-cap',
   ...HOT_PATH_LOCK_SCOPE_SCENARIOS,
   ...DELEGATED_WRITE_SCENARIO_IDS,
   ...COMMUNITY_BAN_SCENARIO_IDS,
