@@ -3,10 +3,6 @@
 // PR #3018 removed 48 story-hydration rss_feeds/topics fingerprints after keyed RSS feed
 // hydration passed paired custom/generic captures (2026-10-17T02-25-09-194Z).
 export const BASELINE_FINGERPRINTS = [
-  // Paired main-4 custom pending-report plans scan the review table. Tighten in #6402.
-  'community-pending-reports-cap-created_at_desc|0|listCommunityPendingModerationReports:force_custom_plan|force_custom_plan:community_post_reviews',
-  'community-pending-reports-cap-severity|0|listCommunityPendingModerationReports:force_custom_plan|force_custom_plan:community_post_reviews',
-  'community-pending-reports-cap-severity|2|listCommunityPendingModerationReports:force_custom_plan|force_custom_plan:community_post_reviews',
   // Engagement recipients are globally ranked by claimed-at fairness across eligible users.
   // Paired CI 42086515835 also selected these custom scans after the prompt fixture grew users.
   'engagement-follow-news-sources|0|getFollowNewsSourcesRecipients:force_custom_plan|force_custom_plan:relation__user__follow__rss_feed',
