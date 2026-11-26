@@ -62,7 +62,7 @@ jobs:
           persist-credentials: false
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@324c8741aa605d4c28897dcfcce17cc8f56ff08a # v3.10.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -264,7 +264,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
+      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@324c8741aa605d4c28897dcfcce17cc8f56ff08a # v3.10.0
         timeout-minutes: 1
         with:
           results: >-

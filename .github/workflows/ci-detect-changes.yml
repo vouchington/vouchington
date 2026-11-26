@@ -114,7 +114,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/fetch-base-ref@feaaab5f6bb8e49407264b5cc6720447d6f21d35 # v3.9.0
+      - uses: vouchington/vouchington-tooling/.github/actions/fetch-base-ref@324c8741aa605d4c28897dcfcce17cc8f56ff08a # v3.10.0
         timeout-minutes: 2
         with:
           filter: blob:none
