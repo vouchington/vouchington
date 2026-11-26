@@ -96,4 +96,12 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-action-attempt-retention-at-cap',
   'copyright-delivery-attempt-retention-at-cap',
   'copyright-unlinked-email-intake-attachment-retention-at-cap',
+  'rss-feed-dedup-by-url',
+  'rss-feed-dedup-by-url-id',
+  'rss-crawl-feed-lookup-at-cap',
+  'rss-feed-discoverability-at-cap',
+  'rss-ingest-existing-items-at-cap',
+  'rss-feed-search-trending-first-at-cap',
+  'rss-feed-search-trending-next-at-cap',
+  'rss-feed-search-trending-terminal-at-cap',
 ] as const
