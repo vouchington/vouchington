@@ -35,6 +35,8 @@
     "household-owner-capacity",
     "household-member-capacity",
     "post-and-creator-bookmarks-at-cap",
+    "rss-stories-by-id-batch-at-cap",
+    "rss-visible-story-posts-batch-at-cap",
     "story-search-new",
     "story-search-best",
     "story-search-hot",
