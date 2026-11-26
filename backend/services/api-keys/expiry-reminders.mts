@@ -7,13 +7,25 @@ export async function getApiKeysDueForExpiryReminder(
   batchSize = getApiKeyExpiryLimits().batchSize,
   options: QueryOptions = {},
 ): Promise<string[]> {
-  const query = sql`/* getApiKeysDueForExpiryReminder */
-    SELECT id FROM api_keys
-    WHERE expires_at > NOW() AND expires_at <= NOW() + INTERVAL '7 days'
-      AND revoked_at IS NULL AND replaced_by_api_key_id IS NULL
-      AND expiry_reminder_sent_at IS NULL
-  `
-  if (afterId) query.append(sql` AND id > ${afterId}::uuid`)
+  // Cost the first page's expiry range independently so it can seek the partial expiry index.
+  // A continuation uses the ID cursor to seek past the expired prefix.
+  const expiryWindow = afterId
+    ? sql`expires_at > NOW() AND expires_at <= NOW() + INTERVAL '7 days'`
+    : sql`expires_at > (SELECT NOW()) AND expires_at <= (SELECT NOW() + INTERVAL '7 days')`
+  const eligible = sql`SELECT id FROM api_keys WHERE `.append(expiryWindow).append(sql`
+    AND revoked_at IS NULL AND replaced_by_api_key_id IS NULL
+    AND expiry_reminder_sent_at IS NULL
+  `)
+  const query = sql`/* getApiKeysDueForExpiryReminder */ `.append(eligible)
+  if (afterId) {
+    query.append(sql` AND id > ${afterId}::uuid`)
+  } else {
+    // The largest ID in any full sample cannot be earlier than the end of the ID page.
+    // A short sample contains every eligible ID.
+    query.append(sql` AND id <= (SELECT id FROM (`).append(eligible)
+      .append(sql` ORDER BY expires_at, id LIMIT ${batchSize}) AS expiry_sample
+        ORDER BY id DESC LIMIT 1)`)
+  }
   query.append(sql` ORDER BY id LIMIT ${batchSize}`)
   const { rows } = await read<{ id: string }>(query, options)
   return rows.map(row => row.id)
