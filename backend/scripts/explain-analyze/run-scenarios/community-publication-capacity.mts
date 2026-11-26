@@ -3,10 +3,10 @@ import { write } from '@data-stores/psql'
 import { encodeScopedUuidCursor } from '@modules/pagination'
 import { getPinnedPosts } from '@services/communities/publications/pinned'
 import { searchCommunityAgentModerations } from '@services/community-agent-prompts/moderations'
-import { listCommunityPendingModerationReports } from '@services/moderation-claims/community-pending-reports'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedCommunityPublicationCapacity } from './community-publication-capacity-fixture.mts'
+import { runCommunityPendingReportCapacity } from './community-pending-report-capacity.mts'
 
 const limit = 100
 
@@ -16,7 +16,7 @@ export async function runCommunityPublicationCapacityScenarios(): Promise<void> 
     await write(`/* analyzeCommunityPublicationCapacity */
       ANALYZE posts, moderation_reports, moderation_report_judgements, community_members,
         community_pinned_posts, community_post_reviews, agent_moderations, community_agent_prompts`)
-    await runPendingReports(fixture)
+    await runCommunityPendingReportCapacity(fixture)
     await runAgentModerations(fixture)
     await runPinnedPosts(fixture)
   } finally {
@@ -25,83 +25,6 @@ export async function runCommunityPublicationCapacityScenarios(): Promise<void> 
 }
 
 type Fixture = Awaited<ReturnType<typeof seedCommunityPublicationCapacity>>
-
-async function runPendingReports({
-  communityId,
-  rankedReportIds,
-  timeReportIds,
-  seededRows,
-}: Fixture) {
-  const statements = ['listCommunityPendingModerationReports', 'fetchBanEvasionReports']
-  for (const [sort, expected] of [
-    ['severity', rankedReportIds],
-    ['created_at_desc', timeReportIds],
-  ] as const) {
-    const scenario = `community-pending-reports-cap-${sort}`
-    registerScenarioContract(scenario, {
-      // One candidate and one matching pending report per target in this fixture.
-      expectations: [{ kind: 'maxProcessedRows', relation: 'moderation_reports', max: 394 }],
-      seededRows,
-      crossPartition: { posts: 'Reports can target community posts from any month.' },
-    })
-    await runAndCapture(
-      scenario,
-      async () => {
-        const first = await listCommunityPendingModerationReports({ communityId, limit, sort })
-        assert.deepEqual(
-          first.reports.map(row => row.id),
-          expected.slice(0, limit),
-        )
-        assert.equal(first.hasNextPage, true)
-        const boundary = first.reports.at(-1)!
-        const next = await listCommunityPendingModerationReports({
-          communityId,
-          limit,
-          sort,
-          afterCursor: {
-            id: boundary.id,
-            severityRank: boundary.cursor_severity_rank,
-            reportCount: boundary.cursor_report_count,
-          },
-        })
-        assert.deepEqual(
-          next.reports.map(row => row.id),
-          expected.slice(limit, limit * 2),
-        )
-        assert.equal(next.hasNextPage, true)
-        assert.ok(next.reports.some(row => row.is_system_generated))
-        assert.ok(next.reports.some(row => !row.is_system_generated))
-      },
-      undefined,
-      statements,
-      {
-        afterCapture:
-          sort === 'created_at_desc'
-            ? () => assertRemainingReportsByCreationTime(communityId, expected)
-            : undefined,
-      },
-    )
-  }
-}
-
-async function assertRemainingReportsByCreationTime(communityId: string, expected: string[]) {
-  assert.ok(expected.length > limit * 2)
-  let afterId = expected[limit * 2 - 1]!
-  for (let offset = limit * 2; offset < expected.length; offset += limit) {
-    const page = await listCommunityPendingModerationReports({
-      communityId,
-      limit,
-      sort: 'created_at_desc',
-      afterCursor: { id: afterId },
-    })
-    assert.deepEqual(
-      page.reports.map(row => row.id),
-      expected.slice(offset, offset + limit),
-    )
-    assert.equal(page.hasNextPage, offset + limit < expected.length)
-    afterId = page.reports.at(-1)!.id
-  }
-}
 
 async function runAgentModerations({
   communityId,
