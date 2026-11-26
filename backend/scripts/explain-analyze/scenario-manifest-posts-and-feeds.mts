@@ -34,6 +34,7 @@ export const POSTS_AND_FEEDS_SCENARIOS = [
   'prioritized-referral-links',
   'profile-posts-page',
   'recommended-rss-feeds',
+  'recommended-rss-feeds-low-visibility',
   'recommended-topics',
   'recommended-topics-long-vote-history',
   'report-judgement-contexts-batch',

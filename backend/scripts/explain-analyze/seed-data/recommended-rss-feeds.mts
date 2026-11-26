@@ -43,16 +43,15 @@ export async function seedRecommendedRssFeedsPopularFeed(): Promise<void> {
      ON CONFLICT DO NOTHING`,
     [subjects, objects],
   )
-  // Vacuum like autovacuum does in production: the visibility map lets the ordered newest-follow
-  // indexes answer index-only, which is the plan the caps are written for.
+}
+
+export async function vacuumRecommendedRssFeedsFollows(): Promise<void> {
   await write(
     '/* vacuumRecommendedRssFeedsFollows */ VACUUM (ANALYZE) relation__user__follow__rss_feed',
   )
-  // VACUUM cannot mark a page all-visible while another backend (an autovacuum ANALYZE of any
-  // table, for one) holds a snapshot older than the insert, which leaves relallvisible at 0. The
-  // planner then costs the object__newest probe as a bitmap heap scan plus Sort that reads every
-  // co-follower of the popular feed (6,592 rows against the 5,600 cap) instead of the ordered
-  // index-only LIMIT 25. Pin relallvisible to the fully vacuumed state the cap is written for.
+}
+
+export async function pinRecommendedRssFeedsFollowsVisibility(allVisible: boolean): Promise<void> {
   await write(
     `/* pinRecommendedRssFeedsFollowsVisibility */
      SELECT pg_restore_relation_stats(
@@ -60,7 +59,7 @@ export async function seedRecommendedRssFeedsPopularFeed(): Promise<void> {
        'relname', 'relation__user__follow__rss_feed',
        'relpages', relpages,
        'reltuples', reltuples,
-       'relallvisible', relpages
+       'relallvisible', ${allVisible ? 'relpages' : '0'}
      )
      FROM pg_class
      WHERE oid = 'public.relation__user__follow__rss_feed'::regclass`,
