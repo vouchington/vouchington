@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { seedUser } from '../run-support.mts'
 import { seedUuidAtTimestamp } from './common.mts'
+import { cleanupCopyrightRestoreFixtures } from './copyright-restore-cleanup.mts'
 
 const caseCount = 21
 const targetsPerCase = 40
@@ -94,56 +95,10 @@ export async function seedCopyrightRestoreIntents() {
       .filter((_, index) => [1, 3, 4].includes(index % intentsPerTarget)),
     targetCount,
     intentCount,
-    cleanup: () => cleanupCopyrightRestoreIntents(notices, placements, imageId!),
+    cleanup: () =>
+      cleanupCopyrightRestoreFixtures(notices, placements, imageId!, {
+        analyzeSql,
+        hasLegalHoldAssessments: false,
+      }),
   }
-}
-
-async function cleanupCopyrightRestoreIntents(
-  notices: string[],
-  placements: string[],
-  imageId: string,
-): Promise<void> {
-  await using transaction = await beginTransaction()
-  await transaction(
-    `/* cleanupCopyrightRestoreIntents:scope */
-      SELECT set_config('app.explain_copyright_restore_notice_ids', $1::uuid[]::text, true)`,
-    [notices],
-  )
-  // The purge guards require a separate case and table scope for each delete.
-  await transaction(`/* cleanupCopyrightRestoreIntents:cases */
-    DO $cleanup$
-    DECLARE notice_id uuid;
-    BEGIN
-      FOREACH notice_id IN ARRAY current_setting('app.explain_copyright_restore_notice_ids')::uuid[] LOOP
-        PERFORM set_config('app.copyright_case_purge_notice_id', notice_id::text, true);
-        PERFORM set_config('app.copyright_case_purge_table', 'copyright_notice_action_work_items', true);
-        DELETE FROM copyright_notice_action_work_items WHERE copyright_notice_id = notice_id;
-        PERFORM set_config('app.copyright_case_purge_table', 'copyright_restrictions', true);
-        DELETE FROM copyright_restrictions WHERE copyright_notice_id = notice_id;
-        PERFORM set_config('app.copyright_case_purge_table', 'copyright_notice_submissions', true);
-        DELETE FROM copyright_notice_submissions WHERE copyright_notice_id = notice_id;
-        PERFORM set_config('app.copyright_case_purge_table', 'copyright_notice_targets', true);
-        DELETE FROM copyright_notice_targets WHERE copyright_notice_id = notice_id;
-        PERFORM set_config('app.copyright_case_purge_table', 'copyright_notices', true);
-        DELETE FROM copyright_notices WHERE id = notice_id;
-      END LOOP;
-    END;
-    $cleanup$`)
-  await transaction(
-    `/* cleanupCopyrightRestoreIntents:noticeIdentities */
-      DELETE FROM retained_copyright_notice_identities WHERE id = ANY($1::uuid[])`,
-    [notices],
-  )
-  await transaction(
-    `/* cleanupCopyrightRestoreIntents:placements */
-      DELETE FROM retained_image_placement_bindings WHERE placement_id = ANY($1::uuid[])`,
-    [placements],
-  )
-  await transaction(
-    `/* cleanupCopyrightRestoreIntents:image */
-      DELETE FROM retained_image_identities WHERE id = $1::uuid`,
-    [imageId],
-  )
-  await transaction(analyzeSql)
-  await transaction.commit()
 }
