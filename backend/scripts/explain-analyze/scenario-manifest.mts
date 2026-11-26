@@ -77,6 +77,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-story-projection-restart-at-fetch-cap',
   'rss-story-projection-source-refresh-at-fetch-cap',
   'rss-category-snapshot-write-at-fetch-cap',
+  'rss-feed-category-invalidation-dense-sources',
   'rss-item-category-hashtag-aliases-at-cap',
   'rss-item-category-insert-at-cap',
   'rss-item-category-update-at-cap',

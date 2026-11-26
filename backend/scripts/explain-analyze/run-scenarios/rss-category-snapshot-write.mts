@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import { beginTransaction } from '@data-stores/psql'
-import { persistRssFeedItemCategorySnapshotReconciliations } from '@services/rss-feed-items/category-snapshot-reconciliations'
+import {
+  markRssFeedCategorySnapshotsForReconciliation,
+  persistRssFeedItemCategorySnapshotReconciliations,
+} from '@services/rss-feed-items/category-snapshot-reconciliations'
 import { RSS_FEED_ITEM_MAX_CATEGORIES } from '@services/rss-feed-items/processing-limits'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -68,5 +71,42 @@ export async function runRssCategorySnapshotWriteScenario(fixture: RssWriteCapac
       'persistRssFeedItemSourceCategorySnapshots',
       'persistRssFeedItemCategorySnapshotReconciliations',
     ],
+  )
+  await captureFeedCategoryInvalidation(fixture, existingCount)
+}
+
+async function captureFeedCategoryInvalidation(
+  fixture: RssWriteCapacityFixture,
+  existingCount: number,
+): Promise<void> {
+  const scenario = 'rss-feed-category-invalidation-dense-sources'
+  registerScenarioContract(scenario, { allowEmptyResult: true, expectations: [] })
+  await runAndCapture(
+    scenario,
+    async () => {
+      await using query = await beginTransaction()
+      await markRssFeedCategorySnapshotsForReconciliation(query, fixture.feedId)
+      const { rows } = await query<{
+        rss_feed_item_id: string
+        categories: string[]
+        generation: string
+      }>(
+        `/* checkRssFeedCategoryInvalidation */ SELECT rss_feed_item_id, categories, generation
+         FROM rss_feed_item_category_snapshot_reconciliations
+         WHERE rss_feed_item_id = ANY($1::uuid[]) ORDER BY rss_feed_item_id`,
+        [fixture.itemIds],
+      )
+      assert.deepEqual(
+        rows,
+        fixture.itemIds.map((rss_feed_item_id, index) => ({
+          rss_feed_item_id,
+          categories: index < existingCount ? ['older category'] : [],
+          generation: index < existingCount ? '2' : '1',
+        })),
+      )
+      await query.rollback()
+    },
+    undefined,
+    'markRssFeedCategorySnapshotsForReconciliation',
   )
 }
