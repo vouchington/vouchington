@@ -7,6 +7,7 @@ import { runMembershipOrphanedQueuedGrantScenarios } from './run-scenarios/membe
 import { runMembershipReadCapacityScenarios } from './run-scenarios/membership-read-capacity.mts'
 import { runMembershipPendingStateCapacity } from './run-scenarios/membership-pending-state-capacity.mts'
 import { runMembershipEntitlementEffectCapacityScenarios } from './run-scenarios/membership-entitlement-effect-capacity.mts'
+import { runMembershipRefundDispatchScenario } from './run-scenarios/membership-refund-dispatch.mts'
 
 export const AFTER_MEMBERSHIPS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCategoryProjectionScenarios,
@@ -21,5 +22,6 @@ export const AFTER_MEMBERSHIPS_RUNNERS: readonly (() => Promise<unknown>)[] = [
 export const AFTER_MEMBERSHIP_CAPACITY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runMembershipReadCapacityScenarios,
   runMembershipPendingStateCapacity,
+  runMembershipRefundDispatchScenario,
   runMembershipEntitlementEffectCapacityScenarios,
 ]

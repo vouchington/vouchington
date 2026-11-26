@@ -14,4 +14,5 @@ export const MEMBERSHIP_SCENARIO_IDS = [
   'membership-pending-state-at-default',
   'membership-entitlement-effect-claim-at-default',
   'membership-entitlement-effect-complete-at-default',
+  'membership-refund-reconciliation-dispatch-at-default',
 ] as const

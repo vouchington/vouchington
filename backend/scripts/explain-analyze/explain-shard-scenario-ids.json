@@ -678,6 +678,7 @@
     "membership-expiry-page-activation",
     "membership-expiry-user-lock",
     "membership-orphaned-queued-grant-candidates",
+    "membership-refund-reconciliation-dispatch-at-default",
     "membership-orphaned-queued-grant-nil-cursor",
     "membership-orphaned-queued-grant-activation",
     "membership-entitlement-effect-claim-at-default",
