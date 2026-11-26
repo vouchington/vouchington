@@ -53,6 +53,7 @@ export const SEARCH_AND_TOPICS_SCENARIOS = [
   'topic-rating-stats-large',
   'topic-search-best',
   'topic-search-text',
+  'topic-search-text-at-cap',
   'topic-viewer-counts',
   'topic-viewer-counts-dense',
   'topic-viewer-counts-many-aliases',
