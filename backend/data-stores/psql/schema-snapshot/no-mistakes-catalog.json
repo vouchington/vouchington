@@ -27820,7 +27820,7 @@
         "idx_conversations__subject_user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conversations__subject_user_id ON public.conversations USING btree (subject_user_id) WHERE (subject_user_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_conversations__subject_user_id ON public.conversations USING btree (subject_user_id, community_id, last_activity_at DESC, id DESC) WHERE (subject_user_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -27829,6 +27829,33 @@
               "descending": false,
               "expression": "subject_user_id",
               "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "last_activity_at",
+              "descending": true,
+              "expression": "last_activity_at",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }

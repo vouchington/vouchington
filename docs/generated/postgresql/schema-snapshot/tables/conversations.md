@@ -69,7 +69,7 @@ _none_
 - `idx_conversations__post_id`: `CREATE INDEX idx_conversations__post_id ON public.conversations USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_conversations__resolved_by_id`: `CREATE INDEX idx_conversations__resolved_by_id ON public.conversations USING btree (resolved_by_id) WHERE (resolved_by_id IS NOT NULL)`
 - `idx_conversations__rss_feed_item_id`: `CREATE INDEX idx_conversations__rss_feed_item_id ON public.conversations USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)`
-- `idx_conversations__subject_user_id`: `CREATE INDEX idx_conversations__subject_user_id ON public.conversations USING btree (subject_user_id) WHERE (subject_user_id IS NOT NULL)`
+- `idx_conversations__subject_user_id`: `CREATE INDEX idx_conversations__subject_user_id ON public.conversations USING btree (subject_user_id, community_id, last_activity_at DESC, id DESC) WHERE (subject_user_id IS NOT NULL)`
 - `idx_conversations__unresolved`: `CREATE INDEX idx_conversations__unresolved ON public.conversations USING btree (id DESC) WHERE (resolved_at IS NULL)`
 - `idx_conversations__updated_by_id`: `CREATE INDEX idx_conversations__updated_by_id ON public.conversations USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)`
 - `uq_conversations__moderator_internal_open_post`: `CREATE UNIQUE INDEX uq_conversations__moderator_internal_open_post ON public.conversations USING btree (post_id) WHERE ((channel_type = 'mod_internal'::conversation_channel_types) AND (post_id IS NOT NULL) AND (resolved_at IS NULL) AND (deleted_at IS NULL))`

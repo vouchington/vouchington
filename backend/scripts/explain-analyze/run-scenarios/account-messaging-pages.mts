@@ -19,8 +19,17 @@ async function captureModmailInbox(fixture: Fixture): Promise<void> {
   registerScenarioContract(scenario, {
     expectations: [
       { kind: 'noSeqScan', relation: 'conversations' },
-      // Both plan modes can scan all subject threads before sorting the first page. https://github.com/vouchington/vouchington/issues/6404
-      { kind: 'maxProcessedRows', relation: 'conversations', max: 320 },
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'idx_conversations__subject_user_id',
+          'idx_conversations__modmail_subject_activity',
+        ],
+        anyOf: true,
+        noSort: true,
+      },
+      // The fixture's first page visits 101 visible threads plus six deleted threads.
+      { kind: 'maxProcessedRows', relation: 'conversations', max: limit + 7 },
     ],
   })
   const { threadIds, communityId, subjectId } = fixture
