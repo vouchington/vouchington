@@ -26,8 +26,10 @@ export async function listUserModNotes(
   // A single-value range keeps target_user_id in the scoped index order.
   const query = sql`/* listUserModNotes */
     SELECT n.id, n.created_at, n.target_user_id, n.author_user_id,
-      author_profile.username AS author_username,
-      author_profile.verified_display_name AS author_display_name,
+      (SELECT author.username FROM view_embedded_users author WHERE author.id = n.author_user_id)
+        AS author_username,
+      (SELECT author.verified_display_name FROM view_users_public author WHERE author.id = n.author_user_id)
+        AS author_display_name,
       n.community_id, community.name AS community_name, n.body, n.deleted_at
     FROM (
       SELECT id, created_at, target_user_id, author_user_id, community_id, body, deleted_at
@@ -47,12 +49,10 @@ export async function listUserModNotes(
     query.append(sql` AND id < ${beforeId}::uuid`)
   }
 
-  // The projection joins are keyed and can only decorate the selected notes.
   query.append(sql`
       ORDER BY target_user_id ASC, id DESC
       LIMIT ${limit + 1}
     ) n
-    LEFT JOIN view_users_public author_profile ON author_profile.id = n.author_user_id
     LEFT JOIN communities community ON community.id = n.community_id
     ORDER BY n.id DESC
   `)

@@ -143,8 +143,12 @@ async function runUserModNotes({ noteTargetId, noteIds, seededRows }: Fixture) {
   const name = 'listUserModNotes'
   registerScenarioContract(scenario, {
     seededRows,
-    // The custom plan can sort the target's live notes before taking the page.
-    expectations: [{ kind: 'maxProcessedRows', relation: 'user_moderator_notes', max: 224 }],
+    expectations: [
+      // The custom plan can sort the target's live notes before taking the page.
+      { kind: 'maxProcessedRows', relation: 'user_moderator_notes', max: 224 },
+      // One username probe and two probes through the public display-name view per selected note.
+      { kind: 'maxProcessedRows', relation: 'users', max: 3 * (pageSize + 1) },
+    ],
   })
   await runAndCapture(
     scenario,
