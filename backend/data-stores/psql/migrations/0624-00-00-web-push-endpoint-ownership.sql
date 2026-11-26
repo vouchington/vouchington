@@ -196,6 +196,7 @@ FOR EACH ROW WHEN (OLD.id IS DISTINCT FROM NEW.id)
 EXECUTE FUNCTION fn_project_retire_notification_push_intent();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Both capture paths reuse the keyed foreign-key check plan across recipients.
 CREATE OR REPLACE FUNCTION fn_project_capture_notification_push_intent() RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO notification_push_intents (user_id, notification_id, conversation_id)
@@ -203,7 +204,7 @@ BEGIN
   ON CONFLICT (user_id, notification_id) DO NOTHING;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET plan_cache_mode = force_generic_plan;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_notifications_capture_updated_push_intent
@@ -220,7 +221,7 @@ BEGIN
   ON CONFLICT (user_id, notification_id) DO NOTHING;
   RETURN NULL;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET plan_cache_mode = force_generic_plan;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_notifications_capture_inserted_push_intents
