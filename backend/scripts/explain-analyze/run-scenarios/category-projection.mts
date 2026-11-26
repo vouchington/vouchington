@@ -24,8 +24,8 @@ const cases = [
 ] as const
 
 export async function runCategoryProjectionScenarios(): Promise<void> {
-  const itemId = await seedCategoryProjection()
-  await runRssCategoryReconciliationPageScenarios()
+  const { itemId, pendingRows } = await seedCategoryProjection()
+  await runRssCategoryReconciliationPageScenarios(pendingRows)
   for (const [index, [queryName, state]] of cases.entries()) {
     const id = CATEGORY_PROJECTION_SCENARIO_IDS[index]!
     const sourceUnion = queryName === 'getRssFeedItemCategorySnapshotPage'

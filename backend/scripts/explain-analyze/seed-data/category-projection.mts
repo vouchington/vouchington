@@ -4,8 +4,14 @@ import { contentHash, seedUuid } from './common.mts'
 export const CATEGORY_PROJECTION_NOISE_ROWS = 1000
 export const CATEGORY_PROJECTION_TEXT = 'seed-completed-category-projection'
 
+export type CategoryProjectionPendingRow = {
+  rss_feed_item_id: string
+  change_id: string
+  updated_at: string
+}
+
 /** Seed only after ordinary captures: these pending rows belong to this point-write fixture. */
-export async function seedCategoryProjection(): Promise<string> {
+export async function seedCategoryProjection() {
   const { rows } = await write<{ id: string }>(
     `/* seedCategoryProjection:item */ SELECT id FROM rss_feed_item_guids
       WHERE url_hostname_id = $1::uuid AND guid = 'seed-item-guid-0'`,
@@ -47,12 +53,13 @@ export async function seedCategoryProjection(): Promise<string> {
       ON CONFLICT (rss_feed_item_id) DO NOTHING`,
     [CATEGORY_PROJECTION_NOISE_ROWS],
   )
-  await write(
+  const { rows: pendingRows } = await write<CategoryProjectionPendingRow>(
     `/* seedCategoryProjection:pending */
       INSERT INTO rss_feed_item_category_snapshot_reconciliations (rss_feed_item_id, categories)
       SELECT id, '[]'::jsonb FROM rss_feed_item_guids
       WHERE guid LIKE 'seed-item-guid-%' ORDER BY id LIMIT $1
-      ON CONFLICT (rss_feed_item_id) DO NOTHING`,
+      ON CONFLICT (rss_feed_item_id) DO NOTHING
+      RETURNING rss_feed_item_id, change_id, updated_at::text`,
     [CATEGORY_PROJECTION_NOISE_ROWS],
   )
   await write(
@@ -79,7 +86,7 @@ export async function seedCategoryProjection(): Promise<string> {
     rss_feed_item_source_category_snapshots,
     rss_feed_item_sources,
     rss_feeds`)
-  return itemId
+  return { itemId, pendingRows }
 }
 
 /** Restore exact captured identity so independent EXPLAIN replays touch a real pending row. */
