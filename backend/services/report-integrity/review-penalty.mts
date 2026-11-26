@@ -66,32 +66,34 @@ export async function reviewReportAbusePenalty(
   reviewedById: string,
 ): Promise<ReportAbusePenalty & IntegrityPenaltyLabels> {
   return runWithTransaction(undefined, async query => {
-    const { rows: dueRows } = await query<{ user_id: string; review_due_at: Date }>(sql`
-      /* reviewReportAbusePenalty_lockDue */
-      SELECT user_id, review_due_at FROM report_abuse_penalties
+    // Keep the deadline intact until RETURNING captures the value this confirmation replaces.
+    const { rows: dueRows } = await query<{ review_due_at: Date }>(sql`
+      /* reviewReportAbusePenalty.confirm */
+      UPDATE report_abuse_penalties
+      SET reviewed_at = CURRENT_TIMESTAMP, reviewed_by_id = ${reviewedById}
       WHERE id = ${penaltyId} AND revoked_at IS NULL
         AND review_due_at <= CURRENT_TIMESTAMP
-      FOR UPDATE
+      RETURNING review_due_at
     `)
     const due = dueRows[0]
     if (!due) throw createHttpError(404, 'Active report abuse penalty not found')
 
     const { rows } = await query<ReportAbusePenalty>(sql`/* reviewReportAbusePenalty */
       UPDATE report_abuse_penalties
-      SET reviewed_at = CURRENT_TIMESTAMP,
-          reviewed_by_id = ${reviewedById},
-          review_due_at = CURRENT_TIMESTAMP + interval '12 months'
-      WHERE id = ${penaltyId}
+      SET review_due_at = CURRENT_TIMESTAMP + interval '12 months'
+      WHERE id = ${penaltyId} AND revoked_at IS NULL
+        AND review_due_at <= CURRENT_TIMESTAMP
       RETURNING id, user_id, reason, source_flag_id, created_by_id, revoked_at,
         revoked_by_id, reviewed_at, reviewed_by_id, review_due_at, created_at, updated_at
     `)
-    const penalty = rows[0]!
+    const penalty = rows[0]
+    if (!penalty) throw createHttpError(404, 'Active report abuse penalty not found')
     await recordModeratorAction(
       reviewedById,
       {
         actionType: 'report_integrity_penalty_review',
         reportAbusePenaltyId: penaltyId,
-        targetUserId: due.user_id,
+        targetUserId: penalty.user_id,
         metadata: {
           before: { review_due_at: due.review_due_at.toISOString() },
           after: { review_due_at: penalty.review_due_at.toISOString() },

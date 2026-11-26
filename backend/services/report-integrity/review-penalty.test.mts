@@ -18,6 +18,7 @@ import {
 import { getReportAbusePenaltyReviewsDue, reviewReportAbusePenalty } from './review-penalty.mts'
 import { getReportAbusePenaltyByIdFromPrimary } from './get-penalties.mts'
 import { rejectPostgresWriteForTest } from '@voucha/test-helpers/injected-failures'
+import { commitRelationWriteDuringCompetingMutationForTest } from '@voucha/test-helpers/relation-write-interleaving'
 
 describe('report abuse penalty annual review', () => {
   it('uses the configured default and maximum for direct due-review reads', async () => {
@@ -139,6 +140,35 @@ describe('report abuse penalty annual review', () => {
     expect(afterTargetPurge).toHaveLength(2)
     expect(afterTargetPurge.map(action => action.report_abuse_penalty_id)).toEqual([null, null])
     expect(afterTargetPurge.map(action => action.target_user_id)).toEqual([target.id, target.id])
+  })
+
+  it('audits the deadline committed by a competing write', async () => {
+    const reviewer = await createTestUser()
+    const target = await createTestUser()
+    const penaltyId = await insertTestReportAbusePenalty({
+      userId: target.id,
+      createdById: reviewer.id,
+    })
+    await setTestReportAbusePenaltyReviewDueAt(penaltyId, new Date('2001-01-01T00:00:00.000Z'))
+    const competingDue = '2002-01-01T00:00:00.123456Z'
+
+    const reviewed = await commitRelationWriteDuringCompetingMutationForTest(
+      query => setTestReportAbusePenaltyReviewDueAt(penaltyId, competingDue, { query }),
+      'reviewReportAbusePenalty.confirm',
+      () => reviewReportAbusePenalty(penaltyId, reviewer.id),
+    )
+
+    const actions = await getModeratorActionRowsForTest({ targetUserId: target.id })
+    expect(
+      actions.filter(action => action.action_type === 'report_integrity_penalty_review'),
+    ).toEqual([
+      expect.objectContaining({
+        metadata: {
+          before: { review_due_at: new Date(competingDue).toISOString() },
+          after: { review_due_at: reviewed.review_due_at.toISOString() },
+        },
+      }),
+    ])
   })
 
   it('rolls back the confirmation when the audit action cannot be written', async () => {
