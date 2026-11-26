@@ -130,4 +130,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-staff-email-queue-at-cap',
   'copyright-dsa-recovery-first-page',
   'copyright-dsa-recovery-continuation',
+  'copyright-receipt-review-retirement-first-page',
+  'copyright-receipt-review-retirement-continuation',
 ] as const
