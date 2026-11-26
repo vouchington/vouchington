@@ -30,6 +30,7 @@ export async function lockReviewSuccessionCandidates(
     SELECT id FROM posts
     WHERE id = ANY($1::uuid[])
     ORDER BY id
+    -- lock-reason: prevents: archiving a predecessor using a concurrently withdrawn or retopiced successor; writer: post deletion, manual archive, clearance changes, and review topic edits.
     FOR UPDATE`,
     [candidateIds],
   )

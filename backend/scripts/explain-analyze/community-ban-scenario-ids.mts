@@ -9,4 +9,6 @@ export const COMMUNITY_BAN_SCENARIO_IDS = [
   'community-bans-lift-single',
   'community-bans-newest-active',
   'community-bans-history-summary',
+  'user-active-community-bans-at-cap',
+  'user-active-community-bans-continuation-at-cap',
 ] as const

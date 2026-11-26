@@ -14,29 +14,30 @@ export async function resetPostClearance(
 ): Promise<boolean> {
   const run = async (query: TransactionQuery): Promise<boolean> => {
     const { rowCount } = await query(
+      `/* resetPostClearance:advanceVersion */
+    UPDATE posts
+    SET clearance_version = clearance_version + 1
+    WHERE id = $1
+      AND (
+        approved_at IS NOT NULL
+        OR rejected_at IS NOT NULL
+        OR in_review_at IS NOT NULL
+        OR clearance_changed_at IS NOT NULL
+      )`,
+      [postId],
+    )
+    if (rowCount === 0) return false
+
+    // Append the receipt after the version write settles concurrent changes to this post.
+    await query(
       `/* resetPostClearance */
-    WITH reset_post AS (
-      SELECT id AS post_id
-      FROM posts
-      WHERE id = $1
-        AND (
-          approved_at IS NOT NULL
-          OR rejected_at IS NOT NULL
-          OR in_review_at IS NOT NULL
-          OR clearance_changed_at IS NOT NULL
-        )
-      -- lock-reason: prevents: recording duplicate clearance resets against the same prior state; writer: content edits and moderation clearance reset.
-      FOR UPDATE
-    ),
-    inserted_change AS (
+    WITH inserted_change AS (
       INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id)
-      SELECT post_id, 'reset_to_pending', $2
-      FROM reset_post
-      RETURNING id, post_id, created_at, changed_by_id
+      VALUES ($1, 'reset_to_pending', $2)
+      RETURNING post_id, created_at, changed_by_id
     )
     UPDATE posts
     SET
-      clearance_version = posts.clearance_version + 1,
       clearance_changed_at = inserted_change.created_at,
       clearance_changed_by_id = inserted_change.changed_by_id,
       clearance_public_reason_code = NULL,
@@ -48,14 +49,11 @@ export async function resetPostClearance(
     WHERE posts.id = inserted_change.post_id`,
       [postId, changedById ?? null],
     )
-    const changed = (rowCount ?? 0) > 0
-    if (changed) {
-      await recordPostPublicationChange(query, {
-        scope: { type: 'post', postId },
-        reason: 'post_clearance_changed',
-      })
-    }
-    return changed
+    await recordPostPublicationChange(query, {
+      scope: { type: 'post', postId },
+      reason: 'post_clearance_changed',
+    })
+    return true
   }
   const changed = await runInTransaction(options, run)
   if (changed && !options.query) await invalidate.posts(postId)
