@@ -4046,6 +4046,9 @@ importers:
         specifier: ^0.15.0
         version: 0.15.0
     devDependencies:
+      '@services/content-provenance':
+        specifier: workspace:^
+        version: link:../services/content-provenance
       '@services/notifications-push':
         specifier: workspace:^
         version: link:../services/notifications-push
