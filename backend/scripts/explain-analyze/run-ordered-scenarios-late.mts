@@ -23,6 +23,9 @@ import {
 import { runMediaDeliveryPopularImageScenario } from './run-scenarios/media-delivery-popular-image.mts'
 import { seedMediaDeliveryReplay } from './seed-data/media-delivery-replay.mts'
 import { runTopicAliasCategoryWorkScenarios } from './run-scenarios/topic-alias-category-work.mts'
+import { runCopyrightHoldRestoreRecoveryCapacityScenarios } from './run-scenarios/copyright-hold-restore-recovery.mts'
+import { runCopyrightFormReviewRecoveryScenarios } from './run-scenarios/copyright-form-review-recovery.mts'
+import { runCopyrightTrustedFlaggerCapacityScenarios } from './run-scenarios/copyright-trusted-flaggers.mts'
 import { runMembershipProviderRecoveryScenarios } from './run-scenarios/membership-provider-recovery.mts'
 import { runRetentionStagePageScenarios } from './run-scenarios/retention-stage-pages.mts'
 import { runStripeEventRecoveryScenario } from './run-scenarios/stripe-event-recovery.mts'
@@ -92,6 +95,9 @@ export const LATE_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightActionIntentRecoveryCapacityScenarios,
   runCopyrightDeliveryIntentRecoveryCapacityScenarios,
   runMembershipProviderRecoveryScenarios,
+  runCopyrightHoldRestoreRecoveryCapacityScenarios,
+  runCopyrightFormReviewRecoveryScenarios,
+  runCopyrightTrustedFlaggerCapacityScenarios,
   // The actor probes read the agent moderation and report context corpora seeded earlier in this
   // segment, so they stay in it, ahead of the hot publication fixtures.
   runFkActorIndexScenarios,
