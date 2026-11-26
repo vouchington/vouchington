@@ -153,4 +153,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'copyright-agent-dispatch-form-screening-continuation',
   'copyright-agent-dispatch-form-effect-first',
   'copyright-agent-dispatch-form-effect-continuation',
+  'copyright-unlinked-reply-edges-at-cap',
+  'copyright-unlinked-ancestor-edges-at-cap',
 ] as const

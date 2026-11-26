@@ -1,4 +1,5 @@
 import { runApplicationQuestions } from './run-scenarios/community-application-question-write.mts'
+import { runCopyrightEmailAncestorRetentionScenarios } from './run-scenarios/copyright-email-ancestor-retention.mts'
 import { runCopyrightAiRunRetentionCapacityScenario } from './run-scenarios/copyright-ai-run-retention-capacity.mts'
 import { runCopyrightExecutionRetentionScenarios } from './run-scenarios/copyright-execution-retention.mts'
 import { runCopyrightUnlinkedEmailRetentionScenario } from './run-scenarios/copyright-unlinked-email-retention.mts'
@@ -38,4 +39,5 @@ export const AFTER_COPYRIGHT_CAPACITY_RUNNERS: readonly (() => Promise<unknown>)
   runCopyrightReceiptReviewRetirementCapacity,
   runCopyrightRetainedEmailLookupScenarios,
   runCopyrightEmailFormDispatchCapacityScenarios,
+  runCopyrightEmailAncestorRetentionScenarios,
 ]

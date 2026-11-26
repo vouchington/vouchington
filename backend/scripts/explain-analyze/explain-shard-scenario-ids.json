@@ -834,6 +834,8 @@
     "topic-merge-relation-preflight-at-cap",
     "topic-merge-alias-move-tail-at-cap",
     "copyright-unlinked-email-recommendation-retention-at-cap",
-    "topic-merge-alias-snapshot-tail-at-cap"
+    "topic-merge-alias-snapshot-tail-at-cap",
+    "copyright-unlinked-reply-edges-at-cap",
+    "copyright-unlinked-ancestor-edges-at-cap"
   ]
 }
