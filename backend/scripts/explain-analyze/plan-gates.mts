@@ -11,6 +11,7 @@ import { executingPartitionLeaves } from './pruning/plan-gate.mts'
 import { getScenarioContract, type PlanExpectation } from './plan-expectations.mts'
 import { assertCustomPlanCheck } from './plan-custom-checks.mts'
 import { assertFunctionCallCap } from './plan-function-calls.mts'
+import { assertMaxInputRows } from './plan-max-input-rows.mts'
 import { assertMaxProcessedRows } from './plan-max-processed-rows.mts'
 import { assertUniversalPlanShape } from './plan-universal-shape.mts'
 export { assertScenarioFunctionCalls } from './plan-function-calls.mts'
@@ -60,28 +61,9 @@ function evaluateExpectation(
         )
       return
     }
-    case 'maxInputRows': {
-      if (
-        expectation.captureIndex !== undefined &&
-        result.capture_index !== expectation.captureIndex
-      )
-        return
-      const total =
-        expectation.nodeType === 'Sort'
-          ? nodes
-              .filter(
-                node => node['Node Type'] === 'Sort' || node['Node Type'] === 'Incremental Sort',
-              )
-              .reduce((sum, node) => sum + sortInputRows(result.name, node), 0)
-          : nodes
-              .filter(node => node['Node Type'] === expectation.nodeType)
-              .reduce((sum, node) => sum + processedRows(node), 0)
-      if (total > expectation.max)
-        throw new Error(
-          `${result.name} processed ${total} ${expectation.nodeType} input rows; expected at most ${expectation.max}`,
-        )
+    case 'maxInputRows':
+      assertMaxInputRows(result, nodes, expectation)
       return
-    }
     case 'noSeqScan': {
       if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
         return
@@ -156,15 +138,4 @@ function assertSingleLeaf(
     throw new Error(
       `${result.name} must constrain ${parent}${key ? `.${key}` : ''} and execute exactly one partition leaf; observed [${executed.join(', ')}]`,
     )
-}
-
-// A top-N sort can emit fewer rows than it reads. Count only rows delivered by its outer input.
-function sortInputRows(queryName: string, node: PlanNode): number {
-  if (node['Actual Loops'] === 0) return 0
-  const children = Array.isArray(node.Plans) ? (node.Plans as PlanNode[]) : []
-  const input = children.find(child => child['Parent Relationship'] === 'Outer')
-  const rows = Number(input?.['Actual Rows']) * Number(input?.['Actual Loops'])
-  if (!Number.isFinite(rows))
-    throw new Error(`${queryName} must expose measured rows for the outer input of each sort`)
-  return rows
 }
