@@ -1649,6 +1649,13 @@
 - `dismissed`
 - `penalized`
 
+## `report_judgement_backfill_targets`
+
+- `post`
+- `user`
+- `url_hostname`
+- `rss_feed_item`
+
 ## `reporting_rollup_kinds`
 
 - `growth`

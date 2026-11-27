@@ -1,39 +1,56 @@
-import { randomUUID } from 'node:crypto'
 import { describe, it, expect } from 'vitest'
-import {
-  createTestUser,
-  insertTestPost,
-  insertTestModerationReport,
-  readAllQueueJobs,
-} from '@voucha/test-helpers'
 import { ai_agents } from '@queues/ai-agents/queues'
 import type { ReportJudgementJobData } from '@queues/ai-agents/types'
-import { processBackfillReportJudgements } from './process-backfill-report-judgements.mts'
+import { moderationReportsWorkConfig } from '@services/moderation-reports/work-limits'
+import {
+  advanceJudgementBackfillCursor,
+  readJudgementBackfillCursor,
+} from '@services/moderation-reports/judgement-backfill-cursor'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { readAllQueueJobs } from '@voucha/test-helpers'
+import { withTestJudgementBackfillRun } from '@voucha/test-helpers/report-judgement-backfill-fixture'
+import { processAIAgent } from '../processors.mts'
+
+async function readFixtureJobs(postIds: readonly string[]) {
+  const jobs = await readAllQueueJobs(ai_agents)
+  return jobs
+    .flatMap(job => {
+      const data = job.data as ReportJudgementJobData
+      return job.name === 'report-judgement' && postIds.includes(data.entity_id)
+        ? [{ postId: data.entity_id, reportId: data.triggering_report_id }]
+        : []
+    })
+    .toSorted((left, right) => left.postId.localeCompare(right.postId))
+}
 
 describe('processBackfillReportJudgements', () => {
-  it('enqueues a report-judgement job for an entity missing a judgement', async () => {
-    const author = await createTestUser()
-    const reporter = await createTestUser()
-    const postId = await insertTestPost({
-      createdById: author.id,
-      slug: `proc-backfill-${randomUUID().slice(0, 8)}`,
-      title: `Proc Backfill Post ${randomUUID().slice(0, 8)}`,
-      markdown: 'body',
+  it('stops at the run cap and reads the persisted continuation on the next run', async () => {
+    const run = () =>
+      processAIAgent({
+        name: 'backfill_report_judgements',
+        data: {},
+      } as Parameters<typeof processAIAgent>[0])
+    const restore = overrideDynamicConfigFieldsForTest(moderationReportsWorkConfig, {
+      backfill_batch_size: 1,
+      backfill_max_batches_per_run: 2,
     })
-    await insertTestModerationReport({
-      reporterUserId: reporter.id,
-      entityType: 'post',
-      entityId: postId,
-    })
+    try {
+      await withTestJudgementBackfillRun(async (postIds, reportIds) => {
+        const startingCursor = await readJudgementBackfillCursor()
+        const expected = postIds.map((postId, index) => ({ postId, reportId: reportIds[index] }))
+        expect(await run()).toEqual({ enqueued: 2, hasMore: true })
+        expect(await readFixtureJobs(postIds)).toEqual(expected.slice(0, 2))
+        expect(await readJudgementBackfillCursor()).toMatchObject({
+          target_kind: 'post',
+          cursor_target_id: postIds[1],
+        })
+        expect(await advanceJudgementBackfillCursor(startingCursor, startingCursor)).toBe(false)
 
-    const result = await processBackfillReportJudgements()
-    expect(result.enqueued).toBeGreaterThanOrEqual(1)
-
-    const waiting = await readAllQueueJobs(ai_agents)
-    const found = waiting.find(
-      j => j.name === 'report-judgement' && (j.data as ReportJudgementJobData).entity_id === postId,
-    )
-    expect(found).toBeDefined()
-    expect((found!.data as ReportJudgementJobData).entity_type).toBe('post')
+        expect(await run()).toEqual({ enqueued: 2, hasMore: true })
+        expect(await readFixtureJobs(postIds)).toEqual(expected)
+      })
+    } finally {
+      restore()
+    }
   })
 })

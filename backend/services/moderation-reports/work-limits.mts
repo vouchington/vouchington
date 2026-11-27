@@ -4,6 +4,7 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 const defaultFields = {
   cluster_report_count_cap: 1000,
   backfill_batch_size: 500,
+  backfill_max_batches_per_run: 10,
   dispatch_batch_size: 200,
   dispatch_min_age_seconds: 120,
   dispatch_max_age_seconds: 1800,
@@ -14,6 +15,7 @@ const defaultFields = {
 export const moderationReportsWorkMaxValues = {
   cluster_report_count_cap: 10000,
   backfill_batch_size: 5000,
+  backfill_max_batches_per_run: 20,
   dispatch_batch_size: 2000,
   dispatch_min_age_seconds: 600,
   dispatch_max_age_seconds: 86400,
@@ -28,6 +30,7 @@ export const moderationReportsWorkConfig = new DynamicConfig({
   fieldTypes: {
     cluster_report_count_cap: 'number',
     backfill_batch_size: 'number',
+    backfill_max_batches_per_run: 'number',
     dispatch_batch_size: 'number',
     dispatch_min_age_seconds: 'number',
     dispatch_max_age_seconds: 'number',

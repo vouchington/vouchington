@@ -663,7 +663,7 @@
     "moderation-cluster-latest-judgements",
     "moderation-report-resolution-context",
     "moderation-undispatched-judgements-at-cap",
-    "moderation-missing-judgements-backfill-at-cap",
+    "moderation-judgement-backfill-continuation-at-cap",
     "moderation-case-writer-bulk-candidates",
     "moderation-case-writer-target",
     "moderation-cluster-writer-targets",

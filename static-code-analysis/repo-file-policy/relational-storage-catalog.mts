@@ -73,6 +73,9 @@ const ALLOWED_NONRELATION_UUID = new Set([
   // History checkpoints may outlive deletion of their raw candidate rows.
   'history_retention_cursors.cursor_id',
   'history_retention_cursors.sweep_cutoff_id',
+  // The backfill position can outlive its target. The frozen end is a UUIDv7 time bound.
+  'report_judgement_backfill_cursors.cursor_target_id',
+  'report_judgement_backfill_cursors.sweep_upper_bound_id',
   // Classifier keyset positions are traversal values and survive deletion of scanned cache rows.
   'classifier_retention_cursors.cursor_id',
   'classifier_retention_cursors.cursor_child_id',

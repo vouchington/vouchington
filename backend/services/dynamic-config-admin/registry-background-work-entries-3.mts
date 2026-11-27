@@ -28,7 +28,8 @@ export const backgroundWorkEntries3 = [
     minValues: { dispatch_max_age_seconds: MIN_DISPATCH_MAX_AGE_SECONDS },
     descriptions: {
       cluster_report_count_cap: 'Maximum reports counted per moderation report cluster.',
-      backfill_batch_size: 'Backfill batch size for moderation reports processing.',
+      backfill_batch_size: 'Reported targets inspected per judgement backfill batch.',
+      backfill_max_batches_per_run: 'Maximum batches inspected per judgement backfill run.',
       dispatch_batch_size: 'Dispatch batch size for moderation reports processing.',
       dispatch_min_age_seconds: 'Minimum age of judgements eligible for auto-dispatch.',
       dispatch_max_age_seconds: 'Maximum age of judgements eligible for auto-dispatch.',
