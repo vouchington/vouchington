@@ -61,6 +61,11 @@ function evaluateExpectation(
       return
     }
     case 'maxInputRows': {
+      if (
+        expectation.captureIndex !== undefined &&
+        result.capture_index !== expectation.captureIndex
+      )
+        return
       const total =
         expectation.nodeType === 'Sort'
           ? nodes

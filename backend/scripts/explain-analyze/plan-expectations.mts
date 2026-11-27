@@ -5,7 +5,7 @@ import { isKnownCustomPlanCheck } from './plan-custom-checks.mts'
 export type PlanExpectation =
   | { kind: 'maxProcessedRows'; relation: string; max: number; captureIndex?: number }
   | { kind: 'maxBitmapIndexRows'; max: number }
-  | { kind: 'maxInputRows'; nodeType: 'Sort' | 'Function Scan'; max: number }
+  | { kind: 'maxInputRows'; nodeType: 'Sort' | 'Function Scan'; max: number; captureIndex?: number }
   | {
       kind: 'usesIndexes'
       indexes: readonly string[]

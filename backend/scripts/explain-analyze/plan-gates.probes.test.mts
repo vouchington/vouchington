@@ -51,6 +51,34 @@ describe('EXPLAIN input row budgets', () => {
     )
   })
 
+  it('applies a sort budget only to its selected capture', async () => {
+    const { assertRequiredPlanShape, registerScenarioContract } = await loadGates()
+    const scenario = 'copyright-receipt-review-retirement-continuation'
+    registerScenarioContract(scenario, {
+      expectations: [
+        { kind: 'maxInputRows', nodeType: 'Sort', captureIndex: 0, max: 501 },
+        { kind: 'maxInputRows', nodeType: 'Sort', captureIndex: 1, max: 0 },
+      ],
+    })
+    const sort = (rows: number, capture_index: number) => ({
+      ...result(scenario, {
+        'Node Type': 'Sort',
+        Plans: [
+          {
+            'Node Type': 'Result',
+            'Parent Relationship': 'Outer',
+            'Actual Rows': rows,
+            'Actual Loops': 1,
+          },
+        ],
+      }),
+      capture_index,
+    })
+    expect(() => assertRequiredPlanShape(sort(501, 0))).not.toThrow()
+    expect(() => assertRequiredPlanShape(sort(502, 0))).toThrow('expected at most 501')
+    expect(() => assertRequiredPlanShape(sort(1, 1))).toThrow('expected at most 0')
+  })
+
   it('sums function scan input rows across loops and nodes', async () => {
     const { assertRequiredPlanShape, registerScenarioContract } = await loadGates()
     const scenario = 'rss-ingest-source-associations-at-cap'
