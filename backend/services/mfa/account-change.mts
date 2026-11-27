@@ -100,7 +100,6 @@ async function lockSessionsAccountChangeWillWrite(
          id = $2
          OR id IN (
            SELECT id
-           -- no-mistakes-disable-next-line postgres-required-predicates: a SID may be minted before its owning user, so every session-ID partition can hold an active session for this user
            FROM user_sessions
            WHERE user_id = $1
              AND revoked_at IS NULL

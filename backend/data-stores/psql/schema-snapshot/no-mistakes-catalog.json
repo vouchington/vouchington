@@ -81772,7 +81772,7 @@
         "idx_moderation_queue_claims__claimed_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderation_queue_claims__claimed_by_id ON public.moderation_queue_claims USING btree (claimed_by_id) WHERE (claimed_by_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_moderation_queue_claims__claimed_by_id ON public.moderation_queue_claims USING btree (claimed_by_id)",
           "immediate": true,
           "keys": [
             {
@@ -81786,7 +81786,7 @@
             }
           ],
           "live": true,
-          "predicate": "(claimed_by_id IS NOT NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -86000,29 +86000,6 @@
           ],
           "live": true,
           "predicate": "(hostname_crawler_configuration_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_moderator_actions__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderator_actions__id ON public.moderator_actions USING btree (id DESC)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -102688,7 +102665,7 @@
         "idx_posts__community_id__stable_hot_rank__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__community_id__stable_hot_rank__id ON ONLY public.posts USING btree (community_id, (\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((community_id IS NOT NULL) AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "definition": "CREATE INDEX idx_posts__community_id__stable_hot_rank__id ON ONLY public.posts USING btree (community_id, (\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((community_id IS NOT NULL) AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "immediate": true,
           "keys": [
             {
@@ -102704,7 +102681,7 @@
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
+              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
               "nullsFirst": true,
               "opclass": "pg_catalog.float8_ops",
               "orderingSupported": true
@@ -103250,14 +103227,14 @@
         "idx_posts__hacker_news_references__stable_hot_rank__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__hacker_news_references__stable_hot_rank__id ON ONLY public.posts USING btree ((\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "definition": "CREATE INDEX idx_posts__hacker_news_references__stable_hot_rank__id ON ONLY public.posts USING btree ((\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) WHERE (has_hacker_news_references AND (deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "immediate": true,
           "keys": [
             {
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
+              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
               "nullsFirst": true,
               "opclass": "pg_catalog.float8_ops",
               "orderingSupported": true
@@ -103465,7 +103442,7 @@
         "idx_posts__post_type__stable_hot_rank__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__post_type__stable_hot_rank__id ON ONLY public.posts USING btree (post_type, (\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "definition": "CREATE INDEX idx_posts__post_type__stable_hot_rank__id ON ONLY public.posts USING btree (post_type, (\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "immediate": true,
           "keys": [
             {
@@ -103481,7 +103458,7 @@
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
+              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
               "nullsFirst": true,
               "opclass": "pg_catalog.float8_ops",
               "orderingSupported": true
@@ -103698,14 +103675,14 @@
         "idx_posts__stable_hot_rank__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__stable_hot_rank__id ON ONLY public.posts USING btree ((\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "definition": "CREATE INDEX idx_posts__stable_hot_rank__id ON ONLY public.posts USING btree ((\nCASE\n    WHEN (votes_score_sort > (0)::double precision) THEN (ln(votes_score_sort) + (((EXTRACT(epoch FROM (uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone)) / 259200.0) * ln(2.0)))::double precision)\n    ELSE (- ('1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric)::double precision)\nEND) DESC, id DESC) INCLUDE (votes_score_sort) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "immediate": true,
           "keys": [
             {
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2026-01-01 00:00:00+00'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
+              "expression": "(\nCASE\n    WHEN votes_score_sort > 0::double precision THEN ln(votes_score_sort) + (EXTRACT(epoch FROM uuid_extract_timestamp(id) - '2025-12-31 16:00:00-08'::timestamp with time zone) / 259200.0 * ln(2.0))::double precision\n    ELSE - '1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'::numeric::double precision\nEND)",
               "nullsFirst": true,
               "opclass": "pg_catalog.float8_ops",
               "orderingSupported": true
@@ -104712,29 +104689,6 @@
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
-            {
-              "collation": null,
-              "column": "referral_program_topic_id",
-              "descending": false,
-              "expression": "referral_program_topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_referral_program_topic_link_validation_rule_sets__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_referral_program_topic_link_validation_rule_sets__topic_id ON public.referral_program_topic_link_validation_rule_sets USING btree (referral_program_topic_id)",
-          "immediate": true,
-          "keys": [
             {
               "collation": null,
               "column": "referral_program_topic_id",
@@ -157661,29 +157615,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_url_hostnames__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__topic_id ON public.url_hostnames USING btree (topic_id) WHERE (topic_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_url_hostnames__topic_id__votes_score_sort__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -158289,7 +158220,7 @@
         "idx_urls__hostname_feed_rank_latest_published_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_urls__hostname_feed_rank_latest_published_id ON public.urls USING btree (hostname_id, feed_rank, COALESCE(latest_published_at, '1970-01-01 00:00:00+00'::timestamp with time zone) DESC, id DESC)",
+          "definition": "CREATE INDEX idx_urls__hostname_feed_rank_latest_published_id ON public.urls USING btree (hostname_id, feed_rank, COALESCE(latest_published_at, '1969-12-31 16:00:00-08'::timestamp with time zone) DESC, id DESC)",
           "immediate": true,
           "keys": [
             {
@@ -158314,7 +158245,7 @@
               "collation": null,
               "column": null,
               "descending": true,
-              "expression": "COALESCE(latest_published_at, '1970-01-01 00:00:00+00'::timestamp with time zone)",
+              "expression": "COALESCE(latest_published_at, '1969-12-31 16:00:00-08'::timestamp with time zone)",
               "nullsFirst": true,
               "opclass": "pg_catalog.timestamptz_ops",
               "orderingSupported": true
@@ -168905,7 +168836,7 @@
         "idx_user_sessions__user_agent_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_sessions__user_agent_id ON ONLY public.user_sessions USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_user_sessions__user_agent_id ON ONLY public.user_sessions USING btree (user_agent_string_id)",
           "immediate": true,
           "keys": [
             {
@@ -168919,7 +168850,7 @@
             }
           ],
           "live": true,
-          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -168928,7 +168859,7 @@
         "idx_user_sessions__user_id__foreign_key": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_sessions__user_id__foreign_key ON ONLY public.user_sessions USING btree (user_id) WHERE (user_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_user_sessions__user_id__foreign_key ON ONLY public.user_sessions USING btree (user_id)",
           "immediate": true,
           "keys": [
             {
@@ -168942,7 +168873,7 @@
             }
           ],
           "live": true,
-          "predicate": "(user_id IS NOT NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -173197,29 +173128,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_vote_integrity_flags__post__category__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__post__category__topic_id ON public.vote_integrity_flags USING btree (relation__post__category__topic_id) WHERE (relation__post__category__topic_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__post__category__topic_id",
-              "descending": false,
-              "expression": "relation__post__category__topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__post__category__topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_vote_integrity_flags__post__related__post_flag_pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -173435,29 +173343,6 @@
           ],
           "live": true,
           "predicate": "(resolved_by_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_vote_integrity_flags__rss_feed_item__category__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__rss_feed_item__category__topic_id ON public.vote_integrity_flags USING btree (relation__rss_feed_item__category__topic_id) WHERE (relation__rss_feed_item__category__topic_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__rss_feed_item__category__topic_id",
-              "descending": false,
-              "expression": "relation__rss_feed_item__category__topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__rss_feed_item__category__topic_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -173902,29 +173787,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_vote_integrity_flags__topic__category__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__topic__category__topic_id ON public.vote_integrity_flags USING btree (relation__topic__category__topic_id) WHERE (relation__topic__category__topic_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__topic__category__topic_id",
-              "descending": false,
-              "expression": "relation__topic__category__topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__topic__category__topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_vote_integrity_flags__topic__faq__post_flag_pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -173955,29 +173817,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_vote_integrity_flags__topic__faq__post_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__topic__faq__post_id ON public.vote_integrity_flags USING btree (relation__topic__faq__post_id) WHERE (relation__topic__faq__post_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__topic__faq__post_id",
-              "descending": false,
-              "expression": "relation__topic__faq__post_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__topic__faq__post_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_vote_integrity_flags__topic__faq__url_flag_pending": {
@@ -174012,29 +173851,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_vote_integrity_flags__topic__faq__url_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__topic__faq__url_id ON public.vote_integrity_flags USING btree (relation__topic__faq__url_id) WHERE (relation__topic__faq__url_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__topic__faq__url_id",
-              "descending": false,
-              "expression": "relation__topic__faq__url_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__topic__faq__url_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_vote_integrity_flags__topic__guide__url_flag_pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -174065,29 +173881,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_vote_integrity_flags__topic__guide__url_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__topic__guide__url_id ON public.vote_integrity_flags USING btree (relation__topic__guide__url_id) WHERE (relation__topic__guide__url_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__topic__guide__url_id",
-              "descending": false,
-              "expression": "relation__topic__guide__url_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__topic__guide__url_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_vote_integrity_flags__topic__landing_page__url_flag_pending": {
@@ -174122,52 +173915,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_vote_integrity_flags__topic__landing_page__url_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__topic__landing_page__url_id ON public.vote_integrity_flags USING btree (relation__topic__landing_page__url_id) WHERE (relation__topic__landing_page__url_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__topic__landing_page__url_id",
-              "descending": false,
-              "expression": "relation__topic__landing_page__url_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__topic__landing_page__url_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_vote_integrity_flags__topic__publisher_type__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__topic__publisher_type__topic_id ON public.vote_integrity_flags USING btree (relation__topic__publisher_type__topic_id) WHERE (relation__topic__publisher_type__topic_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__topic__publisher_type__topic_id",
-              "descending": false,
-              "expression": "relation__topic__publisher_type__topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__topic__publisher_type__topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_vote_integrity_flags__topic__related__post_flag_pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -174198,29 +173945,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_vote_integrity_flags__topic__related__post_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__topic__related__post_id ON public.vote_integrity_flags USING btree (relation__topic__related__post_id) WHERE (relation__topic__related__post_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__topic__related__post_id",
-              "descending": false,
-              "expression": "relation__topic__related__post_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__topic__related__post_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_vote_integrity_flags__topic__related__topic_flag_pending": {
@@ -174255,29 +173979,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_vote_integrity_flags__topic__related__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__topic__related__topic_id ON public.vote_integrity_flags USING btree (relation__topic__related__topic_id) WHERE (relation__topic__related__topic_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__topic__related__topic_id",
-              "descending": false,
-              "expression": "relation__topic__related__topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__topic__related__topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_vote_integrity_flags__topic__related__url_flag_pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -174308,52 +174009,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_vote_integrity_flags__topic__related__url_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__topic__related__url_id ON public.vote_integrity_flags USING btree (relation__topic__related__url_id) WHERE (relation__topic__related__url_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__topic__related__url_id",
-              "descending": false,
-              "expression": "relation__topic__related__url_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__topic__related__url_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_vote_integrity_flags__topic__terms_of_service__url_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__topic__terms_of_service__url_id ON public.vote_integrity_flags USING btree (relation__topic__terms_of_service__url_id) WHERE (relation__topic__terms_of_service__url_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__topic__terms_of_service__url_id",
-              "descending": false,
-              "expression": "relation__topic__terms_of_service__url_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__topic__terms_of_service__url_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_vote_integrity_flags__topic_flag_pending": {
@@ -174441,29 +174096,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_vote_integrity_flags__user__category__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_vote_integrity_flags__user__category__topic_id ON public.vote_integrity_flags USING btree (relation__user__category__topic_id) WHERE (relation__user__category__topic_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "relation__user__category__topic_id",
-              "descending": false,
-              "expression": "relation__user__category__topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(relation__user__category__topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_vote_integrity_flags__user_cate_topi_page": {

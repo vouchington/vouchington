@@ -820,16 +820,6 @@ COMMENT ON COLUMN rss_feed_crawls.redirect_url_id IS 'The URL this crawl redirec
 -- 0360-00-00-rss-feed-source-management.sql
 -- ============================================================================
 
--- Allow multiple hostnames per topic by replacing the one-to-one unique index with a non-unique one.
--- Topics now support a primary hostname (topics.hostname_id) plus additional hostnames,
--- all tracked via url_hostnames.topic_id. The UNIQUE constraint allowed only one hostname
--- per topic; removing it enables the one-to-many relationship.
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_url_hostnames__topic_id
-ON url_hostnames (topic_id)
-WHERE topic_id IS NOT NULL;
-
 COMMENT ON COLUMN url_hostnames.topic_id IS
   'The topic that owns this hostname (primary or additional domain). Many hostnames may share the same topic_id; the primary is identified by topics.hostname_id.';
 

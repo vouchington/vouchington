@@ -45,7 +45,6 @@ export async function revokeAllAuthenticatedSessionsInTransaction(
   const result = await query(sql`/* revokeAllAuthenticatedSessions */
       WITH active AS MATERIALIZED (
         SELECT id
-        -- no-mistakes-disable-next-line postgres-required-predicates: a SID may be minted before its owning user, so every session-ID partition can hold an active session for this user
         FROM user_sessions
         WHERE user_id = ${currentUserId} AND revoked_at IS NULL
           AND expires_at > CURRENT_TIMESTAMP

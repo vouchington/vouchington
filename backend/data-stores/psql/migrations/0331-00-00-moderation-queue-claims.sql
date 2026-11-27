@@ -75,8 +75,7 @@ ALTER TABLE conversations VALIDATE CONSTRAINT fk_conversations_moderation_report
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__claimed_by_id
-  ON moderation_queue_claims (claimed_by_id)
-  WHERE claimed_by_id IS NOT NULL;
+  ON moderation_queue_claims (claimed_by_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__post_id

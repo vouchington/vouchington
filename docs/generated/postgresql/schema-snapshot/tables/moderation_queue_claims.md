@@ -35,7 +35,7 @@ _none_
 
 **Indexes:**
 
-- `idx_moderation_queue_claims__claimed_by_id`: `CREATE INDEX idx_moderation_queue_claims__claimed_by_id ON public.moderation_queue_claims USING btree (claimed_by_id) WHERE (claimed_by_id IS NOT NULL)`
+- `idx_moderation_queue_claims__claimed_by_id`: `CREATE INDEX idx_moderation_queue_claims__claimed_by_id ON public.moderation_queue_claims USING btree (claimed_by_id)`
 - `idx_moderation_queue_claims__community`: `CREATE INDEX idx_moderation_queue_claims__community ON public.moderation_queue_claims USING btree (community_id)`
 - `idx_moderation_queue_claims__post_id`: `CREATE INDEX idx_moderation_queue_claims__post_id ON public.moderation_queue_claims USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_moderation_queue_claims__report_id`: `CREATE INDEX idx_moderation_queue_claims__report_id ON public.moderation_queue_claims USING btree (report_id) WHERE (report_id IS NOT NULL)`
