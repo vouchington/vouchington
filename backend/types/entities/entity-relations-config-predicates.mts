@@ -1,6 +1,5 @@
 type EntityRelationPredicate = {
   description: string
-  order_index?: boolean
   election?: boolean
   is_bookmark?: boolean
   bidirectional?: boolean
@@ -9,7 +8,6 @@ type EntityRelationPredicate = {
 export const entityRelationPredicates: Record<string, EntityRelationPredicate> = {
   rewards_program_status: {
     description: '<object> is a rewards program status of <subject>',
-    order_index: true,
   },
   faq: {
     description: '<object> is an FAQ for <subject>',

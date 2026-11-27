@@ -10,7 +10,6 @@ export type EntityRelationMetadata = {
   object_type: EntityRelationEntityType
   predicate: EntityRelationPredicateType
   description: string
-  order_index: boolean
   election: boolean
   is_bookmark: boolean
   bidirectional: boolean
@@ -33,7 +32,6 @@ export const entityRelationMetadatum: EntityRelationMetadata[] = Object.keys(
         object_type: objectType as EntityRelationEntityType,
         predicate: predicate as EntityRelationPredicateType,
         description: entityRelationPredicates[predicate].description ?? '',
-        order_index: entityRelationPredicates[predicate].order_index ?? false,
         election: entityRelationPredicates[predicate].election ?? false,
         is_bookmark: entityRelationPredicates[predicate].is_bookmark ?? false,
         bidirectional: entityRelationPredicates[predicate].bidirectional ?? false,
