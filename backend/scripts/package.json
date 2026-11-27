@@ -158,6 +158,6 @@
     "@services/tag-limits": "workspace:^",
     "@vouchington/explain-plan": "^0.0.1",
     "husky": "^9.1.7",
-    "vouchington-tooling": "^3.10.0"
+    "vouchington-tooling": "^3.11.0"
   }
 }

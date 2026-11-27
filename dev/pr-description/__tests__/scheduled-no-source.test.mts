@@ -26,16 +26,21 @@ ${VALID_PROVENANCE_BLOCK}
 `
 
 describe('Voucha scheduled no-source policy', () => {
-  it('accepts the exact scheduled no-source representation', () => {
-    expect(
-      validatePrBody(VALID_SCHEDULED_NO_SOURCE_BODY, { policy: VOUCHA_PR_BODY_POLICY }),
-    ).toEqual({
-      advisories: [],
-      errors: [],
-      ok: true,
-      referencedIssues: [],
-    })
-  })
+  it.each(['Triage loop', 'pg-schema hourly check-in', 'A'])(
+    'accepts the scheduled no-source representation for %s',
+    name => {
+      expect(
+        validatePrBody(VALID_SCHEDULED_NO_SOURCE_BODY.replace('Triage loop', name), {
+          policy: VOUCHA_PR_BODY_POLICY,
+        }),
+      ).toEqual({
+        advisories: [],
+        errors: [],
+        ok: true,
+        referencedIssues: [],
+      })
+    },
+  )
 
   it.each([
     ['missing visible line', 'No source issue; scheduled prompt run.\n', ''],
@@ -43,7 +48,17 @@ describe('Voucha scheduled no-source policy', () => {
     [
       'partial workspace line',
       'Workspace setup: Triage loop scheduled prompt',
-      'Workspace setup: GitHub Actions scheduled prompt',
+      'Workspace setup: pg-schema hourly check-in',
+    ],
+    [
+      'blank prompt name',
+      'Workspace setup: Triage loop scheduled prompt',
+      'Workspace setup:    scheduled prompt',
+    ],
+    [
+      'non-standalone workspace line',
+      'Workspace setup: Triage loop scheduled prompt',
+      'Workspace setup: pg-schema scheduled prompt (manual)',
     ],
   ])('rejects scheduled no-source bodies with a %s', (_name, search, replacement) => {
     const result = validatePrBody(VALID_SCHEDULED_NO_SOURCE_BODY.replace(search, replacement), {
