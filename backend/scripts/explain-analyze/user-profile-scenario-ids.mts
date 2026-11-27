@@ -9,6 +9,7 @@ export const USER_PROFILE_SCENARIO_IDS = [
   'landing-page-create',
   'profile-link-reorder',
   'profile-links',
+  'profile-links-at-cap',
   'post-and-creator-bookmarks',
   'post-and-creator-bookmarks-at-cap',
 ] as const
