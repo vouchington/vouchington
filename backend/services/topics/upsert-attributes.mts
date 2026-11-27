@@ -5,15 +5,65 @@ import {
   type QueryOptions,
 } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
+import type { CurrencyCode } from '@ts-shared/money'
 import type pg from 'pg'
 
-type TopicAttributeTableName =
-  | 'card_topics'
-  | 'referral_program_topics'
-  | 'retailer_topics'
-  | 'rewards_program_status_topics'
-  | 'rewards_program_topics'
-  | 'spending_category_topics'
+export type TopicAttributeRowMap = {
+  card_topics: {
+    bank_topic_id: string | null
+    brand_topic_id: string | null
+    annual_fee_minor_units: string | null
+    currency_code: CurrencyCode | null
+  }
+  referral_program_topics: {
+    topic_id: string
+    company_topic_id: string | null
+    enabled_at: Date | null
+    disabled_at: Date | null
+    created_at: Date
+    updated_at: Date
+  }
+  retailer_topics: {
+    topic_id: string
+    created_at: Date
+    updated_at: Date
+  }
+  rewards_program_status_topics: {
+    topic_id: string
+    lifetime_version_id: string | null
+    order_index: number
+    created_at: Date
+    updated_at: Date
+  }
+  rewards_program_topics: {
+    topic_id: string
+    company_topic_id: string | null
+    created_at: Date
+    updated_at: Date
+  }
+  spending_category_topics: {
+    topic_id: string
+    is_foreign_transaction: boolean
+    default_spending_frequency: 'monthly' | 'annually'
+    created_at: Date
+    updated_at: Date
+  }
+}
+
+type TopicAttributeTableName = keyof TopicAttributeRowMap
+
+const TOPIC_ATTRIBUTE_RETURNING_COLUMNS: Record<TopicAttributeTableName, string> = {
+  card_topics:
+    'bank_topic_id, brand_topic_id, annual_fee_minor_units::TEXT AS annual_fee_minor_units, currency_code',
+  referral_program_topics:
+    'topic_id, company_topic_id, enabled_at, disabled_at, created_at, updated_at',
+  retailer_topics: 'topic_id, created_at, updated_at',
+  rewards_program_status_topics:
+    'topic_id, lifetime_version_id, order_index, created_at, updated_at',
+  rewards_program_topics: 'topic_id, company_topic_id, created_at, updated_at',
+  spending_category_topics:
+    'topic_id, is_foreign_transaction, default_spending_frequency, created_at, updated_at',
+}
 
 /**
  * Upserts topic attributes into a junction table using dynamic column building
@@ -24,17 +74,17 @@ type TopicAttributeTableName =
  * @param values - Array of values corresponding to the columns
  * @returns The upserted row or null if the operation fails
  */
-export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
-  tableName: TopicAttributeTableName,
+export async function upsertTopicAttributes<T extends TopicAttributeTableName>(
+  tableName: T,
   topicId: string,
   columns: string[],
   values: unknown[],
   options?: QueryOptions,
-): Promise<T | null> {
+): Promise<TopicAttributeRowMap[T] | null> {
   if (columns.length === 0) {
     // No columns to update, but we still want to ensure the row exists
     // Use a no-op update on conflict so RETURNING always yields a row.
-    return writeTopicAttributeRow<T>(
+    return writeTopicAttributeRow(
       options ?? {},
       tableName,
       '',
@@ -51,7 +101,7 @@ export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
   const updateSets = columns.map((col, i) => `${col} = $${i + 2}`).join(', ')
 
   // Build the upsert query
-  return writeTopicAttributeRow<T>(
+  return writeTopicAttributeRow(
     options ?? {},
     tableName,
     `, ${columns.join(', ')}`,
@@ -61,21 +111,27 @@ export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
   )
 }
 
-async function writeTopicAttributeRow<T extends pg.QueryResultRow>(
+async function writeTopicAttributeRow<T extends TopicAttributeTableName>(
   options: QueryOptions,
-  tableName: TopicAttributeTableName,
+  tableName: T,
   columns: string,
   values: string,
   updateSets: string,
   parameters: unknown[],
-): Promise<T | null> {
+): Promise<TopicAttributeRowMap[T] | null> {
+  const returningColumns = TOPIC_ATTRIBUTE_RETURNING_COLUMNS[tableName]
   const suffix = `(topic_id${columns})
     VALUES ($1${values})
     ON CONFLICT (topic_id) DO UPDATE
     SET ${updateSets}
-    RETURNING *`
+    RETURNING ${returningColumns}`
   const run = async (query: TransactionQuery) => {
-    const { rows } = await topicAttributeUpsertQuery<T>(query, tableName, suffix, parameters)
+    const { rows } = await topicAttributeUpsertQuery<TopicAttributeRowMap[T]>(
+      query,
+      tableName,
+      suffix,
+      parameters,
+    )
     return rows[0] ?? null
   }
   if (options.query || options.client) return withTransactionOptions(options, run)

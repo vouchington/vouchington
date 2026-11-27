@@ -5,7 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { Topic } from './types.mts'
 import { assertRewardsProgramStatusExists } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
-import { upsertTopicAttributes } from './upsert-attributes.mts'
+import { upsertTopicAttributes, type TopicAttributeRowMap } from './upsert-attributes.mts'
 
 type RewardsProgramStatusAttributes = {
   lifetime_version_id?: string | null
@@ -36,7 +36,7 @@ export async function updateRewardsProgramStatusAttributes(
   currentUser: PrivateUser | null,
   topic: Topic,
   attributes: RewardsProgramStatusAttributes,
-): Promise<RewardsProgramStatusAttributes | null> {
+): Promise<TopicAttributeRowMap['rewards_program_status_topics'] | null> {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
   assert(
@@ -82,10 +82,5 @@ export async function updateRewardsProgramStatusAttributes(
     values.push(attributes.order_index)
   }
 
-  return upsertTopicAttributes<RewardsProgramStatusAttributes>(
-    'rewards_program_status_topics',
-    topic.id,
-    columns,
-    values,
-  )
+  return upsertTopicAttributes('rewards_program_status_topics', topic.id, columns, values)
 }

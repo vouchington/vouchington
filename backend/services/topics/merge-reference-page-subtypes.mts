@@ -69,7 +69,7 @@ export async function createTopicMergeDestinationSubtype(
       : ''
   await query(
     `/* createTopicMergeDestinationSubtype */ WITH source AS MATERIALIZED (
-    SELECT * FROM ${table} WHERE topic_id = $1::uuid LIMIT 1
+    SELECT ${fields.join(', ')} FROM ${table} WHERE topic_id = $1::uuid LIMIT 1
   ) ${clearLifetime} INSERT INTO ${table} (${names.join(', ')})
     SELECT ${projection.join(', ')} FROM source
     ${clearLifetime ? 'WHERE (SELECT count(*) FROM cleared) >= 0' : ''}

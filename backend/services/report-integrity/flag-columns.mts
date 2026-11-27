@@ -1,3 +1,22 @@
+const FLAG_BASE_COLUMN_NAMES = [
+  'id',
+  'post_id',
+  'reported_user_id',
+  'hostname_id',
+  'rss_feed_item_id',
+  'flag_type',
+  'reporter_count',
+  'new_account_reporter_percent',
+  'details',
+  'resolved_at',
+  'resolved_by_id',
+  'resolution',
+  'created_at',
+] as const
+
+/** Unqualified columns for `INSERT INTO report_integrity_flags ... RETURNING`. */
+export const FLAG_RETURNING_COLUMNS = FLAG_BASE_COLUMN_NAMES.join(', ')
+
 /**
  * Column list for reading a flag out of `flag`, a table or CTE with the flag columns. The
  * reporter set is stored in `reporters`, a relation of `(flag_id, user_id)` rows;
@@ -22,20 +41,9 @@ export const FLAG_SUMMARY_COLUMNS_WITH_HOSTNAME = `${flagSummaryColumns(
   (SELECT hostname FROM url_hostnames WHERE id = report_integrity_flags.hostname_id) AS hostname`
 
 function flagSummaryColumns(flag: string, details: string): string {
-  return `
-  ${flag}.id,
-  ${flag}.post_id,
-  ${flag}.reported_user_id,
-  ${flag}.hostname_id,
-  ${flag}.rss_feed_item_id,
-  ${flag}.flag_type,
-  ${flag}.reporter_count,
-  ${flag}.new_account_reporter_percent,
-  ${details} AS details,
-  ${flag}.resolved_at,
-  ${flag}.resolved_by_id,
-  ${flag}.resolution,
-  ${flag}.created_at`
+  return `\n  ${FLAG_BASE_COLUMN_NAMES.map(column =>
+    column === 'details' ? `${details} AS details` : `${flag}.${column}`,
+  ).join(',\n  ')}`
 }
 
 /** Columns for `SELECT ... FROM report_integrity_flags` and `UPDATE ... RETURNING`. */

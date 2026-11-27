@@ -4,17 +4,37 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
 import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 
+const BASE_RELATION_RETURNING_COLUMNS = [
+  'subject_id',
+  'object_id',
+  'created_by_id',
+  'created_at',
+  'deleted_at',
+  'deleted_by_id',
+] as const
+
+type RelationReturningColumn =
+  | (typeof BASE_RELATION_RETURNING_COLUMNS)[number]
+  | 'id'
+  | 'outbound_activitypub_follow_activity_id'
+
 function buildRelationColumns(relation: EntityRelationMetadata): {
   columns: string[]
   primaryKeyColumns: string[]
+  returningColumns: RelationReturningColumn[]
 } {
   const primaryKeyColumns: string[] = ['subject_id', 'object_id']
   const columns: string[] = [...primaryKeyColumns, 'created_by_id']
+  const returningColumns: RelationReturningColumn[] = [...BASE_RELATION_RETURNING_COLUMNS]
+  if (relation.election) {
+    returningColumns.push('id')
+  }
   if (isUserFollowRelation(relation)) {
     columns.push('outbound_activitypub_follow_activity_id')
+    returningColumns.push('outbound_activitypub_follow_activity_id')
   }
 
-  return { columns, primaryKeyColumns }
+  return { columns, primaryKeyColumns, returningColumns }
 }
 
 export function buildInsertQuery(
@@ -41,7 +61,7 @@ export function buildInsertBody(
   options?: UpsertEntityRelationsOptions,
 ): SQLStatement {
   if (pairs.length === 0) throw new Error('buildInsertQuery requires at least one pair')
-  const { columns, primaryKeyColumns } = buildRelationColumns(relation)
+  const { columns, primaryKeyColumns, returningColumns } = buildRelationColumns(relation)
   const subjectIds = pairs.map(({ subject }) => subject.id)
   const objectIds = pairs.map(({ object }) => object.id)
   const table = relation.table_name
@@ -135,9 +155,13 @@ export function buildInsertBody(
     query.append(sql`.deleted_at IS NULL`)
   }
   query.append(sql`
-	      RETURNING *
+	      RETURNING `)
+  query.append(returningColumns.join(', '))
+  query.append(sql`
 	    )
-    SELECT upserted.*, (existing.subject_id IS NULL OR existing.deleted_at IS NOT NULL) AS newly_active
+    SELECT `)
+  query.append(returningColumns.map(column => `upserted.${column}`).join(', '))
+  query.append(sql`, (existing.subject_id IS NULL OR existing.deleted_at IS NOT NULL) AS newly_active
     FROM upserted
     JOIN input
       ON input.subject_id = upserted.subject_id AND input.object_id = upserted.object_id

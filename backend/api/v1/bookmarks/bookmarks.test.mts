@@ -210,6 +210,9 @@ describe('bookmarks', () => {
 
         expect(response.body.bookmark).toBeDefined()
         expect(response.body.bookmark).not.toHaveProperty('outbound_activitypub_follow_activity_id')
+        expect(response.body.bookmark).not.toHaveProperty(
+          'outbound_activitypub_distributed_activity_id',
+        )
 
         const getResponse = await request.get(`/api/v1/bookmarks/user/${targetUser.id}`).expect(200)
         expect(getResponse.body.bookmarks.follow).toBe(true)

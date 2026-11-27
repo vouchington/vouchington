@@ -43,3 +43,8 @@ const communityColumnNames = Object.keys({
 export function communityColumns(alias: string): string {
   return communityColumnNames.map(column => `${alias}.${column}`).join(', ')
 }
+
+/** Unqualified response-facing `communities` columns, for `UPDATE ... RETURNING`. */
+export function communityReturningColumns(): string {
+  return communityColumnNames.join(', ')
+}
