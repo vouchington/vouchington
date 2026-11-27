@@ -6,6 +6,7 @@ import {
   reportTargetJoinsSql,
 } from '@services/moderation-reports/target-metadata'
 import type { ModerationReportStatus } from '@services/moderation-reports/config'
+import { postReportEnrichmentJoinsSql } from '@services/moderation-reports/post-report-enrichment-sql'
 import { appendModerationReportStatusPredicate } from '@services/moderation-reports/sort-sql'
 import { reportAutomaticJudgementEnabledSql } from '@services/moderation-reports/automatic-judgement-eligibility'
 import type { CommunityModerationQueuePage } from './moderation-queue-cursor.mts'
@@ -72,25 +73,8 @@ export function buildCommunityReportQueueQuery(
   reportQuery.append(sql`
     LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = r.reporter_user_id
     LEFT JOIN view_users_public resolver_profile ON resolver_profile.id = r.resolved_by_id
-    LEFT JOIN LATERAL (
-      SELECT COUNT(DISTINCT rc.reporter_user_id)::integer AS report_count
-      FROM moderation_reports rc
-      -- One target FK per row. Keep all four keyed comparisons for shared UUIDs.
-      WHERE (rc.post_id = r.post_id OR rc.reported_user_id = r.post_id
-          OR rc.hostname_id = r.post_id OR rc.rss_feed_item_id = r.post_id)
-        AND `)
-  appendModerationReportStatusPredicate(reportQuery, 'rc', status)
-  reportQuery.append(sql`
-    ) report_counts ON true
-    LEFT JOIN LATERAL (
-      SELECT mj.recommended_action
-      FROM moderation_report_judgements mj
-      WHERE (mj.post_id = r.post_id OR mj.reported_user_id = r.post_id
-          OR mj.hostname_id = r.post_id OR mj.rss_feed_item_id = r.post_id)
-      ORDER BY mj.id DESC
-      LIMIT 1
-    ) latest_judgement ON true
   `)
+  reportQuery.append(postReportEnrichmentJoinsSql({ status, countMode: 'distinct_reporters' }))
   return reportQuery
 }
 
