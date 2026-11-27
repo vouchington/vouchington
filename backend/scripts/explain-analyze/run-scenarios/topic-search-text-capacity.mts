@@ -63,7 +63,12 @@ export async function runTopicTextSearchCapacityScenario(): Promise<void> {
     await write('/* analyzeTopicTextSearchCapacity */ ANALYZE topics')
 
     registerScenarioContract(scenario, {
-      expectations: [{ kind: 'queryBinds', token: 'LIMIT' }],
+      expectations: [
+        { kind: 'queryBinds', token: 'LIMIT' },
+        // Hosted plans scan 12,134 topic rows per page in both modes.
+        // https://github.com/vouchington/vouchington/issues/6374#issuecomment-7187154165
+        { kind: 'maxProcessedRows', relation: 'topics', max: 12_200 },
+      ],
       seededRows: { topics: (SEEDED_ROWS_BY_RELATION.topics ?? 0) + records.length },
     })
 
