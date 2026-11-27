@@ -4,7 +4,7 @@ import { LAST_SIGN_IN_METHOD_REMOVAL_FORBIDDEN } from '@modules/on-error/error-c
 import { getConfiguredOAuthProviders } from './configuration.mts'
 import { providerTableConfigs } from './providers.mts'
 
-/** Serialize removals and count only live, supported first factors. Enrollment alone is not proof. */
+/** Count only live, supported first factors. Enrollment alone is not proof. */
 export async function assertUserHasSignInMethod(
   currentUserId: string,
   query: TransactionQuery,
@@ -14,9 +14,6 @@ export async function assertUserHasSignInMethod(
     '/* assertUserHasSignInMethod:userFence */ SELECT fn_lock_active_user_for_mutation($1)',
     [currentUserId],
   )
-  await query('/* assertUserHasSignInMethod:lockUser */ SELECT id FROM users WHERE id = $1', [
-    currentUserId,
-  ])
   const checks = [
     'SELECT 1 FROM user_email_addresses WHERE user_id = $1',
     ...getConfiguredOAuthProviders().map(
