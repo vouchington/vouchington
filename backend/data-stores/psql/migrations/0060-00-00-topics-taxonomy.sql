@@ -381,15 +381,17 @@ WHERE (
 );
 
 -- GiST trigram indexes keep selective ILIKE '%query%' searches index-served in both plan modes.
+-- Text search only reads active topics. Including merged sources here would also let exact-slug
+-- reference lookups choose GiST and recheck thousands of candidates per input.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__name_trgm
 ON topics USING GiST (name gist_trgm_ops)
-WHERE deleted_at IS NULL;
+WHERE deleted_at IS NULL AND merged_into_topic_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__slug_trgm
 ON topics USING GiST (slug gist_trgm_ops)
-WHERE deleted_at IS NULL;
+WHERE deleted_at IS NULL AND merged_into_topic_id IS NULL;
 
 -- find topics pending language detection
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

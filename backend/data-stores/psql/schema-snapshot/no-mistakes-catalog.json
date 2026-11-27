@@ -155089,7 +155089,7 @@
         "idx_topics__name_trgm": {
           "accessMethod": "gist",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__name_trgm ON public.topics USING gist (name gist_trgm_ops) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_topics__name_trgm ON public.topics USING gist (name gist_trgm_ops) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -155103,7 +155103,7 @@
             }
           ],
           "live": true,
-          "predicate": "(deleted_at IS NULL)",
+          "predicate": "((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -155245,7 +155245,7 @@
         "idx_topics__slug_trgm": {
           "accessMethod": "gist",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__slug_trgm ON public.topics USING gist (slug gist_trgm_ops) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_topics__slug_trgm ON public.topics USING gist (slug gist_trgm_ops) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -155259,7 +155259,7 @@
             }
           ],
           "live": true,
-          "predicate": "(deleted_at IS NULL)",
+          "predicate": "((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
