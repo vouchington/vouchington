@@ -1,6 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { ensureCurrentPostModerationVersion } from '@services/post-clearance/moderation-ledger-versions'
-import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { seedUuid } from '../seed-data/common.mts'
 import { seedPostId, seedUser } from '../run-support.mts'
 

@@ -35,6 +35,7 @@
     "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/users": "workspace:^",
+    "@voucha/types": "workspace:^",
     "@vouchington/utils": "^0.13.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",

@@ -1,4 +1,5 @@
 import { write } from '@data-stores/psql'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import sql from 'sql-template-strings'
 import { acquireTestPostgresAdvisoryLock } from '../postgres-advisory-lock.mts'
 
@@ -21,7 +22,7 @@ export async function recordTestPostModerationDisposition(input: {
       SELECT id, llm_moderation_content_sha256 FROM posts WHERE id = ${input.postId}
     ), version AS (
       INSERT INTO post_moderation_versions (post_id, content_sha256, policy_revision)
-      SELECT id, llm_moderation_content_sha256, '2026-09-09.1' FROM current_post
+      SELECT id, llm_moderation_content_sha256, ${POST_MODERATION_POLICY_REVISION} FROM current_post
       ON CONFLICT (post_id, content_sha256, policy_revision) DO UPDATE SET post_id = EXCLUDED.post_id
       RETURNING id
     )

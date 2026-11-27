@@ -1,4 +1,5 @@
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { seedTopicId, seedUser } from '../run-support.mts'
 import { contentHash, postSeedTimestampMs, seedUuidAtTimestamp } from './common.mts'
 
@@ -7,7 +8,6 @@ export const REPORT_POST_PAGE_CAP = 100
 const OTHER_POSTS = 800
 export const SIDECAR_HASH = contentHash('mod-report-sidecars-current')
 const OLD_HASH = contentHash('mod-report-sidecars-previous')
-const POLICY_REVISION = '2026-09-09.1'
 
 type ModeratorFixture = {
   agent_id: string
@@ -40,7 +40,7 @@ async function seedPostDispositions(query: TransactionQuery, postIds: string[]) 
           '{"signals":[{"signal":"embeddings_similarity","flagged":true}]}'::jsonb
         ELSE '{}'::jsonb END
     FROM versions CROSS JOIN unnest(ARRAY['openai_omni','spam_detection']) AS sources(source)`,
-    [postIds, SIDECAR_HASH, OLD_HASH, POLICY_REVISION],
+    [postIds, SIDECAR_HASH, OLD_HASH, POST_MODERATION_POLICY_REVISION],
   )
 }
 
@@ -125,7 +125,7 @@ async function countReportPostSidecarCandidates() {
         JOIN agents agent ON agent.system_user_id = relation.created_by_id
         JOIN moderator_agents mod ON mod.agent_id = agent.id) AS tag_rows,
       (SELECT count(*)::int FROM vote_integrity_flags WHERE resolved_at IS NULL) AS pending_flags`,
-    [POLICY_REVISION],
+    [POST_MODERATION_POLICY_REVISION],
   )
   return counts!
 }

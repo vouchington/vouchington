@@ -15,7 +15,7 @@ import {
   countCapturedQueriesByAnnotation,
   withCapturedTestQueries,
 } from '@voucha/test-helpers/query-capture'
-import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
 

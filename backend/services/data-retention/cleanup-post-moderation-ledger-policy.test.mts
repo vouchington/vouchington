@@ -22,7 +22,7 @@ import {
   setPostModerationRetentionPolicyCursor,
 } from '@voucha/test-helpers/post-moderation-retention-continuation'
 import { deleteTestPostRow } from '@voucha/test-helpers/publication-test-queries'
-import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { processPostModerationCandidatePage } from './cleanup-post-moderation-ledger-candidates.mts'
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
 import { reconsiderChangedPostModerationPost } from './cleanup-post-moderation-ledger-hash-work.mts'

@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import sql from 'sql-template-strings'
 
 export async function getTestPostClearanceState(postId: string): Promise<
@@ -26,7 +27,7 @@ export async function getTestPostClearanceState(postId: string): Promise<
       LEFT JOIN post_moderation_versions version
         ON version.post_id = post.id
        AND version.content_sha256 = post.llm_moderation_content_sha256
-       AND version.policy_revision = '2026-09-09.1'
+       AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
       LEFT JOIN LATERAL (
         SELECT disposition
         FROM post_moderation_dispositions

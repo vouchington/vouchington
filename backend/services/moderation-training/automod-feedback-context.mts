@@ -1,5 +1,6 @@
 import sql from 'sql-template-strings'
 import type { QueryExecutor } from '@data-stores/psql/types'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 
 export async function getAutomodFeedbackContext(
   communityId: string,
@@ -68,7 +69,7 @@ export async function getAutomodFeedbackContext(
     JOIN post_moderation_versions version
       ON version.post_id = p.id
      AND version.content_sha256 = p.llm_moderation_content_sha256
-     AND version.policy_revision = '2026-09-09.1'
+     AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
     JOIN LATERAL (
       SELECT 1
       FROM (

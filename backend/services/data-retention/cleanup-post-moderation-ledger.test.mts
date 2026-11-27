@@ -13,7 +13,7 @@ import {
   setPostLLMModerationContentSha256,
 } from '@voucha/test-helpers'
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
-import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { revertPostDuringTestModerationRetention } from '@voucha/test-helpers/post-moderation-retention-lock'
 import { getTestPostModerationVersionMarkers } from '@voucha/test-helpers/post-moderation-retention-progress'
 

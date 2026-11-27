@@ -1,8 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import {
-  POST_MODERATION_POLICY_REVISION,
-  type PostModerationVersion,
-} from './moderation-ledger-types.mts'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
+import type { PostModerationVersion } from './moderation-ledger-types.mts'
 
 type CapturedPostVersionKey = {
   post_id: string

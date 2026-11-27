@@ -1,5 +1,5 @@
 import type { QueryExecutor } from '@data-stores/psql'
-import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000'
 

@@ -1,4 +1,5 @@
 import sql from 'sql-template-strings'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 
 export function clearanceRejectionAutomodBranch(communityId: string, windowHours: number) {
   return clearanceRejectionSelect().append(clearanceRejectionFrom(communityId, windowHours))
@@ -37,7 +38,7 @@ function clearanceRejectionFrom(communityId: string, windowHours: number) {
       JOIN post_moderation_versions version
         ON version.post_id = p.id
        AND version.content_sha256 = p.llm_moderation_content_sha256
-       AND version.policy_revision = '2026-09-09.1'
+       AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
       JOIN LATERAL (
         SELECT evidence
         FROM (
@@ -101,7 +102,7 @@ function spamDetectionFrom(communityId: string, windowHours: number) {
       JOIN post_moderation_versions version
         ON version.post_id = p.id
        AND version.content_sha256 = p.llm_moderation_content_sha256
-       AND version.policy_revision = '2026-09-09.1'
+       AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
       JOIN LATERAL (
         SELECT evidence
         FROM (

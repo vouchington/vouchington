@@ -1,6 +1,7 @@
 import sql from 'sql-template-strings'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { recordPostPublicationChange } from '@services/post-publication'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { getAutomodFeedbackContext } from './automod-feedback-context.mts'
 import { parseAutomodActionSourceKey } from './recent-actions.mts'
 import type { RecordAutomodActionFeedbackInput } from './automod-feedback-input.mts'
@@ -41,7 +42,7 @@ export async function applyAutomodKeepRemoved(
               ) latest ON latest.disposition IN ('review', 'reject')
               WHERE version.post_id = p.id
                 AND version.content_sha256 = p.llm_moderation_content_sha256
-                AND version.policy_revision = '2026-09-09.1'
+                AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
             ), '{}'::moderation_transparency_categories[])
           FROM posts p
           WHERE p.id = ${context.post_id}

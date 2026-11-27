@@ -1,10 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { createLocalTestUser } from '../../../../test-helpers/data-stores/psql/users.mts'
 import {
   completeLocalTestImagePlacementDeliveryRecord,
   insertLocalTestPost,
   queryLocalTestPostImageIds,
   queryLocalTestPostOpenAIModerationFlag,
+  queryLocalTestViewPostsDefinition,
   recordLocalTestPostOpenAIModerationDisposition,
 } from '../../../../test-helpers/data-stores/psql/posts.mts'
 import {
@@ -35,6 +37,17 @@ describe('view_posts moderation projection', () => {
 
     await recordLocalTestPostOpenAIModerationDisposition(postId, 'pass')
     expect(await queryLocalTestPostOpenAIModerationFlag(postId)).toBe(false)
+  })
+
+  it('filters view_posts moderation lookup with POST_MODERATION_POLICY_REVISION', async () => {
+    const definition = await queryLocalTestViewPostsDefinition()
+    const matches = [
+      ...definition.matchAll(
+        /ROW\(\s*posts\.id,\s*posts\.llm_moderation_content_sha256,\s*'([^']+)'::text\s*\)::post_moderation_version_keys/g,
+      ),
+    ]
+    expect(matches).toHaveLength(1)
+    expect(matches[0]?.[1]).toBe(POST_MODERATION_POLICY_REVISION)
   })
 
   it('projects post images only after their exact delivery tuple completes while image safety passes', async () => {
