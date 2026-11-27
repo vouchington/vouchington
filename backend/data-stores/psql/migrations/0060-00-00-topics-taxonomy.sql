@@ -380,16 +380,15 @@ WHERE (
   OR (bedrock_nova_multimodal_v1_input_sha256 != bedrock_nova_multimodal_v1_content_sha256)
 );
 
--- GIN trigram indexes to support ILIKE '%query%' substring searches
--- (text_pattern_ops B-tree indexes only help prefix matches; pg_trgm is installed)
+-- GiST trigram indexes keep selective ILIKE '%query%' searches index-served in both plan modes.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__name_trgm
-ON topics USING GIN (name gin_trgm_ops)
+ON topics USING GiST (name gist_trgm_ops)
 WHERE deleted_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__slug_trgm
-ON topics USING GIN (slug gin_trgm_ops)
+ON topics USING GiST (slug gist_trgm_ops)
 WHERE deleted_at IS NULL;
 
 -- find topics pending language detection
