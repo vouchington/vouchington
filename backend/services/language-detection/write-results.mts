@@ -167,10 +167,6 @@ async function executeLanguageDetectionUpdate(
         RETURNING t.id`)
       return updated.map(r => r.id)
     }
-    default: {
-      const _exhaustive: never = batch
-      throw new Error(`Unknown language detection table: ${String(_exhaustive)}`)
-    }
   }
 }
 
@@ -190,9 +186,5 @@ async function invalidateLanguageDetectionCaches(
     case 'crawls':
     case 'communities':
       return undefined
-    default: {
-      const _exhaustive: never = table
-      throw new Error(`Unknown language detection table: ${String(_exhaustive)}`)
-    }
   }
 }

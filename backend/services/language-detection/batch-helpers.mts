@@ -156,9 +156,5 @@ async function buildWriteBatch(
             })),
           }
     }
-    default: {
-      const _exhaustive: never = batch
-      throw new Error(`Unknown language detection table: ${String(_exhaustive)}`)
-    }
   }
 }
