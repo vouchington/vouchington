@@ -34,7 +34,7 @@ export type LanguageDetectionBatch =
 
 async function detectPendingRows<Row extends BatchRowBase>(
   rows: readonly Row[],
-): Promise<Array<{ row: Row; fields: DetectedWriteFields }>> {
+): Promise<Array<Omit<Row, keyof DetectedWriteFields> & DetectedWriteFields>> {
   // Use the declared language in the key so changing a declared language triggers re-detection
   // even when text hasn't changed — matches the single-entity computeDetectionKey convention.
   const pending: Array<{ row: Row; normalizedLanguage: string | null; inputSha256: Buffer }> = []
@@ -53,8 +53,8 @@ async function detectPendingRows<Row extends BatchRowBase>(
   }))
   const outputs = await runDetectionMany(inputs)
   return pending.map(({ row, inputSha256 }, i) => ({
-    row,
-    fields: toDetectedWriteFields(row.id, inputSha256, outputs[i]!),
+    ...row,
+    ...toDetectedWriteFields(row.id, inputSha256, outputs[i]!),
   }))
 }
 
@@ -79,82 +79,35 @@ export async function runBatch(batch: LanguageDetectionBatch): Promise<{ updated
   return { updated: updatedIds.length }
 }
 
+async function detectTableBatch<
+  Table extends LanguageDetectionBatch['table'],
+  Row extends BatchRowBase,
+>(
+  table: Table,
+  rows: readonly Row[],
+): Promise<{
+  table: Table
+  rows: Array<Omit<Row, keyof DetectedWriteFields> & DetectedWriteFields>
+} | null> {
+  const detected = await detectPendingRows(rows)
+  return detected.length === 0 ? null : { table, rows: detected }
+}
+
 async function buildWriteBatch(
   batch: LanguageDetectionBatch,
 ): Promise<LanguageDetectionWriteBatch | null> {
   switch (batch.table) {
-    case 'posts': {
-      const detected = await detectPendingRows(batch.rows)
-      return detected.length === 0
-        ? null
-        : {
-            table: 'posts',
-            rows: detected.map(({ row, fields }) => ({
-              ...fields,
-              title: row.title,
-              markdown: row.markdown,
-              declaredLanguage: row.declaredLanguage,
-            })),
-          }
-    }
-    case 'rss_feed_items': {
-      const detected = await detectPendingRows(batch.rows)
-      return detected.length === 0
-        ? null
-        : {
-            table: 'rss_feed_items',
-            rows: detected.map(({ row, fields }) => ({ ...fields, data: row.data })),
-          }
-    }
-    case 'crawls': {
-      const detected = await detectPendingRows(batch.rows)
-      return detected.length === 0
-        ? null
-        : {
-            table: 'crawls',
-            rows: detected.map(({ row, fields }) => ({
-              ...fields,
-              title: row.title,
-              markdown: row.markdown,
-              language: row.language,
-            })),
-          }
-    }
-    case 'communities': {
-      const detected = await detectPendingRows(batch.rows)
-      return detected.length === 0
-        ? null
-        : {
-            table: 'communities',
-            rows: detected.map(({ row, fields }) => ({
-              ...fields,
-              name: row.name,
-              markdown: row.markdown,
-              defaultLanguage: row.defaultLanguage,
-            })),
-          }
-    }
-    case 'users': {
-      const detected = await detectPendingRows(batch.rows)
-      return detected.length === 0
-        ? null
-        : {
-            table: 'users',
-            rows: detected.map(({ row, fields }) => ({ ...fields, markdown: row.markdown })),
-          }
-    }
-    case 'topics': {
-      const detected = await detectPendingRows(batch.rows)
-      return detected.length === 0
-        ? null
-        : {
-            table: 'topics',
-            rows: detected.map(({ row, fields }) => ({
-              ...fields,
-              name: row.name,
-              markdown: row.markdown,
-            })),
-          }
-    }
+    case 'posts':
+      return detectTableBatch('posts', batch.rows)
+    case 'rss_feed_items':
+      return detectTableBatch('rss_feed_items', batch.rows)
+    case 'crawls':
+      return detectTableBatch('crawls', batch.rows)
+    case 'communities':
+      return detectTableBatch('communities', batch.rows)
+    case 'users':
+      return detectTableBatch('users', batch.rows)
+    case 'topics':
+      return detectTableBatch('topics', batch.rows)
   }
 }
