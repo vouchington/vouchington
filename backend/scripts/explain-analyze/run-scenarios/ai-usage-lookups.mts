@@ -88,7 +88,7 @@ export async function runAiUsageLookupScenarios(): Promise<void> {
       () => recordAiUsage(options),
       undefined,
       'findAiUsageTier',
-      { exactCapturedNames: ['registerAiUsageTier', 'findAiUsageTier', 'recordAiUsage'] },
+      { exactCapturedNames: ['findAiUsageTier', 'recordAiUsage'] },
     )
   } finally {
     await write(sql`/* explainAiUsageLookupCleanup:rows */

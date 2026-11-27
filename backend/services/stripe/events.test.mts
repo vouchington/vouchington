@@ -1,5 +1,11 @@
+import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type Stripe from 'stripe'
+import { runWithConcurrentLookupRegistration } from '@voucha/test-helpers/lookup-registration-race'
+import {
+  countCapturedQueriesByAnnotation,
+  withCapturedTestQueries,
+} from '@voucha/test-helpers/query-capture'
 import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
 import {
   markStripeEventCompleted,
@@ -71,6 +77,47 @@ describe('events', () => {
           (a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)),
         ),
       ).toEqual([false, true])
+    })
+
+    it('resolves a new stripe_event_type when a concurrent first call commits first and reads without writing afterward', async () => {
+      const eventType = `future.Event-${randomUUID()}`
+      const firstEvent = createStripeEvent(eventType, {
+        id: 'in_test_race_1',
+        object: 'invoice',
+        customer: 'cus_test_race',
+        subscription: 'sub_test_race',
+      })
+      const secondEvent = createStripeEvent(eventType, {
+        id: 'in_test_race_2',
+        object: 'invoice',
+        customer: 'cus_test_race',
+        subscription: 'sub_test_race',
+      })
+
+      const {
+        result: { result: first, queries: firstQueries },
+      } = await runWithConcurrentLookupRegistration('stripe_event_types', eventType, () =>
+        withCapturedTestQueries(() => insertStripeEvent(firstEvent)),
+      )
+      expect(first.is_new).toBe(true)
+      expect(first.stripe_event_type_id).toBe(eventType)
+      expect(countCapturedQueriesByAnnotation(firstQueries, 'findStripeEventType')).toBe(1)
+      expect(countCapturedQueriesByAnnotation(firstQueries, 'registerStripeEventType')).toBe(1)
+      expect(countCapturedQueriesByAnnotation(firstQueries, 'findRegisteredStripeEventType')).toBe(
+        1,
+      )
+
+      const { result: second, queries: secondQueries } = await withCapturedTestQueries(() =>
+        insertStripeEvent(secondEvent),
+      )
+      expect(second.is_new).toBe(true)
+      expect(second.id).not.toBe(first.id)
+      expect(second.stripe_event_type_id).toBe(eventType)
+      expect(countCapturedQueriesByAnnotation(secondQueries, 'findStripeEventType')).toBe(1)
+      expect(countCapturedQueriesByAnnotation(secondQueries, 'registerStripeEventType')).toBe(0)
+      expect(countCapturedQueriesByAnnotation(secondQueries, 'findRegisteredStripeEventType')).toBe(
+        0,
+      )
     })
 
     it('tracks processing lifecycle', async () => {

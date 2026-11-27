@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import {
   AiUsageMonthPreparationError,
   needsAiUsageMonthCreation,
@@ -87,15 +87,19 @@ function isMissingAiUsagePartition(error: unknown): boolean {
 }
 
 async function registerAiUsageTier(serviceTier: string): Promise<string> {
-  const { rows } = await write<{ id: string }>(sql`/* registerAiUsageTier */
+  const { rows: existing } = await read<{ id: string }>(sql`/* findAiUsageTier */
+    SELECT id FROM ai_service_tiers WHERE service_tier = ${serviceTier}
+  `)
+  if (existing[0]?.id) return existing[0].id
+  const { rows: inserted } = await write<{ id: string }>(sql`/* registerAiUsageTier */
     INSERT INTO ai_service_tiers (service_tier) VALUES (${serviceTier})
     ON CONFLICT (service_tier) DO NOTHING
     RETURNING id`)
-  if (rows[0]?.id) return rows[0].id
-  const { rows: existing } = await write<{ id: string }>(sql`/* findAiUsageTier */
+  if (inserted[0]?.id) return inserted[0].id
+  const { rows: raced } = await write<{ id: string }>(sql`/* findRegisteredAiUsageTier */
     SELECT id FROM ai_service_tiers WHERE service_tier = ${serviceTier}
   `)
-  const id = existing[0]?.id
+  const id = raced[0]?.id
   if (!id) throw new Error('AI service tier registration returned no row')
   return id
 }
