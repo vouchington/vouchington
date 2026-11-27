@@ -70,6 +70,7 @@ export async function runCopyrightStaffCaseQueueScenarios(): Promise<void> {
       await runAndCapture(
         scenario,
         async () => {
+          if (index > 0) assert.ok(cursor.after, 'The first staff case page must provide a cursor')
           const args =
             index === 0 ? initial : copyrightStaffQueueParser.parse({ after: cursor.after })
           const page = await listCopyrightStaffQueuePage(moderator, args, { now: STAFF_CASE_CLOCK })
