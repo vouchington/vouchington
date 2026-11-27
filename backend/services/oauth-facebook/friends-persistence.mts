@@ -1,5 +1,5 @@
 import { getOauthFacebookWorkLimit } from './work-limits.mts'
-import { beginTransaction, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 
 export async function persistFacebookFriendPage(
   facebookAccountId: string,
@@ -68,11 +68,7 @@ async function persistFacebookFriendBatch(
   friendIds: string[],
   syncStartTime: string,
 ): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  const owner = await facebookSyncOwnerExists(transaction, facebookAccountId, userId, syncStartTime)
-  if (!owner) return false
-
-  await transaction(
+  const { rowCount } = await write(
     `/* persistFacebookFriendBatch */ INSERT INTO facebook_friends (facebook_account_id, facebook_friend_id, friend_facebook_account_id, last_observed_at)
      SELECT $1::uuid, friend_id,
        (SELECT CASE WHEN user_id IS NOT NULL THEN id END FROM facebook_accounts
@@ -88,8 +84,7 @@ async function persistFacebookFriendBatch(
      WHERE facebook_friends.last_observed_at <= EXCLUDED.last_observed_at`,
     [facebookAccountId, friendIds, syncStartTime, userId],
   )
-  await transaction.commit()
-  return true
+  return (rowCount ?? 0) > 0
 }
 
 async function getStaleFacebookFriendIds(
@@ -115,11 +110,7 @@ async function deleteFacebookFriendBatch(
   syncStartTime: string,
   friendIds: string[],
 ): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  const owner = await facebookSyncOwnerExists(transaction, facebookAccountId, userId, syncStartTime)
-  if (!owner) return false
-
-  await transaction(
+  const { rowCount } = await write(
     `/* deleteFacebookFriendBatch */ DELETE FROM facebook_friends
      WHERE facebook_account_id = $1
        AND facebook_friend_id = ANY($2::text[])
@@ -129,8 +120,7 @@ async function deleteFacebookFriendBatch(
            AND (owner.friend_edges_invalidated_at IS NULL OR owner.friend_edges_invalidated_at < $3::timestamptz))`,
     [facebookAccountId, friendIds, syncStartTime, userId],
   )
-  await transaction.commit()
-  return true
+  return (rowCount ?? 0) > 0
 }
 
 async function markFacebookFriendSyncComplete(
@@ -138,11 +128,7 @@ async function markFacebookFriendSyncComplete(
   userId: string,
   syncStartTime: string,
 ): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  const owner = await facebookSyncOwnerExists(transaction, facebookAccountId, userId, syncStartTime)
-  if (!owner) return false
-
-  await transaction(
+  const { rowCount } = await write(
     `/* markFacebookFriendSyncComplete */ UPDATE facebook_accounts
      SET friends_synced_at = CURRENT_TIMESTAMP
      WHERE id = $1 AND user_id = $2
@@ -150,23 +136,5 @@ async function markFacebookFriendSyncComplete(
        AND EXISTS (SELECT 1 FROM users WHERE id = $2::uuid AND deleted_at IS NULL)`,
     [facebookAccountId, userId, syncStartTime],
   )
-  await transaction.commit()
-  return true
-}
-
-async function facebookSyncOwnerExists(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  facebookAccountId: string,
-  userId: string,
-  syncStartTime: string,
-): Promise<boolean> {
-  const { rows } = await query(
-    `/* facebookSyncOwnerExists */ SELECT 1 FROM facebook_accounts
-     WHERE id = $1 AND user_id = $2
-       AND EXISTS (SELECT 1 FROM users WHERE id = $2::uuid AND deleted_at IS NULL)
-       AND (friend_edges_invalidated_at IS NULL OR friend_edges_invalidated_at < $3::timestamptz)
-`,
-    [facebookAccountId, userId, syncStartTime],
-  )
-  return rows.length > 0
+  return (rowCount ?? 0) > 0
 }

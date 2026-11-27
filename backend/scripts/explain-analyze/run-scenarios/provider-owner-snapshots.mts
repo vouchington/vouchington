@@ -101,7 +101,7 @@ async function captureProvider(
       },
       undefined,
       [
-        `${provider}SyncOwnerExists`,
+        ...(provider === 'x' ? [`${provider}SyncOwnerExists`] : []),
         `persist${name}FriendBatch`,
         `getStale${name}FriendIds`,
         `delete${name}FriendBatch`,

@@ -1,5 +1,5 @@
 import { getOauthGithubWorkLimit } from './work-limits.mts'
-import { beginTransaction, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 
 export async function persistGithubFriendPage(
   githubAccountId: string,
@@ -64,11 +64,7 @@ async function persistGithubFriendBatch(
   friendIds: string[],
   syncStartTime: string,
 ): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId, syncStartTime)))
-    return false
-
-  await transaction(
+  const { rowCount } = await write(
     `/* persistGithubFriendBatch */ INSERT INTO github_friends (github_account_id, github_friend_id, friend_github_account_id, last_observed_at)
      SELECT $1::uuid, friend_id,
        (SELECT CASE WHEN user_id IS NOT NULL THEN id END FROM github_accounts
@@ -84,8 +80,7 @@ async function persistGithubFriendBatch(
      WHERE github_friends.last_observed_at <= EXCLUDED.last_observed_at`,
     [githubAccountId, friendIds, syncStartTime, userId],
   )
-  await transaction.commit()
-  return true
+  return (rowCount ?? 0) > 0
 }
 
 async function getStaleGithubFriendIds(
@@ -111,11 +106,7 @@ async function deleteGithubFriendBatch(
   syncStartTime: string,
   friendIds: string[],
 ): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId, syncStartTime)))
-    return false
-
-  await transaction(
+  const { rowCount } = await write(
     `/* deleteGithubFriendBatch */ DELETE FROM github_friends
      WHERE github_account_id = $1
        AND github_friend_id = ANY($2::text[])
@@ -125,8 +116,7 @@ async function deleteGithubFriendBatch(
            AND (owner.friend_edges_invalidated_at IS NULL OR owner.friend_edges_invalidated_at < $3::timestamptz))`,
     [githubAccountId, friendIds, syncStartTime, userId],
   )
-  await transaction.commit()
-  return true
+  return (rowCount ?? 0) > 0
 }
 
 async function markGithubFriendSyncComplete(
@@ -134,11 +124,7 @@ async function markGithubFriendSyncComplete(
   userId: string,
   syncStartTime: string,
 ): Promise<boolean> {
-  await using transaction = await beginTransaction()
-  if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId, syncStartTime)))
-    return false
-
-  await transaction(
+  const { rowCount } = await write(
     `/* markGithubFriendSyncComplete */ UPDATE github_accounts
      SET friends_synced_at = CURRENT_TIMESTAMP
      WHERE id = $1 AND user_id = $2
@@ -146,23 +132,5 @@ async function markGithubFriendSyncComplete(
        AND EXISTS (SELECT 1 FROM users WHERE id = $2::uuid AND deleted_at IS NULL)`,
     [githubAccountId, userId, syncStartTime],
   )
-  await transaction.commit()
-  return true
-}
-
-async function githubSyncOwnerExists(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  githubAccountId: string,
-  userId: string,
-  syncStartTime: string,
-): Promise<boolean> {
-  const { rows } = await query(
-    `/* githubSyncOwnerExists */ SELECT 1 FROM github_accounts
-     WHERE id = $1 AND user_id = $2
-       AND EXISTS (SELECT 1 FROM users WHERE id = $2::uuid AND deleted_at IS NULL)
-       AND (friend_edges_invalidated_at IS NULL OR friend_edges_invalidated_at < $3::timestamptz)
-`,
-    [githubAccountId, userId, syncStartTime],
-  )
-  return rows.length > 0
+  return (rowCount ?? 0) > 0
 }
