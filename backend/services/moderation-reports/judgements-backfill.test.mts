@@ -4,7 +4,9 @@ import {
   insertTestPost,
   insertTestModerationReport,
   insertTestReportJudgement,
+  markTestPostDeletedBy,
 } from '@voucha/test-helpers'
+import { resolveTestModerationReports } from '@voucha/test-helpers/entities/moderation-report-clusters'
 import crypto from 'node:crypto'
 import { streamEntitiesMissingJudgementBatches } from './judgements-backfill.mts'
 
@@ -108,6 +110,54 @@ describe('streamEntitiesMissingJudgementBatches', () => {
     expect(found).toBeDefined()
     expect(found!.entityType).toBe('post')
     expect(found!.triggeringReportId).toBe(latestReportId)
+  })
+
+  it('keeps the newest resolved report for a live post and skips a deleted post', async () => {
+    const [author, reporter, newerReporter] = await Promise.all([
+      createTestUser(),
+      createTestUser(),
+      createTestUser(),
+    ])
+    const [livePostId, deletedPostId] = await Promise.all([
+      insertTestPost({
+        createdById: author.id,
+        slug: `backfill-live-${crypto.randomUUID()}`,
+        title: 'Live Backfill Post',
+        markdown: 'body',
+      }),
+      insertTestPost({
+        createdById: author.id,
+        slug: `backfill-deleted-${crypto.randomUUID()}`,
+        title: 'Deleted Backfill Post',
+        markdown: 'body',
+      }),
+    ])
+    const newestReportId = await insertTestModerationReport({
+      reporterUserId: newerReporter.id,
+      entityType: 'post',
+      entityId: livePostId,
+      createdAt: new Date(Date.UTC(2026, 2, 2)),
+    })
+    await insertTestModerationReport({
+      reporterUserId: reporter.id,
+      entityType: 'post',
+      entityId: livePostId,
+      createdAt: new Date(Date.UTC(2026, 2, 1)),
+    })
+    await insertTestModerationReport({
+      reporterUserId: reporter.id,
+      entityType: 'post',
+      entityId: deletedPostId,
+    })
+    await Promise.all([
+      resolveTestModerationReports([newestReportId], 'reviewed'),
+      markTestPostDeletedBy(deletedPostId, author.id),
+    ])
+
+    const results = await collectAll(streamEntitiesMissingJudgementBatches())
+    expect(
+      results.filter(row => row.entityId === livePostId || row.entityId === deletedPostId),
+    ).toEqual([{ entityType: 'post', entityId: livePostId, triggeringReportId: newestReportId }])
   })
 
   it('includes a user entity with a report and no judgement', async () => {

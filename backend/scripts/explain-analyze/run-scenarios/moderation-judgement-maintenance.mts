@@ -8,6 +8,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
+import { registerModerationJudgementBackfillPlan } from './moderation-judgement-backfill-plan.mts'
 
 // Defaults from moderation-reports/work-limits.mts.
 const DISPATCH = 200
@@ -158,24 +159,7 @@ async function captureBackfill(
     entityType: 'user',
     triggeringReportId,
   })).toSorted((a, b) => a.entityId.localeCompare(b.entityId))
-  const { rows } = await write<{ reports: number; posts: number }>(
-    `/* boundModerationJudgementBackfillPlan */
-    SELECT (SELECT (count(*) + count(*) FILTER (WHERE post_id IS NULL))::int
-            FROM moderation_reports) AS reports,
-           (SELECT count(*)::int FROM posts) AS posts`,
-  )
-  const corpus = rows[0]!
-  // https://github.com/vouchington/vouchington/issues/6565 tracks bounding the full post walk and the report corpus plus non-post branch reads.
-  registerScenarioContract(scenario, {
-    crossPartition: {
-      posts: 'The backfill streams reported targets across all creation months.',
-      rss_feed_items: 'The backfill includes reported targets in every retention month.',
-    },
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'moderation_reports', max: corpus.reports },
-      { kind: 'maxProcessedRows', relation: 'posts', max: corpus.posts },
-    ],
-  })
+  await registerModerationJudgementBackfillPlan(scenario)
   const owned = new Set(targetIds)
   await runAndCapture(
     scenario,
