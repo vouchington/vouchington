@@ -16,7 +16,6 @@ export async function revokeSessionsAboveLimit(
   const { rows } = await query<{ id: string }>(sql`/* findActiveSessionsForLimit */
     WITH active AS MATERIALIZED (
       SELECT id
-      -- no-mistakes-disable-next-line postgres-required-predicates: a SID can be minted before its owning user, so the exact per-user active cap must include every session-ID partition
       FROM user_sessions
       WHERE user_id = ${currentUserId} AND revoked_at IS NULL
         AND expires_at > CURRENT_TIMESTAMP

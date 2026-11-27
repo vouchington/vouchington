@@ -1,5 +1,6 @@
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { topicMergeRelationScratchNames } from '@voucha/types/entities/topic-merge-relation-scratch'
+import { isTopicMergeElectionRelation } from './utils/entity-relation-vote-integrity-targets.mts'
 
 // Index names preserve every table word in order while fitting PostgreSQL's 63-byte limit.
 const abbreviatedWords = (name: string) =>
@@ -12,11 +13,7 @@ const abbreviatedWords = (name: string) =>
 export default function generateTopicMergeRelationWorkItemsSql(): string {
   return entityRelationMetadatum
     .flatMap(metadata => {
-      if (
-        !metadata.election ||
-        (metadata.subject_type !== 'topic' && metadata.object_type !== 'topic')
-      )
-        return []
+      if (!isTopicMergeElectionRelation(metadata)) return []
       const { suffix, mappings: table, owners: users } = topicMergeRelationScratchNames(metadata)
       const mappingIndex = `idx_${abbreviatedWords(table)}__`
       const ownerIndex = `idx_${abbreviatedWords(users)}__`

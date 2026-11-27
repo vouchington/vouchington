@@ -85,7 +85,6 @@ _none_
 - `idx_moderator_actions__community__type__id`: `CREATE INDEX idx_moderator_actions__community__type__id ON public.moderator_actions USING btree (community_id, action_type, id DESC)`
 - `idx_moderator_actions__community_application_id`: `CREATE INDEX idx_moderator_actions__community_application_id ON public.moderator_actions USING btree (community_application_id) WHERE (community_application_id IS NOT NULL)`
 - `idx_moderator_actions__crawler_id`: `CREATE INDEX idx_moderator_actions__crawler_id ON public.moderator_actions USING btree (hostname_crawler_configuration_id) WHERE (hostname_crawler_configuration_id IS NOT NULL)`
-- `idx_moderator_actions__id`: `CREATE INDEX idx_moderator_actions__id ON public.moderator_actions USING btree (id DESC)`
 - `idx_moderator_actions__ineligible_purchase_reversal_case_id`: `CREATE INDEX idx_moderator_actions__ineligible_purchase_reversal_case_id ON public.moderator_actions USING btree (membership_ineligible_purchase_reversal_case_id) WHERE (membership_ineligible_purchase_reversal_case_id IS NOT NULL)`
 - `idx_moderator_actions__moderation_appeal_id`: `CREATE INDEX idx_moderator_actions__moderation_appeal_id ON public.moderator_actions USING btree (moderation_appeal_id) WHERE (moderation_appeal_id IS NOT NULL)`
 - `idx_moderator_actions__oauth_client_id`: `CREATE INDEX idx_moderator_actions__oauth_client_id ON public.moderator_actions USING btree (oauth_client_id) WHERE (oauth_client_id IS NOT NULL)`

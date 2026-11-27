@@ -3699,11 +3699,6 @@
     sqlInclude:
       - backend/data-stores/psql/migrations/**/*.sql
     allowDirective: redundant-index-guard-allow
-    # 0.48.1 honors later DROP INDEX, so retired prefixes from 0572/0588/0589 no
-    # longer need allowlisting. These remaining names are live prefixes of
-    # implicit unique/PK composites. Do not drop them in this consume PR.
-    allowedIndexes:
-      - referral_program_topic_link_validation_rule_sets.idx_referral_program_topic_link_validation_rule_sets__topic_id
 
 - name: enforce PostgreSQL column names and foreign-key semantics
   rule: postgres-column-naming

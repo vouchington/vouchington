@@ -13,7 +13,6 @@ export async function listActiveUserSessions(
     WITH active AS MATERIALIZED (
       SELECT id, user_id, device_id, device_name, user_agent_string_id,
         ip_address, created_at, last_seen_at, expires_at
-      -- no-mistakes-disable-next-line postgres-required-predicates: a SID may be minted before its owning user, so active-session pagination must include every session-ID partition
       FROM user_sessions
       WHERE user_id = ${currentUserId} AND revoked_at IS NULL
         AND expires_at > CURRENT_TIMESTAMP

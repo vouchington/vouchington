@@ -341,15 +341,10 @@ CREATE INDEX IF NOT EXISTS idx_topics__homepage_url_id
 ON topics (homepage_url_id)
 WHERE homepage_url_id IS NOT NULL;
 
-ALTER TABLE url_hostnames
+ALTER TABLE url_hostnames -- fk-index-guard-allow: covered by idx_url_hostnames__topic_id__votes_score_sort__id in config-driven/0190-00-00-hostname-elections-indexes.mts
 ADD CONSTRAINT fk_url_hostnames_topic_id FOREIGN KEY (topic_id) REFERENCES topics ON DELETE RESTRICT NOT VALID;
 
 ALTER TABLE url_hostnames VALIDATE CONSTRAINT fk_url_hostnames_topic_id;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_url_hostnames__topic_id
-ON url_hostnames (topic_id)
-WHERE topic_id IS NOT NULL;
 
 COMMENT ON COLUMN url_hostnames.topic_id IS 'The topic associated with this hostname (e.g. the company''s topic page).';
 

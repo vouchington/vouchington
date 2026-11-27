@@ -233,10 +233,6 @@ CREATE TABLE IF NOT EXISTS referral_program_topic_link_validation_rule_sets (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_referral_program_topic_link_validation_rule_sets__topic_id
-ON referral_program_topic_link_validation_rule_sets (referral_program_topic_id);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_referral_program_topic_link_validation_rule_sets__rule_set
 ON referral_program_topic_link_validation_rule_sets (referral_program_link_validation_rule_set_id, referral_program_topic_id);
 

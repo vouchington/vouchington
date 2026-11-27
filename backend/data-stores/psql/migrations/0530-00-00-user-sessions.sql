@@ -62,13 +62,11 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions__expires_at_id
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_sessions__user_agent_id
-  ON user_sessions (user_agent_string_id)
-  WHERE user_agent_string_id IS NOT NULL;
+  ON user_sessions (user_agent_string_id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id__foreign_key
-  ON user_sessions (user_id)
-  WHERE user_id IS NOT NULL;
+  ON user_sessions (user_id);
 
 CREATE OR REPLACE TRIGGER trigger_user_sessions_queue_released_user_agent_string
   AFTER DELETE OR UPDATE OF user_agent_string_id ON user_sessions
