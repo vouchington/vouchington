@@ -120,21 +120,6 @@ export async function getTestTopicAliasRowVersion(aliasId: string): Promise<stri
   return rows[0]!.row_version
 }
 
-// Reads the generated search_vector column directly: no service queries topics.search_vector
-// via FTS today (topic listing/tool search use plain name/slug ILIKE), so this is the only way
-// to assert the voucha_english config folds diacritics on the generated-column write path.
-export async function topicSearchVectorMatchesQuery(
-  topicId: string,
-  query: string,
-): Promise<boolean> {
-  const { rows } = await read<{ matches: boolean }>(sql`/* topicSearchVectorMatchesQuery */
-    SELECT search_vector @@ websearch_to_tsquery('voucha_english', ${query}) AS matches
-    FROM topics
-    WHERE id = ${topicId}
-  `)
-  return rows[0]?.matches ?? false
-}
-
 export async function hasUniqueSlugIndexOnTopics(): Promise<boolean> {
   const { rows } = await read(sql`/* hasUniqueSlugIndexOnTopics */
     SELECT indexname

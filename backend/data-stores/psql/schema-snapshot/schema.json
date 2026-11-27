@@ -143949,7 +143949,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 44,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -143960,7 +143960,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 47,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -143971,7 +143971,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 43,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -143982,7 +143982,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 45,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -143993,7 +143993,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47,
+          "ordinalPosition": 46,
           "type": "jsonb"
         },
         "logo_image_id": {
@@ -144070,7 +144070,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 42,
           "type": "uuid"
         },
         "rewards_program_topic_id": {
@@ -144081,19 +144081,8 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
-          "type": "uuid"
-        },
-        "search_vector": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "stored",
-          "generatedExpression": "(((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(fn_immutable_array_to_string(aliases, ' '::text), ''::text)), 'B'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'D'::\"char\"))",
-          "identity": null,
-          "nullable": true,
           "ordinalPosition": 41,
-          "type": "tsvector"
+          "type": "uuid"
         },
         "should_allow_reviews": {
           "collation": null,
@@ -144808,26 +144797,6 @@
             }
           ],
           "predicate": "(rewards_program_topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_topics__search_vector": {
-          "accessMethod": "gin",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__search_vector ON public.topics USING gin (search_vector) WHERE (deleted_at IS NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "search_vector",
-              "descending": false,
-              "expression": "search_vector",
-              "nullsFirst": false,
-              "opclass": "tsvector_ops"
-            }
-          ],
-          "predicate": "(deleted_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
