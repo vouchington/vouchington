@@ -1,34 +1,44 @@
 import { getApiKeyExpiryLimits } from './work-limits.mts'
 import { read, write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import {
+  decodeScopedPreciseTimestampCursor,
+  encodeScopedPreciseTimestampCursor,
+} from '@modules/pagination'
+
+const cursorScope = 'api-key-expiry-reminders'
 
 export async function getApiKeysDueForExpiryReminder(
-  afterId?: string,
+  after?: string,
   batchSize = getApiKeyExpiryLimits().batchSize,
   options: QueryOptions = {},
-): Promise<string[]> {
-  // Cost the first page's expiry range independently so it can seek the partial expiry index.
-  // A continuation uses the ID cursor to seek past the expired prefix.
-  const expiryWindow = afterId
-    ? sql`expires_at > NOW() AND expires_at <= NOW() + INTERVAL '7 days'`
-    : sql`expires_at > (SELECT NOW()) AND expires_at <= (SELECT NOW() + INTERVAL '7 days')`
-  const eligible = sql`SELECT id FROM api_keys WHERE `.append(expiryWindow).append(sql`
-    AND revoked_at IS NULL AND replaced_by_api_key_id IS NULL
-    AND expiry_reminder_sent_at IS NULL
-  `)
-  const query = sql`/* getApiKeysDueForExpiryReminder */ `.append(eligible)
-  if (afterId) {
-    query.append(sql` AND id > ${afterId}::uuid`)
-  } else {
-    // The largest ID in any full sample cannot be earlier than the end of the ID page.
-    // A short sample contains every eligible ID.
-    query.append(sql` AND id <= (SELECT id FROM (`).append(eligible)
-      .append(sql` ORDER BY expires_at, id LIMIT ${batchSize}) AS expiry_sample
-        ORDER BY id DESC LIMIT 1)`)
+): Promise<{ ids: string[]; nextCursor: string | undefined }> {
+  const query = sql`/* getApiKeysDueForExpiryReminder */
+    SELECT id, to_char(expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_expiry
+    FROM api_keys
+    WHERE expires_at > NOW() AND expires_at <= NOW() + INTERVAL '7 days'
+      AND revoked_at IS NULL AND replaced_by_api_key_id IS NULL
+      AND expiry_reminder_sent_at IS NULL`
+  if (after) {
+    const cursor = decodeScopedPreciseTimestampCursor(
+      after,
+      cursorScope,
+      'Invalid expiry reminder cursor',
+    )
+    query.append(
+      sql` AND (expires_at, id) > (${cursor.timestamp}::timestamptz, ${cursor.id}::uuid)`,
+    )
   }
-  query.append(sql` ORDER BY id LIMIT ${batchSize}`)
-  const { rows } = await read<{ id: string }>(query, options)
-  return rows.map(row => row.id)
+  query.append(sql` ORDER BY expires_at, id LIMIT ${batchSize}`)
+  const { rows } = await read<{ id: string; cursor_expiry: string }>(query, options)
+  const last = rows.at(-1)
+  return {
+    ids: rows.map(row => row.id),
+    nextCursor:
+      rows.length === batchSize && last
+        ? encodeScopedPreciseTimestampCursor(last.cursor_expiry, last.id, cursorScope)
+        : undefined,
+  }
 }
 
 export async function getApiKeyExpiryReminderDetails(id: string, options: QueryOptions = {}) {

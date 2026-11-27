@@ -190,11 +190,11 @@ describe('API key lifetime and rotation', () => {
     const user = await createTestUser()
     const due = await createApiKey(user.id, 'rss', 'Due', ['rss:read'])
     await setTestApiKeyExpiry(due.apiKey.id, new Date(Date.now() + 6 * 86400000))
-    let dueIds = await getApiKeysDueForExpiryReminder()
-    while (dueIds.length > 0 && !dueIds.includes(due.apiKey.id)) {
-      dueIds = await getApiKeysDueForExpiryReminder(dueIds.at(-1))
+    let page = await getApiKeysDueForExpiryReminder()
+    while (page.nextCursor && !page.ids.includes(due.apiKey.id)) {
+      page = await getApiKeysDueForExpiryReminder(page.nextCursor)
     }
-    expect(dueIds).toContain(due.apiKey.id)
+    expect(page.ids).toContain(due.apiKey.id)
     expect(
       (
         await Promise.all([

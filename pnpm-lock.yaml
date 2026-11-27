@@ -4501,6 +4501,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@modules/scopes':
         specifier: workspace:^
         version: link:../../modules/scopes
@@ -14373,6 +14376,9 @@ importers:
         specifier: workspace:^
         version: link:../emails
     devDependencies:
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@services/ses-bounce-events':
         specifier: workspace:^
         version: link:../../services/ses-bounce-events

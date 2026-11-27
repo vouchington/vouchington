@@ -8,16 +8,18 @@ export const API_KEY_EXPIRY_FIXTURE_LABEL = 'Explain expiry reminder'
 const dueCount = 2_001
 const currentStatesPerGroup = 5
 const fixtureSize = dueCount * (1 + currentStatesPerGroup)
+const dayMs = 86_400_000
 
 export async function seedApiKeyExpiryCapacity(seedUserId: string, batchSize: number) {
-  // Sort expired history before the due keys, then interleave the remaining excluded states.
-  // The earliest expiry group follows the first ID page, so the sample alone cannot answer it.
-  const timestamp = Date.UTC(2000, 0, 1) + randomInt(86_400_000)
-  const ids = Array.from({ length: fixtureSize }, (_, index) =>
-    seedUuidAtTimestamp(timestamp, index),
-  )
+  const longDueEnd = fixtureSize - (batchSize - 1) * currentStatesPerGroup
+  const now = Date.now() - randomInt(3_600_000)
+  const ids = Array.from({ length: fixtureSize }, (_, index) => {
+    // Recently issued 30-day keys expire first, ahead of much older 365-day keys.
+    const ageDays = index < dueCount ? 400 : index < longDueEnd ? 361 : 28
+    return seedUuidAtTimestamp(now - ageDays * dayMs, index)
+  })
   const salt = randomUUID()
-  const { rowCount } = await write(sql`/* seedExplainApiKeyExpiry */
+  const { rows } = await write<{ id: string; expires_at: string }>(sql`/* seedExplainApiKeyExpiry */
     INSERT INTO api_keys
       (id, user_id, prefix, key_hash, label, expires_at, revoked_at,
         replaced_by_api_key_id, expiry_reminder_sent_at)
@@ -26,11 +28,8 @@ export async function seedApiKeyExpiryCapacity(seedUserId: string, batchSize: nu
       'explain-expiry', sha256((${salt} || id::text)::bytea), ${API_KEY_EXPIRY_FIXTURE_LABEL},
       CASE state
         WHEN -1 THEN NOW() - INTERVAL '1 day'
-        WHEN 0 THEN NOW() + CASE
-          WHEN ordinality <= ${dueCount + batchSize * currentStatesPerGroup} THEN INTERVAL '4 days'
-          WHEN ordinality <= ${dueCount + 2 * batchSize * currentStatesPerGroup} THEN INTERVAL '3 days'
-          ELSE INTERVAL '5 days'
-        END
+        WHEN 0 THEN NOW() + CASE WHEN ordinality > ${longDueEnd}::int
+          THEN INTERVAL '2 days' ELSE INTERVAL '4 days' END
         WHEN 1 THEN NOW() + INTERVAL '60 days'
         ELSE NOW() + INTERVAL '3 days'
       END,
@@ -43,11 +42,20 @@ export async function seedApiKeyExpiryCapacity(seedUserId: string, batchSize: nu
       END AS state
       FROM unnest(${ids}::uuid[]) WITH ORDINALITY AS fixture(id, ordinality)
     ) AS keys
+    RETURNING id, to_char(expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS expires_at
   `)
-  assert.equal(rowCount, fixtureSize)
+  assert.equal(rows.length, fixtureSize)
+  const expiryById = new Map(rows.map(row => [row.id, row.expires_at]))
+  const byId = ids.slice(dueCount).filter((_, index) => index % currentStatesPerGroup === 0)
+  const longDueCount = (longDueEnd - dueCount) / currentStatesPerGroup
+  const dueKeys = [...byId.slice(longDueCount), ...byId.slice(0, longDueCount)].map(id => ({
+    id,
+    expiresAt: expiryById.get(id)!,
+  }))
+  assert.equal(dueKeys.length, dueCount)
   return {
     ids,
-    dueIds: ids.slice(dueCount).filter((_, index) => index % currentStatesPerGroup === 0),
+    dueKeys,
     firstDueIndex: dueCount,
     firstSentIndex: dueCount + 4,
     async cleanup() {

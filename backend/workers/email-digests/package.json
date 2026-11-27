@@ -34,6 +34,7 @@
     "@workers/emails": "workspace:^"
   },
   "devDependencies": {
+    "@modules/pagination": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }

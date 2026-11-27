@@ -20,8 +20,8 @@ export const EMAIL_DIGESTS_DOMAIN = defineBackgroundDomain({
 })
 
 export type EmptyEmailDigestsJobData = Record<string, never>
-/** One page of API keys; `afterId` is the last key of the previous page. */
 export type DispatchCommunityModerationSummaryData = { afterId?: string }
+/** The opaque `afterId` cursor encodes the last page's expiry timestamp and key ID. */
 export type DispatchApiKeyExpiryRemindersData = { afterId?: string }
 export type SendApiKeyExpiryReminderData = { apiKeyId: string }
 
