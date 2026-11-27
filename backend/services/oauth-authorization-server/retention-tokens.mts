@@ -49,6 +49,7 @@ export async function deleteExpiredOAuthRetentionTokens(
       ? { rowCount: 0 }
       : await query(
           `/* deleteOAuthRetentionFamilyTokens */
+     /* lock-reason: prevents: a family drain from waiting on an access-token revocation; writer: user-deletion OAuth credential revocation. */
      /* deadlock-safe: the indexed page bounds child locks before deletion. */
      WITH page AS MATERIALIZED (
        SELECT artifact.id FROM ${tokenTable} AS artifact
@@ -68,6 +69,7 @@ export async function deleteExpiredOAuthRetentionTokens(
   if (!includeOwnExpiry || deleted === limit) return deleted
   const independentlyExpired = await query(
     `/* deleteOAuthRetentionExpiredTokens */
+     /* lock-reason: prevents: an expiry page from waiting on an access-token revocation; writer: user-deletion OAuth credential revocation. */
      /* deadlock-safe: the expiry-index page bounds child locks before deletion. */
      WITH page AS MATERIALIZED (
        SELECT artifact.id FROM ${tokenTable} AS artifact

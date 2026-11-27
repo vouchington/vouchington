@@ -154,6 +154,7 @@ async function lockAuthorizationRequest(
   query: TransactionQuery,
 ): Promise<AuthorizationRequestRow | null> {
   const result = await query<AuthorizationRequestRow>(
+    // lock-reason: prevents: issuing a code or recording a second decision from the same pending request; writer: concurrent consent approval or denial.
     `/* lockAuthorizationRequest */ SELECT request.id, request.client_id, request.user_id, request.redirect_uri, request.client_state,
        request.resource, request.scopes::text[] AS scopes, request.code_challenge, client.owner_user_id,
        client.scopes::text[] AS client_scopes, client.redirect_uris, client.metadata_url
