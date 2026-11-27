@@ -47,8 +47,7 @@ export async function writeLanguageDetectionResults(
   return updatedIds
 }
 
-function packCommonColumns<Row extends DetectedWriteFields>(inputRows: readonly Row[]) {
-  const rows = inputRows.toSorted((a, b) => a.id.localeCompare(b.id))
+function packCommonColumns<Row extends DetectedWriteFields>(rows: readonly Row[]) {
   return {
     rows,
     ids: rows.map(r => r.id),
@@ -147,7 +146,7 @@ async function executeLanguageDetectionUpdate(
           ${ids}::uuid[], ${langs}::text[], ${contentShas}::bytea[], ${inputShas}::bytea[],
           ${results}::jsonb[], ${rows.map(r => r.markdown)}::text[]
         ) AS v(id, lang, content_sha, input_sha, results, markdown)
-        WHERE t.id = v.id AND COALESCE(t.markdown, '') IS NOT DISTINCT FROM COALESCE(v.markdown, '')
+        WHERE t.id = v.id AND t.markdown IS NOT DISTINCT FROM v.markdown
         RETURNING t.id`)
       return updated.map(r => r.id)
     }
