@@ -15,6 +15,7 @@ export const SCHEDULED_PROMPT_NO_SOURCE_TEMPLATE: NoSourceLinePairTemplate = {
   visibleLine: 'No source issue; scheduled prompt run.',
   marker: '<!-- related-issues-validation: no-source-scheduled-prompt -->',
   requiredBodyLines: new Set(['Workspace setup: Triage loop scheduled prompt']),
+  requiredBodyLinePatterns: [/^Workspace setup: \S(?:.*\S)? scheduled prompt$/],
 }
 
 export const PARTIAL_BATCH_TEMPLATE: PartialBatchTemplate = {

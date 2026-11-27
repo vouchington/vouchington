@@ -22,7 +22,7 @@ describe('renderNoSourceIssue', () => {
     [
       'scheduled prompt run',
       SCHEDULED_PROMPT_NO_SOURCE_TEMPLATE,
-      'Workspace setup: Triage loop scheduled prompt\n',
+      'Workspace setup: pg-schema hourly check-in scheduled prompt\n',
     ],
   ])('renders the %s pair the body policy accepts', (reason, template, setup) => {
     const body = `## Related issues\n\n${renderNoSourceIssue({ reason })}\n\n${setup}`

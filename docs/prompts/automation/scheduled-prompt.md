@@ -37,7 +37,15 @@ For a qualifying change, immediately before publication re-check the scheduled r
 commit, push without overwriting concurrent work, and create one draft pull request. Never merge or
 arm auto-merge.
 
-The title must begin with `Automation scheduled: {{PROMPT_NAME}}` and use conventional commit format for the remainder. Supply a `### Scheduled prompt` `details` entry with the prompt path and the exact standalone line `Triage loop run: {{LOOP_RUN_ID}}`, plus `### Root cause`, `### Implementation choice`, and `### Options considered` `details` entries, and pass `workspaceSetup: "Triage loop scheduled prompt"` so the tools render the exact standalone line `Workspace setup: Triage loop scheduled prompt`. Include implementation details and the pros and cons of viable options. If there is no source issue, pass an empty `relatedIssues` and
+The title must begin with `Automation scheduled: {{PROMPT_NAME}}` and use conventional commit
+format for the remainder. Supply a `### Scheduled prompt` `details` entry with the prompt path and
+the exact standalone line `Triage loop run: {{LOOP_RUN_ID}}`, plus `### Root cause`,
+`### Implementation choice`, and `### Options considered` entries. Include implementation details
+and the pros and cons of viable options.
+
+Pass `workspaceSetup: "{{PROMPT_NAME}} scheduled prompt"` using the actual non-empty prompt name.
+The tools render `Workspace setup: {{PROMPT_NAME}} scheduled prompt` as a standalone line.
+If there is no source issue, pass an empty `relatedIssues` and
 `noSourceIssue: { reason: "scheduled prompt run" }`; the tools render these two exact standalone
 lines consecutively in the visible `## Related issues` section:
 
@@ -46,10 +54,9 @@ No source issue; scheduled prompt run.
 <!-- related-issues-validation: no-source-scheduled-prompt -->
 ```
 
-Before publication, confirm the exact scheduled workspace-setup line
-in every body and validate it with the `pr_validate` tool of the `vouchington-tooling` MCP server.
-For a no-source body, the validator checks the pair's adjacency and placement and the exact
-scheduled workspace-setup line.
+Before publication, confirm every workspace-setup line names the prompt that ran and validate the
+body with the `pr_validate` tool of the `vouchington-tooling` MCP server. For a no-source body, the
+validator checks the pair's adjacency and placement and the named scheduled workspace-setup line.
 
 Never run pr-shepherd in this scheduled task; the loop shepherds the PR.
 Apply the `automation` label to the draft PR, then re-fetch it and require it to be present before
