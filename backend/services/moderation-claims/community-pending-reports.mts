@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { reportAutomaticJudgementEnabledSql } from '@services/moderation-reports/automatic-judgement-eligibility'
+import { postReportEnrichmentJoinsSql } from '@services/moderation-reports/post-report-enrichment-sql'
 import {
   appendReportTargetColumns,
   reportTargetIsRestrictedSql,
@@ -148,28 +149,10 @@ async function fetchPostCommentReports(
     ) r
   `)
   query.append(reportTargetJoinsSql())
-  // Keep matches across all target types when their UUIDs happen to be equal.
   query.append(sql`
     LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = r.reporter_user_id
-    LEFT JOIN LATERAL (
-      SELECT COUNT(*)::integer AS report_count
-      FROM moderation_reports rc
-      WHERE rc.reviewed_at IS NULL
-        AND rc.resolution_action IS NULL
-        AND (
-          rc.post_id = r.post_id OR rc.reported_user_id = r.post_id
-          OR rc.hostname_id = r.post_id OR rc.rss_feed_item_id = r.post_id
-        )
-    ) report_counts ON true
-    LEFT JOIN LATERAL (
-      SELECT mj.recommended_action
-      FROM moderation_report_judgements mj
-      WHERE mj.post_id = r.post_id OR mj.reported_user_id = r.post_id
-        OR mj.hostname_id = r.post_id OR mj.rss_feed_item_id = r.post_id
-      ORDER BY mj.id DESC
-      LIMIT 1
-    ) latest_judgement ON true
   `)
+  query.append(postReportEnrichmentJoinsSql({ status: 'pending', countMode: 'rows' }))
   query.append(sql` WHERE true`)
   if (escalated === true) {
     query.append(sql` AND r.escalated_at IS NOT NULL`)
