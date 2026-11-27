@@ -30,6 +30,7 @@ export async function dismissReviewDispute(
     const row = rows[0]
     if (!row) return rejectUnresolvableDispute(disputeId, { query })
 
+    // ast-grep-ignore: no-three-sequential-awaits -- all statements share one transaction client query and setLifecycle consumes lifecycleId
     const lifecycleId = await appendLifecycleChange(
       disputeId,
       'dismiss',
@@ -37,26 +38,24 @@ export async function dismissReviewDispute(
       {},
       { query },
     )
-    await Promise.all([
-      query(sql`/* dismissReviewDispute:setLifecycle */
-        UPDATE review_disputes SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${disputeId}
-      `),
-      recordModerationTrainingFeedback(
-        {
-          trainingEvidence,
-          sourceType: 'review_dispute',
-          eventType: 'dispute_resolved',
-          label: 'rejected',
-          humanAction: 'dismiss',
-          actorUserId: staffUserId,
-          communityId: row.community_id,
-          postId: row.post_id,
-          reviewDisputeId: disputeId,
-          metadata: { reason: row.reason, recommended_action: row.recommended_action },
-        },
-        { query },
-      ),
-    ])
+    await query(sql`/* dismissReviewDispute:setLifecycle */
+      UPDATE review_disputes SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${disputeId}
+    `)
+    await recordModerationTrainingFeedback(
+      {
+        trainingEvidence,
+        sourceType: 'review_dispute',
+        eventType: 'dispute_resolved',
+        label: 'rejected',
+        humanAction: 'dismiss',
+        actorUserId: staffUserId,
+        communityId: row.community_id,
+        postId: row.post_id,
+        reviewDisputeId: disputeId,
+        metadata: { reason: row.reason, recommended_action: row.recommended_action },
+      },
+      { query },
+    )
     await logDisputeResolution(staffUserId, 'dismiss_report', disputeId, row.post_id, { query })
     return getReviewDisputeAfterMutation(disputeId, { query })
   })
