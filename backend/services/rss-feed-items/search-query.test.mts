@@ -21,6 +21,6 @@ describe('searchRssFeedItems query planning', () => {
     expect(query!.text).toMatch(
       /ORDER BY limited_rss_feed_items\.published_at DESC, limited_rss_feed_items\.id DESC\s+LIMIT 10\s*$/,
     )
-    expect(query!.values).toEqual([[feed.id], [feed.id]])
+    expect(query!.values).toEqual([feed.id, feed.id])
   })
 })

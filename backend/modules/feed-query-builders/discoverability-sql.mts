@@ -7,13 +7,7 @@ export function feedIsEnabledAndDiscoverableSql(feedAlias: string): SQLStatement
     throw new Error(`Unsafe SQL alias: ${feedAlias}`)
   }
 
-  return sql`EXISTS (
-    SELECT 1
-    FROM view_rss_feed_current_states current_state
-    WHERE current_state.rss_feed_id = `.append(`${feedAlias}.id`).append(sql`
-      AND current_state.is_enabled = TRUE
-      AND current_state.is_discoverable = TRUE
-  )`)
+  return sql``.append(`${feedAlias}.is_enabled = TRUE AND ${feedAlias}.is_discoverable = TRUE`)
 }
 
 export function itemHasDiscoverableSourceSql(

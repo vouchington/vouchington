@@ -74,17 +74,23 @@ export function buildRssFeedItemFilters(options: SearchRssFeedItemsOptions): SQL
   }
 
   if (rss_feed_ids.length > 0) {
-    const filter = sql`EXISTS (
+    const sourceFeed =
+      rss_feed_ids.length === 1
+        ? sql`rfis.rss_feed_id = ${rss_feed_ids[0]}::uuid`
+        : sql`rfis.rss_feed_id = ANY(${rss_feed_ids})`
+    filters.push(
+      sql`EXISTS (
       SELECT 1 FROM rss_feed_item_sources rfis
       JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
       WHERE rfis.rss_feed_item_id = rss_feed_items.id
-        AND rfis.rss_feed_id = ANY(${rss_feed_ids})
-        AND rf.deleted_at IS NULL
         AND `
-    filter.append(feedIsEnabledAndDiscoverableSql('rf'))
-    filter.append(sql`
-    )`)
-    filters.push(filter)
+        .append(sourceFeed)
+        .append(sql`
+        AND rf.deleted_at IS NULL
+        AND `)
+        .append(feedIsEnabledAndDiscoverableSql('rf')).append(sql`
+    )`),
+    )
   }
   if (topic_ids.length > 0) {
     filters.push(buildFeedOwnerTopicFilter(topic_ids))
