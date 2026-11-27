@@ -505,7 +505,7 @@ WHERE deleted_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__user_id__unread
-ON notifications (user_id, id DESC)
+ON notifications (user_id, id DESC, read_at)
 WHERE deleted_at IS NULL AND read_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
