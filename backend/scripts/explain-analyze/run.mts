@@ -36,7 +36,7 @@ import { runDeletedConversationRetentionCapacityScenarios } from './run-scenario
 import { runAiUsageRetentionCapacityScenario } from './run-scenarios/ai-usage-retention-capacity.mts'
 import { runTextEmbeddingRetentionCapacityScenario } from './run-scenarios/text-embedding-retention-capacity.mts'
 import { runCommunityRosterReadCapacityScenario } from './run-scenarios/community-roster-read-capacity.mts'
-import { NOTIFICATION_UNREAD_RUNNERS } from './run-ordered-scenarios-after-notifications.mts'
+import { runNotificationUnreadCapacityScenario } from './run-scenarios/notification-unread-capacity.mts'
 
 // EXPLAIN_SHARD splits the CI run (explain-shards.mts); unset runs everything.
 async function main() {
@@ -56,7 +56,10 @@ async function main() {
     if (shard === undefined || shard === ORDINARY_EXPLAIN_SHARDS.at(-1)) {
       await runOrderedRunners(AFTER_PARTITION_RUNNERS)
       // The mixed-recipient fixture updates notification statistics after other notification plans.
-      await runOrderedRunners(NOTIFICATION_UNREAD_RUNNERS)
+      await runStep(
+        runNotificationUnreadCapacityScenario.name,
+        runNotificationUnreadCapacityScenario,
+      )
       await runStep(
         runCommunityRosterReadCapacityScenario.name,
         runCommunityRosterReadCapacityScenario,
