@@ -2493,6 +2493,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "active_user_data_request_claims_pkey": {
           "accessMethod": "btree",
@@ -2661,6 +2662,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "activitypub_actor_keys_pkey": {
           "accessMethod": "btree",
@@ -2787,6 +2789,7 @@
       },
       "comment": "Replay-dedup ledger for the ActivityPub inbox receiver. One row per accepted activity id; a second delivery of the same activity id is rejected before it reaches any write-path.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "activitypub_inbox_activities_pkey": {
           "accessMethod": "btree",
@@ -2947,6 +2950,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "activitypub_post_like_activities_pkey": {
           "accessMethod": "btree",
@@ -3222,6 +3226,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "activitypub_post_likes_pkey": {
           "accessMethod": "btree",
@@ -3473,6 +3478,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "activitypub_remote_follow_activities_pkey": {
           "accessMethod": "btree",
@@ -3737,6 +3743,7 @@
       },
       "comment": "Monotonic inbound admission boundary retained after expired ActivityPub replay-ledger rows are deleted.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "activitypub_replay_rejection_floors_pkey": {
           "accessMethod": "btree",
@@ -3907,6 +3914,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "admin_import_batches_pkey": {
           "accessMethod": "btree",
@@ -4189,6 +4197,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "admin_import_rows__batch_row_index": {
           "accessMethod": "btree",
@@ -4408,6 +4417,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "agent_moderation_retention_post_work_items_pkey": {
           "accessMethod": "btree",
@@ -4620,6 +4630,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "agent_moderation_votes_pkey": {
           "accessMethod": "btree",
@@ -5133,6 +5144,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "agent_moderations_pkey": {
           "accessMethod": "btree",
@@ -5957,6 +5969,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "agent_prompts_pkey": {
           "accessMethod": "btree",
@@ -6276,6 +6289,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "agents_pkey": {
           "accessMethod": "btree",
@@ -6503,6 +6517,7 @@
       },
       "comment": "Model provider service tier names (OpenAI flex/default, Anthropic standard/priority/batch) registered on first sight; each provider owns this open set and exact spelling.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "ai_service_tiers_pkey": {
           "accessMethod": "btree",
@@ -6713,6 +6728,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "ai_usage_community_monthly_roll_community_id_month_start_on_key": {
           "accessMethod": "btree",
@@ -6936,6 +6952,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "ai_usage_global_monthly_rollups_month_start_on_key": {
           "accessMethod": "btree",
@@ -7080,6 +7097,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "ai_usage_provider_response_keys_ai_usage_record_id_key": {
           "accessMethod": "btree",
@@ -7467,6 +7485,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "ai_usage_records_pkey": {
           "accessMethod": "btree",
@@ -7677,6 +7696,7 @@
       },
       "comment": "Persistent UUIDv7 position of the bounded AI usage fold and delete sweep.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "ai_usage_retention_cursors_pkey": {
           "accessMethod": "btree",
@@ -7799,6 +7819,7 @@
       },
       "comment": "Durable suppression identity for each address with a permanent bounce or complaint.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "amazon_ses_address_suppressions_email_address_key": {
           "accessMethod": "btree",
@@ -8026,6 +8047,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "amazon_ses_bounce_events_pkey": {
           "accessMethod": "btree",
@@ -8228,6 +8250,7 @@
       },
       "comment": "SES bounce subtype names registered on first sight; the provider owns this open set and exact spelling.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_key": {
           "accessMethod": "btree",
@@ -8483,6 +8506,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "api_keys_pkey": {
           "accessMethod": "btree",
@@ -8853,6 +8877,7 @@
       },
       "comment": "Apple App Attest keys, one row per device-generated attestation key, used to verify subsequent per-request assertions.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "app_attestation_keys_key_id_key": {
           "accessMethod": "btree",
@@ -9083,6 +9108,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "apple_accounts_apple_user_id_key": {
           "accessMethod": "btree",
@@ -9362,6 +9388,7 @@
       },
       "comment": "Durable bounded cleanup progress for short-lived authentication and session rows.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "auth_session_retention_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -9444,6 +9471,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_autotagger_agent_run_topics__topic": {
           "accessMethod": "btree",
@@ -9684,6 +9712,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_bedrock_embedding_batch_entities__batch_id": {
           "accessMethod": "btree",
@@ -10046,6 +10075,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "bedrock_embedding_batches_pkey": {
           "accessMethod": "btree",
@@ -10275,6 +10305,7 @@
       },
       "comment": "Centralized lookup table for Amazon Nova multimodal text vectors, keyed by content hash.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "bedrock_nova_multimodal_v1_embeddings_pkey": {
           "accessMethod": "btree",
@@ -10438,6 +10469,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "blocklisted_domains_domain_source_id_key": {
           "accessMethod": "btree",
@@ -10714,6 +10746,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "bluesky_follow_records_pkey": {
           "accessMethod": "btree",
@@ -11081,6 +11114,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "bluesky_link_authorizations_pkey": {
           "accessMethod": "btree",
@@ -11323,6 +11357,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "bluesky_link_completions_pkey": {
           "accessMethod": "btree",
@@ -11529,6 +11564,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "bluesky_linked_accounts_bluesky_did_key": {
           "accessMethod": "btree",
@@ -11689,6 +11725,7 @@
       },
       "comment": "Singleton position of the scheduled boilerplate removal sweep over hostnames in id order.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "boilerplate_removal_hostname_cursors_pkey": {
           "accessMethod": "btree",
@@ -11848,6 +11885,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "card_topics_pkey": {
           "accessMethod": "btree",
@@ -12116,6 +12154,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "classifier_candidate_community_overrides_pkey": {
           "accessMethod": "btree",
@@ -12455,6 +12494,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "classifier_candidate_thresholds_pkey": {
           "accessMethod": "btree",
@@ -12853,6 +12893,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "classifier_candidates_pkey": {
           "accessMethod": "btree",
@@ -13435,6 +13476,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "classifier_decision_batch_candidates_pkey": {
           "accessMethod": "btree",
@@ -13849,6 +13891,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "classifier_decision_batches_pkey": {
           "accessMethod": "btree",
@@ -14318,6 +14361,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "classifier_decision_calls_pkey": {
           "accessMethod": "btree",
@@ -14628,6 +14672,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "classifier_prompt_versions_pkey": {
           "accessMethod": "btree",
@@ -14964,6 +15009,7 @@
       },
       "comment": "One independent cyclic keyset position per bounded classifier record retention sweep.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "classifier_retention_cursors_pkey": {
           "accessMethod": "btree",
@@ -15103,6 +15149,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_classifier_run_candidates__rss_feed_item": {
           "accessMethod": "btree",
@@ -15401,6 +15448,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_classifier_run_community_prompts__community_agent_prompt": {
           "accessMethod": "btree",
@@ -15643,6 +15691,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_classifier_run_identities__classifier": {
           "accessMethod": "btree",
@@ -16202,6 +16251,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_classifier_run_requests__classifier": {
           "accessMethod": "btree",
@@ -16844,6 +16894,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_classifier_runs__classifier": {
           "accessMethod": "btree",
@@ -17302,6 +17353,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "classifiers_pkey": {
           "accessMethod": "btree",
@@ -17938,6 +17990,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "communities_pkey": {
           "accessMethod": "btree",
@@ -18411,6 +18464,7 @@
       },
       "comment": "Singleton high-water mark for completed community activity digest windows.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "community_activity_digest_cursors_pkey": {
           "accessMethod": "btree",
@@ -18552,6 +18606,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_agent_prompt_revisions_pkey": {
           "accessMethod": "btree",
@@ -18717,6 +18772,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_agent_prompt_slot_counts_pkey": {
           "accessMethod": "btree",
@@ -18878,6 +18934,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_agent_prompts_pkey": {
           "accessMethod": "btree",
@@ -19283,6 +19340,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_application_answers_pkey": {
           "accessMethod": "btree",
@@ -19476,6 +19534,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_application_questions_identity_key": {
           "accessMethod": "btree",
@@ -19775,6 +19834,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_applications_identity_key": {
           "accessMethod": "btree",
@@ -20070,6 +20130,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_auto_tagger_agents_pkey": {
           "accessMethod": "btree",
@@ -20370,6 +20431,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_bans_pkey": {
           "accessMethod": "btree",
@@ -20805,6 +20867,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_invites_pkey": {
           "accessMethod": "btree",
@@ -21153,6 +21216,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_list_posts_pkey": {
           "accessMethod": "btree",
@@ -21519,6 +21583,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_list_rss_feeds_pkey": {
           "accessMethod": "btree",
@@ -21856,6 +21921,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_list_topics_pkey": {
           "accessMethod": "btree",
@@ -22187,6 +22253,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_list_url_hostnames_pkey": {
           "accessMethod": "btree",
@@ -22512,6 +22579,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_list_urls_pkey": {
           "accessMethod": "btree",
@@ -22799,6 +22867,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_member_vacations_pkey": {
           "accessMethod": "btree",
@@ -23079,6 +23148,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_members_pkey": {
           "accessMethod": "btree",
@@ -23725,6 +23795,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_pinned_posts_pkey": {
           "accessMethod": "btree",
@@ -24005,6 +24076,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "community_post_review_changes_pkey": {
           "accessMethod": "btree",
@@ -24531,6 +24603,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_post_reviews_pkey": {
           "accessMethod": "btree",
@@ -25180,6 +25253,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "community_prompt_classifier_results_pkey": {
           "accessMethod": "btree",
@@ -25512,6 +25586,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_restrictions_pkey": {
           "accessMethod": "btree",
@@ -25816,6 +25891,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_saved_replies_pkey": {
           "accessMethod": "btree",
@@ -26055,6 +26131,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "community_search_counts_pkey": {
           "accessMethod": "btree",
@@ -26589,6 +26666,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "conversation_messages_pkey": {
           "accessMethod": "btree",
@@ -26938,6 +27016,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "conversation_participants_pkey": {
           "accessMethod": "btree",
@@ -27413,6 +27492,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "conversations_pkey": {
           "accessMethod": "btree",
@@ -28075,6 +28155,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_automatic_withholding_refusals_pkey": {
           "accessMethod": "btree",
@@ -28248,6 +28329,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_case_preservation_holds_pkey": {
           "accessMethod": "btree",
@@ -28521,6 +28603,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_claimant_misuse_events_copyright_restriction_id_key": {
           "accessMethod": "btree",
@@ -28757,6 +28840,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_claimant_suspension_reversals_pkey": {
           "accessMethod": "btree",
@@ -28976,6 +29060,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_decision_rationales_pkey": {
           "accessMethod": "btree",
@@ -29319,6 +29404,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_dsa_statement_submi_copyright_dsa_statement_submi_key": {
           "accessMethod": "btree",
@@ -29622,6 +29708,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_dsa_statement_submission_copyright_restriction_id_key": {
           "accessMethod": "btree",
@@ -29859,6 +29946,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_email_receipt_preservation_holds_pkey": {
           "accessMethod": "btree",
@@ -30111,6 +30199,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_eu_dispute_settlement_outcomes_pkey": {
           "accessMethod": "btree",
@@ -30357,6 +30446,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_eu_dispute_settlement_referrals_pkey": {
           "accessMethod": "btree",
@@ -30742,6 +30832,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_eu_supervised_complaints_pkey": {
           "accessMethod": "btree",
@@ -31119,6 +31210,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_eu_transparency_reports_pkey": {
           "accessMethod": "btree",
@@ -31300,6 +31392,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_jurisdiction_policy_approvals_pkey": {
           "accessMethod": "btree",
@@ -31506,6 +31599,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_jurisdiction_policy_withdrawals_pkey": {
           "accessMethod": "btree",
@@ -31648,6 +31742,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_legal_hold_restrictions_pkey": {
           "accessMethod": "btree",
@@ -31807,6 +31902,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_action_attempt_results_pkey": {
           "accessMethod": "btree",
@@ -31939,6 +32035,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_action_attempt_work_item_id_attempt_number_key": {
           "accessMethod": "btree",
@@ -32293,6 +32390,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_action_work_items_copyright_notice_id_id_key": {
           "accessMethod": "btree",
@@ -32649,6 +32747,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_appeal_recommendation_runs_pkey": {
           "accessMethod": "btree",
@@ -32877,6 +32976,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_appeal_recommendations_id_submission_unique": {
           "accessMethod": "btree",
@@ -33189,6 +33289,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_appeal_reviews_pkey": {
           "accessMethod": "btree",
@@ -33570,6 +33671,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_correspondence_id_notice_unique": {
           "accessMethod": "btree",
@@ -33835,6 +33937,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_counter_notice_assessment_targets_pkey": {
           "accessMethod": "btree",
@@ -34087,6 +34190,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_counter_notice_reviews_pkey": {
           "accessMethod": "btree",
@@ -34370,6 +34474,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_deadlines_copyright_notice_id_id_key": {
           "accessMethod": "btree",
@@ -34610,6 +34715,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_delivery_attempt_results_pkey": {
           "accessMethod": "btree",
@@ -34742,6 +34848,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_delivery_attem_work_item_id_attempt_number_key": {
           "accessMethod": "btree",
@@ -34943,6 +35050,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_delivery_recipients_pkey": {
           "accessMethod": "btree",
@@ -35474,6 +35582,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_delivery_work_items_idempotency_key_key": {
           "accessMethod": "btree",
@@ -36163,6 +36272,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "copyright_notice_email_correspondence_reviews_pkey": {
           "accessMethod": "btree",
@@ -36497,6 +36607,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_email_intake_attachments_pkey": {
           "accessMethod": "btree",
@@ -36838,6 +36949,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_email_intake__correspondence_submission_id_key": {
           "accessMethod": "btree",
@@ -37267,6 +37379,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_email_intake_parses_pkey": {
           "accessMethod": "btree",
@@ -37495,6 +37608,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_email_intake_receipt_amazon_ses_message_id_key": {
           "accessMethod": "btree",
@@ -37698,6 +37812,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_email_intake_recommendation_identities_pkey": {
           "accessMethod": "btree",
@@ -37928,6 +38043,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_email_intake_recommendation_runs_pkey": {
           "accessMethod": "btree",
@@ -38151,6 +38267,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "copyright_notice_email_intake_recommendations_pkey": {
           "accessMethod": "btree",
@@ -38410,6 +38527,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "copyright_notice_email_intake_reviews_pkey": {
           "accessMethod": "btree",
@@ -38824,6 +38942,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_email_intakes_amazon_ses_message_id_key": {
           "accessMethod": "btree",
@@ -39048,6 +39167,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_email_message_ancestors_pkey": {
           "accessMethod": "btree",
@@ -39212,6 +39332,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_email_thread_references_pkey": {
           "accessMethod": "btree",
@@ -39408,6 +39529,7 @@
       },
       "comment": "Private UUID identities for keyed RFC message-reference digests; exclusively owned tokens expire after the case reply window, while shared tokens survive.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_email_thread_tokens_pkey": {
           "accessMethod": "btree",
@@ -39595,6 +39717,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_evidence_artifacts_copyright_notice_id_id_key": {
           "accessMethod": "btree",
@@ -39870,6 +39993,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_form_intake_reviews_pkey": {
           "accessMethod": "btree",
@@ -40120,6 +40244,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_form_intakes_copyright_notice_id_key": {
           "accessMethod": "btree",
@@ -40440,6 +40565,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_form_screeni_copyright_notice_form_intake__key": {
           "accessMethod": "btree",
@@ -40713,6 +40839,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_form_screening_work_items_pkey": {
           "accessMethod": "btree",
@@ -40941,6 +41068,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_form_screenings_pkey": {
           "accessMethod": "btree",
@@ -41140,6 +41268,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_guest_capability_notice_key": {
           "accessMethod": "btree",
@@ -41410,6 +41539,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_guest_capability_identity_notice_key": {
           "accessMethod": "btree",
@@ -41576,6 +41706,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_legal_hold_assessment_targets_pkey": {
           "accessMethod": "btree",
@@ -41856,6 +41987,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_legal_hold_assessments_pkey": {
           "accessMethod": "btree",
@@ -42116,6 +42248,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_legal_hold_resolutions_pkey": {
           "accessMethod": "btree",
@@ -42694,6 +42827,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "copyright_notice_lifecycle_changes_copyright_notice_id_id_key": {
           "accessMethod": "btree",
@@ -43349,6 +43483,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_operational_retention_cursors_pkey": {
           "accessMethod": "btree",
@@ -43464,6 +43599,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_party_identities_pkey": {
           "accessMethod": "btree",
@@ -43573,6 +43709,7 @@
       },
       "comment": "Global legal-preservation change generation for bounded case-party proof; hold changes invalidate prior bounded proof pages.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_retention_generations_pkey": {
           "accessMethod": "btree",
@@ -43671,6 +43808,7 @@
       },
       "comment": "One private evidence-bucket object identity shared by every intake or artifact that references its unique storage key.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_storage_objects_pkey": {
           "accessMethod": "btree",
@@ -43791,6 +43929,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_submission_assessment_identities_pkey": {
           "accessMethod": "btree",
@@ -44037,6 +44176,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "copyright_notice_submission_assessments_pkey": {
           "accessMethod": "btree",
@@ -44340,6 +44480,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_submission_guidance_pkey": {
           "accessMethod": "btree",
@@ -44568,6 +44709,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_submission_guidance_runs_pkey": {
           "accessMethod": "btree",
@@ -44773,6 +44915,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_submission_requests_pkey": {
           "accessMethod": "btree",
@@ -44947,6 +45090,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_submission_targets_copyright_notice_id_id_key": {
           "accessMethod": "btree",
@@ -45312,6 +45456,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_submissions_id_notice_unique": {
           "accessMethod": "btree",
@@ -45767,6 +45912,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_target_images_pkey": {
           "accessMethod": "btree",
@@ -45994,6 +46140,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_targets_copyright_notice_id_id_key": {
           "accessMethod": "btree",
@@ -46248,6 +46395,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_thread_blocker_generations_pkey": {
           "accessMethod": "btree",
@@ -46322,6 +46470,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_thread_party_generations_pkey": {
           "accessMethod": "btree",
@@ -46411,6 +46560,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_thread_retention_activities_pkey": {
           "accessMethod": "btree",
@@ -46494,6 +46644,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notice_urgent_filings_pkey": {
           "accessMethod": "btree",
@@ -46840,6 +46991,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_notices_pkey": {
           "accessMethod": "btree",
@@ -47257,6 +47409,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_repeat_infringer_account_states_pkey": {
           "accessMethod": "btree",
@@ -47440,6 +47593,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "copyright_repeat_infringer_dispositions_pkey": {
           "accessMethod": "btree",
@@ -47602,6 +47756,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_repeat_infringer_incident_targets_pkey": {
           "accessMethod": "btree",
@@ -47823,6 +47978,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_repeat_infringer_incidents_pkey": {
           "accessMethod": "btree",
@@ -48096,6 +48252,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_repeat_infringer_review_identities_pkey": {
           "accessMethod": "btree",
@@ -48308,6 +48465,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "copyright_repeat_infringer_reviews_pkey": {
           "accessMethod": "btree",
@@ -48486,6 +48644,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "copyright_restriction_administrator_lifts_pkey": {
           "accessMethod": "btree",
@@ -48862,6 +49021,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_restrictions_copyright_notice_id_id_key": {
           "accessMethod": "btree",
@@ -49240,6 +49400,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_staydown_entries_copyright_restriction_id_key": {
           "accessMethod": "btree",
@@ -49513,6 +49674,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_staydown_match_unique": {
           "accessMethod": "btree",
@@ -49751,6 +49913,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_territorial_decision_identities_pkey": {
           "accessMethod": "btree",
@@ -50065,6 +50228,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "copyright_territorial_decisions_pkey": {
           "accessMethod": "btree",
@@ -50379,6 +50543,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_territorial_escalations_pkey": {
           "accessMethod": "btree",
@@ -50675,6 +50840,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_territorial_notice_acknowledgments_pkey": {
           "accessMethod": "btree",
@@ -50945,6 +51111,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_territorial_notice_receipts_pkey": {
           "accessMethod": "btree",
@@ -51181,6 +51348,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_territorial_notice_routings_pkey": {
           "accessMethod": "btree",
@@ -51264,6 +51432,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_territorial_redress_copyright_territorial_redress_key": {
           "accessMethod": "btree",
@@ -51472,6 +51641,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "copyright_territorial_redress_decisions_pkey": {
           "accessMethod": "btree",
@@ -51825,6 +51995,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_territorial_redress_requests_pkey": {
           "accessMethod": "btree",
@@ -52258,6 +52429,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_trusted_flagger_changes_pkey": {
           "accessMethod": "btree",
@@ -52509,6 +52681,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_trusted_flagger_matches_copyright_notice_id_key": {
           "accessMethod": "btree",
@@ -52766,6 +52939,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "copyright_trusted_flaggers_pkey": {
           "accessMethod": "btree",
@@ -52935,6 +53109,7 @@
       },
       "comment": "Lookup table of supported countries with ISO 3166-1 alpha-2 codes.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "countries_code_key": {
           "accessMethod": "btree",
@@ -53138,6 +53313,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "crawl_chunks_pkey": {
           "accessMethod": "btree",
@@ -53645,6 +53821,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "crawls_pkey": {
           "accessMethod": "btree",
@@ -54098,6 +54275,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "curated_aside_items_pkey": {
           "accessMethod": "btree",
@@ -54305,6 +54483,7 @@
       },
       "comment": "ISO 4217 currency codes supported by the platform.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "currencies_pkey": {
           "accessMethod": "btree",
@@ -54427,6 +54606,7 @@
       },
       "comment": "Position of the cyclic ballot pass after the user deletion drain.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "deleted_user_ballot_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -54587,6 +54767,7 @@
       },
       "comment": "External sources of domain blacklists (e.g. spam user_lists, disposable email user_lists).",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "domain_blocklist_sources_name_key": {
           "accessMethod": "btree",
@@ -54730,6 +54911,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "dynamic_configuration_revisions_pkey": {
           "accessMethod": "btree",
@@ -54984,6 +55166,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "email_address_login_tokens_email_address_token_key": {
           "accessMethod": "btree",
@@ -55414,6 +55597,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "facebook_accounts_facebook_user_id_key": {
           "accessMethod": "btree",
@@ -55819,6 +56003,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "facebook_friends_facebook_account_id_facebook_friend_id_key": {
           "accessMethod": "btree",
@@ -56160,6 +56345,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "fediverse_instance_integration_changes_pkey": {
           "accessMethod": "btree",
@@ -56384,6 +56570,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "fediverse_instance_topics_pkey": {
           "accessMethod": "btree",
@@ -56502,6 +56689,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "follower_distribution_deliveries_pkey": {
           "accessMethod": "btree",
@@ -56652,6 +56840,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "follower_distribution_selected_recipients_pkey": {
           "accessMethod": "btree",
@@ -56888,6 +57077,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "follower_distributions_pkey": {
           "accessMethod": "btree",
@@ -57328,6 +57518,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "github_accounts_github_user_id_key": {
           "accessMethod": "btree",
@@ -57733,6 +57924,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "github_friends_github_account_id_github_friend_id_key": {
           "accessMethod": "btree",
@@ -58099,6 +58291,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "google_accounts_google_user_id_key": {
           "accessMethod": "btree",
@@ -58344,6 +58537,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "growth_metric_daily_post_authors_pkey": {
           "accessMethod": "btree",
@@ -58623,6 +58817,7 @@
       },
       "comment": "Anonymous current-eligibility daily reporting totals, retained for the all-range growth report and replaced when that source day changes.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "growth_metric_daily_totals_day_key": {
           "accessMethod": "btree",
@@ -58739,6 +58934,7 @@
       },
       "comment": "Durable UUIDv7 progress for bounded history retention passes.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "history_retention_cursors_pkey": {
           "accessMethod": "btree",
@@ -58988,6 +59184,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "hostname_crawler_configurations_pkey": {
           "accessMethod": "btree",
@@ -59191,6 +59388,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "hostname_path_boilerplate_removal_urls_pkey": {
           "accessMethod": "btree",
@@ -59337,6 +59535,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "hostname_path_boilerplate_removals_pkey": {
           "accessMethod": "btree",
@@ -59576,6 +59775,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "hostname_votes_pkey": {
           "accessMethod": "btree",
@@ -59927,6 +60127,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "household_invitations_pkey": {
           "accessMethod": "btree",
@@ -60273,6 +60474,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "household_members_pkey": {
           "accessMethod": "btree",
@@ -60475,6 +60677,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "households_pkey": {
           "accessMethod": "btree",
@@ -60732,6 +60935,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "identity_verification_attempts_checkout_session_id_key": {
           "accessMethod": "btree",
@@ -61014,6 +61218,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_image_deletion_post_updates__post_id": {
           "accessMethod": "btree",
@@ -61158,6 +61363,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_image_placements__image": {
           "accessMethod": "btree",
@@ -61380,6 +61586,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_image_surface_placement_activations__bound_by_user": {
           "accessMethod": "btree",
@@ -61636,6 +61843,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_image_surface_placements__community_banner": {
           "accessMethod": "btree",
@@ -62325,6 +62533,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_images__abandoned_uploads": {
           "accessMethod": "btree",
@@ -62777,6 +62986,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_import_retention_cursors__admin_batch_id": {
           "accessMethod": "btree",
@@ -63046,6 +63256,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_individual_cards__authorized_user_of_id": {
           "accessMethod": "btree",
@@ -63342,6 +63553,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_individual_financial_profiles__currency_code": {
           "accessMethod": "btree",
@@ -63521,6 +63733,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_ind_rewards_program_point_valuations__currency_code": {
           "accessMethod": "btree",
@@ -63787,6 +64000,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_individual_rewards_program_statuses__individual_id_id": {
           "accessMethod": "btree",
@@ -63921,6 +64135,7 @@
       },
       "comment": "Represents a real person. A user account maps to one individual for personal finance tracking.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "individuals_pkey": {
           "accessMethod": "btree",
@@ -64103,6 +64318,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_linkedin_accounts__email": {
           "accessMethod": "btree",
@@ -64517,6 +64733,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_mcp_call_audit_events__actor_user": {
           "accessMethod": "btree",
@@ -64739,6 +64956,7 @@
       },
       "comment": "Singleton raw UUIDv7 scan position for aged delivery transition retention.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "media_delivery_change_retention_cursors_pkey": {
           "accessMethod": "btree",
@@ -64962,6 +65180,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_media_delivery_registry_changes__actor": {
           "accessMethod": "btree",
@@ -65288,6 +65507,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_med_dlvry_rgstry_prjctn_wrk_itms__failed_change": {
           "accessMethod": "btree",
@@ -65586,6 +65806,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_media_delivery_registry_records__image": {
           "accessMethod": "btree",
@@ -65785,6 +66006,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_media_delivery_repair_markers__oldest": {
           "accessMethod": "btree",
@@ -65967,6 +66189,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "media_placements_pkey": {
           "accessMethod": "btree",
@@ -66063,6 +66286,7 @@
       },
       "comment": "Shared lookup of validated MIME types for URLs, RSS enclosures and legal email/evidence records.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "media_types_mime_type_key": {
           "accessMethod": "btree",
@@ -66317,6 +66541,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membersh_administr_refund_operation_requests__currency_code": {
           "accessMethod": "btree",
@@ -66579,6 +66804,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_automatic_refund_receipts__currency_code": {
           "accessMethod": "btree",
@@ -66965,6 +67191,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_changes__changed_by_id": {
           "accessMethod": "btree",
@@ -67362,6 +67589,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_entitlement_effects__change_id": {
           "accessMethod": "btree",
@@ -67617,6 +67845,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_google_play_acknowledgment_work_items__claim": {
           "accessMethod": "btree",
@@ -67860,6 +68089,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_google_play_acknowledgments__lineage_context": {
           "accessMethod": "btree",
@@ -68184,6 +68414,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_google_play_purchase_tokens__context_token": {
           "accessMethod": "btree",
@@ -68402,6 +68633,7 @@
       },
       "comment": "Bounded Google Play notification, acknowledgement, and active-source recovery scans advance only after their queue fan-out succeeds.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "membership_google_play_recovery_cursors_pkey": {
           "accessMethod": "btree",
@@ -68529,6 +68761,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_grant_activation_periods__grant_id": {
           "accessMethod": "btree",
@@ -68860,6 +69093,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_grants__granted_by_id": {
           "accessMethod": "btree",
@@ -69108,6 +69342,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_members_ineligib_purchase_reversal_case_operatio__operation": {
           "accessMethod": "btree",
@@ -69379,6 +69614,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_member_inelig_purchase_reversal_cases__collision_at_id": {
           "accessMethod": "btree",
@@ -69694,6 +69930,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_members_ineligi_purchase_reversal_refund_observat__currency": {
           "accessMethod": "btree",
@@ -69864,6 +70101,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "pk_mipr_refund_scan_cycles": {
           "accessMethod": "btree",
@@ -70153,6 +70391,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membersh_ineligibl_purchase_reversal_refund_scans__currency": {
           "accessMethod": "btree",
@@ -70398,6 +70637,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_lineage_bindings__current_direct_lineage": {
           "accessMethod": "btree",
@@ -70812,6 +71052,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_microsoft_store_credentials__due": {
           "accessMethod": "btree",
@@ -71000,6 +71241,7 @@
       },
       "comment": "Single durable high-water mark for Microsoft Store active-source recovery.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "membership_microsoft_store_recovery_cursors_pkey": {
           "accessMethod": "btree",
@@ -71126,6 +71368,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_operation_execution_work_items__available": {
           "accessMethod": "btree",
@@ -71301,6 +71544,7 @@
       },
       "comment": "One persisted keyset position per bounded membership operational retention sweep.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "membership_operational_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -71709,6 +71953,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_operations__binding_id": {
           "accessMethod": "btree",
@@ -72211,6 +72456,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_pause_collection_work_items__available": {
           "accessMethod": "btree",
@@ -72401,6 +72647,7 @@
       },
       "comment": "Canonical membership offerings, independent of any billing provider.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_products__active_plan_interval": {
           "accessMethod": "btree",
@@ -72538,6 +72785,7 @@
       },
       "comment": "Canonical identity for a configured membership provider, environment, and application.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "membership_provider_contexts_pkey": {
           "accessMethod": "btree",
@@ -72776,6 +73024,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_provider_evidence_records__context_event": {
           "accessMethod": "btree",
@@ -73144,6 +73393,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_provider_lineages__id_context": {
           "accessMethod": "btree",
@@ -73633,6 +73883,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_provider_observations__evidence_id": {
           "accessMethod": "btree",
@@ -74099,6 +74350,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_provider_products__active_product_context": {
           "accessMethod": "btree",
@@ -74581,6 +74833,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_purchase_intents__active_user": {
           "accessMethod": "btree",
@@ -74910,6 +75163,7 @@
       },
       "comment": "Durable (user, grant) keyset for the scheduled repair of queued grants behind a cancelled or expired projection.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "membership_queued_grant_repair_cursors_pkey": {
           "accessMethod": "btree",
@@ -75050,6 +75304,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "membership_refund_operation_attempt_metadata_scans_pkey": {
           "accessMethod": "btree",
@@ -75279,6 +75534,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_refund_operation_attempts__active_provider_key": {
           "accessMethod": "btree",
@@ -75774,6 +76030,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_refunds__issued_by_id": {
           "accessMethod": "btree",
@@ -76213,6 +76470,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available": {
           "accessMethod": "btree",
@@ -76581,6 +76839,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_source_states__family_effective_at": {
           "accessMethod": "btree",
@@ -76863,6 +77122,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_sources__current_family_lineage_user": {
           "accessMethod": "btree",
@@ -77276,6 +77536,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_stripe_purchase_collision_reviews__binding": {
           "accessMethod": "btree",
@@ -77523,6 +77784,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_stripe_purchase_collision_work_items__binding": {
           "accessMethod": "btree",
@@ -77837,6 +78099,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_membership_verifications__evidence_id": {
           "accessMethod": "btree",
@@ -78273,6 +78536,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_memberships__effective_user": {
           "accessMethod": "btree",
@@ -78663,6 +78927,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_microsoft_accounts__email": {
           "accessMethod": "btree",
@@ -78935,6 +79200,7 @@
       },
       "comment": null,
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "migrations_pkey": {
           "accessMethod": "btree",
@@ -79053,6 +79319,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_appeal_lifecycle_changes__appeal_created": {
           "accessMethod": "btree",
@@ -79278,6 +79545,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_appeal_resolution_runs__active_id": {
           "accessMethod": "btree",
@@ -79930,6 +80198,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_appeals__ai_draft_requested_run_id": {
           "accessMethod": "btree",
@@ -80652,6 +80921,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_cases__hostname_id": {
           "accessMethod": "btree",
@@ -80947,6 +81217,7 @@
       },
       "comment": "Singleton keyset position for the daily bounded media reveal retention sweep.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "moderation_media_reveal_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -81103,6 +81374,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_media_reveals__moderator_revealed": {
           "accessMethod": "btree",
@@ -81265,6 +81537,7 @@
       },
       "comment": "Singleton keyset position for the daily bounded claim retention sweep.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "moderation_queue_claim_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -81430,6 +81703,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_queue_claims__claimed_by_id": {
           "accessMethod": "btree",
@@ -81647,6 +81921,7 @@
       },
       "comment": "Durable UUIDv7 keyset progress for bounded daily moderation record retention.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "moderation_record_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -81826,6 +82101,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_report_clusters__first_reported_at": {
           "accessMethod": "btree",
@@ -82262,6 +82538,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_report_judgement_runs__active_id": {
           "accessMethod": "btree",
@@ -82642,6 +82919,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_report_judgements__case_id": {
           "accessMethod": "btree",
@@ -83240,6 +83518,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_reports__active_community_user_unique": {
           "accessMethod": "btree",
@@ -84277,6 +84556,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderation_training_feedbacks__actor_user_id": {
           "accessMethod": "btree",
@@ -84672,6 +84952,7 @@
       },
       "comment": "Immutable aggregate-only daily moderation transparency disclosures; no source or community foreign key is retained.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "idx_moderatio_transparen_released_daily_rollups__community_page": {
           "accessMethod": "btree",
@@ -84838,6 +85119,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderator_action_community_restrictions__restriction": {
           "accessMethod": "btree",
@@ -85428,6 +85710,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderator_actions__actor__id": {
           "accessMethod": "btree",
@@ -86157,6 +86440,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "moderator_agents_pkey": {
           "accessMethod": "btree",
@@ -86321,6 +86605,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_moderator_workload_daily_totals__actor_user_id": {
           "accessMethod": "btree",
@@ -86601,6 +86886,7 @@
       },
       "comment": "Durable positions for bounded notification tombstone sweeps that skip protected rows.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "notification_email_retention_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -86699,6 +86985,7 @@
       },
       "comment": "Singleton position for the pending push intent age sweep.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "notification_push_intent_retention_cursors_pkey": {
           "accessMethod": "btree",
@@ -86846,6 +87133,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_notifi_push_intent_subscr_receipt__user_id__subscription_id": {
           "accessMethod": "btree",
@@ -87091,6 +87379,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_notification_push_intents__available": {
           "accessMethod": "btree",
@@ -87954,6 +88243,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_notifications__actor_user_id": {
           "accessMethod": "btree",
@@ -89342,6 +89632,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_access_tokens__expiry": {
           "accessMethod": "btree",
@@ -89681,6 +89972,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_authorization_codes__expiry": {
           "accessMethod": "btree",
@@ -89900,6 +90192,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "oauth_authorization_exchange_attempt_results_pkey": {
           "accessMethod": "btree",
@@ -90018,6 +90311,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "oauth_authorization_exchange__oauth_authorization_id_attemp_key": {
           "accessMethod": "btree",
@@ -90320,6 +90614,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_authorization_requests__client": {
           "accessMethod": "btree",
@@ -90645,6 +90940,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_authorization_server_events__access_revocation": {
           "accessMethod": "btree",
@@ -91413,6 +91709,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_authorizations__active_web_authentication": {
           "accessMethod": "btree",
@@ -91800,6 +92097,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "oauth_client_grant_markers_pkey": {
           "accessMethod": "btree",
@@ -92107,6 +92405,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_clients__metadata_url": {
           "accessMethod": "btree",
@@ -92318,6 +92617,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_grant_retention_anchors__ended": {
           "accessMethod": "btree",
@@ -92592,6 +92892,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_grants__active_subject": {
           "accessMethod": "btree",
@@ -92929,6 +93230,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_native_session_token_mints__user": {
           "accessMethod": "btree",
@@ -93144,6 +93446,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_refresh_token_families__expiry": {
           "accessMethod": "btree",
@@ -93433,6 +93736,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_oauth_refresh_tokens__expiry": {
           "accessMethod": "btree",
@@ -93702,6 +94006,7 @@
       },
       "comment": "Durable keyset positions for actor, hostname-block, and conversation rows that remain protected while a sweep advances.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "operational_tombstone_retention_cursors_pkey": {
           "accessMethod": "btree",
@@ -93775,6 +94080,7 @@
       },
       "comment": "One persisted UUIDv7 keyset position per daily payment operational cleanup.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "payment_operational_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -93903,6 +94209,7 @@
       },
       "comment": "Short-lived tokens for phone-number-based login via SMS/voice.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "idx_phone_number_login_tokens__active": {
           "accessMethod": "btree",
@@ -94109,6 +94416,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_podcast_playback_positions__rss_feed_item_id": {
           "accessMethod": "btree",
@@ -94313,6 +94621,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "podcast_shows_pkey": {
           "accessMethod": "btree",
@@ -94419,6 +94728,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "post_activitypub_like_tallies_pkey": {
           "accessMethod": "btree",
@@ -94531,6 +94841,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "post_admission_attempt_results_pkey": {
           "accessMethod": "btree",
@@ -94649,6 +94960,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "post_admission_attempts_pkey": {
           "accessMethod": "btree",
@@ -94838,6 +95150,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_admission_claims__lease_expires_at": {
           "accessMethod": "btree",
@@ -94978,6 +95291,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_admission_quota_consumptions__actor_committed": {
           "accessMethod": "btree",
@@ -95348,6 +95662,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_admission_reservations__committed_post_retention": {
           "accessMethod": "btree",
@@ -95625,6 +95940,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_classifier_local_outcomes__local_topic": {
           "accessMethod": "btree",
@@ -95897,6 +96213,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_post_clearance_changes__changed_by_id": {
           "accessMethod": "btree",
@@ -96121,6 +96438,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_post_data_point_topics__topic_id": {
           "accessMethod": "btree",
@@ -96335,6 +96653,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_dispute_annotations__created_by": {
           "accessMethod": "btree",
@@ -96571,6 +96890,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_post_explicit_topic_categories__topic_id": {
           "accessMethod": "btree",
@@ -96761,6 +97081,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_post_feed_shares__post_id": {
           "accessMethod": "btree",
@@ -97033,6 +97354,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_images__image_id__post_id": {
           "accessMethod": "btree",
@@ -97253,6 +97575,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_locks__lifted_by_id": {
           "accessMethod": "btree",
@@ -97467,6 +97790,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_moderation_attempts__version_source_id": {
           "accessMethod": "btree",
@@ -97780,6 +98104,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_moderation_dispositions__actor_user_id": {
           "accessMethod": "btree",
@@ -98132,6 +98457,7 @@
       },
       "comment": "Durable UUIDv7 positions for bounded post moderation ledger retention.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "post_moderation_retention_cursors_pkey": {
           "accessMethod": "btree",
@@ -98245,6 +98571,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_moderation_retention_post_work_items__changed": {
           "accessMethod": "btree",
@@ -98429,6 +98756,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_moderation_versions__content_policy_key": {
           "accessMethod": "btree",
@@ -98746,6 +99074,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "post_publication_community_identities_community_id_key": {
           "accessMethod": "btree",
@@ -98865,6 +99194,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_post_read_states__post_id": {
           "accessMethod": "btree",
@@ -99026,6 +99356,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_post_review_topic_ratings__topic_id": {
           "accessMethod": "btree",
@@ -99197,6 +99528,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_post_revisions__post_id": {
           "accessMethod": "btree",
@@ -99361,6 +99693,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_slugs__post_id__id_desc": {
           "accessMethod": "btree",
@@ -99657,6 +99990,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_topic_alias_sources__contributor_id": {
           "accessMethod": "btree",
@@ -99868,6 +100202,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_topic_recommendation_hostnames__hostname_id": {
           "accessMethod": "btree",
@@ -100006,6 +100341,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_post_topic_recommendation_landing_page_urls__url_id": {
           "accessMethod": "btree",
@@ -100346,6 +100682,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_post_topic_recommendations__created_topic_id": {
           "accessMethod": "btree",
@@ -100552,6 +100889,7 @@
       },
       "comment": "Anonymous daily count of post vote events removed by ballot retention, preserving historical engagement metrics.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "post_vote_retained_daily_counts_day_key": {
           "accessMethod": "btree",
@@ -100817,6 +101155,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_post_votes__activitypub_pending": {
           "accessMethod": "btree",
@@ -102000,6 +102339,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_posts__approved": {
           "accessMethod": "btree",
@@ -103780,6 +104120,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_queue_domain_controls__paused_by_user_id": {
           "accessMethod": "btree",
@@ -103936,6 +104277,7 @@
       },
       "comment": "Named validation rule sets that can be attached to referral programs to verify submitted URLs.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "idx_referral_program_link_validation_rule_sets__slug_prefix": {
           "accessMethod": "btree",
@@ -104164,6 +104506,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_referral_program_link_validation_rules__validation_id": {
           "accessMethod": "btree",
@@ -104279,6 +104622,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_referral_program_topic_link_validation_rule_sets__rule_set": {
           "accessMethod": "btree",
@@ -104473,6 +104817,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_referral_program_topics__company_topic_id__topic_id": {
           "accessMethod": "btree",
@@ -104651,6 +104996,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__community__mute__topic__created_by_id": {
           "accessMethod": "btree",
@@ -104922,6 +105268,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__community__mute__url_hostname__created_by_id": {
           "accessMethod": "btree",
@@ -105309,6 +105656,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__post__category__topic__created_by_id": {
           "accessMethod": "btree",
@@ -105883,6 +106231,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__post__category__topic__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -106320,6 +106669,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__post__category__topic_alias__created_by_id": {
           "accessMethod": "btree",
@@ -106887,6 +107237,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relat__post__catego__topic_alias__votes__relation__user__id": {
           "accessMethod": "btree",
@@ -107198,6 +107549,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__post__mentioned__post__created_by_id": {
           "accessMethod": "btree",
@@ -107464,6 +107816,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__post__mentioned__topic__created_by_id": {
           "accessMethod": "btree",
@@ -107737,6 +108090,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__post__mentioned__user__created_by_id": {
           "accessMethod": "btree",
@@ -108126,6 +108480,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__post__related__post__created_by_id": {
           "accessMethod": "btree",
@@ -108661,6 +109016,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__post__related__post__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -109095,6 +109451,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__post__related__url__active_reverse": {
           "accessMethod": "btree",
@@ -109789,6 +110146,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__post__related__url__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -110119,6 +110477,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__remote_actor__follow__user__active_reverse": {
           "accessMethod": "btree",
@@ -110538,6 +110897,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relati__rss_feed_item__categor__topic__votes_score_sort__id": {
           "accessMethod": "btree",
@@ -111078,6 +111438,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_rela__rss_feed_item__cate__topic__votes__relation__user__id": {
           "accessMethod": "btree",
@@ -111515,6 +111876,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rela__rss_feed_item__cate__topi_alias__votes_score_sort__id": {
           "accessMethod": "btree",
@@ -112048,6 +112410,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_rela__rss_fee_ite__cat__topi_alia__vote__relation__user__id": {
           "accessMethod": "btree",
@@ -112482,6 +112845,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__category__topic__created_by_id": {
           "accessMethod": "btree",
@@ -113022,6 +113386,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__topic__category__topic__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -113459,6 +113824,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__faq__post__created_by_id": {
           "accessMethod": "btree",
@@ -113999,6 +114365,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__topic__faq__post__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -114436,6 +114803,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__faq__url__active_reverse": {
           "accessMethod": "btree",
@@ -115008,6 +115376,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__topic__faq__url__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -115445,6 +115814,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__guide__url__active_reverse": {
           "accessMethod": "btree",
@@ -116017,6 +116387,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__topic__guide__url__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -116454,6 +116825,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__landing_page__url__active_reverse": {
           "accessMethod": "btree",
@@ -117026,6 +117398,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relati__topic__landing_page__url__votes__relation__user__id": {
           "accessMethod": "btree",
@@ -117340,6 +117713,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__mentioned__post__created_by_id": {
           "accessMethod": "btree",
@@ -117611,6 +117985,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__parent__topic__created_by_id": {
           "accessMethod": "btree",
@@ -118005,6 +118380,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__publishe_type__topic__votes_score_sort__id": {
           "accessMethod": "btree",
@@ -118545,6 +118921,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relat__topic__publis_type__topic__votes__relation__user__id": {
           "accessMethod": "btree",
@@ -118982,6 +119359,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__related__post__created_by_id": {
           "accessMethod": "btree",
@@ -119522,6 +119900,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__topic__related__post__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -119959,6 +120338,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__related__topic__created_by_id": {
           "accessMethod": "btree",
@@ -120499,6 +120879,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__topic__related__topic__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -120936,6 +121317,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__topic__related__url__active_reverse": {
           "accessMethod": "btree",
@@ -121508,6 +121890,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__topic__related__url__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -121945,6 +122328,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relatio__topic__terms_of_service__url__votes_score_sort__id": {
           "accessMethod": "btree",
@@ -122517,6 +122901,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_rela__topic__terms_of_servi__url__votes__relation__user__id": {
           "accessMethod": "btree",
@@ -122831,6 +123216,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__block__topic__created_by_id": {
           "accessMethod": "btree",
@@ -123102,6 +123488,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__block__url_hostname__created_by_id": {
           "accessMethod": "btree",
@@ -123366,6 +123753,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__block__user__created_by_id": {
           "accessMethod": "btree",
@@ -123753,6 +124141,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__category__topic__created_by_id": {
           "accessMethod": "btree",
@@ -124293,6 +124682,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_relation__user__category__topic__votes__cleanup__id": {
           "accessMethod": "btree",
@@ -124607,6 +124997,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__dismiss_recommendat__topic__subject__newest": {
           "accessMethod": "btree",
@@ -124878,6 +125269,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__dismiss_recommendati__user__subject__newest": {
           "accessMethod": "btree",
@@ -125142,6 +125534,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__follow__post__created_by_id": {
           "accessMethod": "btree",
@@ -125406,6 +125799,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__follow__rss_feed__created_at": {
           "accessMethod": "btree",
@@ -125734,6 +126128,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__follow__topic__created_by_id": {
           "accessMethod": "btree",
@@ -126025,6 +126420,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__follow__user__activitypub_pending": {
           "accessMethod": "btree",
@@ -126366,6 +126762,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__hide__post__created_by_id": {
           "accessMethod": "btree",
@@ -126630,6 +127027,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__hide__rss_feed_item__created_by_id": {
           "accessMethod": "btree",
@@ -126894,6 +127292,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__mentioned__post__created_by_id": {
           "accessMethod": "btree",
@@ -127158,6 +127557,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__mute__rss_feed__created_by_id": {
           "accessMethod": "btree",
@@ -127422,6 +127822,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__mute__topic__created_by_id": {
           "accessMethod": "btree",
@@ -127693,6 +128094,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__mute__url_hostname__created_by_id": {
           "accessMethod": "btree",
@@ -127957,6 +128359,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__mute__user__created_by_id": {
           "accessMethod": "btree",
@@ -128221,6 +128624,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__proxy_follow__community__created_by_id": {
           "accessMethod": "btree",
@@ -128489,6 +128893,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__proxy_mute__community__created_by_id": {
           "accessMethod": "btree",
@@ -128757,6 +129162,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__save__community__created_by_id": {
           "accessMethod": "btree",
@@ -129021,6 +129427,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__save__post__created_by_id": {
           "accessMethod": "btree",
@@ -129285,6 +129692,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__save__rss_feed_item__created_by_id": {
           "accessMethod": "btree",
@@ -129549,6 +129957,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__save__url__active_reverse": {
           "accessMethod": "btree",
@@ -129845,6 +130254,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__subscribe__post__created_by_id": {
           "accessMethod": "btree",
@@ -130109,6 +130519,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__subscribe__rss_feed__created_by_id": {
           "accessMethod": "btree",
@@ -130373,6 +130784,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__subscribe__user__created_by_id": {
           "accessMethod": "btree",
@@ -130637,6 +131049,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relation__user__subscribe_posts__topic__created_by_id": {
           "accessMethod": "btree",
@@ -130908,6 +131321,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_relati__user__subscr_rss_feed_items__topic__subject__newest": {
           "accessMethod": "btree",
@@ -131117,6 +131531,7 @@
       },
       "comment": "Stable external actor URI identity for exact ActivityPub replay after the signing-key cache expires; identity alone never authorizes an actor.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "remote_actor_identities_actor_uri_key": {
           "accessMethod": "btree",
@@ -131321,6 +131736,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_remote_actors__cache_retention": {
           "accessMethod": "btree",
@@ -131631,6 +132047,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_report_abuse_penalties__active": {
           "accessMethod": "btree",
@@ -131915,6 +132332,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_report_integrity_flag_reporters__user_id": {
           "accessMethod": "btree",
@@ -132185,6 +132603,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_report_integrity_flags__hostname_flag_pending": {
           "accessMethod": "btree",
@@ -132524,6 +132943,7 @@
       },
       "comment": "Transactional first-unmaterialized day for scheduled reporting; ordinary initialization discovers the earliest source day and every completed day writes explicit totals before advancing.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "reporting_daily_rollup_cursors_pkey": {
           "accessMethod": "btree",
@@ -132617,6 +133037,7 @@
       },
       "comment": "Anonymous atomic source-day recovery events; existing entity reconciliation consumes the UUIDv7 event window and cleanupPartitions retires the monthly history.",
       "foreignKeys": {},
+      "hasDescendants": true,
       "indexes": {
         "reporting_source_day_events_pkey": {
           "accessMethod": "btree",
@@ -132701,6 +133122,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_retailer_countries__country_id": {
           "accessMethod": "btree",
@@ -132819,6 +133241,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retailer_topics_pkey": {
           "accessMethod": "btree",
@@ -132878,6 +133301,7 @@
       },
       "comment": "Concrete API key identity owner that outlives the live row while durable audit references remain; never authorizes calls.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "retained_api_key_identities_pkey": {
           "accessMethod": "btree",
@@ -132937,6 +133361,7 @@
       },
       "comment": "Finite identity owner for case-party links during bounded post-root purge cleanup; it never authorizes a deleted notice.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "idx_retained_copyright_notice_identities__residual": {
           "accessMethod": "btree",
@@ -133029,6 +133454,7 @@
       },
       "comment": "One operational keyset cursor per concrete retained root family.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "retained_identity_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -133102,6 +133528,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_retained_image_identities__created_by_id": {
           "accessMethod": "btree",
@@ -133241,6 +133668,7 @@
       },
       "comment": "Independent bounded sweep of placement bindings; bindings are not root identity owners.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "retained_image_placement_binding_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -133329,6 +133757,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_retained_image_placement_bindings__image_id": {
           "accessMethod": "btree",
@@ -133487,6 +133916,7 @@
       },
       "comment": "Concrete membership identity retained while durable ledger references remain; never authorizes membership access.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "retained_membership_identities_pkey": {
           "accessMethod": "btree",
@@ -133536,6 +133966,7 @@
       },
       "comment": "Concrete post identity owner that outlives the live row while durable references remain.",
       "foreignKeys": {},
+      "hasDescendants": true,
       "indexes": {
         "retained_post_identities_pkey": {
           "accessMethod": "btree",
@@ -133607,6 +134038,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__post__category__topic_pkey": {
           "accessMethod": "btree",
@@ -133685,6 +134117,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__post__category__topic_alias_pkey": {
           "accessMethod": "btree",
@@ -133763,6 +134196,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__post__related__post_pkey": {
           "accessMethod": "btree",
@@ -133841,6 +134275,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__post__related__url_pkey": {
           "accessMethod": "btree",
@@ -133919,6 +134354,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__rss_feed_item__category__topic_pkey": {
           "accessMethod": "btree",
@@ -133997,6 +134433,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__rss_feed_item__category__topic_alias_pkey": {
           "accessMethod": "btree",
@@ -134075,6 +134512,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__topic__category__topic_pkey": {
           "accessMethod": "btree",
@@ -134153,6 +134591,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__topic__faq__post_pkey": {
           "accessMethod": "btree",
@@ -134231,6 +134670,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__topic__faq__url_pkey": {
           "accessMethod": "btree",
@@ -134309,6 +134749,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__topic__guide__url_pkey": {
           "accessMethod": "btree",
@@ -134387,6 +134828,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__topic__landing_page__url_pkey": {
           "accessMethod": "btree",
@@ -134465,6 +134907,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__topic__publisher_type__topic_pkey": {
           "accessMethod": "btree",
@@ -134543,6 +134986,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__topic__related__post_pkey": {
           "accessMethod": "btree",
@@ -134621,6 +135065,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__topic__related__topic_pkey": {
           "accessMethod": "btree",
@@ -134699,6 +135144,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__topic__related__url_pkey": {
           "accessMethod": "btree",
@@ -134777,6 +135223,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__topic__terms_of_service__url_pkey": {
           "accessMethod": "btree",
@@ -134855,6 +135302,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "retained_relation__user__category__topic_pkey": {
           "accessMethod": "btree",
@@ -134948,6 +135396,7 @@
       },
       "comment": "One operational keyset cursor per metadata-declared elected relation family.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "retained_relation_identity_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -135001,6 +135450,7 @@
       },
       "comment": "Concrete RSS item identity owner that outlives the live row while durable references remain.",
       "foreignKeys": {},
+      "hasDescendants": true,
       "indexes": {
         "retained_rss_feed_item_identities_pkey": {
           "accessMethod": "btree",
@@ -135052,6 +135502,7 @@
       },
       "comment": "Concrete topic identity owner that outlives the live row while durable references remain.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "retained_topic_identities_pkey": {
           "accessMethod": "btree",
@@ -135131,6 +135582,7 @@
       },
       "comment": "Concrete user identity owner that outlives the live row while durable references remain; never authorizes actions.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "idx_retained_user_identities__copyright_clock_pending": {
           "accessMethod": "btree",
@@ -135272,6 +135724,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_review_dispute_lifecycle_changes__changed_by_id": {
           "accessMethod": "btree",
@@ -135497,6 +135950,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_review_dispute_resolution_runs__active_id": {
           "accessMethod": "btree",
@@ -136016,6 +136470,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_review_disputes__ai_draft_requested_run_id": {
           "accessMethod": "btree",
@@ -136400,6 +136855,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_review_succession_topics__topic_id": {
           "accessMethod": "btree",
@@ -136609,6 +137065,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_review_successions__active_successor_post_id": {
           "accessMethod": "btree",
@@ -136864,6 +137321,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rewards_program_status_topics__lifetime_version_id": {
           "accessMethod": "btree",
@@ -136995,6 +137453,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rewards_program_topics__company_topic_id__topic_id": {
           "accessMethod": "btree",
@@ -137111,6 +137570,7 @@
       },
       "comment": "Canonical normalized RSS category identities shared across feeds and items.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "rss_category_identities_category_text_key": {
           "accessMethod": "btree",
@@ -137255,6 +137715,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rss_feed_categories__category_identity_id": {
           "accessMethod": "btree",
@@ -137487,6 +137948,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_rss_feed_crawls__redirect_url_id": {
           "accessMethod": "btree",
@@ -137694,6 +138156,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rss_feed_item_categories__category_identity_id": {
           "accessMethod": "btree",
@@ -137947,6 +138410,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "rss_feed_item_category_projection_results_pkey": {
           "accessMethod": "btree",
@@ -138035,6 +138499,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rss_feed_item_category_rejections__created_by_id": {
           "accessMethod": "btree",
@@ -138176,6 +138641,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rss_feed_item_category_snapshot_reconciliations__updated_at": {
           "accessMethod": "btree",
@@ -138349,6 +138815,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_rss_feed_item_feed_shares__item": {
           "accessMethod": "btree",
@@ -138553,6 +139020,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "rss_feed_item_guids_pkey": {
           "accessMethod": "btree",
@@ -138677,6 +139145,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_rss_feed_item_read_states__rss_feed_item_id": {
           "accessMethod": "btree",
@@ -138805,6 +139274,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rss_feed_item_source_category_snapshots__item_feed": {
           "accessMethod": "btree",
@@ -138948,6 +139418,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rss_feed_item_sources__feed_published_item": {
           "accessMethod": "btree",
@@ -139146,6 +139617,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "rss_feed_item_unmapped_category_counts_pkey": {
           "accessMethod": "btree",
@@ -139344,6 +139816,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_rss_feed_item_votes__cleanup__id": {
           "accessMethod": "btree",
@@ -140039,6 +140512,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_rss_feed_items__bedrock_nova_multimodal_v1_embedding": {
           "accessMethod": "hnsw",
@@ -140742,6 +141216,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rss_feed_setting_changes__changed_by_id": {
           "accessMethod": "btree",
@@ -141152,6 +141627,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_rss_feeds__canonical_rss_feed_id": {
           "accessMethod": "btree",
@@ -141583,6 +142059,7 @@
       },
       "comment": "One durable keyset position per bounded security-record cleanup source.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "security_retention_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -141780,6 +142257,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_session_referral_attributions__referrer_id": {
           "accessMethod": "btree",
@@ -142050,6 +142528,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "spending_category_topics_pkey": {
           "accessMethod": "btree",
@@ -142249,6 +142728,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_spending_entries__currency_code": {
           "accessMethod": "btree",
@@ -142513,6 +142993,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_stories__id_desc": {
           "accessMethod": "btree",
@@ -142908,6 +143389,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_story_classifier_results__batch_candidate": {
           "accessMethod": "btree",
@@ -143364,6 +143846,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_story_post_relate_url_projec_jobs__lease_expires_at_post_id": {
           "accessMethod": "btree",
@@ -143622,6 +144105,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_story_post_related_url_projection_receipts__source_item_id": {
           "accessMethod": "btree",
@@ -143788,6 +144272,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_story_post_related_url_projecti_relation_mutation__relation": {
           "accessMethod": "btree",
@@ -143959,6 +144444,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_story_posts__initiated_by_id": {
           "accessMethod": "btree",
@@ -144204,6 +144690,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_stripe_event_processing_work_items__claim": {
           "accessMethod": "btree",
@@ -144351,6 +144838,7 @@
       },
       "comment": "Stripe event type names registered on first sight; the provider owns this open set and exact spelling.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "stripe_event_types_pkey": {
           "accessMethod": "btree",
@@ -144557,6 +145045,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_stripe_events__customer_id": {
           "accessMethod": "btree",
@@ -144844,6 +145333,7 @@
       },
       "comment": "Coalesced cleanup/backfill work for linked topic aliases; delete tombstones have no FK by design.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "idx_topic_alias_category_mapping_reconciliations__updated_at": {
           "accessMethod": "btree",
@@ -145077,6 +145567,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topic_aliases__alias__text_pattern_ops": {
           "accessMethod": "btree",
@@ -145665,6 +146156,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topic_claims__claimant": {
           "accessMethod": "btree",
@@ -146300,6 +146792,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_topic_classifier_results__batch": {
           "accessMethod": "btree",
@@ -146713,6 +147206,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topic_merge_metric_users__original_vote_topic_id": {
           "accessMethod": "btree",
@@ -146846,6 +147340,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topic_merge_operation_aliases__alias_id": {
           "accessMethod": "btree",
@@ -147286,6 +147781,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topic_merge_operations__active_destination": {
           "accessMethod": "btree",
@@ -147618,6 +148114,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topic_merge_parent_ancestors__pending": {
           "accessMethod": "btree",
@@ -147818,6 +148315,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_post_cate_topi_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -147999,6 +148497,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_post_cate_topi_vote_owne__priority": {
           "accessMethod": "btree",
@@ -148199,6 +148698,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_rss_feed_item_cate_topi_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -148380,6 +148880,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_rss_feed_item_cate_topi_vote_owne__priority": {
           "accessMethod": "btree",
@@ -148580,6 +149081,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_cate_topi_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -148761,6 +149263,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_cate_topi_vote_owne__priority": {
           "accessMethod": "btree",
@@ -148961,6 +149464,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_faq_post_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -149142,6 +149646,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_faq_post_vote_owne__priority": {
           "accessMethod": "btree",
@@ -149342,6 +149847,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_faq_url_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -149523,6 +150029,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_faq_url_vote_owne__priority": {
           "accessMethod": "btree",
@@ -149723,6 +150230,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_guid_url_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -149904,6 +150412,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_guid_url_vote_owne__priority": {
           "accessMethod": "btree",
@@ -150104,6 +150613,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_land_page_url_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -150285,6 +150795,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_land_page_url_vote_owne__priority": {
           "accessMethod": "btree",
@@ -150485,6 +150996,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_publ_type_topi_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -150666,6 +151178,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_publ_type_topi_vote_owne__priority": {
           "accessMethod": "btree",
@@ -150866,6 +151379,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_rela_post_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -151047,6 +151561,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_rela_post_vote_owne__priority": {
           "accessMethod": "btree",
@@ -151247,6 +151762,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_rela_topi_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -151428,6 +151944,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_rela_topi_vote_owne__priority": {
           "accessMethod": "btree",
@@ -151628,6 +152145,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_rela_url_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -151809,6 +152327,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_rela_url_vote_owne__priority": {
           "accessMethod": "btree",
@@ -152009,6 +152528,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_term_of_serv_url_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -152190,6 +152710,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_topi_term_of_serv_url_vote_owne__priority": {
           "accessMethod": "btree",
@@ -152390,6 +152911,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_user_cate_topi_pare_mapp__next_parent": {
           "accessMethod": "btree",
@@ -152571,6 +153093,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topi_merg_user_cate_topi_vote_owne__priority": {
           "accessMethod": "btree",
@@ -152869,6 +153392,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topic_metrics__ratings__score__sort": {
           "accessMethod": "btree",
@@ -153028,6 +153552,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_topic_revisions__revised_by_id": {
           "accessMethod": "btree",
@@ -153274,6 +153799,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_topic_votes__cleanup__id": {
           "accessMethod": "btree",
@@ -154158,6 +154684,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_topics__bedrock_nova_multimodal_v1_embedding": {
           "accessMethod": "hnsw",
@@ -154970,6 +155497,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_url_crawl_states__hostname_recency": {
           "accessMethod": "btree",
@@ -155109,6 +155637,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "url_hacker_news_comments_pkey": {
           "accessMethod": "btree",
@@ -155230,6 +155759,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "url_hacker_news_stories_pkey": {
           "accessMethod": "btree",
@@ -155337,6 +155867,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_url_hacker_news_totals__looked_up_at__url_id": {
           "accessMethod": "btree",
@@ -155657,6 +156188,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_url_hostname_blocks__active_domain_source": {
           "accessMethod": "btree",
@@ -156101,6 +156633,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_url_hostname_cache_invalidation_work_items__available": {
           "accessMethod": "btree",
@@ -156700,6 +157233,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_url_hostnames__age_threshold_days_id_crawlable": {
           "accessMethod": "btree",
@@ -157359,6 +157893,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "url_identities_identity_key": {
           "accessMethod": "btree",
@@ -157621,6 +158156,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_urls__canonical_url_id__id": {
           "accessMethod": "btree",
@@ -157978,6 +158514,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "user_agent_string_cleanup_candidates_pkey": {
           "accessMethod": "btree",
@@ -158056,6 +158593,7 @@
       },
       "comment": "Deduplicated lookup table for browser user-agent strings shared by sessions and votes; rows referenced by neither are removed by bounded cleanup. Empty string represents an unknown session user agent.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "uq_user_agent_strings__user_agent": {
           "accessMethod": "btree",
@@ -158186,6 +158724,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "uc_user_aside_preferences__user_aside": {
           "accessMethod": "btree",
@@ -158350,6 +158889,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_consents__user_id__foreign_key": {
           "accessMethod": "btree",
@@ -158503,6 +159043,7 @@
       },
       "comment": "Durable composite UUIDv7 scan position for old export attempt keys.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "user_data_request_attempt_retention_cursors_pkey": {
           "accessMethod": "btree",
@@ -158606,6 +159147,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "user_data_request_attempts_pkey": {
           "accessMethod": "btree",
@@ -158846,6 +159388,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_user_data_requests__download_expiry": {
           "accessMethod": "btree",
@@ -159229,6 +159772,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_deletion_external_works__completed_audit": {
           "accessMethod": "btree",
@@ -159926,6 +160470,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_dele_rela_impac__rss_feed_item__category__alias_target": {
           "accessMethod": "btree",
@@ -160942,6 +161487,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_deletion_requests__completed_retention": {
           "accessMethod": "btree",
@@ -161256,6 +161802,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_email_addresses__email": {
           "accessMethod": "btree",
@@ -161538,6 +162085,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "user_engagement_email_sends_pkey": {
           "accessMethod": "btree",
@@ -161763,6 +162311,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_import_requests__pending_id": {
           "accessMethod": "btree",
@@ -162181,6 +162730,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_landing_page_candidates__profile_link_id": {
           "accessMethod": "btree",
@@ -162452,6 +163002,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_landing_page_group_members__item_sort": {
           "accessMethod": "btree",
@@ -162773,6 +163324,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_landing_page_items__page_sort": {
           "accessMethod": "btree",
@@ -163101,6 +163653,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_landing_pages__user_id_default": {
           "accessMethod": "btree",
@@ -163342,6 +163895,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_legal_preservation_holds__account_release": {
           "accessMethod": "btree",
@@ -163632,6 +164186,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_list_posts__post_id": {
           "accessMethod": "btree",
@@ -163915,6 +164470,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_list_rss_feed_items__rss_feed_item_id": {
           "accessMethod": "btree",
@@ -164247,6 +164803,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_lists__created_via_oauth_client_id": {
           "accessMethod": "btree",
@@ -164483,6 +165040,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "user_moderation_email_sends_pkey": {
           "accessMethod": "btree",
@@ -164665,6 +165223,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_moderator_notes__author_user_id": {
           "accessMethod": "btree",
@@ -164972,6 +165531,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_passkeys__user_id": {
           "accessMethod": "btree",
@@ -165118,6 +165678,7 @@
       },
       "comment": "Lookup table of granular permission types that can be granted to roles or users.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "user_permission_types_pkey": {
           "accessMethod": "btree",
@@ -165247,6 +165808,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_permissions__permission_type_id": {
           "accessMethod": "btree",
@@ -165405,6 +165967,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_phone_numbers__phone": {
           "accessMethod": "btree",
@@ -165698,6 +166261,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_profile_links__image_id": {
           "accessMethod": "btree",
@@ -166148,6 +166712,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_refe_prog_link__referral_program_topic_id__foreign_key": {
           "accessMethod": "btree",
@@ -166725,6 +167290,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_role_permissions__permission_type_id": {
           "accessMethod": "btree",
@@ -166853,6 +167419,7 @@
       },
       "comment": "Lookup table of role types (e.g. administrator) that can be assigned to users.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "user_role_types_pkey": {
           "accessMethod": "btree",
@@ -166982,6 +167549,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_roles__role_type_id": {
           "accessMethod": "btree",
@@ -167187,6 +167755,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_rss_feed_import_batches__completed_at__id": {
           "accessMethod": "btree",
@@ -167458,6 +168027,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_rss_feed_import_row_discoveries__batch_row_url": {
           "accessMethod": "btree",
@@ -167770,6 +168340,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_rss_feed_import_rows__rss_feed_id": {
           "accessMethod": "btree",
@@ -168224,6 +168795,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_user_sessions__expires_at_id": {
           "accessMethod": "btree",
@@ -168499,6 +169071,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_suspensions__lifted_by_id": {
           "accessMethod": "btree",
@@ -168752,6 +169325,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_topic_import_attempts__retention": {
           "accessMethod": "btree",
@@ -168962,6 +169536,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_totp_authenticators__user_id": {
           "accessMethod": "btree",
@@ -169183,6 +169758,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_user_vouch_votes__cleanup__id": {
           "accessMethod": "btree",
@@ -169539,6 +170115,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_user_warnings__case_id": {
           "accessMethod": "btree",
@@ -170517,6 +171094,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_users__deleted_at": {
           "accessMethod": "btree",
@@ -170968,6 +171546,7 @@
       },
       "comment": "Permanent minimum anti-reuse record: a keyed document hash with first-verification and revocation dates only, with no account or provider identity.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "verified_identities_pkey": {
           "accessMethod": "btree",
@@ -171056,6 +171635,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "verified_identity_account_links_identity_fingerprint_key": {
           "accessMethod": "btree",
@@ -171188,6 +171768,7 @@
       },
       "comment": "One monotonic aged-superseder frontier and frozen sweep end per ballot table.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "vote_ballot_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -171276,6 +171857,7 @@
       },
       "comment": "Bounded cyclic UUIDv7 sweep that strips aged identifying details while retaining moderation flags.",
       "foreignKeys": {},
+      "hasDescendants": false,
       "indexes": {
         "vote_integrity_flag_detail_cleanup_cursors_pkey": {
           "accessMethod": "btree",
@@ -172123,6 +172705,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_vote_inte_flag__rss_feed_item__category__topic_flag_pending": {
           "accessMethod": "btree",
@@ -174164,6 +174747,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_vote_weight_penalties__active": {
           "accessMethod": "btree",
@@ -174630,6 +175214,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "web_push_endpoint_owners_endpoint_key": {
           "accessMethod": "btree",
@@ -174881,6 +175466,7 @@
           "validated": true
         }
       },
+      "hasDescendants": true,
       "indexes": {
         "idx_web_push_subs__deleted_at_id_user_id": {
           "accessMethod": "btree",
@@ -175203,6 +175789,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_x_accounts__friend_edges_pending": {
           "accessMethod": "btree",
@@ -175562,6 +176149,7 @@
           "validated": true
         }
       },
+      "hasDescendants": false,
       "indexes": {
         "idx_x_friends__friend_id": {
           "accessMethod": "btree",
