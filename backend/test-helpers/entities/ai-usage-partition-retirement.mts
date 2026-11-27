@@ -122,9 +122,9 @@ export async function retireTestAiUsagePartitionDuringWrite(
   await withTestOwnedPostgresWait(
     {
       holderProcessId,
-      pool: 'write',
-      lock: { kind: 'relation', name: 'ai_service_tiers', waiterMode: 'RowExclusiveLock' },
-      queryMarker: 'registerAiUsageTier',
+      pool: 'read',
+      lock: { kind: 'relation', name: 'ai_service_tiers', waiterMode: 'AccessShareLock' },
+      queryMarker: 'findAiUsageTier',
       releaseHolder: () => transaction[Symbol.asyncDispose](),
     },
     async waitForLock => {

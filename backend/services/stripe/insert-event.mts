@@ -21,14 +21,11 @@ export async function insertStripeEvent(
     return hydrateStripeEventRecord({ ...existing, is_new: false })
   }
 
+  const eventTypeId = await resolveStripeEventTypeId(event.type, query)
+
   const inserted = await query(
     sql`/* insertStripeEvent */
-      WITH registered_type AS (
-        INSERT INTO stripe_event_types (stripe_event_type) VALUES (${event.type})
-        ON CONFLICT (stripe_event_type) DO UPDATE SET stripe_event_type = EXCLUDED.stripe_event_type
-        RETURNING id, stripe_event_type
-      )
-       , inserted_event AS (INSERT INTO stripe_events (
+      WITH inserted_event AS (INSERT INTO stripe_events (
         stripe_event_id,
         stripe_event_type_id,
         is_live_mode,
@@ -40,9 +37,9 @@ export async function insertStripeEvent(
         checkout_session_id,
         received_at,
         payload
-      ) SELECT
+      ) VALUES (
         ${event.id},
-        registered_type.id,
+        ${eventTypeId},
         ${event.livemode},
         ${event.api_version ?? null},
         ${normalized.stripeCreatedAt},
@@ -52,8 +49,7 @@ export async function insertStripeEvent(
         ${normalized.checkoutSessionId},
         ${receivedAt},
         ${payload}::jsonb
-      FROM registered_type
-      WHERE TRUE
+      )
       ON CONFLICT (stripe_event_id) DO NOTHING
       RETURNING id, stripe_event_id, stripe_event_type_id, is_live_mode, api_version, occurred_at,
         customer_id, subscription_id, invoice_id, checkout_session_id, received_at, payload, created_at
@@ -66,7 +62,7 @@ export async function insertStripeEvent(
     `.append(stripeEventColumns()).append(sql`
       FROM inserted_event event
       JOIN inserted_work work ON work.stripe_event_id = event.id
-      JOIN registered_type event_type ON event_type.id = event.stripe_event_type_id
+      JOIN stripe_event_types event_type ON event_type.id = event.stripe_event_type_id
     `),
   )
 
@@ -104,4 +100,30 @@ async function findStripeEventForReplay(
     `),
   )
   return (existing.rows[0] as StripeEventRow | undefined) ?? null
+}
+
+async function resolveStripeEventTypeId(
+  stripeEventType: string,
+  query: TransactionQuery,
+): Promise<string> {
+  const existing = await query<{ id: string }>(sql`/* findStripeEventType */
+    SELECT id FROM stripe_event_types WHERE stripe_event_type = ${stripeEventType}
+  `)
+  if (existing.rows[0]?.id) return existing.rows[0].id
+
+  const inserted = await query<{ id: string }>(sql`/* registerStripeEventType */
+    INSERT INTO stripe_event_types (stripe_event_type) VALUES (${stripeEventType})
+    ON CONFLICT (stripe_event_type) DO NOTHING
+    RETURNING id
+  `)
+  if (inserted.rows[0]?.id) return inserted.rows[0].id
+
+  // ON CONFLICT DO NOTHING only returns zero rows when another transaction committed this
+  // stripe_event_type first. Under READ COMMITTED this separate SELECT gets a fresh snapshot.
+  const raced = await query<{ id: string }>(sql`/* findRegisteredStripeEventType */
+    SELECT id FROM stripe_event_types WHERE stripe_event_type = ${stripeEventType}
+  `)
+  const id = raced.rows[0]?.id
+  assert(id, 500, `stripe_event_types row missing after conflict: ${stripeEventType}`)
+  return id
 }

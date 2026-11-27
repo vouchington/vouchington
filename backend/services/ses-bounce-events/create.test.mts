@@ -1,4 +1,10 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { runWithConcurrentLookupRegistration } from '../../test-helpers/lookup-registration-race.mts'
+import {
+  countCapturedQueriesByAnnotation,
+  withCapturedTestQueries,
+} from '../../test-helpers/query-capture.mts'
 import { createSesBounceEvent } from './create.mts'
 describe('createSesBounceEvent', () => {
   it('creates a bounce event', async () => {
@@ -137,6 +143,54 @@ describe('createSesBounceEvent', () => {
     expect(first?.id).toBeDefined()
     expect(first?.amazon_ses_bounce_subtype_id).toBe(subtype)
     expect(redelivered).toBeNull()
+  })
+
+  it('resolves a new bounce subtype when a concurrent first call commits first and reads without writing afterward', async () => {
+    const subtype = `FutureSubtype-${randomUUID()}`
+    const email = `tests+subtype-race-${randomUUID()}@voucha.ai`
+
+    const {
+      result: { result: first, queries: firstQueries },
+    } = await runWithConcurrentLookupRegistration('amazon_ses_bounce_subtypes', subtype, () =>
+      withCapturedTestQueries(() =>
+        createSesBounceEvent({
+          notification_type: 'bounce',
+          bounce_type: 'permanent',
+          amazon_ses_bounce_subtype_id: subtype,
+          recipients: [email],
+          amazon_ses_message_id: `msg-${randomUUID()}`,
+          occurred_at: new Date('2024-01-01T00:00:00.000Z'),
+          raw_message: { notificationType: 'Bounce' },
+        }),
+      ),
+    )
+
+    expect(first?.id).toBeDefined()
+    expect(first?.amazon_ses_bounce_subtype_id).toBe(subtype)
+    expect(countCapturedQueriesByAnnotation(firstQueries, 'findSesBounceSubtype')).toBe(1)
+    expect(countCapturedQueriesByAnnotation(firstQueries, 'registerSesBounceSubtype')).toBe(1)
+    expect(countCapturedQueriesByAnnotation(firstQueries, 'findRegisteredSesBounceSubtype')).toBe(1)
+
+    const { result: second, queries: secondQueries } = await withCapturedTestQueries(() =>
+      createSesBounceEvent({
+        notification_type: 'bounce',
+        bounce_type: 'permanent',
+        amazon_ses_bounce_subtype_id: subtype,
+        recipients: [email],
+        amazon_ses_message_id: `msg-${randomUUID()}`,
+        occurred_at: new Date('2024-01-01T00:00:01.000Z'),
+        raw_message: { notificationType: 'Bounce' },
+      }),
+    )
+
+    expect(second?.id).toBeDefined()
+    expect(second?.id).not.toBe(first?.id)
+    expect(second?.amazon_ses_bounce_subtype_id).toBe(subtype)
+    expect(countCapturedQueriesByAnnotation(secondQueries, 'findSesBounceSubtype')).toBe(1)
+    expect(countCapturedQueriesByAnnotation(secondQueries, 'registerSesBounceSubtype')).toBe(0)
+    expect(countCapturedQueriesByAnnotation(secondQueries, 'findRegisteredSesBounceSubtype')).toBe(
+      0,
+    )
   })
 
   it('two distinct notification types on the same mail.messageId are not deduplicated against each other', async () => {

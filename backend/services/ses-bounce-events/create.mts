@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import type { CreateSesBounceEventInput, SesBounceEvent } from './types.mts'
 
 const VALID_NOTIFICATION_TYPES = new Set(['bounce', 'complaint'])
@@ -48,16 +48,11 @@ export async function createSesBounceEvent(
 
   const normalizedRecipients = normalizeRecipients(input.recipients)
   const dedupKey = deriveDedupKey(input, normalizedRecipients)
+  const subtype = input.amazon_ses_bounce_subtype_id ?? null
+  const subtypeId = subtype === null ? null : await resolveSesBounceSubtypeId(subtype)
 
   const { rows } = await write<SesBounceEvent>(sql`/* createSesBounceEvent */
-    WITH registered_subtype AS (
-      INSERT INTO amazon_ses_bounce_subtypes (amazon_ses_bounce_subtype)
-      SELECT ${input.amazon_ses_bounce_subtype_id ?? null}::text AS amazon_ses_bounce_subtype
-      WHERE ${input.amazon_ses_bounce_subtype_id ?? null}::text IS NOT NULL
-      ON CONFLICT (amazon_ses_bounce_subtype) DO UPDATE
-        SET amazon_ses_bounce_subtype = EXCLUDED.amazon_ses_bounce_subtype
-      RETURNING id, amazon_ses_bounce_subtype
-    ), inserted_event AS (
+    WITH inserted_event AS (
     INSERT INTO amazon_ses_bounce_events (
       notification_type,
       bounce_type,
@@ -74,7 +69,7 @@ export async function createSesBounceEvent(
     VALUES (
       ${input.notification_type}::amazon_ses_notification_types,
       ${input.bounce_type ?? null}::amazon_ses_bounce_types,
-      (SELECT id FROM registered_subtype),
+      ${subtypeId},
       ${JSON.stringify(normalizedRecipients)}::jsonb,
       ${input.amazon_ses_message_id ?? null},
       ${input.amazon_ses_feedback_id ?? null},
@@ -139,7 +134,7 @@ export async function createSesBounceEvent(
       event.id,
       event.notification_type,
       event.bounce_type,
-      subtype.amazon_ses_bounce_subtype AS amazon_ses_bounce_subtype_id,
+      ${subtype}::text AS amazon_ses_bounce_subtype_id,
       event.recipients,
       event.amazon_ses_message_id,
       event.amazon_ses_feedback_id,
@@ -150,7 +145,6 @@ export async function createSesBounceEvent(
       event.dedup_key,
       event.created_at
     FROM inserted_event event
-    LEFT JOIN registered_subtype subtype ON subtype.id = event.amazon_ses_bounce_subtype_id
   `)
 
   if (rows.length === 0) {
@@ -159,4 +153,24 @@ export async function createSesBounceEvent(
   }
   assert(rows.length === 1, 500, 'Failed to create ses_bounce_event')
   return rows[0]
+}
+
+async function resolveSesBounceSubtypeId(subtype: string): Promise<string> {
+  const { rows: existing } = await read<{ id: string }>(sql`/* findSesBounceSubtype */
+    SELECT id FROM amazon_ses_bounce_subtypes WHERE amazon_ses_bounce_subtype = ${subtype}
+  `)
+  if (existing[0]?.id) return existing[0].id
+  const { rows: inserted } = await write<{ id: string }>(sql`/* registerSesBounceSubtype */
+    INSERT INTO amazon_ses_bounce_subtypes (amazon_ses_bounce_subtype)
+    VALUES (${subtype})
+    ON CONFLICT (amazon_ses_bounce_subtype) DO NOTHING
+    RETURNING id
+  `)
+  if (inserted[0]?.id) return inserted[0].id
+  const { rows: raced } = await write<{ id: string }>(sql`/* findRegisteredSesBounceSubtype */
+    SELECT id FROM amazon_ses_bounce_subtypes WHERE amazon_ses_bounce_subtype = ${subtype}
+  `)
+  const id = raced[0]?.id
+  assert(id, 500, `amazon_ses_bounce_subtypes row missing after conflict: ${subtype}`)
+  return id
 }

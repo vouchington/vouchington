@@ -1,4 +1,4 @@
-import { advisoryLockPool, jobSerializationPool, writePool } from '@data-stores/psql'
+import { advisoryLockPool, jobSerializationPool, readPool, writePool } from '@data-stores/psql'
 import {
   withTestOwnedPostgresWait as withPoolsOwnedPostgresWait,
   type TestOwnedPostgresWaitOptions as PoolsOwnedPostgresWaitOptions,
@@ -9,7 +9,7 @@ import { testLockNoticeOptions } from './postgres-lock-notice-options.mts'
 export type TestOwnedPostgresWaitOptions = Omit<
   PoolsOwnedPostgresWaitOptions,
   'pool' | 'observerPool' | 'notice' | 'isOwnedRequest'
-> & { pool: 'advisory' | 'write' | 'job-serialization' }
+> & { pool: 'advisory' | 'read' | 'write' | 'job-serialization' }
 
 /** Bind an owned wait to Voucha's named pools, with an observer on a different pool. */
 export function bindTestOwnedPostgresWait(
@@ -18,9 +18,11 @@ export function bindTestOwnedPostgresWait(
   const pool =
     options.pool === 'write'
       ? writePool
-      : options.pool === 'job-serialization'
-        ? jobSerializationPool
-        : advisoryLockPool
+      : options.pool === 'read'
+        ? readPool
+        : options.pool === 'job-serialization'
+          ? jobSerializationPool
+          : advisoryLockPool
   return {
     ...options,
     pool,
