@@ -285,8 +285,9 @@ jobs:
           run-id: ${{ github.run_id }}
       - name: Run ordinary EXPLAIN scenarios
         if: ${{ startsWith(matrix.shard, 'main') }}
-        # Each segment of the ordinary scenarios took 4.7 to 5.4 minutes in the run that measured
-        # them (the unsplit step took 19.4 minutes); 10 minutes leaves headroom for a slow runner.
+        # Measured in run 46075844280 with the previous cuts: 3m54s, 3m59s, 4m59s and 9m53s (the
+        # last timed out twice). The cuts now aim for about 4 to 6.5 minutes per shard; run.mts
+        # emits a warning annotation past 7 minutes, and 10 minutes leaves headroom for a slow runner.
         timeout-minutes: 10
         run: node backend/scripts/explain-analyze/run.mts
         env:
