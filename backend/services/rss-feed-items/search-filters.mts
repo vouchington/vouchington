@@ -6,7 +6,10 @@ import {
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
-import { itemHasDiscoverableSourceSql } from '@modules/feed-query-builders/discoverability-sql'
+import {
+  feedIsEnabledAndDiscoverableSql,
+  itemHasDiscoverableSourceSql,
+} from '@modules/feed-query-builders/discoverability-sql'
 import type { SearchRssFeedItemsOptions } from './search-types.mts'
 import {
   buildCategoryTopicFilter,
@@ -80,10 +83,12 @@ export function buildRssFeedItemFilters(options: SearchRssFeedItemsOptions): SQL
       SELECT 1 FROM rss_feed_item_sources rfis
       JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
       WHERE rfis.rss_feed_item_id = rss_feed_items.id
-        AND `.append(sourceFeed).append(sql`
+        AND `
+        .append(sourceFeed)
+        .append(sql`
         AND rf.deleted_at IS NULL
-        AND rf.is_enabled = TRUE
-        AND rf.is_discoverable = TRUE
+        AND `)
+        .append(feedIsEnabledAndDiscoverableSql('rf')).append(sql`
     )`),
     )
   }

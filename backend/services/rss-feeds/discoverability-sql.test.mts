@@ -5,10 +5,8 @@ describe('feedIsEnabledAndDiscoverableSql', () => {
   it('builds discoverability checks for a safe feed alias', () => {
     const statement = feedIsEnabledAndDiscoverableSql('rf')
 
-    expect(statement.text).toContain('FROM view_rss_feed_current_states current_state')
-    expect(statement.text).toContain('WHERE current_state.rss_feed_id = rf.id')
-    expect(statement.text).toContain('current_state.is_enabled = TRUE')
-    expect(statement.text).toContain('current_state.is_discoverable = TRUE')
+    expect(statement.text).toBe('rf.is_enabled = TRUE AND rf.is_discoverable = TRUE')
+    expect(statement.values).toEqual([])
   })
 
   it('rejects unsafe SQL aliases', () => {
