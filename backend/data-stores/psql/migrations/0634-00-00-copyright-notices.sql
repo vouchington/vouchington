@@ -819,7 +819,11 @@ CREATE INDEX idx_copyright_notice_submissions__notice_id ON copyright_notice_sub
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__staff_review_kinds
   ON copyright_notice_submissions(kind, copyright_notice_id) INCLUDE (id, received_at)
-  WHERE kind IN ('appeal', 'counter_notice', 'court_or_ccb_hold');
+  WHERE kind IN ('appeal', 'court_or_ccb_hold');
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_submissions__counter_review
+  ON copyright_notice_submissions(id) INCLUDE (copyright_notice_id, received_at)
+  WHERE kind = 'counter_notice';
 -- Every notice aggregate inserts one initial claimant allegation; staff territorial
 -- decisions may append their own notice-kind submission to the same case.
 CREATE UNIQUE INDEX idx_copyright_notice_submissions__initial_notice

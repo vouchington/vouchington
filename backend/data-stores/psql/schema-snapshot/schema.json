@@ -42392,6 +42392,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_copyright_notice_submissions__counter_review": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_submissions__counter_review ON public.copyright_notice_submissions USING btree (id) INCLUDE (copyright_notice_id, received_at) WHERE (kind = 'counter_notice'::copyright_notice_submission_kinds)",
+          "includedColumns": ["copyright_notice_id", "received_at"],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(kind = 'counter_notice'::copyright_notice_submission_kinds)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_notice_submissions__current_assessed_by": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -42610,7 +42630,7 @@
         "idx_copyright_notice_submissions__staff_review_kinds": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_submissions__staff_review_kinds ON public.copyright_notice_submissions USING btree (kind, copyright_notice_id) INCLUDE (id, received_at) WHERE (kind = ANY (ARRAY['appeal'::copyright_notice_submission_kinds, 'counter_notice'::copyright_notice_submission_kinds, 'court_or_ccb_hold'::copyright_notice_submission_kinds]))",
+          "definition": "CREATE INDEX idx_copyright_notice_submissions__staff_review_kinds ON public.copyright_notice_submissions USING btree (kind, copyright_notice_id) INCLUDE (id, received_at) WHERE (kind = ANY (ARRAY['appeal'::copyright_notice_submission_kinds, 'court_or_ccb_hold'::copyright_notice_submission_kinds]))",
           "includedColumns": ["id", "received_at"],
           "keys": [
             {
@@ -42628,7 +42648,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(kind = ANY (ARRAY['appeal'::copyright_notice_submission_kinds, 'counter_notice'::copyright_notice_submission_kinds, 'court_or_ccb_hold'::copyright_notice_submission_kinds]))",
+          "predicate": "(kind = ANY (ARRAY['appeal'::copyright_notice_submission_kinds, 'court_or_ccb_hold'::copyright_notice_submission_kinds]))",
           "primary": false,
           "ready": true,
           "unique": false,
