@@ -1,3 +1,4 @@
+import { seedProfileLinksAtCapacity } from './seed-data/profile-links-at-cap.mts'
 import { seedFinalExplainFixtures } from './seed-data/final-fixtures.mts'
 import { seedIngestionRawPages } from './seed-data/ingestion-raw-pages.mts'
 import { seedRelationVoteReads } from './seed-data/relation-vote-reads.mts'
@@ -167,6 +168,7 @@ async function main() {
   await seedTopHashtags()
   await seedFollowerDistributions()
   await seedProfileLinks(1000)
+  await seedProfileLinksAtCapacity()
   await seedCommunitySearchFixtures()
   await seedConversationPaginationRows(1000)
   await seedPostDataPointTopics(1000)
