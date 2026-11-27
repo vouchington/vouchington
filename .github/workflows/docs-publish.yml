@@ -52,7 +52,7 @@ jobs:
           ref: ${{ github.sha }}
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@324c8741aa605d4c28897dcfcce17cc8f56ff08a # v3.10.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@abdf0163718e038ab2c9499274dd85b4f65e7b19 # v3.11.0
         timeout-minutes: 3
         with:
           deadline-seconds: '150'
