@@ -26,20 +26,7 @@ vi.mock<typeof import('@modules/stripe/subscriptions')>(
 
 describe('Stripe membership provider fact snapshots', () => {
   it('rejects an authoritative subscription without a fixed recurring price', async () => {
-    const applicationId = `test-membership-provider-facts-snapshot-${randomUUID()}`
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'plus', provider_application_id: applicationId })
-    const subscriptionId = `sub_missing_price_${randomUUID()}`
-    const event = makeStripeEvent(`evt_missing_price_${randomUUID()}`, subscriptionId, true)
-    await insertStripeEvent(event)
-    const membership = await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      stripeCustomerId: `cus_missing_price_${randomUUID()}`,
-      providerApplicationId: applicationId,
-    })
+    const { sku, subscriptionId, event, membership } = await setupSnapshotFixture('missing_price')
     const subscription = makeSubscription(subscriptionId, sku.stripe_price_id, 500, 'usd', true)
     subscription.items.data = []
 
@@ -53,25 +40,10 @@ describe('Stripe membership provider fact snapshots', () => {
   })
 
   it('uses provider lifecycle clocks for scheduled cancellation, start, and past-due state', async () => {
-    const applicationId = `test-membership-provider-facts-snapshot-${randomUUID()}`
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'plus', provider_application_id: applicationId })
-    const subscriptionId = `sub_provider_lifecycle_${randomUUID()}`
-    const event = makeStripeEvent(
-      `evt_provider_lifecycle_${randomUUID()}`,
-      subscriptionId,
-      true,
-      300,
+    const { sku, subscriptionId, event, membership } = await setupSnapshotFixture(
+      'provider_lifecycle',
+      { eventCreated: 300 },
     )
-    await insertStripeEvent(event)
-    const membership = await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      stripeCustomerId: `cus_provider_lifecycle_${randomUUID()}`,
-      providerApplicationId: applicationId,
-    })
     const scheduled = makeSubscription(subscriptionId, sku.stripe_price_id, 500, 'usd', true)
     Object.assign(scheduled, {
       cancel_at_period_end: true,
@@ -91,34 +63,24 @@ describe('Stripe membership provider fact snapshots', () => {
   })
 
   it('preserves durable past-due timing and clears it on a later active provider snapshot', async () => {
-    const applicationId = `test-membership-provider-facts-snapshot-${randomUUID()}`
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'plus', provider_application_id: applicationId })
-    const subscriptionId = `sub_provider_past_due_${randomUUID()}`
-    const pastDueEvent = makeStripeEvent(
-      `evt_provider_past_due_${randomUUID()}`,
+    const {
+      sku,
       subscriptionId,
-      true,
-      400,
-    )
+      event: pastDueEvent,
+      membership,
+    } = await setupSnapshotFixture('provider_past_due', {
+      eventCreated: 400,
+      effectiveAt: new Date('2025-01-01T00:00:00.000Z'),
+      observedAt: new Date('2025-02-01T00:00:00.000Z'),
+      status: 'past_due',
+    })
     const activeEvent = makeStripeEvent(
       `evt_provider_recovered_${randomUUID()}`,
       subscriptionId,
       true,
       500,
     )
-    await Promise.all([pastDueEvent, activeEvent].map(event => insertStripeEvent(event)))
-    const membership = await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      stripeCustomerId: `cus_provider_past_due_${randomUUID()}`,
-      providerApplicationId: applicationId,
-      effectiveAt: new Date('2025-01-01T00:00:00.000Z'),
-      observedAt: new Date('2025-02-01T00:00:00.000Z'),
-      status: 'past_due',
-    })
+    await insertStripeEvent(activeEvent)
     const pastDue = makeSubscription(
       subscriptionId,
       sku.stripe_price_id,
@@ -152,23 +114,14 @@ describe('Stripe membership provider fact snapshots', () => {
   })
 
   it('preserves durable paused timing on a later provider snapshot', async () => {
-    const applicationId = `test-membership-provider-facts-snapshot-${randomUUID()}`
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'plus', provider_application_id: applicationId })
-    const subscriptionId = `sub_provider_paused_${randomUUID()}`
-    const event = makeStripeEvent(`evt_provider_paused_${randomUUID()}`, subscriptionId, true)
-    await insertStripeEvent(event)
-    const membership = await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      stripeCustomerId: `cus_provider_paused_${randomUUID()}`,
-      providerApplicationId: applicationId,
-      effectiveAt: new Date('2025-01-01T00:00:00.000Z'),
-      observedAt: new Date('2025-02-01T00:00:00.000Z'),
-      status: 'paused',
-    })
+    const { sku, subscriptionId, event, membership } = await setupSnapshotFixture(
+      'provider_paused',
+      {
+        effectiveAt: new Date('2025-01-01T00:00:00.000Z'),
+        observedAt: new Date('2025-02-01T00:00:00.000Z'),
+        status: 'paused',
+      },
+    )
 
     const result = await recordStripeMembershipProviderFacts({
       stripeEventId: event.id,
@@ -188,25 +141,10 @@ describe('Stripe membership provider fact snapshots', () => {
   })
 
   it('uses the authoritative observation time when past-due timing is not yet known', async () => {
-    const applicationId = `test-membership-provider-facts-snapshot-${randomUUID()}`
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'plus', provider_application_id: applicationId })
-    const subscriptionId = `sub_provider_past_due_observation_${randomUUID()}`
-    const event = makeStripeEvent(
-      `evt_provider_past_due_observation_${randomUUID()}`,
-      subscriptionId,
-      true,
+    const { sku, subscriptionId, event, membership } = await setupSnapshotFixture(
+      'provider_past_due_observation',
+      { effectiveAt: new Date('2025-01-01T00:00:00.000Z') },
     )
-    await insertStripeEvent(event)
-    const membership = await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      stripeCustomerId: `cus_provider_past_due_observation_${randomUUID()}`,
-      providerApplicationId: applicationId,
-      effectiveAt: new Date('2025-01-01T00:00:00.000Z'),
-    })
     const observedAt = new Date('2030-01-01T00:00:00.000Z')
     const subscription = makeSubscription(
       subscriptionId,
@@ -230,20 +168,7 @@ describe('Stripe membership provider fact snapshots', () => {
   })
 
   it('uses the subscription item period end when the subscription period end is absent', async () => {
-    const applicationId = `test-membership-provider-facts-snapshot-${randomUUID()}`
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'plus', provider_application_id: applicationId })
-    const subscriptionId = `sub_item_period_end_${randomUUID()}`
-    const event = makeStripeEvent(`evt_item_period_end_${randomUUID()}`, subscriptionId, true)
-    await insertStripeEvent(event)
-    const membership = await createMembership({
-      userId: user.id,
-      plan: 'plus',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      stripeCustomerId: `cus_item_period_end_${randomUUID()}`,
-      providerApplicationId: applicationId,
-    })
+    const { sku, subscriptionId, event, membership } = await setupSnapshotFixture('item_period_end')
     const subscription = makeSubscription(subscriptionId, sku.stripe_price_id, 500, 'usd', true)
     Reflect.deleteProperty(subscription, 'current_period_end')
     Object.assign(subscription.items.data[0]!, { current_period_end: 1_800_000_000 })
@@ -258,7 +183,62 @@ describe('Stripe membership provider fact snapshots', () => {
       source_expires_at: new Date(1_800_000_000_000),
     })
   })
+
+  it('uses the subscription item period start as effective_at when start_date and subscription period start are absent', async () => {
+    const { sku, subscriptionId, event, membership } = await setupSnapshotFixture(
+      'item_period_start',
+      { effectiveAt: new Date('2025-01-01T00:00:00.000Z') },
+    )
+    const subscription = makeSubscription(subscriptionId, sku.stripe_price_id, 500, 'usd', true)
+    Reflect.deleteProperty(subscription, 'start_date')
+    Reflect.deleteProperty(subscription, 'current_period_start')
+    Object.assign(subscription.items.data[0]!, { current_period_start: 1_742_000_000 })
+
+    await recordStripeMembershipProviderFacts({
+      stripeEventId: event.id,
+      membershipId: membership.id,
+      subscription,
+    })
+
+    await expect(getTestMembershipSourceState(membership.id)).resolves.toMatchObject({
+      effective_at: new Date(1_742_000_000_000),
+    })
+  })
 })
+
+async function setupSnapshotFixture(
+  label: string,
+  options: {
+    eventCreated?: number
+    effectiveAt?: Date
+    observedAt?: Date
+    status?: 'active' | 'past_due' | 'paused'
+  } = {},
+) {
+  const applicationId = `test-membership-provider-facts-snapshot-${randomUUID()}`
+  const user = await createTestUser()
+  const sku = await createTestSku({ plan: 'plus', provider_application_id: applicationId })
+  const subscriptionId = `sub_${label}_${randomUUID()}`
+  const event = makeStripeEvent(
+    `evt_${label}_${randomUUID()}`,
+    subscriptionId,
+    true,
+    options.eventCreated,
+  )
+  await insertStripeEvent(event)
+  const membership = await createMembership({
+    userId: user.id,
+    plan: 'plus',
+    skuId: sku.id,
+    stripeSubscriptionId: subscriptionId,
+    stripeCustomerId: `cus_${label}_${randomUUID()}`,
+    providerApplicationId: applicationId,
+    ...(options.effectiveAt ? { effectiveAt: options.effectiveAt } : {}),
+    ...(options.observedAt ? { observedAt: options.observedAt } : {}),
+    ...(options.status ? { status: options.status } : {}),
+  })
+  return { sku, subscriptionId, event, membership }
+}
 
 function makeStripeEvent(
   id: string,

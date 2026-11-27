@@ -10,14 +10,14 @@ import type {
   OAuthAccountUpsertOptions,
   PreparedOAuthAccount,
 } from '@services/oauth-accounts/reauthentication'
-import { createProviderOperationSignal, getProviderFetch } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport, createProviderOperationSignal } from '@modules/api-egress-proxy'
 
 const appleIdTokenVerifier = createOidcIdTokenVerifier({
   jwksUri: 'https://appleid.apple.com/auth/keys',
   issuers: ['https://appleid.apple.com'],
   audiences: () => [APPLE_CLIENT_ID, ...APPLE_NATIVE_CLIENT_IDS].filter(Boolean),
   fetch: (input, init) =>
-    getProviderFetch('apple_oauth_enabled')(input, {
+    apiEgressProxyTransport.getRoutedFetch('apple_oauth_enabled')(input, {
       ...init,
       signal: createProviderOperationSignal(),
     }),

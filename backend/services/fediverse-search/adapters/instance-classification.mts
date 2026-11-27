@@ -1,6 +1,6 @@
 import onError from '@modules/on-error'
 import { fetch } from 'undici'
-import { getProviderRequestDispatcher } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport } from '@modules/api-egress-proxy'
 import {
   FEDIVERSE_ADAPTER_BUDGET_MS,
   FEDIVERSE_BLUESKY_HOST,
@@ -45,7 +45,7 @@ async function fetchNodeInfoWellKnown(host: string, budgetSignal: AbortSignal): 
   const url = new URL(`https://${host}/.well-known/nodeinfo`)
 
   const response = await fetch(url, {
-    dispatcher: getProviderRequestDispatcher('fediverse_search_enabled'),
+    dispatcher: apiEgressProxyTransport.getRoutedRequestDispatcher('fediverse_search_enabled'),
     signal,
     headers: { Accept: 'application/json' },
   })
@@ -62,7 +62,7 @@ async function fetchNodeInfoDocument(url: URL, budgetSignal: AbortSignal): Promi
   const signal = AbortSignal.any([AbortSignal.timeout(FEDIVERSE_PROVIDER_TIMEOUT_MS), budgetSignal])
 
   const response = await fetch(url, {
-    dispatcher: getProviderRequestDispatcher('fediverse_search_enabled'),
+    dispatcher: apiEgressProxyTransport.getRoutedRequestDispatcher('fediverse_search_enabled'),
     signal,
     headers: { Accept: 'application/json' },
   })

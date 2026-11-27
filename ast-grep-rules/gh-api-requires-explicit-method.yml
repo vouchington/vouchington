@@ -84,21 +84,6 @@ examples:
     isValid: true
     file: 'dev/label-command.mts'
   - code: |
-      await runGh([
-        'api',
-        'graphql',
-        '-f',
-        `query=${query}`,
-        '-F',
-        `owner=${owner}`,
-        '-F',
-        `repo=${repo}`,
-        '-F',
-        `number=${ref.number}`,
-      ])
-    isValid: true
-    file: 'dev/pr-description/issue-closure.mts'
-  - code: |
       const result = await createGhApi({ run }).call(
         [`repos/${repository}/check-runs/${job.id}/annotations`, '-F', 'per_page=100'],
       )

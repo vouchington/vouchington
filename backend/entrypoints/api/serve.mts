@@ -11,7 +11,7 @@ import http from 'node:http'
 import onError, { flushSentry, onFatalError } from '@modules/on-error'
 import { enableApiEgressGuardrail } from '@modules/utils'
 import { validateRuntimeImageOrigin } from '@modules/utils/image-origin'
-import { installApiEgressProxyRoutingResolver } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport } from '@modules/api-egress-proxy'
 import { isApiEgressProxyEnabled } from '@services/api-egress-proxy'
 import { createWorkerSecretValidator, isAdminDashboardRequest } from './dashboard-auth.mts'
 import { createOriginGuardedListener } from '@voucha/api/app'
@@ -30,7 +30,8 @@ validateRuntimeImageOrigin()
 /* v8 ignore next -- production bootstrap side effect; this module runs only in the real API process (serve.test.mts reads it as source text rather than importing it). */
 enableApiEgressGuardrail()
 
-installApiEgressProxyRoutingResolver(isApiEgressProxyEnabled)
+/* v8 ignore next -- production bootstrap side effect; this module runs only in the real API process and is never imported by unit tests. */
+apiEgressProxyTransport.setRoutingResolver(isApiEgressProxyEnabled)
 
 // On a deployed environment (staging or production), the Turnstile secret must be a real key —
 // never any of Cloudflare's public test secrets (always-pass, always-fail, token-already-spent).

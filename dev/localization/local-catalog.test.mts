@@ -1,4 +1,5 @@
 import {
+  appendFileSync,
   cpSync,
   existsSync,
   mkdtempSync,
@@ -6,11 +7,12 @@ import {
   readFileSync,
   rmSync,
   symlinkSync,
+  writeFileSync,
 } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { localCatalogPaths } from './local-catalog.mts'
 
@@ -77,5 +79,77 @@ describe('ensureLocalLocalizationCatalog', () => {
     const output = runLocalCatalogCli(root, root, join(linkedDirectory, 'local-catalog.mts'))
 
     expect(output).toBe(localCatalogPaths(root).output)
+  })
+
+  it('rebuilds with a new revision hash when either PACKAGE_MANIFESTS file changes', () => {
+    const root = makeWorktreeFixture()
+    const output = localCatalogPaths(root).output
+    const packagesRoot = makeTempDirectory('localization-manifests-')
+    const localizationDir = join(packagesRoot, 'localization')
+    const compilerDir = join(packagesRoot, 'localization-compiler')
+    mkdirSync(join(localizationDir, 'dist'), { recursive: true })
+    mkdirSync(join(compilerDir, 'dist'), { recursive: true })
+    const localizationManifest = join(localizationDir, 'package.json')
+    const compilerManifest = join(compilerDir, 'package.json')
+    writeFileSync(localizationManifest, '{"name":"@vouchington/localization","version":"0.1.0"}\n')
+    writeFileSync(
+      compilerManifest,
+      '{"name":"@vouchington/localization-compiler","version":"0.1.0"}\n',
+    )
+    writeFileSync(join(localizationDir, 'dist', 'index.mjs'), 'export {}\n')
+    writeFileSync(
+      join(compilerDir, 'dist', 'index.mjs'),
+      `export * from ${JSON.stringify(import.meta.resolve('@vouchington/localization-compiler'))}\n`,
+    )
+
+    const overrides = {
+      '@vouchington/localization': pathToFileURL(join(localizationDir, 'dist', 'index.mjs')).href,
+      '@vouchington/localization-compiler': pathToFileURL(join(compilerDir, 'dist', 'index.mjs'))
+        .href,
+    }
+    const hookSource = [
+      "import { registerHooks } from 'node:module'",
+      `const overrides = ${JSON.stringify(overrides)}`,
+      'registerHooks({',
+      '  resolve(specifier, context, nextResolve) {',
+      "    if (context.parentURL?.endsWith('/local-catalog.mts') && specifier in overrides) {",
+      '      return { url: overrides[specifier], shortCircuit: true }',
+      '    }',
+      '    return nextResolve(specifier, context)',
+      '  },',
+      '})',
+    ].join('\n')
+    const hookUrl = `data:text/javascript,${encodeURIComponent(hookSource)}`
+    const runWithOverrides = () =>
+      execFileSync(
+        process.execPath,
+        ['--import', hookUrl, LOCAL_CATALOG_CLI, '--worktree-root', root],
+        { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 10_000 },
+      ).trim()
+
+    expect(runWithOverrides()).toBe(output)
+    const firstRevision = readFileSync(`${output}.revision`, 'utf8')
+    const marker = Buffer.from('local-catalog-unchanged-marker')
+    appendFileSync(output, marker)
+
+    expect(runWithOverrides()).toBe(output)
+    expect(readFileSync(`${output}.revision`, 'utf8')).toBe(firstRevision)
+    expect(readFileSync(output).subarray(-marker.length)).toEqual(marker)
+
+    writeFileSync(localizationManifest, '{"name":"@vouchington/localization","version":"0.1.1"}\n')
+    expect(runWithOverrides()).toBe(output)
+    const secondRevision = readFileSync(`${output}.revision`, 'utf8')
+    expect(secondRevision).not.toBe(firstRevision)
+    expect(readFileSync(output)).not.toContain(marker)
+
+    appendFileSync(output, marker)
+    writeFileSync(
+      compilerManifest,
+      '{"name":"@vouchington/localization-compiler","version":"0.1.1"}\n',
+    )
+    expect(runWithOverrides()).toBe(output)
+    const thirdRevision = readFileSync(`${output}.revision`, 'utf8')
+    expect(thirdRevision).not.toBe(secondRevision)
+    expect(readFileSync(output)).not.toContain(marker)
   })
 })

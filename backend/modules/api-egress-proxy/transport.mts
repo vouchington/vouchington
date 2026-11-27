@@ -22,23 +22,17 @@ export type ApiEgressProxyProvider =
   | 'fediverse_search_enabled'
   | 'bedrock_embeddings_enabled'
 
-const apiEgressProxyTransport = createProxyRoutedDispatchers<ApiEgressProxyProvider>({
-  direct: {
-    getExternalFetch,
-    getLongRunningExternalFetch,
-    getExternalRequestDispatcher,
-    getLongRunningExternalRequestDispatcher,
-  },
-  getProxyUrl: getApiEgressProxyUrl,
-  onError: reportHttpTransportError,
-})
-
-export const installApiEgressProxyRoutingResolver = apiEgressProxyTransport.setRoutingResolver
-export const isApiEgressProxyRouteEnabled = apiEgressProxyTransport.isProxyRouteEnabled
-export const getProviderFetch = apiEgressProxyTransport.getRoutedFetch
-export const getProviderRequestDispatcher: ProxyRoutedDispatchers<ApiEgressProxyProvider>['getRoutedRequestDispatcher'] =
-  apiEgressProxyTransport.getRoutedRequestDispatcher
-export const closeApiEgressProxyTransport = apiEgressProxyTransport.closeProxyDispatchers
+export const apiEgressProxyTransport: ProxyRoutedDispatchers<ApiEgressProxyProvider> =
+  createProxyRoutedDispatchers<ApiEgressProxyProvider>({
+    direct: {
+      getExternalFetch,
+      getLongRunningExternalFetch,
+      getExternalRequestDispatcher,
+      getLongRunningExternalRequestDispatcher,
+    },
+    getProxyUrl: getApiEgressProxyUrl,
+    onError: reportHttpTransportError,
+  })
 
 export function getApiEgressProxyUrl(): string {
   const rawUrl = process.env.API_EGRESS_PROXY_URL?.trim()
@@ -69,4 +63,4 @@ export function getApiEgressProxyUrl(): string {
   return url.toString()
 }
 
-addGracefulShutdownDrainCallback(closeApiEgressProxyTransport)
+addGracefulShutdownDrainCallback(apiEgressProxyTransport.closeProxyDispatchers)

@@ -4,7 +4,7 @@ import type {
   NodeSavedSessionStore,
 } from '@atproto/oauth-client-node'
 import { createAtprotoOAuthClient } from '@vouchington/oauth-client/atproto'
-import { getProviderFetch } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport } from '@modules/api-egress-proxy'
 import { getBlueskyClientMetadata } from './client-metadata.mts'
 import { getBlueskyKeyset } from './keyset.mts'
 
@@ -45,7 +45,7 @@ export async function createBlueskyOAuthClient(
     keyset,
     stateStore: stores.stateStore,
     sessionStore: stores.sessionStore,
-    fetch: getProviderFetch('bluesky_oauth_enabled'),
+    fetch: apiEgressProxyTransport.getRoutedFetch('bluesky_oauth_enabled'),
     operationSignal,
   })
 }

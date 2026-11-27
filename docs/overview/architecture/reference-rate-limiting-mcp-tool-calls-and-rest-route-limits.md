@@ -46,5 +46,6 @@ still apply to the request.
   [MCP usage quota](reference-rate-limiting-layer-4-per-route-rate-limiting-backend.md#mcp-usage-quota).
 
 **Files:** `backend/api/mcp-route-rate-limit-helpers.mts`,
-`backend/services/mcp-tools/tool-route-keys.mts`, `backend/services/mcp-tools/classify-calls.mts`,
+`toolRouteCharges` from `@vouchington/mcp-server/tools`,
+`backend/services/mcp-tools/classify-calls.mts`,
 `backend/services/mcp-tools/rate-limited-result.mts`

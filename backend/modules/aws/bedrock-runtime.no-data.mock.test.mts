@@ -1,7 +1,7 @@
 import type { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime'
 import { describe, expect, it, vi } from 'vitest'
 import * as shutdown from '@data-stores/graceful-shutdown'
-import { installApiEgressProxyRoutingResolver } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport } from '@modules/api-egress-proxy'
 import './config.mts'
 import './credentials.mts'
 
@@ -43,9 +43,11 @@ describe('Bedrock client drain registration', () => {
       vi.stubEnv('BEDROCK_AWS_ACCESS_KEY_ID', 'synthetic-bedrock-access-key')
       vi.stubEnv('BEDROCK_AWS_SECRET_ACCESS_KEY', 'synthetic-bedrock-secret-key')
       vi.stubEnv('BEDROCK_AWS_SESSION_TOKEN', 'synthetic-bedrock-session-token')
-      installApiEgressProxyRoutingResolver(() => false)
+      apiEgressProxyTransport.setRoutingResolver(() => false)
       const directConfig = BedrockEmbeddingsClient.config
-      installApiEgressProxyRoutingResolver(provider => provider === 'bedrock_embeddings_enabled')
+      apiEgressProxyTransport.setRoutingResolver(
+        provider => provider === 'bedrock_embeddings_enabled',
+      )
       const proxiedConfig = BedrockEmbeddingsClient.config
       expect(proxiedConfig).not.toBe(directConfig)
       await expect(proxiedConfig.credentials()).resolves.toMatchObject({
@@ -61,9 +63,11 @@ describe('Bedrock client drain registration', () => {
       await close()
       expect(destroyedClients).toHaveLength(2)
 
-      installApiEgressProxyRoutingResolver(() => false)
+      apiEgressProxyTransport.setRoutingResolver(() => false)
       expect(BedrockEmbeddingsClient.config).not.toBe(directConfig)
-      installApiEgressProxyRoutingResolver(provider => provider === 'bedrock_embeddings_enabled')
+      apiEgressProxyTransport.setRoutingResolver(
+        provider => provider === 'bedrock_embeddings_enabled',
+      )
       expect(BedrockEmbeddingsClient.config).not.toBe(proxiedConfig)
       await close()
       expect(destroyedClients).toHaveLength(4)
@@ -72,7 +76,7 @@ describe('Bedrock client drain registration', () => {
       try {
         await close?.()
       } finally {
-        installApiEgressProxyRoutingResolver(() => false)
+        apiEgressProxyTransport.setRoutingResolver(() => false)
         vi.unstubAllEnvs()
       }
     }

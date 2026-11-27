@@ -9,7 +9,7 @@ import { loadRecordedResponse } from './recorded-response.mts'
 
 // Stripe adapter for the shared provider replay (see docs/development/testing/backend/helpers.md).
 // Stripe takes an `httpClient`, not a `fetch` option, so `replayClient()` does not apply. A test
-// replays recorded responses by either spying on `getProviderFetch` (to run the real
+// replays recorded responses by either spying on `apiEgressProxyTransport.getRoutedFetch` (to run the real
 // `getStripeClient()`) or spying on `getStripeClient()` with `createReplayStripeClient()`; the real
 // SDK serializes the request and parses the recorded bytes either way. Module mocks of internal
 // modules are not allowed (`no-mistakes/module-mock-boundary`), hence spies.

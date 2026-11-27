@@ -9,7 +9,7 @@ import type {
   OAuthAccountUpsertOptions,
   PreparedOAuthAccount,
 } from '@services/oauth-accounts/reauthentication'
-import { getProviderFetch } from '@modules/api-egress-proxy'
+import { apiEgressProxyTransport } from '@modules/api-egress-proxy'
 
 export async function prepareXAccount(
   code: string,
@@ -24,7 +24,7 @@ export async function prepareXAccount(
   return prepareRedeemedProviderAccount(
     xProvider({ clientId: X_CLIENT_ID, clientSecret: X_CLIENT_SECRET }),
     { code, redirectUri, codeVerifier },
-    { ...options, label: 'X', fetch: getProviderFetch('x_oauth_enabled') },
+    { ...options, label: 'X', fetch: apiEgressProxyTransport.getRoutedFetch('x_oauth_enabled') },
   )
 }
 
@@ -37,6 +37,6 @@ export async function upsertXAccount(
   return redeemProviderAccount(
     xProvider({ clientId: X_CLIENT_ID, clientSecret: X_CLIENT_SECRET }),
     { code, redirectUri, codeVerifier },
-    { ...options, label: 'X', fetch: getProviderFetch('x_oauth_enabled') },
+    { ...options, label: 'X', fetch: apiEgressProxyTransport.getRoutedFetch('x_oauth_enabled') },
   )
 }
