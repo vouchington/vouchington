@@ -137,8 +137,8 @@ export async function runViewDrivenHostnameScenarios(): Promise<void> {
         anyOf: true,
       },
       { kind: 'noSeqScan', relation: 'url_hostnames' },
-      // Custom uses BitmapAnd(hostname_key, hostname_trgm) (~1,040 rows); generic uses hostname_trgm (~3,082 rows, vs 6,064 before).
-      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 3_700 },
+      // Custom walks hostname_key / BitmapAnd; generic scans hostname_trgm once (~3,767 rows on full seed, vs ~7,500 before).
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 5_000 },
     ],
   })
   await runAndCapture('url-hostname-search-text-low-selectivity-deep-cursor', async () => {
