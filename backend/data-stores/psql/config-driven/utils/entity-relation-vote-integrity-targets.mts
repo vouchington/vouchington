@@ -6,6 +6,14 @@ import {
 } from '@voucha/types/entities/entity-relations-metadata'
 import { buildConstraintAddAndValidateSql } from '@vouchington/postgres/catalog-guarded-ddl'
 
+export function isTopicMergeElectionRelation(
+  metadata: Pick<EntityRelationMetadata, 'election' | 'subject_type' | 'object_type'>,
+): boolean {
+  return (
+    metadata.election && (metadata.subject_type === 'topic' || metadata.object_type === 'topic')
+  )
+}
+
 export function createEntityRelationVoteIntegrityTargets(
   electionRelations: EntityRelationMetadata[],
 ): string {
@@ -19,8 +27,7 @@ export function createEntityRelationVoteIntegrityTargets(
         : `${shortName}_flag_pending`
     // Topic-involving election relations already get a covering (target, id) page index from
     // 0000-00-01d-topic-merge-relation-work-items.mts with the same predicate.
-    const hasTopicMergePageIndex =
-      metadata.subject_type === 'topic' || metadata.object_type === 'topic'
+    const hasTopicMergePageIndex = isTopicMergeElectionRelation(metadata)
     return [
       `COMMENT ON COLUMN vote_integrity_flags."${targetColumn}" IS 'Flagged ${metadata.table_name} relation, if this flag targets that relation type.';`,
       `COMMENT ON COLUMN vote_integrity_flags."${subjectColumn}" IS 'Subject identifier paired with ${targetColumn} for referential integrity.';`,
