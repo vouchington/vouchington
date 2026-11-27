@@ -89,11 +89,6 @@ CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
     ${getElectionConstraintClause(metadata.table_name, ['subject_id', 'id'], 'uq')}UNIQUE (subject_id, id)`
   }
 
-  if (metadata.order_index) {
-    query += `,
-    order_index BIGINT NOT NULL DEFAULT 0`
-  }
-
   query += `,
     PRIMARY KEY (${primary_keys.join(', ')})`
 

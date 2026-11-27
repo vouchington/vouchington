@@ -34,7 +34,6 @@ export type EntityRelationResult = {
   created_by_id: string | null
   deleted_at?: Date
   deleted_by_id?: string
-  order_index?: number
   votes_count_up?: number
   votes_count_down?: number
   votes_score_net?: number
@@ -146,9 +145,7 @@ export async function getEntityRelationsBatch(
   query.append(' ORDER BY requested_subject_id, ')
   if ((options.sort ?? 'best') === 'best' && metadata.election)
     query.append('votes_score_sort DESC, created_at DESC, object_id DESC')
-  else if (options.sort === 'newest' || !metadata.order_index)
-    query.append('created_at DESC, object_id DESC')
-  else query.append('order_index ASC, object_id ASC')
+  else query.append('created_at DESC, object_id DESC')
   const { rows } = await (options.readOnly === false ? write : read)(query)
   const grouped = Map.groupBy(
     rows as Array<EntityRelationResult & { requested_subject_id: string }>,

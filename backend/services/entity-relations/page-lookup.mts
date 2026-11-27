@@ -4,9 +4,8 @@ import { anonymousAuthorMaskFor, type EntityRelationViewer } from './viewer.mts'
 
 export type EntityRelationPageCursor = {
   id: string
-  createdAt?: string
+  createdAt: string
   votesScoreSort?: number
-  orderIndex?: number
 }
 
 export function appendFilters(query: SQLStatement, filters: readonly SQLStatement[]): void {
@@ -23,13 +22,11 @@ export function appendRelationOrder(
   metadata: EntityRelationMetadata,
   sort: 'best' | 'newest',
 ): void {
-  // sort=best on non-election relations falls back to order_index or created_at DESC.
+  // sort=best on non-election relations falls back to created_at DESC.
   if (sort === 'best' && metadata.election) {
     query.append(sql`r.votes_score_sort DESC, r.created_at DESC, r.object_id DESC`)
-  } else if (sort === 'newest' || !metadata.order_index) {
-    query.append(sql`r.created_at DESC, r.object_id DESC`)
   } else {
-    query.append(sql`r.order_index ASC, r.object_id ASC`)
+    query.append(sql`r.created_at DESC, r.object_id DESC`)
   }
 }
 
@@ -62,8 +59,5 @@ export function buildCursorFilter(
   if (sort === 'best' && metadata.election) {
     return sql`(r.votes_score_sort, r.created_at, r.object_id) < (${after.votesScoreSort}, ${after.createdAt}, ${after.id})`
   }
-  if (sort === 'newest' || !metadata.order_index) {
-    return sql`(r.created_at, r.object_id) < (${after.createdAt}, ${after.id})`
-  }
-  return sql`(r.order_index, r.object_id) > (${after.orderIndex}, ${after.id})`
+  return sql`(r.created_at, r.object_id) < (${after.createdAt}, ${after.id})`
 }

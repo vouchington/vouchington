@@ -81,10 +81,6 @@ export function buildEntityRelationSelectBody(
       r.votes_score_sort,
       r.votes_score_net,`)
   }
-  if (metadata.order_index) {
-    query.append(sql`
-      r.order_index,`)
-  }
   query.append(sql`
       to_char(r.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_created_at,
       `)

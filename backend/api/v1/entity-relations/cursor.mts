@@ -14,7 +14,6 @@ export function encodeEntityRelationCursor(
     created_at: Date
     cursor_created_at: string
     votes_score_sort?: number
-    order_index?: number
   },
   scope: string,
   parsed: ReturnType<typeof parseEntityRelationSearchInput>,
@@ -27,9 +26,6 @@ export function encodeEntityRelationCursor(
       created_at: relation.cursor_created_at,
       ...(parsed.options.sort === 'best' && parsed.metadata.election
         ? { votes_score_sort: relation.votes_score_sort ?? 0 }
-        : {}),
-      ...(parsed.options.sort === 'best' && parsed.metadata.order_index
-        ? { order_index: relation.order_index ?? 0 }
         : {}),
     }),
   ).toString('base64url')
@@ -54,26 +50,19 @@ export function parseEntityRelationCursor(
     value.scope === scope &&
       value.sort === parsed.options.sort &&
       typeof value.id === 'string' &&
-      isUUID(value.id),
+      isUUID(value.id) &&
+      typeof value.created_at === 'string' &&
+      !Number.isNaN(Date.parse(value.created_at)),
     400,
     'Invalid cursor format',
   )
-  const cursor: EntityRelationPageCursor = { id: value.id as string }
-  /* c8 ignore next 4 -- no entity relation currently configures order_index */
-  if (parsed.options.sort === 'best' && parsed.metadata.order_index) {
-    ctx.assert(Number.isInteger(value.order_index), 400, 'Invalid cursor format')
-    cursor.orderIndex = value.order_index as number
-  } else {
-    ctx.assert(
-      typeof value.created_at === 'string' && !Number.isNaN(Date.parse(value.created_at)),
-      400,
-      'Invalid cursor format',
-    )
-    cursor.createdAt = value.created_at as string
-    if (parsed.options.sort === 'best' && parsed.metadata.election) {
-      ctx.assert(typeof value.votes_score_sort === 'number', 400, 'Invalid cursor format')
-      cursor.votesScoreSort = value.votes_score_sort as number
-    }
+  const cursor: EntityRelationPageCursor = {
+    id: value.id as string,
+    createdAt: value.created_at as string,
+  }
+  if (parsed.options.sort === 'best' && parsed.metadata.election) {
+    ctx.assert(typeof value.votes_score_sort === 'number', 400, 'Invalid cursor format')
+    cursor.votesScoreSort = value.votes_score_sort as number
   }
   return cursor
 }

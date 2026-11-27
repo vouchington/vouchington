@@ -7,7 +7,6 @@ export type EntityRelation = {
   subject_type?: PostType
   object_id: string
   object_type?: PostType
-  order_index?: number
   created_at: Date
   created_by_id: string
   deleted_at?: Date
@@ -25,7 +24,6 @@ export type EntityRelationOrigin = 'local' | 'remote'
 export type UpsertEntityRelationsOptions = QueryOptions & {
   // whether to automatically vote for the relation
   vote?: boolean
-  order_index?: number
   enqueueVoteStats?: boolean
   // Story workflows aggregate their own publication capture inside the surrounding transaction.
   capturePublication?: boolean

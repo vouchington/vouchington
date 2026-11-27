@@ -1,5 +1,4 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { relationReferences } from './merge-relations.mts'
 import {
   applyRelationMetrics,
@@ -107,13 +106,12 @@ async function createFinalRelationParent(
   const object = columns.includes('object_id')
     ? 'CASE WHEN object_id = $4::uuid THEN $5::uuid ELSE object_id END'
     : 'object_id'
-  const orderIndex = entityRelationMetadatum.find(item => item.table_name === table)!.order_index
   await query(
     `/* createFinalRelationParent */
     WITH original AS MATERIALIZED (SELECT *, ${subject} AS next_subject, ${object} AS next_object
       FROM ${table} WHERE subject_id = $2::uuid AND id = $3::uuid LIMIT 1),
-    inserted AS (INSERT INTO ${table} (id, subject_id, object_id, created_at, created_by_id, deleted_at, deleted_by_id${orderIndex ? ', order_index' : ''})
-      SELECT uuidv7(), next_subject, next_object, created_at, created_by_id, deleted_at, deleted_by_id${orderIndex ? ', order_index' : ''}
+    inserted AS (INSERT INTO ${table} (id, subject_id, object_id, created_at, created_by_id, deleted_at, deleted_by_id)
+      SELECT uuidv7(), next_subject, next_object, created_at, created_by_id, deleted_at, deleted_by_id
       FROM original WHERE next_subject <> subject_id OR next_object <> object_id
       RETURNING subject_id, id),
     target AS (SELECT subject_id, id FROM inserted UNION ALL SELECT subject_id, id FROM original

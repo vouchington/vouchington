@@ -11,7 +11,6 @@ export interface EntityRelation {
   created_by_id: string | null
   deleted_at?: string
   deleted_by_id?: string
-  order_index?: number
   votes_count_up?: number
   votes_count_down?: number
   votes_score_net?: number

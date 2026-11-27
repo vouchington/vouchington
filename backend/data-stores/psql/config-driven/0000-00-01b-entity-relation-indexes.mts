@@ -61,14 +61,6 @@ ON "${metadata.table_name}" (${ACTIVE_SUBJECT_NEWEST_INDEX_COLUMNS})
 WHERE deleted_at IS NULL;
 `
 
-  // Create order index (if enabled)
-  if (metadata.order_index) {
-    query += `
-CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'order_index')}
-ON "${metadata.table_name}" (${subjectColumns}, order_index ASC, object_id ASC);
-`
-  }
-
   // Create reverse lookup index (for all tables)
   query += `
 CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'reverse_index')}

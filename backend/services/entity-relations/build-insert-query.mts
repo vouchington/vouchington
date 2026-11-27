@@ -13,10 +13,6 @@ function buildRelationColumns(relation: EntityRelationMetadata): {
   if (isUserFollowRelation(relation)) {
     columns.push('outbound_activitypub_follow_activity_id')
   }
-  /* c8 ignore next 3 -- no entity relation currently configures order_index */
-  if (relation.order_index) {
-    columns.push('order_index')
-  }
 
   return { columns, primaryKeyColumns }
 }
@@ -92,10 +88,6 @@ export function buildInsertBody(
       SELECT input.subject_id, input.object_id, ${creator?.id ?? null}`)
   if (isUserFollowRelation(relation)) {
     query.append(sql`, uuidv7()`)
-  }
-  /* c8 ignore next 3 -- no entity relation currently configures order_index */
-  if (relation.order_index) {
-    query.append(sql`, ${options?.order_index ?? 0}`)
   }
   query.append(sql`
       FROM input

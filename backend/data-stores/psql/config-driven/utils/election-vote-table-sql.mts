@@ -55,7 +55,6 @@ export function createEntityRelationComments(metadata: EntityRelationMetadata): 
     subject_id: `Concrete relation subject in ${subject}.`,
     object_id: `Concrete relation object in ${object}.`,
   }
-  if (metadata.order_index) columns.order_index = 'Ordering position within the subject relation.'
   if (metadata.table_name === 'relation__user__follow__user')
     columns.outbound_activitypub_follow_activity_id =
       'Stable outbound ActivityPub Follow protocol identity.'
