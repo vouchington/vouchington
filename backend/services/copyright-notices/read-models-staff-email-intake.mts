@@ -56,12 +56,15 @@ export async function getCopyrightStaffEmailIntake(
   intakeQuery.append(copyrightEmailReplyReferenceSql())
   intakeQuery.append(sql` AS has_reply_reference
     FROM copyright_notice_email_intakes intake
+    JOIN copyright_notice_email_intake_receipts receipt
+      ON receipt.id = intake.id AND receipt.erased_at IS NULL
     LEFT JOIN copyright_notice_email_intake_parses parse ON parse.copyright_notice_email_intake_id = intake.id
     LEFT JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id
     LEFT JOIN LATERAL (SELECT id, status FROM copyright_notice_email_intake_recommendation_runs
       WHERE copyright_notice_email_intake_receipt_id = intake.id ORDER BY id DESC LIMIT 1) run ON true
     WHERE intake.id = ${intakeId}
+      AND intake.raw_storage_object_id IS NOT NULL
   `)
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{
