@@ -10,7 +10,7 @@ import {
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import sql from 'sql-template-strings'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { runAndCapture, seedUser } from '../run-support.mts'
+import { runAndCapture } from '../run-support.mts'
 import { withNotificationInbox } from '../seed-data/notification-inbox.mts'
 
 export async function runNotificationInboxCapacityScenario(): Promise<void> {
@@ -22,20 +22,23 @@ export async function runNotificationInboxCapacityScenario(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'notifications', max: limit + 1 },
     ],
   })
-  await runAndCapture(
-    scenario,
-    async () => {
-      const page = await listNotifications(seedUser.id, { limit })
-      if (
-        page.results.length !== limit ||
-        !page.page_info.has_next_page ||
-        page.results.some((row, index) => index > 0 && row.id >= page.results[index - 1]!.id)
-      ) {
-        throw new Error('The inbox must return a full newest-first page and a continuation')
-      }
+  await withNotificationInbox(
+    { unread: 2_000, backgroundRecipients: 0 },
+    async ({ recipientId, notifications }) => {
+      await runAndCapture(
+        scenario,
+        async () => {
+          const page = await listNotifications(recipientId, { limit })
+          assert.deepEqual(
+            page.results.map(row => row.id),
+            notifications.slice(0, limit).map(row => row.id),
+          )
+          assert.equal(page.page_info.has_next_page, true)
+        },
+        undefined,
+        'listNotifications',
+      )
     },
-    undefined,
-    'listNotifications',
   )
 }
 

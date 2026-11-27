@@ -1,3 +1,4 @@
+import { runNotificationUnreadCapacityScenario } from './run-scenarios/notification-unread-capacity.mts'
 import { runAggregateExistenceScenarios } from './run-scenarios/aggregate-existence.mts'
 import { runAiUsageTotalsScenarios } from './run-scenarios/ai-usage-totals.mts'
 import { runPostImageWriteScenarios } from './run-scenarios/post-image-writes.mts'
@@ -35,3 +36,5 @@ export const AFTER_NOTIFICATIONS_RUNNERS: readonly (() => Promise<unknown>)[] = 
   runRelatedPostUrlCapacityScenario,
   runHackerNewsPostFlagPages,
 ]
+
+export const NOTIFICATION_UNREAD_RUNNERS = [runNotificationUnreadCapacityScenario] as const
