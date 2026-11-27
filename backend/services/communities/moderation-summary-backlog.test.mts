@@ -4,7 +4,7 @@ import {
   runModerationSummaryMemberships,
 } from './moderation-summary-collection.mts'
 import { collectModerationSummaryMemberPage } from './moderation-summary-activity-pages.mts'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestUser,
   insertTestCommunity,
@@ -125,6 +125,75 @@ describe('moderation digest backlog boundaries', () => {
     } finally {
       restore()
     }
+  })
+
+  it('counts raw memberships and resumes within the frozen recipient range', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(moderationSummaryWorkConfig, {
+        memberships_max_batches_per_run: 1,
+      }),
+    )
+    const [recipient, other] = await Promise.all([createTestUser(), createTestUser()])
+    const [plain, moderated, added] = await Promise.all(
+      Array.from({ length: 3 }, () => insertTestCommunity({ createdById: other.id })),
+    )
+    const windowEnd = new Date()
+    const at = (offset: number) => new Date(windowEnd.getTime() + offset)
+    const member = await insertTestCommunityMember({
+      communityId: plain.id,
+      userId: recipient.id,
+      role: 'member',
+      createdAt: at(60_000),
+    })
+    await insertTestCommunityMember({
+      communityId: plain.id,
+      userId: other.id,
+      role: 'moderator',
+      createdAt: at(120_000),
+    })
+    const moderator = await insertTestCommunityMember({
+      communityId: moderated.id,
+      userId: recipient.id,
+      role: 'moderator',
+      createdAt: at(180_000),
+    })
+    const args = {
+      userId: recipient.id,
+      windowStart: at(-86_400_000),
+      windowEnd,
+      eligibilityAt: windowEnd,
+      collection: createModerationSummaryCollection(),
+      communities: [],
+      limits: { membershipPageSize: 1, sourcePageSize: 1 },
+    }
+    const first = await runModerationSummaryMemberships(args)
+    expect(first).toMatchObject({
+      next: 'memberships',
+      collection: { afterMembershipId: member.id, upperMembershipId: moderator.id, scan: null },
+    })
+    await insertTestCommunityMember({
+      communityId: added.id,
+      userId: recipient.id,
+      role: 'moderator',
+      createdAt: at(240_000),
+    })
+    const second = await runModerationSummaryMemberships({ ...args, collection: first.collection })
+    expect(second).toMatchObject({
+      next: 'reviews',
+      collection: {
+        afterMembershipId: moderator.id,
+        upperMembershipId: moderator.id,
+        scan: { communityId: moderated.id },
+      },
+    })
+    const exhausted = await runModerationSummaryMemberships({
+      ...args,
+      collection: { ...second.collection, scan: null },
+    })
+    expect(exhausted).toMatchObject({
+      next: 'send',
+      collection: { afterMembershipId: moderator.id, upperMembershipId: moderator.id, scan: null },
+    })
   })
 
   it('uses distinct persisted user and community membership maxima beyond the activity clock', async () => {

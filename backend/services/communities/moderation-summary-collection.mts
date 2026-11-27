@@ -70,9 +70,15 @@ async function collectMembershipPage(
     id: string
     community_id: string
     role: string
-  }>(sql`/* collectModerationSummaryMembershipPage */
-      SELECT id,community_id,role FROM community_members WHERE user_id=${args.userId} AND removed_at IS NULL
-        AND id>${state.afterMembershipId} AND id<=${state.upperMembershipId} ORDER BY id LIMIT ${size}`)
+  }>(
+    `/* collectModerationSummaryMembershipPage */
+      SELECT id, community_id, role FROM community_members
+      WHERE user_id = $1 AND removed_at IS NULL
+        AND (user_id, id) > ($1, $2)
+        AND (user_id, id) <= ($1, $3)
+      ORDER BY user_id, id LIMIT $4`,
+    [args.userId, state.afterMembershipId, state.upperMembershipId, size],
+  )
   const eligible = await pMap(
     rows,
     row =>
