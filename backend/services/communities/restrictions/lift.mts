@@ -41,12 +41,15 @@ export async function liftCommunityRestriction(
     throw createHttpError(404, 'No active restriction found')
   }
 
+  await recordModeratorAction(
+    currentUser.id,
+    {
+      actionType: 'lift_restriction',
+      communityId,
+      communityRestrictionIds: [restrictionId],
+      metadata: { restriction_type: restrictionType },
+    },
+    { query },
+  )
   await query.commit()
-
-  await recordModeratorAction(currentUser.id, {
-    actionType: 'lift_restriction',
-    communityId,
-    communityRestrictionIds: [restrictionId],
-    metadata: { restriction_type: restrictionType },
-  })
 }

@@ -49,18 +49,21 @@ export async function activateCommunityRestrictions(
     restrictionTypes,
     input,
   )
-  await query.commit()
-
-  await recordModeratorAction(currentUser.id, {
-    actionType: 'activate_restriction',
-    communityId,
-    reason: input.reason ?? null,
-    communityRestrictionIds: restrictions.map(restriction => restriction.id),
-    metadata: {
-      restriction_types: restrictions.map(restriction => restriction.restriction_type),
-      expires_at: input.expiresAt?.toISOString() ?? null,
+  await recordModeratorAction(
+    currentUser.id,
+    {
+      actionType: 'activate_restriction',
+      communityId,
+      reason: input.reason ?? null,
+      communityRestrictionIds: restrictions.map(restriction => restriction.id),
+      metadata: {
+        restriction_types: restrictions.map(restriction => restriction.restriction_type),
+        expires_at: input.expiresAt?.toISOString() ?? null,
+      },
     },
-  })
+    { query },
+  )
+  await query.commit()
 
   return restrictions
 }
