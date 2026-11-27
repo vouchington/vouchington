@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import sql from 'sql-template-strings'
 import type { ClusterRow, PostIndicatorsById } from './clustered-types.mts'
 import { appendUuidList } from './clustered-utils.mts'
@@ -35,7 +36,7 @@ export async function selectPostIndicators(clusters: ClusterRow[]): Promise<Post
         ) signal
         WHERE version.post_id = p.id
           AND version.content_sha256 = p.llm_moderation_content_sha256
-          AND version.policy_revision = '2026-09-09.1'
+          AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
           AND signal->>'signal' = 'content_hash_duplicate'
           AND signal->>'flagged' = 'true'
       ) AS content_hash_duplicate,
@@ -55,7 +56,7 @@ export async function selectPostIndicators(clusters: ClusterRow[]): Promise<Post
         ) signal
         WHERE version.post_id = p.id
           AND version.content_sha256 = p.llm_moderation_content_sha256
-          AND version.policy_revision = '2026-09-09.1'
+          AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
           AND signal->>'signal' = 'embeddings_similarity'
           AND signal->>'flagged' = 'true'
       ) AS embeddings_similarity,

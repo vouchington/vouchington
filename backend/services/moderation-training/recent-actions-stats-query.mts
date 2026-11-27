@@ -1,4 +1,5 @@
 import sql from 'sql-template-strings'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import type { SearchRecentAutomodActionsOptions } from './types.mts'
 import { buildRecentAutomodActionsQuery } from './recent-actions-query.mts'
 
@@ -40,7 +41,7 @@ export function buildRecentAutomodActionsStatsQuery(
       LEFT JOIN post_moderation_versions spam_version
         ON spam_version.post_id = p.id
        AND spam_version.content_sha256 = mtf.input_sha256
-       AND spam_version.policy_revision = '2026-09-09.1'
+       AND spam_version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
       LEFT JOIN LATERAL (
         SELECT evidence
         FROM post_moderation_dispositions

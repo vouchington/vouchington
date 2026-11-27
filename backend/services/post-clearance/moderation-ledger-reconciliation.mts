@@ -1,8 +1,8 @@
 import { write } from '@data-stores/psql'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { getPostClearanceWorkLimit } from './work-limits.mts'
 import {
   AUTOMATED_POST_MODERATION_SOURCES,
-  POST_MODERATION_POLICY_REVISION,
   type AutomatedPostModerationSource,
 } from './moderation-ledger-types.mts'
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { write } from '@data-stores/psql'
 import { reconcilePostModerationWork } from '@services/post-clearance'
-import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'

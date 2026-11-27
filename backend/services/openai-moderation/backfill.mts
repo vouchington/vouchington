@@ -1,7 +1,7 @@
 import { getOpenaiModerationWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 
 export type BackfillIdPage = { ids: string[]; hasMore: boolean }
 

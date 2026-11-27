@@ -3,12 +3,12 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import onError from '@modules/on-error'
 import { enqueueBulkCreatePostModeration } from '@queues/openai-moderation/enqueues'
 import { enqueueBulkSpamDetection } from '@queues/moderation-signals/enqueues'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import {
   type AutomatedPostModerationSource,
   AUTOMATED_POST_MODERATION_SOURCES,
   type PostModerationDisposition,
   type PostModerationVersion,
-  POST_MODERATION_POLICY_REVISION,
 } from './moderation-ledger-types.mts'
 import {
   ensureCurrentPostModerationVersion,

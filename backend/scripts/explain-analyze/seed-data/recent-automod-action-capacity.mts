@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, write } from '@data-stores/psql'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { seedUser } from '../run-support.mts'
 
 const TARGET_ROWS = 300
 const RECENT_ACTIONS = 225
 const CORPUS_ROWS = 1500
 const HASH = 'ba'.repeat(32)
-const POLICY_REVISION = '2026-09-09.1'
 
 type FixturePost = { id: string; title: string }
 
@@ -55,7 +55,7 @@ export async function seedRecentAutomodActionCapacity() {
        'explain_fixture', jsonb_build_object('composite_score', (n % 5) / 10.0)
      FROM unnest($1::uuid[]) WITH ORDINALITY AS input(post_id, n)
      JOIN versions USING (post_id)`,
-    [postIds, HASH, POLICY_REVISION, RECENT_ACTIONS, TARGET_ROWS],
+    [postIds, HASH, POST_MODERATION_POLICY_REVISION, RECENT_ACTIONS, TARGET_ROWS],
   )
   await query(
     `/* seedRecentAutomodFeedback */

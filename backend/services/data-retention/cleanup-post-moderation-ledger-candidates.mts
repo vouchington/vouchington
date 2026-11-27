@@ -1,5 +1,5 @@
 import type { QueryExecutor } from '@data-stores/psql'
-import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import type { PostModerationRetentionKind } from '@voucha/types/entities/moderation-retention'
 
 export type PostModerationCandidate = { id: string; version_id: string; retention_due_at: Date }

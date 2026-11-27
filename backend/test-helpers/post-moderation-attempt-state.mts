@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import sql from 'sql-template-strings'
 
 type TestModerationSource = 'openai_omni' | 'spam_detection'
@@ -91,7 +92,7 @@ export async function getTestCurrentPostModerationVersion(postId: string): Promi
       JOIN posts post ON post.id = version.post_id
         AND post.llm_moderation_content_sha256 = version.content_sha256
       WHERE post.id = ${postId}
-        AND version.policy_revision = '2026-09-09.1'
+        AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
       ORDER BY version.id DESC
       LIMIT 1
     `,

@@ -18,7 +18,7 @@ import {
   setTestPostModerationRetentionHash,
 } from '@voucha/test-helpers/post-moderation-retention-progress'
 import { createIsolatedRetentionWindow } from '@voucha/test-helpers/retention-window'
-import { POST_MODERATION_POLICY_REVISION as revision } from '@services/post-clearance/moderation-ledger-types'
+import { POST_MODERATION_POLICY_REVISION as revision } from '@voucha/types/entities/post-moderation'
 import { reconsiderChangedPostModerationPost } from './cleanup-post-moderation-ledger-hash-work.mts'
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
 

@@ -25,6 +25,7 @@
     "@services/entity-cache": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/post-publication": "workspace:^",
+    "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2"
   },

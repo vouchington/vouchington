@@ -17,7 +17,7 @@ import {
   getTestPostModerationVersionMarkers,
   setTestPostModerationRetentionHash,
 } from '@voucha/test-helpers/post-moderation-retention-progress'
-import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { cleanupPostModerationLedger } from './cleanup-post-moderation-ledger.mts'
 import { reconsiderChangedPostModerationPost } from './cleanup-post-moderation-ledger-hash-work.mts'
 

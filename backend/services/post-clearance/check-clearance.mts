@@ -7,8 +7,8 @@ import { recordModeratorAction } from '@services/moderator-actions'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/post-classifier'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
-import { POST_MODERATION_POLICY_REVISION } from './moderation-ledger-types.mts'
 
 /**
  * Classifiers that run on an approved post, each through the shared classifier-run lifecycle: C5

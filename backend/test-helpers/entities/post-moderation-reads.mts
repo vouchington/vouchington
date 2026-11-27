@@ -1,4 +1,5 @@
 import { read, write } from '@data-stores/psql'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import sql from 'sql-template-strings'
 import type { TestModerationDisposition } from './post-moderation.mts'
 
@@ -23,7 +24,7 @@ export async function getPostModerationData(postId: string): Promise<{
       disposition.decided_at AS openai_omni_moderation_created_at
     FROM posts post
     LEFT JOIN post_moderation_versions version ON version.post_id = post.id
-      AND version.content_sha256 = post.llm_moderation_content_sha256 AND version.policy_revision = '2026-09-09.1'
+      AND version.content_sha256 = post.llm_moderation_content_sha256 AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
     LEFT JOIN LATERAL (
       SELECT disposition, evidence, decided_at FROM post_moderation_dispositions
       WHERE version_id = version.id AND source = 'openai_omni' ORDER BY id DESC LIMIT 1
@@ -59,7 +60,7 @@ export async function getPostSpamDetectionState(postId: string): Promise<{
       disposition.evidence AS spam_detection_results
     FROM posts post
     LEFT JOIN post_moderation_versions version ON version.post_id = post.id
-      AND version.content_sha256 = post.llm_moderation_content_sha256 AND version.policy_revision = '2026-09-09.1'
+      AND version.content_sha256 = post.llm_moderation_content_sha256 AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
     LEFT JOIN LATERAL (
       SELECT disposition, evidence, decided_at FROM post_moderation_dispositions
       WHERE version_id = version.id AND source = 'spam_detection' ORDER BY id DESC LIMIT 1

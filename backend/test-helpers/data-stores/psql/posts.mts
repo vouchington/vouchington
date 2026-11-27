@@ -1,4 +1,5 @@
 import { read, write } from '@data-stores/psql'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import sql from 'sql-template-strings'
 
 // @data-stores/psql cannot depend on @voucha/test-helpers (see users.mts in this directory for why).
@@ -55,7 +56,7 @@ export async function recordLocalTestPostOpenAIModerationDisposition(
   await write(sql`/* recordLocalTestPostOpenAIModerationDisposition */
     WITH version AS (
       INSERT INTO post_moderation_versions (post_id, content_sha256, policy_revision)
-      SELECT id, llm_moderation_content_sha256, '2026-09-09.1'
+      SELECT id, llm_moderation_content_sha256, ${POST_MODERATION_POLICY_REVISION}
       FROM posts
       WHERE id = ${postId}
       ON CONFLICT (post_id, content_sha256, policy_revision)
@@ -82,6 +83,13 @@ export async function queryLocalTestPostOpenAIModerationFlag(
     LIMIT 1
   `)
   return rows[0]?.is_flagged_by_openai_omni_moderation
+}
+
+export async function queryLocalTestViewPostsDefinition(): Promise<string> {
+  const { rows } = await read<{ definition: string }>(sql`/* queryLocalTestViewPostsDefinition */
+    SELECT pg_get_viewdef('view_posts'::regclass, TRUE) AS definition
+  `)
+  return rows[0]!.definition
 }
 
 export async function queryLocalTestPostImageIds(postId: string): Promise<string[]> {

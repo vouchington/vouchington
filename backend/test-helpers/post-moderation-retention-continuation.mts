@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { POST_MODERATION_POLICY_REVISION } from '../services/post-clearance/moderation-ledger-types.mts'
+import { POST_MODERATION_POLICY_REVISION } from '@voucha/types/entities/post-moderation'
 import {
   createTestUser,
   insertTestPost,

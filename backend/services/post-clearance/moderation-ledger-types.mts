@@ -1,5 +1,3 @@
-export const POST_MODERATION_POLICY_REVISION = '2026-09-09.1'
-
 export const AUTOMATED_POST_MODERATION_SOURCES = ['openai_omni', 'spam_detection'] as const
 
 export type AutomatedPostModerationSource = (typeof AUTOMATED_POST_MODERATION_SOURCES)[number]
