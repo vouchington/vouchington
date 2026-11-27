@@ -144679,9 +144679,9 @@
           "valid": true
         },
         "idx_topics__name_trgm": {
-          "accessMethod": "gin",
+          "accessMethod": "gist",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__name_trgm ON public.topics USING gin (name gin_trgm_ops) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_topics__name_trgm ON public.topics USING gist (name gist_trgm_ops) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -144689,10 +144689,10 @@
               "descending": false,
               "expression": "name",
               "nullsFirst": false,
-              "opclass": "gin_trgm_ops"
+              "opclass": "gist_trgm_ops"
             }
           ],
-          "predicate": "(deleted_at IS NULL)",
+          "predicate": "((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -144813,9 +144813,9 @@
           "valid": true
         },
         "idx_topics__slug_trgm": {
-          "accessMethod": "gin",
+          "accessMethod": "gist",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__slug_trgm ON public.topics USING gin (slug gin_trgm_ops) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_topics__slug_trgm ON public.topics USING gist (slug gist_trgm_ops) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -144823,10 +144823,10 @@
               "descending": false,
               "expression": "slug",
               "nullsFirst": false,
-              "opclass": "gin_trgm_ops"
+              "opclass": "gist_trgm_ops"
             }
           ],
-          "predicate": "(deleted_at IS NULL)",
+          "predicate": "((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,

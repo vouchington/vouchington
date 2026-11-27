@@ -52,10 +52,4 @@ export const BASELINE_FINGERPRINTS = [
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
   'topic-search-text|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
-  // Both pages and plan modes are bounded by the topic-search-text-at-cap contract.
-  // https://github.com/vouchington/vouchington/issues/6374#issuecomment-7187154165
-  'topic-search-text-at-cap|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
-  'topic-search-text-at-cap|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
-  'topic-search-text-at-cap|1|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
-  'topic-search-text-at-cap|1|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
 ] as const
