@@ -117,20 +117,18 @@ async function createWarningInTransaction(
     )
     communityId = reportRows[0]?.community_id ?? null
   }
-  await Promise.all([
-    recordModeratorAction(
-      currentUserId,
-      {
-        actionType: 'warn',
-        targetUserId: input.userId,
-        communityId,
-        reportId: input.reportId ?? null,
-        reason: input.reason,
-      },
-      { query },
-    ),
-    maybeResolveCase(caseId, currentUserId, { query }),
-  ])
+  await recordModeratorAction(
+    currentUserId,
+    {
+      actionType: 'warn',
+      targetUserId: input.userId,
+      communityId,
+      reportId: input.reportId ?? null,
+      reason: input.reason,
+    },
+    { query },
+  )
+  await maybeResolveCase(caseId, currentUserId, { query })
   await query.commit()
   return created
 }

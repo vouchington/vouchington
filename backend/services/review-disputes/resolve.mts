@@ -39,10 +39,15 @@ export async function resolveReviewDisputeRemove(
     const row = rows[0]
     if (!row) return rejectUnresolvableDispute(disputeId, { query })
 
-    const [, lifecycleId] = await Promise.all([
-      setPostClearanceStatus(row.post_id, 'rejected', staffUserId, { query }),
-      appendLifecycleChange(disputeId, 'resolve_remove', staffUserId, {}, { query }),
-    ])
+    // ast-grep-ignore: no-three-sequential-awaits -- all statements share one transaction client query and setLifecycle consumes lifecycleId
+    await setPostClearanceStatus(row.post_id, 'rejected', staffUserId, { query })
+    const lifecycleId = await appendLifecycleChange(
+      disputeId,
+      'resolve_remove',
+      staffUserId,
+      {},
+      { query },
+    )
     await query(sql`/* resolveReviewDisputeRemove:setLifecycle */
       UPDATE review_disputes SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${disputeId}
     `)
@@ -99,14 +104,19 @@ export async function resolveReviewDisputeAnnotate(
     const row = disputeRows[0]
     if (!row) return rejectUnresolvableDispute(disputeId, { query })
 
-    const [lifecycleId] = await Promise.all([
-      appendLifecycleChange(disputeId, 'resolve_annotate', staffUserId, {}, { query }),
-      query(sql`/* resolveReviewDisputeAnnotate:annotation */
-        INSERT INTO post_dispute_annotations (post_id, review_dispute_id, body_text, created_by_id)
-        VALUES (${row.post_id}, ${disputeId}, ${trimmedBody}, ${staffUserId})
-        ON CONFLICT DO NOTHING
-      `),
-    ])
+    // ast-grep-ignore: no-three-sequential-awaits -- all statements share one transaction client query and setLifecycle consumes lifecycleId
+    const lifecycleId = await appendLifecycleChange(
+      disputeId,
+      'resolve_annotate',
+      staffUserId,
+      {},
+      { query },
+    )
+    await query(sql`/* resolveReviewDisputeAnnotate:annotation */
+      INSERT INTO post_dispute_annotations (post_id, review_dispute_id, body_text, created_by_id)
+      VALUES (${row.post_id}, ${disputeId}, ${trimmedBody}, ${staffUserId})
+      ON CONFLICT DO NOTHING
+    `)
     await query(sql`/* resolveReviewDisputeAnnotate:setLifecycle */
       UPDATE review_disputes SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${disputeId}
     `)

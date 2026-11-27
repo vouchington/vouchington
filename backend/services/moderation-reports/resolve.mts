@@ -87,29 +87,28 @@ export async function resolveModerationReport(
     )
     const report = rows[0]
     assert(report, 409, 'Report is already resolved')
-    const [notifications] = await Promise.all([
-      createModerationReportReviewedNotification(report.id, { query }),
-      maybeResolveCase(report.case_id, options.resolvedById, { query }),
-      recordModerationTrainingFeedback(
-        {
-          trainingEvidence: options.trainingEvidence,
-          sourceType: 'moderation_report',
-          eventType: 'report_resolved',
-          label: options.status === 'dismissed' ? 'rejected' : 'accepted',
-          humanAction: `report_${options.status}`,
-          actorUserId: options.resolvedById,
-          communityId: options.communityId ?? context.derived_community_id ?? null,
-          postId: context.target_post_id,
-          moderationReportId: report.id,
-          metadata: {
-            entity_type: report.entity_type,
-            entity_id: report.entity_id,
-            report_reason: report.reason,
-          },
+    // ast-grep-ignore: no-three-sequential-awaits -- all three statements share one transaction client query and must run sequentially
+    const notifications = await createModerationReportReviewedNotification(report.id, { query })
+    await maybeResolveCase(report.case_id, options.resolvedById, { query })
+    await recordModerationTrainingFeedback(
+      {
+        trainingEvidence: options.trainingEvidence,
+        sourceType: 'moderation_report',
+        eventType: 'report_resolved',
+        label: options.status === 'dismissed' ? 'rejected' : 'accepted',
+        humanAction: `report_${options.status}`,
+        actorUserId: options.resolvedById,
+        communityId: options.communityId ?? context.derived_community_id ?? null,
+        postId: context.target_post_id,
+        moderationReportId: report.id,
+        metadata: {
+          entity_type: report.entity_type,
+          entity_id: report.entity_id,
+          report_reason: report.reason,
         },
-        { query },
-      ),
-    ])
+      },
+      { query },
+    )
     if (options.resolvedById) {
       await recordModeratorAction(
         options.resolvedById,
@@ -173,22 +172,21 @@ export async function dismissPendingReportsForDeletedEntity(
       case_id: string
       post_or_comment_community_id: string | null
     }>(updateQuery, { query })
-    const [notifications] = await Promise.all([
-      createModerationReportReviewedNotifications(
-        rows.map(row => row.id),
-        { query },
-      ),
-      maybeResolveCases(caseIds, moderationSystemUserId, { query }),
-      recordModeratorActions(
-        moderationSystemUserId,
-        rows.map(row => ({
-          actionType: 'dismiss_report',
-          communityId: row.post_or_comment_community_id,
-          reportId: row.id,
-        })),
-        { query },
-      ),
-    ])
+    // ast-grep-ignore: no-three-sequential-awaits -- all three statements share one transaction client query and must run sequentially
+    const notifications = await createModerationReportReviewedNotifications(
+      rows.map(row => row.id),
+      { query },
+    )
+    await maybeResolveCases(caseIds, moderationSystemUserId, { query })
+    await recordModeratorActions(
+      moderationSystemUserId,
+      rows.map(row => ({
+        actionType: 'dismiss_report',
+        communityId: row.post_or_comment_community_id,
+        reportId: row.id,
+      })),
+      { query },
+    )
     return { count: rows.length, notifications }
   }
   const { count, notifications } =

@@ -96,6 +96,18 @@ export async function banUserFromCommunity(
     options,
   )
 
+  await recordModeratorAction(
+    currentUser.id,
+    {
+      actionType: 'ban',
+      communityId,
+      targetUserId,
+      reason: opts?.reason ?? null,
+    },
+    options,
+  )
+  await maybeResolveCase(caseId, currentUser.id, options)
+
   const ban = rows[0] as CommunityBan
 
   await query.commit()
@@ -105,16 +117,7 @@ export async function banUserFromCommunity(
     await enqueueOnCommunityAgentPromptsDeactivated(currentUser.id, targetUserId, communityId)
   }
 
-  await Promise.all([
-    recordModeratorAction(currentUser.id, {
-      actionType: 'ban',
-      communityId,
-      targetUserId,
-      reason: opts?.reason ?? null,
-    }),
-    maybeResolveCase(caseId, currentUser.id),
-    invalidateCommunityMemberUserMetrics(targetUserId),
-  ])
+  await invalidateCommunityMemberUserMetrics(targetUserId)
 
   import('@services/notifications/create-community-ban-notification')
     .then(m => m.createCommunityBanNotification(targetUserId, ban.id))
