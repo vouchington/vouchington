@@ -83226,7 +83226,7 @@
         "idx_notifications__user_id__unread": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_notifications__user_id__unread ON ONLY public.notifications USING btree (user_id, id DESC) WHERE ((deleted_at IS NULL) AND (read_at IS NULL))",
+          "definition": "CREATE INDEX idx_notifications__user_id__unread ON ONLY public.notifications USING btree (user_id, id DESC, read_at) WHERE ((deleted_at IS NULL) AND (read_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -83242,6 +83242,13 @@
               "expression": "id",
               "nullsFirst": true,
               "opclass": "uuid_ops"
+            },
+            {
+              "column": "read_at",
+              "descending": false,
+              "expression": "read_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
             }
           ],
           "predicate": "((deleted_at IS NULL) AND (read_at IS NULL))",

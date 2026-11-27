@@ -69,7 +69,8 @@ export async function markAllNotificationsRead(
         AND ${throughId}::uuid IS NULL
         AND deleted_at IS NULL
         AND read_at IS NULL
-      ORDER BY id DESC
+      -- read_at is NULL throughout. Its sort key lets the unread index supply the limit.
+      ORDER BY id DESC, read_at
       LIMIT 1
     ), candidates AS MATERIALIZED (
       SELECT n.id
