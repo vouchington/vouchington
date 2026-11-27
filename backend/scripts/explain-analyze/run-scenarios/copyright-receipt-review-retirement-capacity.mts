@@ -40,6 +40,9 @@ async function capturePage(
 ) {
   const retired = page.filter(candidate => candidate.holdState === 0 || candidate.holdState === 3)
   const scanned = [...previouslyScanned, ...page]
+  // The continuation can bitmap-scan and sort the remaining due receipts before LIMIT.
+  const isContinuation = previouslyScanned.length > 0
+  const remainingDue = oldReviewCount - previouslyScanned.length
   const allRetired = scanned.filter(
     candidate => candidate.holdState === 0 || candidate.holdState === 3,
   )
@@ -58,7 +61,7 @@ async function capturePage(
         kind: 'maxProcessedRows',
         relation: 'copyright_notice_email_intake_receipts',
         captureIndex: 0,
-        max: pageSize,
+        max: isContinuation ? remainingDue : pageSize,
       },
       {
         kind: 'maxProcessedRows',
@@ -66,20 +69,27 @@ async function capturePage(
         captureIndex: 1,
         max: 375,
       },
-      // Main's custom update scans the receipt corpus. Tighten after #6567.
+      // The gate counts both primary-key reads and the UPDATE output.
       {
         kind: 'maxProcessedRows',
         relation: 'copyright_notice_email_intake_receipts',
         captureIndex: 2,
-        max: 26_934,
+        max: 3 * pageSize,
       },
-      // This limits calls, not the work inside each call. See #6567 and #6568.
+      // This limits calls, not the work inside each call. See #6568.
       {
         kind: 'maxFunctionCalls',
         function: 'fn_copyright_receipt_review_retirement_eligible',
         max: 2 * pageSize,
       },
-      { kind: 'maxInputRows', nodeType: 'Sort', max: 0 },
+      {
+        kind: 'maxInputRows',
+        nodeType: 'Sort',
+        captureIndex: 0,
+        max: isContinuation ? remainingDue : 0,
+      },
+      { kind: 'maxInputRows', nodeType: 'Sort', captureIndex: 1, max: 0 },
+      { kind: 'maxInputRows', nodeType: 'Sort', captureIndex: 2, max: 0 },
     ],
   })
   await runAndCapture(
