@@ -14,7 +14,7 @@
     "@vouchington/postgres": "^0.6.2",
     "coverage-check": "^0.18.1",
     "jsonc-parser": "^3.3.1",
-    "no-mistakes": "^0.109.122",
+    "no-mistakes": "^0.109.123",
     "picomatch": "^4.0.4",
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",

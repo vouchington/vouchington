@@ -78,7 +78,7 @@
     "@vouchington/worker-runtime": "^0.3.2",
     "glide-mq": "^0.20.0",
     "jose": "^6.2.18",
-    "no-mistakes": "^0.109.122",
+    "no-mistakes": "^0.109.123",
     "openai": "^7.61.0",
     "otpauth": "^9.6.0",
     "pgvector": "^0.3.0",
