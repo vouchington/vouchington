@@ -138,7 +138,7 @@ export function copyrightStaffQueueKeysSql({
       FROM copyright_notice_deadlines deadline
       WHERE deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
         AND deadline.escalation_at <= (SELECT now FROM deadline_clock)
-    -- Deduplicate reasons before grouping cases so the planner can hash both aggregates.
+    -- Deduplicate reasons by case before building the ordered reason list.
     ), case_reason AS (
       SELECT copyright_notice_id,
         CASE WHEN reason = 'unassessed_court_filing' THEN 'legal_hold_review' ELSE reason END AS reason,
@@ -154,7 +154,7 @@ export function copyrightStaffQueueKeysSql({
           ELSE 2
         END AS urgency,
         min(waiting_since) AS waiting_since,
-        array_agg(reason) AS reasons
+        array_agg(reason ORDER BY reason) AS reasons
       FROM case_reason
       GROUP BY copyright_notice_id
     ), queue_key AS (

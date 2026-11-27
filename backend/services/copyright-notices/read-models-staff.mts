@@ -127,7 +127,7 @@ function queueFields(
   row: QueueKeyRow,
 ): Pick<CopyrightStaffQueueCase, 'reasons' | 'waiting_since' | 'next_deadline'> {
   return {
-    reasons: row.reasons.toSorted(),
+    reasons: row.reasons,
     waiting_since: row.waiting_since,
     next_deadline:
       row.escalation_at && row.restoration_deadline_at
