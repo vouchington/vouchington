@@ -42,4 +42,6 @@ export const VIEW_DRIVEN_SCENARIO_IDS = [
   'search-pending-community-posts',
   'url-hostname-search-text',
   'url-hostname-search-text-cursor',
+  'url-hostname-search-text-low-selectivity',
+  'url-hostname-search-text-low-selectivity-deep-cursor',
 ] as const
