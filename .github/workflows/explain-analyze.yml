@@ -209,8 +209,11 @@ jobs:
   # The ordinary scenarios run in one fixed order that explain-shards.mts and
   # run-ordered-scenarios.mts cut into the contiguous segments `main`, `main-2`, `main-3` and
   # `main-4`; `partition` runs only the partitioned comment fixture and `hn-scale` runs only the
-  # million-post Hacker News fixture. The segments are sized so every shard stays under the 10 minute
-  # performance ceiling, far from the runner timeout that once ejected a group.
+  # million-post Hacker News fixture. `main`, `main-2` and `main-3` take about 4 to 5 minutes. `main-4`
+  # took 9m53s in run 46075844280 and 10m12s in merge queue run 46080278577, so the ordinary step
+  # allows 13 minutes. It cannot be split further yet: its late fixture writers must stay in the last
+  # shard and depend on rows and statistics the segment before them leaves behind (a trial cut
+  # flipped nine plan gates). Dependency-aware sharding is tracked in #6653.
   # The `explain-analyze-gates` job merges all shards and enforces the plan gates, so
   # `backend.yml` still needs one result.
   explain-analyze:
@@ -218,9 +221,10 @@ jobs:
     needs: [seed-explain]
     if: ${{ !cancelled() && needs.seed-explain.result == 'success' }}
     runs-on: ubuntu-latest
-    # About 1 minute of setup and data directory transfer plus a step of at most 10 minutes on
-    # a slow runner; the partition and hn-scale shards fit the same cap (see their steps).
-    timeout-minutes: 15
+    # About 1 to 2 minutes of setup and data directory transfer plus a step of at most 13 minutes
+    # on a slow runner, and upload and teardown after it; the partition and hn-scale shards fit the
+    # same cap (see their steps).
+    timeout-minutes: 17
     strategy:
       fail-fast: false
       matrix:
@@ -285,10 +289,10 @@ jobs:
           run-id: ${{ github.run_id }}
       - name: Run ordinary EXPLAIN scenarios
         if: ${{ startsWith(matrix.shard, 'main') }}
-        # Measured in run 46075844280 with the previous cuts: 3m54s, 3m59s, 4m59s and 9m53s (the
-        # last timed out twice). The cuts now aim for about 4 to 6.5 minutes per shard; run.mts
-        # emits a warning annotation past 7 minutes, and 10 minutes leaves headroom for a slow runner.
-        timeout-minutes: 10
+        # Measured in run 46075844280: 3m54s, 3m59s, 4m59s and 9m53s for main-4, which also took
+        # 10m12s in merge queue run 46080278577. 13 minutes leaves headroom over main-4; run.mts
+        # emits a warning annotation past 11 minutes so growth shows before a timeout (#6653).
+        timeout-minutes: 13
         run: node backend/scripts/explain-analyze/run.mts
         env:
           EXPLAIN_SHARD: ${{ matrix.shard }}

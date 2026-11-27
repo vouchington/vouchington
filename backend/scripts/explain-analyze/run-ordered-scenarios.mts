@@ -36,25 +36,18 @@ export const BEFORE_PARTITION_RUNNERS: readonly OrderedRunner[] = [
 // shard starts from the seeded corpus without the writes of the segments before it, so cut only
 // where the opening runner does not read what earlier segments leave behind:
 // - Post moderation retention reads its own fixtures (the agent moderation seed follows it).
-// - Dense topic viewer counts seeds its own topic fixture. The publication fixtures before it
-//   (notification visibility, publication scope) clean up and re-analyze; main-3 replays only that
-//   analyze in its prelude.
-// - The RSS feed dedup capacity scenario seeds its own cohort; every runner before it in the
-//   embedding and payment group seeds its own corpora, and main-3 replays the preludes they read.
-//
-// Sized from the Backend run 46075844280 timings (PR #6724), where main-4 alone took 9m53s of its
-// 10 minute step limit. The last shard also owns every late fixture writer (about 6 minutes), so
-// its start sits as late as the ordinary segments allow. Measured with the old cuts, then
-// estimated for these: main 3m54s, main-2 3m59s -> about 6m30s, main-3 4m59s -> about 6m25s,
-// main-4 9m53s -> about 6m30s. Re-measure from a recent run before moving a cut.
+// - Notification visibility is the first hot publication fixture; it re-analyzes the seeded
+//   tables itself and every ordinary plan has already run.
+// - Embedding reconciliation seeds its own corpora; the mixed membership corpus from the vote
+//   weight seed belongs to the segment before it.
 export const ORDERED_SHARD_STARTS = [
   'runPostModerationRetentionScenarios',
-  'runDenseTopicViewerCountsScenario',
-  'runRssFeedDedupCapacity',
+  'runNotificationVisibilityScenarios',
+  'runEmbeddingReconciliationScenarios',
 ] as const
 
 // The referral link plans read the crawl and referral link volume the dispatch work plan seeds
-// add in main-2, so later shards replay those seeds without their captures. Without them the
+// add in main-2, so the last shard replays those seeds without their captures. Without them the
 // referral-links follow scan (hostname-exclusion-referral-links) stopped being a near tie.
 async function replayDispatchWorkPlanSeeds(): Promise<void> {
   await prepareCrawlDispatchScale()
@@ -64,20 +57,17 @@ async function replayDispatchWorkPlanSeeds(): Promise<void> {
 
 // Steps a later shard replays before its own segment, in the original order, because plans in it
 // read corpora that main-2 or main-3 wrote. Only add a step that is deterministic and idempotent.
-const REPLAYED_SEEDS: readonly OrderedRunner[] = [
-  // main-2 seeds this: the referral-links follow scan (hostname-exclusion-referral-links).
-  replayDispatchWorkPlanSeeds,
-  // main-2 seeds this: the membership renewal selection and orphaned queued grant plans chose
-  // sequential scans without the mixed membership corpus.
-  seedVoteWeightDispatch,
-  // Notification visibility and publication scope (main-2) re-analyze the seeded tables after
-  // cleaning up. Kept for fidelity with the original order; on its own it fixed no flip.
-  runAnalyze,
-]
-
 const SHARD_PRELUDES: Partial<Record<OrdinaryExplainShard, readonly OrderedRunner[]>> = {
-  'main-3': REPLAYED_SEEDS,
-  'main-4': REPLAYED_SEEDS,
+  'main-4': [
+    // main-2 seeds this: the referral-links follow scan (hostname-exclusion-referral-links).
+    replayDispatchWorkPlanSeeds,
+    // main-2 seeds this: the membership renewal selection and orphaned queued grant plans chose
+    // sequential scans without the mixed membership corpus.
+    seedVoteWeightDispatch,
+    // Notification visibility (main-3) runs this. Kept for fidelity with the original order; on
+    // its own it fixed no flip.
+    runAnalyze,
+  ],
 }
 
 export function getShardPrelude(shard: OrdinaryExplainShard): readonly OrderedRunner[] {

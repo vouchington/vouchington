@@ -39,16 +39,16 @@ import { runTextEmbeddingRetentionCapacityScenario } from './run-scenarios/text-
 import { runCommunityRosterReadCapacityScenario } from './run-scenarios/community-roster-read-capacity.mts'
 import { runNotificationUnreadCapacityScenario } from './run-scenarios/notification-unread-capacity.mts'
 
-// The ordinary step times out at 10 minutes in explain-analyze.yml; warn well before that so a
+// The ordinary step times out at 13 minutes in explain-analyze.yml; warn well before that so a
 // growing shard shows up as an annotation instead of a timeout. It never fails the run.
-const SLOW_SHARD_WARNING_MS = 7 * 60_000
+const SLOW_SHARD_WARNING_MS = 11 * 60_000
 
 function warnWhenShardRunsSlow(shard: ExplainShard | undefined, startedAt: number): void {
   const elapsedMs = Date.now() - startedAt
   if (!isOrdinaryExplainShard(shard) || elapsedMs <= SLOW_SHARD_WARNING_MS) return
   const minutes = (elapsedMs / 60_000).toFixed(1)
   console.log(
-    `::warning title=EXPLAIN shard ${shard} is near its limit::The ${shard} scenarios took ${minutes} minutes against the 10 minute step limit; move a cut in explain-shard-scenario-ids.json and ORDERED_SHARD_STARTS (run-ordered-scenarios.mts).`,
+    `::warning title=EXPLAIN shard ${shard} is near its limit::The ${shard} scenarios took ${minutes} minutes against the 13 minute step limit; see #6653 for sharding the late fixture writers.`,
   )
 }
 
