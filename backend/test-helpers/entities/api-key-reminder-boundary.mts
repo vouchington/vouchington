@@ -28,13 +28,13 @@ export async function checkTestApiKeyReminderAtOffset(
   let due = false
   let exhausted = false
   for (let batch = 0; batch < maxBatches; batch++) {
-    const dueIds = await getApiKeysDueForExpiryReminder(afterId, batchSize, options)
-    if (dueIds.includes(apiKeyId)) due = true
-    if (due || dueIds.length < batchSize || (dueIds.at(-1) ?? '') >= apiKeyId) {
+    const { ids, nextCursor } = await getApiKeysDueForExpiryReminder(afterId, batchSize, options)
+    if (ids.includes(apiKeyId)) due = true
+    if (due || !nextCursor) {
       exhausted = true
       break
     }
-    afterId = dueIds.at(-1)
+    afterId = nextCursor
   }
   if (!exhausted) throw new Error('API key reminder test exhausted its normal bounded keyset scan')
   // oxlint-disable-next-line react-doctor/async-parallel -- Read pre-claim state, then verify first and repeated claims in order.

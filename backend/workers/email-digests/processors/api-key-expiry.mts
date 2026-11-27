@@ -21,11 +21,11 @@ export async function dispatchApiKeyExpiryReminders(
   let afterId = data.afterId
   for (let batch = 0; batch < maxBatches; batch++) {
     // oxlint-disable-next-line no-await-in-loop -- Advance the cursor only after this bounded page is queued.
-    const ids = await getApiKeysDueForExpiryReminder(afterId, batchSize)
+    const { ids, nextCursor } = await getApiKeysDueForExpiryReminder(afterId, batchSize)
     // oxlint-disable-next-line no-await-in-loop -- Await each bounded bulk enqueue before scanning the next page.
     await enqueueBulkSendApiKeyExpiryReminders(ids)
-    if (ids.length < batchSize) return { hasMore: false }
-    afterId = ids.at(-1)
+    if (!nextCursor) return { hasMore: false }
+    afterId = nextCursor
   }
   await enqueueDispatchApiKeyExpiryReminders({ afterId })
   return { hasMore: true }

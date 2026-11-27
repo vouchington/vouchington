@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { randomInt, randomUUID } from 'node:crypto'
+import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
+import { getApiKeyExpiryLimits } from '@services/api-keys/work-limits'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import {
   claimApiKeyExpiryReminder,
@@ -9,43 +10,15 @@ import {
 import sql from 'sql-template-strings'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
-import { seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
+import {
+  API_KEY_EXPIRY_FIXTURE_LABEL,
+  seedApiKeyExpiryCapacity,
+} from '../seed-data/api-key-expiry-capacity.mts'
 
 const batchSize = 100
-const dueCount = 2_001
-const currentStatesPerGroup = 5
-const fixtureSize = dueCount * (1 + currentStatesPerGroup)
-const firstSentIndex = dueCount + 4
 const duePoll = 'getApiKeysDueForExpiryReminder'
 const detailsQuery = 'getApiKeyExpiryReminderDetails'
 const claimQuery = 'claimApiKeyExpiryReminder'
-const label = 'Explain expiry reminder'
-
-async function seedKeys(ids: readonly string[], salt: string) {
-  const { rowCount } = await write(sql`/* seedExplainApiKeyExpiry */
-    INSERT INTO api_keys
-      (id, user_id, prefix, key_hash, label, expires_at, revoked_at,
-        replaced_by_api_key_id, expiry_reminder_sent_at)
-    SELECT id,
-      CASE WHEN state = 0 THEN ${seedUser.id}::uuid ELSE ${seedUuid(1, '01')}::uuid END,
-      'explain-expiry', sha256((${salt} || id::text)::bytea), ${label},
-      CASE state
-        WHEN -1 THEN NOW() - INTERVAL '1 day'
-        WHEN 1 THEN NOW() + INTERVAL '60 days'
-        ELSE NOW() + INTERVAL '3 days'
-      END,
-      CASE WHEN state = 2 THEN NOW() - INTERVAL '1 day' END,
-      CASE WHEN state = 3 THEN ${ids[dueCount + 1]}::uuid END,
-      CASE WHEN state = 4 THEN NOW() - INTERVAL '1 day' END
-    FROM (
-      SELECT id, CASE WHEN ordinality <= ${dueCount}::int THEN -1
-        ELSE (ordinality - 1 - ${dueCount}::int) % ${currentStatesPerGroup}::int
-      END AS state
-      FROM unnest(${ids}::uuid[]) WITH ORDINALITY AS fixture(id, ordinality)
-    ) AS keys
-  `)
-  assert.equal(rowCount, fixtureSize)
-}
 
 function inspectKeys(query: TransactionQuery, ids: readonly string[]) {
   return query<{
@@ -64,29 +37,41 @@ function inspectKeys(query: TransactionQuery, ids: readonly string[]) {
   `)
 }
 
-async function capturePages(dueIds: readonly string[]) {
-  const pages = [
-    ['api-key-expiry-reminder-first-page', undefined, dueIds.slice(0, batchSize)],
-    [
-      'api-key-expiry-reminder-continuation',
-      dueIds[batchSize - 1],
-      dueIds.slice(batchSize, 2 * batchSize),
-    ],
-  ] as const
-  for (const [scenario, cursor, expected] of pages) {
+async function capturePages({
+  dueKeys,
+  ids,
+}: Awaited<ReturnType<typeof seedApiKeyExpiryCapacity>>) {
+  const cursor: { after?: string } = {}
+  const names = ['api-key-expiry-reminder-first-page', 'api-key-expiry-reminder-continuation']
+  for (const [index, scenario] of names.entries()) {
+    const expected = dueKeys.slice(index * batchSize, (index + 1) * batchSize)
+    const last = expected.at(-1)!
     registerScenarioContract(scenario, {
-      seededRows: { api_keys: fixtureSize },
+      seededRows: { api_keys: ids.length },
       expectations: [
         { kind: 'queryBinds', token: 'LIMIT' },
-        // Main walks an expired key prefix on the first page. Tighten after #6549.
-        { kind: 'maxProcessedRows', relation: 'api_keys', max: cursor ? 500 : 2_497 },
+        { kind: 'maxProcessedRows', relation: 'api_keys', max: batchSize },
+        { kind: 'maxInputRows', nodeType: 'Sort', max: 0 },
+        { kind: 'usesIndexes', indexes: ['idx_api_keys__expiry_reminder'] },
       ],
       forbidSequentialScans: ['api_keys'],
     })
     await runAndCapture(
       scenario,
-      async () =>
-        assert.deepEqual(await getApiKeysDueForExpiryReminder(cursor, batchSize), expected),
+      async () => {
+        if (index > 0)
+          assert.ok(cursor.after, 'The first expiry reminder page must provide a cursor')
+        const page = await getApiKeysDueForExpiryReminder(cursor.after, batchSize)
+        assert.deepEqual(page, {
+          ids: expected.map(key => key.id),
+          nextCursor: encodeScopedPreciseTimestampCursor(
+            last.expiresAt,
+            last.id,
+            'api-key-expiry-reminders',
+          ),
+        })
+        cursor.after = page.nextCursor
+      },
       undefined,
       duePoll,
       { exactCapturedNames: [duePoll], useWallClock: true },
@@ -94,8 +79,10 @@ async function capturePages(dueIds: readonly string[]) {
   }
 }
 
-async function capturePoints(ids: readonly string[]) {
-  const eligible = ids[dueCount]!
+async function capturePoints(fixture: Awaited<ReturnType<typeof seedApiKeyExpiryCapacity>>) {
+  const { ids, firstDueIndex, firstSentIndex } = fixture
+  const fixtureSize = ids.length
+  const eligible = ids[firstDueIndex]!
   const sent = ids[firstSentIndex]!
   const contract = {
     seededRows: { api_keys: fixtureSize },
@@ -120,7 +107,7 @@ async function capturePoints(ids: readonly string[]) {
       assert.ok(row)
       assert.deepEqual(await getApiKeyExpiryReminderDetails(eligible, { query }), {
         user_id: seedUser.id,
-        label,
+        label: API_KEY_EXPIRY_FIXTURE_LABEL,
         expires_at: row.expires_at,
       })
       assert.equal(await getApiKeyExpiryReminderDetails(sent, { query }), null)
@@ -139,18 +126,18 @@ async function capturePoints(ids: readonly string[]) {
       await using query = await beginTransaction()
       const { rows: before } = await inspectKeys(query, ids)
       assert.equal(before.length, fixtureSize)
-      assert.equal(before[dueCount]?.expiry_reminder_sent_at, null)
+      assert.equal(before[firstDueIndex]?.expiry_reminder_sent_at, null)
       assert.ok(before[firstSentIndex]?.expiry_reminder_sent_at)
       assert.equal(await claimApiKeyExpiryReminder(eligible, { query }), true)
       assert.equal(await claimApiKeyExpiryReminder(sent, { query }), false)
       const { rows: after } = await inspectKeys(query, ids)
-      const claimed = after[dueCount]
+      const claimed = after[firstDueIndex]
       assert.ok(claimed?.expiry_reminder_sent_at)
       assert.equal(claimed.claimed_in_transaction, true)
       assert.deepEqual(
         after,
-        before.with(dueCount, {
-          ...before[dueCount]!,
+        before.with(firstDueIndex, {
+          ...before[firstDueIndex]!,
           expiry_reminder_sent_at: claimed.expiry_reminder_sent_at,
           claimed_in_transaction: true,
         }),
@@ -172,24 +159,13 @@ async function capturePoints(ids: readonly string[]) {
 }
 
 export async function runApiKeyExpiryCapacityScenarios() {
-  // Sort expired history before the due keys, then interleave the remaining excluded states.
-  const timestamp = Date.UTC(2000, 0, 1) + randomInt(86_400_000)
-  const ids = Array.from({ length: fixtureSize }, (_, index) =>
-    seedUuidAtTimestamp(timestamp, index),
-  )
-  await seedKeys(ids, randomUUID())
+  assert.equal(getApiKeyExpiryLimits().batchSize, batchSize)
+  const fixture = await seedApiKeyExpiryCapacity(seedUser.id, batchSize)
   try {
     await write('/* analyzeExplainApiKeyExpiry */ ANALYZE api_keys')
-    const dueIds = ids.slice(dueCount).filter((_, index) => index % currentStatesPerGroup === 0)
-    await capturePages(dueIds)
-    await capturePoints(ids)
+    await capturePages(fixture)
+    await capturePoints(fixture)
   } finally {
-    await using query = await beginTransaction()
-    await query(
-      sql`/* cleanupExplainApiKeyExpiry */ DELETE FROM api_keys WHERE id = ANY(${ids}::uuid[])`,
-    )
-    await query(sql`/* cleanupExplainApiKeyExpiryIdentities */
-      DELETE FROM retained_api_key_identities WHERE id = ANY(${ids}::uuid[])`)
-    await query.commit()
+    await fixture.cleanup()
   }
 }

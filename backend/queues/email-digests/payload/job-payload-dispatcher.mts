@@ -7,7 +7,7 @@ export const DISPATCHER_JOB_NAMES = [
   'dispatchApiKeyExpiryReminders',
 ] as const satisfies readonly EmailDigestDispatcherJobs[]
 
-/** Paged dispatchers carry an opaque inspected-row cursor (a membership tuple for moderation). */
+/** Paged dispatchers carry an opaque inspected-row cursor. */
 export function dispatcherPayload(
   name: EmailDigestDispatcherJobs,
   data: unknown,
