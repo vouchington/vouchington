@@ -1,6 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { automatedAssessmentSql } from './automated-assessment-sql.mts'
-import { unassessedCourtFilingSql } from './unassessed-court-filing-sql.mts'
 import { pendingCopyrightEnforcementSql } from './enforcement-pending-sql.mts'
 import { inAreaTrustedFlaggerMatchSql } from './trusted-flagger-match.mts'
 
@@ -21,6 +20,7 @@ export function copyrightStaffQueueKeysSql({
 } = {}): SQLStatement {
   if (now && !Number.isFinite(now.getTime()))
     throw new TypeError('Copyright queue clock must be valid')
+  // Keep the deadline cutoff as an execution-time range bound in both plan modes.
   return sql`
     WITH deadline_clock AS (
       SELECT COALESCE(${now ?? null}::timestamptz, CURRENT_TIMESTAMP) AS now
@@ -48,7 +48,8 @@ export function copyrightStaffQueueKeysSql({
         min(request.decided_at) AS since
       FROM copyright_notices notice
       JOIN copyright_territorial_redress_requests request
-        ON request.copyright_territorial_decision_id = notice.current_territorial_decision_identity_id
+        ON notice.id = request.copyright_notice_id
+        AND notice.current_territorial_decision_identity_id = request.copyright_territorial_decision_id
       WHERE notice.territorial_decision_outcome = 'no_action'
         AND request.staff_disposition = 'revoke'
       GROUP BY notice.id
@@ -59,9 +60,8 @@ export function copyrightStaffQueueKeysSql({
       WHERE request.staff_disposition IS NULL
         AND notice.current_territorial_decision_identity_id = request.copyright_territorial_decision_id
       UNION ALL
-      SELECT target.copyright_notice_id, 'restriction_review', restriction.imposed_at
+      SELECT restriction.copyright_notice_id, 'restriction_review', restriction.imposed_at
       FROM copyright_restrictions restriction
-      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
       WHERE restriction.lifted_at IS NULL AND restriction.human_reviewed_at IS NULL
         AND restriction.copyright_notice_submission_id IS NULL
       UNION ALL
@@ -79,7 +79,9 @@ export function copyrightStaffQueueKeysSql({
         WHERE review.copyright_notice_submission_id = submission.id
       )
       UNION ALL
-      SELECT submission.copyright_notice_id, 'legal_hold_review', submission.received_at
+      SELECT submission.copyright_notice_id,
+        CASE WHEN assessment.id IS NULL THEN 'unassessed_court_filing' ELSE 'legal_hold_review' END,
+        submission.received_at
       FROM copyright_notice_submissions submission
       LEFT JOIN copyright_notice_legal_hold_assessments assessment
         ON assessment.copyright_notice_submission_id = submission.id
@@ -95,10 +97,9 @@ export function copyrightStaffQueueKeysSql({
           AND assessment.is_same_material
         )))
       UNION ALL
-      SELECT target.copyright_notice_id, 'action_failed', intent.updated_at
+      SELECT restriction.copyright_notice_id, 'action_failed', intent.updated_at
       FROM copyright_notice_action_work_items intent
       JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
-      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
       WHERE intent.state = 'failed'
       UNION ALL
       `
@@ -110,6 +111,7 @@ export function copyrightStaffQueueKeysSql({
           ? `DISTINCT submission.copyright_notice_id, 'enforcement_pending'::text, CASE WHEN ${automatedAssessmentSql().text} THEN submission.received_at ELSE assessment.created_at END`
           : "DISTINCT submission.copyright_notice_id, 'enforcement_pending'::text, assessment.created_at",
         'all',
+        'any',
       ),
     )
     .append(sql`
@@ -123,41 +125,41 @@ export function copyrightStaffQueueKeysSql({
           WHERE erased.id = intent.copyright_notice_id AND erased.evidence_erased_at IS NOT NULL
         )
       UNION ALL
-      SELECT target.copyright_notice_id, 'staydown_review', staydown_match.created_at
+      SELECT restriction.copyright_notice_id, 'staydown_review', staydown_match.created_at
       FROM copyright_staydown_matches staydown_match
       JOIN copyright_staydown_entries entry ON entry.id = staydown_match.copyright_staydown_entry_id
       JOIN copyright_restrictions restriction ON restriction.id = entry.copyright_restriction_id
-      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
       WHERE staydown_match.reviewed_at IS NULL
       UNION ALL
       SELECT deadline.copyright_notice_id,
-        CASE WHEN deadline.restoration_deadline_at <= deadline_clock.now
+        CASE WHEN deadline.restoration_deadline_at <= (SELECT now FROM deadline_clock)
           THEN 'deadline_missed' ELSE 'deadline_due' END,
         deadline.escalation_at
-      FROM copyright_notice_deadlines deadline CROSS JOIN deadline_clock
+      FROM copyright_notice_deadlines deadline
       WHERE deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
-        AND deadline.escalation_at <= deadline_clock.now
+        AND deadline.escalation_at <= (SELECT now FROM deadline_clock)
+    -- Deduplicate reasons by case before building the ordered reason list.
+    ), case_reason AS (
+      SELECT copyright_notice_id,
+        CASE WHEN reason = 'unassessed_court_filing' THEN 'legal_hold_review' ELSE reason END AS reason,
+        min(since) AS waiting_since,
+        bool_or(reason IN ('deadline_due', 'unassessed_court_filing')) AS escalating
+      FROM open_item
+      GROUP BY 1, 2
     ), queue_key_base AS (
-      SELECT open_item.copyright_notice_id AS id,
+      SELECT copyright_notice_id AS id,
         CASE
-          WHEN bool_or(open_item.reason = 'deadline_missed') THEN 0
-          WHEN bool_or(open_item.reason = 'deadline_due') OR `)
-    .append(unassessedCourtFilingSql(sql``.append('open_item.copyright_notice_id')))
-    .append(sql` THEN 1
+          WHEN bool_or(reason = 'deadline_missed') THEN 0
+          WHEN bool_or(escalating) THEN 1
           ELSE 2
         END AS urgency,
-        min(open_item.since) AS waiting_since,
-        array_agg(DISTINCT open_item.reason ORDER BY open_item.reason) AS reasons
-      FROM open_item
-      `)
-    .append(sql`
-      GROUP BY open_item.copyright_notice_id
-    )
-  `)
-    .append(sql`
-      , queue_key AS (
-        SELECT queue_key_base.*,
-          queue_key_base.urgency * 2 + `)
+        min(waiting_since) AS waiting_since,
+        array_agg(reason ORDER BY reason) AS reasons
+      FROM case_reason
+      GROUP BY copyright_notice_id
+    ), queue_key AS (
+      SELECT queue_key_base.id, queue_key_base.urgency, queue_key_base.waiting_since, queue_key_base.reasons,
+        queue_key_base.urgency * 2 + `)
     .append(
       trustedFlaggerBoost
         ? sql`CASE WHEN `

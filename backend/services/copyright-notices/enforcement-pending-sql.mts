@@ -17,14 +17,29 @@ export type AutomaticEnforcementScope = Date | 'all' | null
  * An assessment owes its notice's targets when it is a current, compliant notice assessment whose
  * screening is current and whose form has no rejected review. A target is owed until it has any
  * restriction, active or lifted, so a lifted target is never re-restricted by an assessment that
- * already did its work. An automated assessment owes only what `automaticScope` allows, so the
+ * already did its work. The staff queue uses `targetScope: 'any'` because one owed target is enough
+ * to include the assessment. An automated assessment owes only what `automaticScope` allows, so the
  * switch, an earlier on-period or a suspended claimant hold it back; pass `'all'` to see them.
  */
 export function pendingCopyrightEnforcementSql(
   select: string,
   automaticScope: AutomaticEnforcementScope,
+  targetScope: 'all' | 'any' = 'all',
 ): SQLStatement {
   const since = automaticScope instanceof Date ? automaticScope : null
+  const unrestrictedTarget = `NOT EXISTS (
+    SELECT 1 FROM copyright_restrictions restriction
+    WHERE restriction.copyright_notice_target_id = target.id
+  )`
+  const targetJoin =
+    targetScope === 'any'
+      ? `JOIN LATERAL (
+        SELECT target.id FROM copyright_notice_targets target
+        WHERE target.copyright_notice_id = submission.copyright_notice_id
+          AND ${unrestrictedTarget}
+        LIMIT 1
+      ) target ON true`
+      : `JOIN copyright_notice_targets target ON target.copyright_notice_id = submission.copyright_notice_id`
   return sql``
     .append(`SELECT ${select}
     FROM copyright_notice_submissions submission
@@ -36,8 +51,7 @@ export function pendingCopyrightEnforcementSql(
         submission.current_assessment_form_screening_id AS copyright_notice_form_screening_id,
         submission.current_assessed_by_id AS assessed_by_id
     ) assessment
-    JOIN copyright_notice_targets target
-      ON target.copyright_notice_id = submission.copyright_notice_id
+    ${targetJoin}
     WHERE submission.kind = 'notice'
       AND assessment.id IS NOT NULL
       AND assessment.is_substantially_compliant
@@ -53,12 +67,8 @@ export function pendingCopyrightEnforcementSql(
       )
       AND NOT `)
     .append(territorialAssessmentRevokedSql())
-    .append(sql`
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_restrictions restriction
-        WHERE restriction.copyright_notice_target_id = target.id
-      )
-      AND (`)
+    .append(targetScope === 'all' ? ` AND ${unrestrictedTarget}` : '')
+    .append(sql` AND (`)
     .append(
       sql`${automaticScope === 'all'}::boolean OR NOT (`.append(automatedAssessmentSql())
         .append(sql`) OR (

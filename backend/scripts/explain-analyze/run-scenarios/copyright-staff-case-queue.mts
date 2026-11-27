@@ -57,14 +57,9 @@ export async function runCopyrightStaffCaseQueueScenarios(): Promise<void> {
         },
         expectations: [
           { kind: 'queryBinds', token: 'LIMIT' },
-          // The later main-2 fixture includes recovery history on the continuation. See #6616.
-          {
-            kind: 'maxProcessedRows',
-            relation: 'copyright_notice_submissions',
-            max: index === 0 ? 83_386 : 96_390,
-          },
+          { kind: 'maxProcessedRows', relation: 'copyright_notice_submissions', max: 4_000 },
           { kind: 'maxProcessedRows', relation: 'copyright_notice_deadlines', max: 2_406 },
-          { kind: 'maxInputRows', nodeType: 'Sort', max: 11_011 },
+          { kind: 'maxInputRows', nodeType: 'Sort', max: index === 0 ? 800 : 700 },
         ],
       })
       await runAndCapture(
@@ -75,10 +70,14 @@ export async function runCopyrightStaffCaseQueueScenarios(): Promise<void> {
             index === 0 ? initial : copyrightStaffQueueParser.parse({ after: cursor.after })
           const page = await listCopyrightStaffQueuePage(moderator, args, { now: STAFF_CASE_CLOCK })
           assert.deepEqual(
-            page.copyright_notices.map(({ id, reasons, claimant }) => ({
+            page.copyright_notices.map(({ id, reasons, claimant, next_deadline: deadline }) => ({
               id,
               reasons,
               contact: claimant.contact,
+              deadline: deadline && {
+                escalation: new Date(deadline.escalation_at).toISOString(),
+                restoration: new Date(deadline.restoration_deadline_at).toISOString(),
+              },
             })),
             fixture.open.slice(offset, offset + pageSize).map((id, position) => ({
               id,
@@ -87,6 +86,13 @@ export async function runCopyrightStaffCaseQueueScenarios(): Promise<void> {
                 'form_intake_review',
               ],
               contact: STAFF_CASE_CONTACT,
+              deadline: {
+                escalation: new Date(STAFF_CASE_ESCALATION).toISOString(),
+                restoration:
+                  offset + position < STAFF_CASE_MISSED
+                    ? '2000-01-02T01:00:00.000Z'
+                    : '2000-01-05T00:00:00.000Z',
+              },
             })),
           )
           assert.deepEqual(page.page_info, {

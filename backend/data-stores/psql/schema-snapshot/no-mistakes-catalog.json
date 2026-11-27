@@ -34563,6 +34563,47 @@
           "unique": false,
           "valid": true
         },
+        "idx_copyright_notice_deadlines__notice_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_deadlines__notice_pending ON public.copyright_notice_deadlines USING btree (copyright_notice_id, escalation_at, id) WHERE ((resolved_at IS NULL) AND (cancelled_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "escalation_at",
+              "descending": false,
+              "expression": "escalation_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((resolved_at IS NULL) AND (cancelled_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_notice_deadlines__pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -45763,6 +45804,29 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_copyright_notice_submissions__staff_review_kinds": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_submissions__staff_review_kinds ON public.copyright_notice_submissions USING btree (kind) WHERE (kind = ANY (ARRAY['appeal'::copyright_notice_submission_kinds, 'counter_notice'::copyright_notice_submission_kinds, 'court_or_ccb_hold'::copyright_notice_submission_kinds]))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "kind",
+              "descending": false,
+              "expression": "kind",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(kind = ANY (ARRAY['appeal'::copyright_notice_submission_kinds, 'counter_notice'::copyright_notice_submission_kinds, 'court_or_ccb_hold'::copyright_notice_submission_kinds]))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_copyright_notice_submissions__submitted_by": {

@@ -63,19 +63,13 @@ export async function listCopyrightStaffQueue(
     const query = sql`/* listPendingCopyrightStaffCases */`.append(
       copyrightStaffQueueKeysSql({ trustedFlaggerBoost, now: queryOptions.now }),
     ).append(sql`
-    SELECT queue_key.id, queue_key.urgency, queue_key.tier, queue_key.reasons, queue_key.waiting_since,
+    SELECT queue_key.id, queue_key.tier, queue_key.reasons, queue_key.waiting_since,
       to_char(queue_key.waiting_since AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
         AS cursor_waiting_since,
       next_deadline.escalation_at, next_deadline.restoration_deadline_at
-    FROM queue_key
-    LEFT JOIN LATERAL (
-      SELECT deadline.escalation_at, deadline.restoration_deadline_at
-      FROM copyright_notice_deadlines deadline
-      WHERE deadline.copyright_notice_id = queue_key.id
-        AND deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
-      ORDER BY deadline.escalation_at, deadline.id
-      LIMIT 1
-    ) next_deadline ON true
+    -- Resolve the next-deadline detail only for the page and its lookahead.
+    FROM (
+      SELECT id, tier, reasons, waiting_since FROM queue_key
   `)
     if (options.after || noticeIds) {
       query.append(sql` WHERE true`)
@@ -87,8 +81,18 @@ export async function listCopyrightStaffQueue(
       }
     }
     query.append(sql`
+      ORDER BY queue_key.tier, queue_key.waiting_since, queue_key.id
+      LIMIT ${options.limit + 1}
+    ) queue_key
+    LEFT JOIN LATERAL (
+      SELECT deadline.escalation_at, deadline.restoration_deadline_at
+      FROM copyright_notice_deadlines deadline
+      WHERE deadline.copyright_notice_id = queue_key.id
+        AND deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
+      ORDER BY deadline.escalation_at, deadline.id
+      LIMIT 1
+    ) next_deadline ON true
     ORDER BY queue_key.tier, queue_key.waiting_since, queue_key.id
-    LIMIT ${options.limit + 1}
   `)
     const { rows } = await transaction<QueueKeyRow>(query)
     const pageRows = rows.slice(0, options.limit)
@@ -111,7 +115,6 @@ export async function listCopyrightStaffQueue(
 
 type QueueKeyRow = {
   id: string
-  urgency: number
   tier: number
   reasons: CopyrightStaffQueueReason[]
   waiting_since: Date
