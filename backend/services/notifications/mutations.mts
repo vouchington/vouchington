@@ -72,7 +72,7 @@ export async function markAllNotificationsRead(
       ORDER BY id DESC
       LIMIT 1
     ), candidates AS MATERIALIZED (
-      SELECT n.user_id, n.id
+      SELECT n.id
       FROM notifications n
       WHERE n.user_id = ${userId}
         AND n.deleted_at IS NULL
@@ -81,12 +81,13 @@ export async function markAllNotificationsRead(
       ORDER BY n.id
       LIMIT ${pageSize + 1}
     ), page AS MATERIALIZED (
-      SELECT user_id, id FROM candidates ORDER BY id LIMIT ${pageSize}
+      SELECT id FROM candidates ORDER BY id LIMIT ${pageSize}
     ), marked AS (
+      -- An id array pins the primary-key probe; joining to page lets the planner hash-join
+      -- and sequentially scan the whole partition once its statistics describe the inbox.
       UPDATE notifications n
       SET read_at = CURRENT_TIMESTAMP
-      FROM page
-      WHERE n.user_id = page.user_id AND n.id = page.id
+      WHERE n.user_id = ${userId} AND n.id = ANY(ARRAY(SELECT id FROM page))
         AND n.deleted_at IS NULL AND n.read_at IS NULL
       RETURNING n.id
     )
