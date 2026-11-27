@@ -6,7 +6,6 @@ import {
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import {
-  getQueueDomainControl,
   runningQueueDomainControl,
   toQueueDomainControl,
   type QueueDomainControlRow,
@@ -32,7 +31,15 @@ export async function pauseQueueDomain(
     `,
   )
   announceQueueDomainChange(domain)
-  return rows[0] ? toQueueDomainControl(rows[0]) : getQueueDomainControl(domain)
+  if (rows[0]) return toQueueDomainControl(rows[0])
+  const { rows: existingRows } = await write<QueueDomainControlRow>(
+    sql`/* pauseQueueDomain:readExisting */
+      SELECT domain, paused_at, paused_by_user_id, reason
+      FROM queue_domain_controls
+      WHERE domain = ${domain}
+    `,
+  )
+  return existingRows[0] ? toQueueDomainControl(existingRows[0]) : runningQueueDomainControl(domain)
 }
 
 /** Resumes a domain. Its deferred jobs re-check on their next activation, so no wakeup is needed. */

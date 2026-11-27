@@ -126,8 +126,11 @@ export async function runHotPathLoaderScenarios() {
           'idx_spending_entries__household_id_id',
         ],
         queryContains: 'FROM spending_entries',
-        noSort: true,
       },
+      // One UNNEST ... CROSS JOIN LATERAL arm merges up to (limit + 1) rows per accessible household.
+      { kind: 'maxInputRows', nodeType: 'Function Scan', max: 5 },
+      { kind: 'maxInputRows', nodeType: 'Sort', max: 78 },
+      { kind: 'maxProcessedRows', relation: 'spending_entries', max: 104 },
     ],
   })
   await runAndCapture('spending-categories-page', () =>
