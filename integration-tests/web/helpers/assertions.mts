@@ -1,6 +1,6 @@
 import { expect } from 'vitest'
 import { HTML_SECURITY_HEADERS } from './constants.mts'
-import type { TracedRequest } from './backend-trace-proxy.mts'
+import type { TracedRequest } from 'vouchington-tooling/integration-test-helpers'
 
 export function expectNoServerErrors(tracedRequests: TracedRequest[], label: string): void {
   const failures = tracedRequests.flatMap(request =>

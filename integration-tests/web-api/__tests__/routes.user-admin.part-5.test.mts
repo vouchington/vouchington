@@ -27,8 +27,8 @@ import {
   createWebApiTestServer,
   createWebApiTestCookieHeader,
   createWebApiMfaTestCookieHeader,
-  listenOnFetchSafeLoopback,
 } from '../routes.mts'
+import { listenOnFetchSafeLoopback } from 'vouchington-tooling/integration-test-helpers'
 
 describe('routes — user and admin', () => {
   let backendServer: http.Server

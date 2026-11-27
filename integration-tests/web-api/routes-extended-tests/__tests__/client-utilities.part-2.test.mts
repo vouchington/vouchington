@@ -2,8 +2,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import {
   closeWebApiClientRuntime,
+  createLoopbackClientFetch,
+  listenOnFetchSafeLoopback,
   withWebApiClientRuntime,
-} from '../../../test-helpers/web-api-client-runtime.mts'
+} from 'vouchington-tooling/integration-test-helpers'
 
 import http from 'node:http'
 
@@ -15,7 +17,6 @@ import {
   createWebApiTestServer,
   buildWebApiTestProxyHeaders,
   createWebApiTestCookieHeader,
-  listenOnFetchSafeLoopback,
 } from '../../routes.mts'
 
 import type { CookieHeader } from '../../routes-extended.mts'
@@ -40,22 +41,18 @@ describe('client-utilities', () => {
       vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', backendBaseUrl)
 
       previousFetch = globalThis.fetch
-      globalThis.fetch = (input, init) => {
-        if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
-          return previousFetch(input, init)
-        }
-        const headers = buildWebApiTestProxyHeaders(init?.headers)
-        if (process.env.CF_WORKER_SECRET) {
-          headers.set('X-CF-Worker-Secret', process.env.CF_WORKER_SECRET)
-        }
-        if (clientCookieValue) {
-          headers.set('Cookie', clientCookieValue)
-          if ((init?.method ?? 'GET').toUpperCase() !== 'GET') {
-            headers.set('Origin', backendBaseUrl)
-          }
-        }
-        return previousFetch(`${backendBaseUrl}${input}`, { ...init, headers })
-      }
+      globalThis.fetch = createLoopbackClientFetch({
+        baseUrl: backendBaseUrl,
+        previousFetch,
+        isActive: () => clientRuntimeActive,
+        getCookie: () => clientCookieValue,
+        buildHeaders: buildWebApiTestProxyHeaders,
+        extraHeader: {
+          name: 'X-CF-Worker-Secret',
+          value: process.env.CF_WORKER_SECRET,
+          mode: 'always',
+        },
+      })
 
       const user = await createTestUser()
       userCookieHeader = await createWebApiTestCookieHeader(user.id)

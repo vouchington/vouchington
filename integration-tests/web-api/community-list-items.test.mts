@@ -6,8 +6,11 @@ import {
   createWebApiTestServer,
   buildWebApiTestProxyHeaders,
   createWebApiMfaTestCookieHeader,
-  listenOnFetchSafeLoopback,
 } from './routes.mts'
+import {
+  createLoopbackClientFetch,
+  listenOnFetchSafeLoopback,
+} from 'vouchington-tooling/integration-test-helpers'
 import * as clientRoutes from '@/lib/api/client'
 import * as serverRoutes from '@/lib/api/server'
 import {
@@ -59,27 +62,18 @@ describe('community-list-items', () => {
     previousFetch = globalThis.fetch
     hadWindow = Object.hasOwn(globalThis, 'window')
     previousWindow = (globalThis as { window?: unknown }).window
-    globalThis.fetch = (input, init) => {
-      if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
-        return previousFetch(input, init)
-      }
-
-      const headers = buildWebApiTestProxyHeaders(init?.headers)
-      if (clientCookieValue) {
-        headers.set('Cookie', clientCookieValue)
-        if (process.env.CF_WORKER_SECRET) {
-          headers.set('X-CF-Worker-Secret', process.env.CF_WORKER_SECRET)
-        }
-        if ((init?.method ?? 'GET').toUpperCase() !== 'GET') {
-          headers.set('Origin', backendBaseUrl)
-        }
-      }
-
-      return previousFetch(`${backendBaseUrl}${input}`, {
-        ...init,
-        headers,
-      })
-    }
+    globalThis.fetch = createLoopbackClientFetch({
+      baseUrl: backendBaseUrl,
+      previousFetch,
+      isActive: () => clientRuntimeActive,
+      getCookie: () => clientCookieValue,
+      buildHeaders: buildWebApiTestProxyHeaders,
+      extraHeader: {
+        name: 'X-CF-Worker-Secret',
+        value: process.env.CF_WORKER_SECRET,
+        mode: 'with-cookie',
+      },
+    })
 
     const admin = await createTestUser({ administrator: true })
     adminUser = admin

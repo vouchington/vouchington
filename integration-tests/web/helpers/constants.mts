@@ -1,4 +1,6 @@
+import { resolve } from 'node:path'
 import { devices } from 'playwright'
+import type { RequiredArtifactPath } from 'vouchington-tooling/integration-test-helpers'
 
 export const TEST_USER_EMAIL = process.env.WEB_INTEGRATION_TEST_USER_EMAIL ?? 'tests@voucha.ai'
 export const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
@@ -60,3 +62,38 @@ export const HTML_SECURITY_HEADERS = {
   'cross-origin-opener-policy': 'same-origin-allow-popups',
   'cross-origin-resource-policy': 'same-origin',
 } as const
+
+export const PLAYWRIGHT_TOPIC_IDS = [
+  '019c64e6-f710-74cb-b36d-130af8ff1067',
+  '019c64e6-f713-7bf3-8b1e-a869aa7c9cf1',
+  '019c64e6-f716-722f-b05c-f4c4f7b93cd0',
+  '019c64e6-b100-7000-b000-000000000001',
+  '019c64e6-b200-7000-b000-000000000001',
+  '019c64e6-b300-7000-b000-000000000001',
+  '019c64e6-b400-7000-b000-000000000001',
+] as const
+
+export const BUILD_ARTIFACTS_HINT =
+  'Run `pnpm run test:integration:web:setup` or invoke via ' +
+  '`pnpm run test:integration:web` / `pnpm run test:playwright` which build automatically.'
+
+export function getRequiredWebBuildArtifacts(
+  webDir: string,
+  workerDir: string,
+): RequiredArtifactPath[] {
+  return [
+    { label: 'Cloudflare Worker bundle', path: resolve(workerDir, 'dist', 'index.js') },
+    {
+      label: 'Next.js standalone server',
+      path: resolve(webDir, '.next', 'standalone', 'web', 'server.js'),
+    },
+    {
+      label: 'Next.js standalone public assets',
+      path: resolve(webDir, '.next', 'standalone', 'web', 'public'),
+    },
+    {
+      label: 'Next.js standalone static assets',
+      path: resolve(webDir, '.next', 'standalone', 'web', '.next', 'static'),
+    },
+  ]
+}

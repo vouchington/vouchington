@@ -4,12 +4,6 @@ import { buildWebClientInfoHeaders } from '@/lib/api/server/client-info'
 import { createDeviceAndSessionTokens } from '../../backend/services/jwt-session/index.mts'
 import { createVerifiedMfaTestSession } from '../../backend/test-helpers/authenticated-session.mts'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
-import { listenOnFetchSafeEphemeralPort } from '../web/helpers/ports.mts'
-
-export async function listenOnFetchSafeLoopback(server: http.Server): Promise<string> {
-  const port = await listenOnFetchSafeEphemeralPort(server)
-  return `http://127.0.0.1:${port}`
-}
 
 export async function createWebApiTestCookieHeader(
   userId: string,
