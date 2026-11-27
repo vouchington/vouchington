@@ -80,5 +80,13 @@ export const RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS = [
     'ai_usage_retention_cursors.sweep_upper_bound_id',
     'Fixed UUIDv7 sweep boundary is a scan position, not a relationship to a raw usage record.',
   ],
+  [
+    'report_judgement_backfill_cursors.cursor_target_id',
+    'The UUIDv7 keyset position can outlive the inspected target.',
+  ],
+  [
+    'report_judgement_backfill_cursors.sweep_upper_bound_id',
+    'The frozen UUIDv7 sweep boundary is computed from time and has no owning target row.',
+  ],
 ] as const satisfies readonly (readonly [string, string])[]
 /* v8 ignore stop */

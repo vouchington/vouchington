@@ -40,6 +40,10 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
     'deleted_user_ballot_cleanup_cursors',
     'A checked singleton persists the current owner, ballot position, and frozen cycle end.',
   ],
+  [
+    'report_judgement_backfill_cursors',
+    'A checked singleton persists the target kind, keyset position, and frozen sweep end for the operator backfill.',
+  ],
   ...PROVIDER_LOOKUP_BOUNDS,
   ...STATIC_IDENTITY_EXCEPTIONS,
   ...EXTRA_BOUNDED_TABLES,
