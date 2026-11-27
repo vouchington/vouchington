@@ -46,7 +46,7 @@ jobs:
           fetch-depth: 1
         if: steps.checkout.outcome != 'success'
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@324c8741aa605d4c28897dcfcce17cc8f56ff08a # v3.10.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@abdf0163718e038ab2c9499274dd85b4f65e7b19 # v3.11.0
         timeout-minutes: 5
         with:
           deadline-seconds: '270'
@@ -157,7 +157,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@324c8741aa605d4c28897dcfcce17cc8f56ff08a # v3.10.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@abdf0163718e038ab2c9499274dd85b4f65e7b19 # v3.11.0
         with:
           suite: web-api-shard-${{ matrix.shard }}
       - name: Upload full web-api-shard-${{ matrix.shard }} LCOV to GitHub (attempt 2)
@@ -165,7 +165,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@324c8741aa605d4c28897dcfcce17cc8f56ff08a # v3.10.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@abdf0163718e038ab2c9499274dd85b4f65e7b19 # v3.11.0
         with:
           suite: web-api-shard-${{ matrix.shard }}
           name-suffix: -retry
