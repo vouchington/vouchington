@@ -934,7 +934,7 @@ CREATE INDEX IF NOT EXISTS idx_agent_moderations__post_prompt_newest
 -- Forward order supports live history by prompt and ID. Newest probes fix both
 -- leading keys and can walk the same index backward.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_agent_moderations__post_prompt_live_newest
+CREATE INDEX IF NOT EXISTS idx_agent_moderations__post_prompt_live
   ON agent_moderations (post_id, prompt_id, id) WHERE deleted_at IS NULL;
 
 -- RI-usable index for the prompt_id FK

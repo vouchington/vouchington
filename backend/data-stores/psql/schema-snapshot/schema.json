@@ -5037,10 +5037,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_agent_moderations__post_prompt_live_newest": {
+        "idx_agent_moderations__post_prompt_live": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_agent_moderations__post_prompt_live_newest ON ONLY public.agent_moderations USING btree (post_id, prompt_id, id) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_agent_moderations__post_prompt_live ON ONLY public.agent_moderations USING btree (post_id, prompt_id, id) WHERE (deleted_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {

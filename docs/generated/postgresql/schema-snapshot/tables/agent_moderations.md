@@ -70,7 +70,7 @@ _none_
 - `idx_agent_moderations__lookup`: `CREATE INDEX idx_agent_moderations__lookup ON ONLY public.agent_moderations USING btree (post_id, prompt_id, input_sha256) WHERE (deleted_at IS NULL)`
 - `idx_agent_moderations__post_id__id`: `CREATE UNIQUE INDEX idx_agent_moderations__post_id__id ON ONLY public.agent_moderations USING btree (post_id, id)`
 - `idx_agent_moderations__post_live_newest`: `CREATE INDEX idx_agent_moderations__post_live_newest ON ONLY public.agent_moderations USING btree (post_id, id DESC) WHERE (deleted_at IS NULL)`
-- `idx_agent_moderations__post_prompt_live_newest`: `CREATE INDEX idx_agent_moderations__post_prompt_live_newest ON ONLY public.agent_moderations USING btree (post_id, prompt_id, id) WHERE (deleted_at IS NULL)`
+- `idx_agent_moderations__post_prompt_live`: `CREATE INDEX idx_agent_moderations__post_prompt_live ON ONLY public.agent_moderations USING btree (post_id, prompt_id, id) WHERE (deleted_at IS NULL)`
 - `idx_agent_moderations__post_prompt_newest`: `CREATE INDEX idx_agent_moderations__post_prompt_newest ON ONLY public.agent_moderations USING btree (post_id, prompt_id, id DESC)`
 - `idx_agent_moderations__prompt_id`: `CREATE INDEX idx_agent_moderations__prompt_id ON ONLY public.agent_moderations USING btree (prompt_id)`
 - `idx_agent_moderations__retention_due`: `CREATE INDEX idx_agent_moderations__retention_due ON ONLY public.agent_moderations USING btree (retention_due_at, id, post_id) WHERE (retention_due_at IS NOT NULL)`
