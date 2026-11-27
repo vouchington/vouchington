@@ -816,6 +816,10 @@ CREATE INDEX idx_copyright_restrictions__human_reviewer ON copyright_restriction
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__notice_received ON copyright_notice_submissions(copyright_notice_id, received_at, id);
 CREATE INDEX idx_copyright_notice_submissions__notice_id ON copyright_notice_submissions(copyright_notice_id, id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_submissions__staff_review_kinds
+  ON copyright_notice_submissions(kind, copyright_notice_id) INCLUDE (id, received_at)
+  WHERE kind IN ('appeal', 'counter_notice', 'court_or_ccb_hold');
 -- Every notice aggregate inserts one initial claimant allegation; staff territorial
 -- decisions may append their own notice-kind submission to the same case.
 CREATE UNIQUE INDEX idx_copyright_notice_submissions__initial_notice
@@ -855,6 +859,10 @@ CREATE INDEX idx_copyright_notice_legal_hold_resolutions__resolved_by ON copyrig
 CREATE INDEX idx_copyright_notice_deadlines__notice ON copyright_notice_deadlines(copyright_notice_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_deadlines__pending ON copyright_notice_deadlines(escalation_at, id) WHERE resolved_at IS NULL AND cancelled_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX idx_copyright_notice_deadlines__notice_pending
+  ON copyright_notice_deadlines(copyright_notice_id, escalation_at, id)
+  WHERE resolved_at IS NULL AND cancelled_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_correspondence_messages__notice ON copyright_notice_correspondence_messages(copyright_notice_id, id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

@@ -59,6 +59,7 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_notice_submissions__notice_id`: `CREATE INDEX idx_copyright_notice_submissions__notice_id ON public.copyright_notice_submissions USING btree (copyright_notice_id, id)`
 - `idx_copyright_notice_submissions__notice_received`: `CREATE INDEX idx_copyright_notice_submissions__notice_received ON public.copyright_notice_submissions USING btree (copyright_notice_id, received_at, id)`
 - `idx_copyright_notice_submissions__one_guest_court_hold`: `CREATE UNIQUE INDEX idx_copyright_notice_submissions__one_guest_court_hold ON public.copyright_notice_submissions USING btree (copyright_notice_guest_capability_id) WHERE ((kind = 'court_or_ccb_hold'::copyright_notice_submission_kinds) AND (copyright_notice_guest_capability_id IS NOT NULL))`
+- `idx_copyright_notice_submissions__staff_review_kinds`: `CREATE INDEX idx_copyright_notice_submissions__staff_review_kinds ON public.copyright_notice_submissions USING btree (kind, copyright_notice_id) INCLUDE (id, received_at) WHERE (kind = ANY (ARRAY['appeal'::copyright_notice_submission_kinds, 'counter_notice'::copyright_notice_submission_kinds, 'court_or_ccb_hold'::copyright_notice_submission_kinds]))`
 - `idx_copyright_notice_submissions__submitted_by`: `CREATE INDEX idx_copyright_notice_submissions__submitted_by ON public.copyright_notice_submissions USING btree (submitted_by_id) WHERE (submitted_by_id IS NOT NULL)`
 
 **Triggers:**
