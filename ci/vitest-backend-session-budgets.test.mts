@@ -4,7 +4,7 @@ import {
   FAST_TEST_STATEMENT_TIMEOUT_MS,
   MAX_TEST_STATEMENT_TIMEOUT_MS,
   parseTestStatementTimeout,
-} from '../backend/test-helpers/statement-timeout-constant.mts'
+} from 'vouchington-tooling/shared-db-scope-guard'
 
 interface SessionProject {
   test?: {

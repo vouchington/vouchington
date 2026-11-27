@@ -1,33 +1,25 @@
-import { beginTransaction, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
-import type { QueryInput, QueryValues } from '@data-stores/psql/types'
+import { beginTransaction, type QueryOptions } from '@data-stores/psql'
+import {
+  withFailingTransactionQueryOptionsForTest as withFailingTargetTransactionQueryOptions,
+  withForcedTransactionRollbackForTest as withForcedTargetTransactionRollback,
+  type ManagedSqlTransaction,
+} from 'vouchington-tooling/postgres-test-faults'
 
-export async function withForcedTransactionRollbackForTest(
+const beginManagedTransaction = beginTransaction as unknown as () => Promise<ManagedSqlTransaction>
+
+export function withForcedTransactionRollbackForTest(
   handler: (options: QueryOptions) => Promise<unknown>,
 ): Promise<never> {
-  await using transaction = await beginTransaction()
-  const query = transaction
-  await handler({ query })
-  throw new Error('Injected transaction rollback for test')
+  return withForcedTargetTransactionRollback(beginManagedTransaction, options =>
+    handler(options as unknown as QueryOptions),
+  )
 }
 
-export async function withFailingTransactionQueryOptionsForTest<Result>(
+export function withFailingTransactionQueryOptionsForTest<Result>(
   annotation: string,
   handler: (options: QueryOptions) => Promise<Result>,
 ): Promise<Result> {
-  await using transaction = await beginTransaction()
-  const query = transaction
-  const failingQuery = Object.assign(
-    (input: QueryInput, values?: QueryValues) => {
-      const text = typeof input === 'string' ? input : input.text
-      if (text.includes(`/* ${annotation} */`)) {
-        throw new Error(`Injected query failure for ${annotation}`)
-      }
-      return query(input, values)
-    },
-    { client: query.client },
-  ) as TransactionQuery
-
-  const result = await handler({ query: failingQuery })
-  await transaction.commit()
-  return result
+  return withFailingTargetTransactionQueryOptions(beginManagedTransaction, annotation, options =>
+    handler(options as unknown as QueryOptions),
+  )
 }

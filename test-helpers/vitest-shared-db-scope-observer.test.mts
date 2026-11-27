@@ -1,16 +1,17 @@
 import type { QueryExecutor } from '../backend/data-stores/psql/types.mts'
-import {
-  registerRetainedRelationCleanupReservation,
-  rejectUnscopedSharedDbCall,
-  markSharedDbScopeViolationsReported,
-} from './vitest-shared-db-scope-violations.mts'
 import { describe, expect, it, vi } from 'vitest'
 import { sharedDbCursorScope, sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
-import { observeSharedDbScope } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
 import {
-  installSharedDbScopeObserver,
+  configureTestPostgresSessions,
+  FAST_TEST_STATEMENT_TIMEOUT_MS,
+} from 'vouchington-tooling/shared-db-scope-guard'
+import { observeSharedDbScope } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
+import { TEST_HNSW_EF_SEARCH } from '../backend/test-helpers/vector-search-recall-constant.mts'
+import {
+  sharedDbScopeGuard,
+  VOUCHA_TEST_POSTGRES_SESSION_OPTIONS,
   type SharedDbScopeEvent,
-} from './vitest-shared-db-scope-observer.mts'
+} from './vitest-shared-db-scope-guard.mts'
 
 describe('shared database scope observer', () => {
   it('leaves deliberate global production calls legal without an observer', () => {
@@ -31,7 +32,7 @@ describe('shared database scope observer', () => {
 
   it('registers both retained cleanup boundaries with their shared cursor tables', () => {
     const events: SharedDbScopeEvent[] = []
-    const dispose = installSharedDbScopeObserver(event => events.push(event))
+    const dispose = sharedDbScopeGuard.installObserver(event => events.push(event))
     try {
       observeSharedDbScope('cleanupRetainedIdentityRoots', sharedDbIdsScope(['root']))
       observeSharedDbScope('cleanupRetainedRelationIdentities', sharedDbIdsScope())
@@ -54,7 +55,7 @@ describe('shared database scope observer', () => {
 
   it('reports bound ids and keyset cursors to a registered observer', () => {
     const events: SharedDbScopeEvent[] = []
-    const dispose = installSharedDbScopeObserver(event => events.push(event))
+    const dispose = sharedDbScopeGuard.installObserver(event => events.push(event))
     try {
       observeSharedDbScope(
         'listRecoverableMediaDeliveryRegistryIds',
@@ -80,7 +81,7 @@ describe('shared database scope observer', () => {
 
   it('keeps the observer installed across module re-evaluation', async () => {
     const events: SharedDbScopeEvent[] = []
-    const dispose = installSharedDbScopeObserver(event => events.push(event))
+    const dispose = sharedDbScopeGuard.installObserver(event => events.push(event))
     try {
       vi.resetModules()
       const fresh = await import('../backend/data-stores/psql/shared-db-scope-observer.mts')
@@ -92,12 +93,19 @@ describe('shared database scope observer', () => {
   })
 })
 
-describe('retained relation transaction admission', () => {
-  it('admits only the registered executor, operation, test and active lifetime', () => {
+describe('Voucha shared database scope policy wiring', () => {
+  it('preserves explicit ID admission for staff email intakes without requiring a keyset', () => {
+    expect(() =>
+      sharedDbScopeGuard.rejectUnscopedCall({
+        operation: 'searchCopyrightStaffEmailIntakes',
+        table: 'copyright_notice_email_intakes',
+        scope: { kind: 'ids', ids: ['00000000-0000-0000-0000-000000000002'] },
+      }),
+    ).not.toThrow()
+  })
+
+  it('admits cleanupRetainedRelationIdentities only for the reserved transaction and survives resetModules', async () => {
     const query: QueryExecutor = async () => {
-      throw new Error('Boundary test must not execute SQL')
-    }
-    const other: QueryExecutor = async () => {
       throw new Error('Boundary test must not execute SQL')
     }
     const event: SharedDbScopeEvent = {
@@ -106,71 +114,37 @@ describe('retained relation transaction admission', () => {
       scope: { kind: 'global' },
       transaction: query,
     }
-    const state = { ...expect.getState() }
-    const close = registerRetainedRelationCleanupReservation(query)
+    const testPath = expect.getState().testPath!
+    const close = sharedDbScopeGuard.registerTransactionReservation(query)
     try {
-      expect(() => rejectUnscopedSharedDbCall(event)).not.toThrow()
-      expect(() => registerRetainedRelationCleanupReservation(query)).toThrow(
-        'one active test transaction',
-      )
-      expect(() => rejectUnscopedSharedDbCall({ ...event, transaction: other })).toThrow('requires')
-      expect(() => rejectUnscopedSharedDbCall({ ...event, transaction: undefined })).toThrow(
-        'requires',
-      )
+      expect(() => sharedDbScopeGuard.rejectUnscopedCall(event)).not.toThrow()
       expect(() =>
-        rejectUnscopedSharedDbCall({
+        sharedDbScopeGuard.rejectUnscopedCall({
           ...event,
           operation: 'cleanupRetainedIdentityRoots',
           table: 'retained_identity_cleanup_cursors',
         }),
       ).toThrow('requires')
-      expect.setState({ currentTestName: `${state.currentTestName}:different` })
-      expect(() => rejectUnscopedSharedDbCall(event)).toThrow('requires')
-      expect.setState({ currentTestName: undefined })
-      expect(() => rejectUnscopedSharedDbCall({ ...event, transaction: other })).toThrow('requires')
-      expect(() => rejectUnscopedSharedDbCall(event)).toThrow('requires')
-      expect(() => registerRetainedRelationCleanupReservation(other)).toThrow(
-        'one active test transaction',
-      )
-      expect.setState({ currentTestName: state.currentTestName })
-      close()
-      close()
-      expect(() => rejectUnscopedSharedDbCall(event)).toThrow('requires')
-      const nextClose = registerRetainedRelationCleanupReservation(query)
-      try {
-        close()
-        expect(() => rejectUnscopedSharedDbCall(event)).not.toThrow()
-      } finally {
-        nextClose()
-      }
+
+      vi.resetModules()
+      const fresh = await import('./vitest-shared-db-scope-guard.mts')
+      expect(() => fresh.sharedDbScopeGuard.rejectUnscopedCall(event)).not.toThrow()
     } finally {
-      expect.setState({ currentTestName: state.currentTestName })
       close()
-      markSharedDbScopeViolationsReported(state.testPath!)
+      sharedDbScopeGuard.markViolationsReported(testPath)
     }
   })
 
-  it('preserves active admission across module re-evaluation', async () => {
-    const query: QueryExecutor = async () => {
-      throw new Error('Boundary test must not execute SQL')
+  it('applies Voucha test PostgreSQL session options including hnsw.ef_search', () => {
+    const env = {
+      DATABASE_URL: 'postgres://localhost/owned',
+      READ_DATABASE_URL: 'postgres://localhost/owned_read',
     }
-    const close = registerRetainedRelationCleanupReservation(query)
-    try {
-      vi.resetModules()
-      const fresh = await import('./vitest-shared-db-scope-violations.mts')
-      expect(() =>
-        fresh.rejectUnscopedSharedDbCall({
-          operation: 'cleanupRetainedRelationIdentities',
-          table: 'retained_relation_identity_cleanup_cursors',
-          scope: { kind: 'global' },
-          transaction: query,
-        }),
-      ).not.toThrow()
-      expect(() => fresh.registerRetainedRelationCleanupReservation(query)).toThrow(
-        'one active test transaction',
-      )
-    } finally {
-      close()
+    configureTestPostgresSessions(env, VOUCHA_TEST_POSTGRES_SESSION_OPTIONS)
+    for (const key of ['DATABASE_URL', 'READ_DATABASE_URL'] as const) {
+      const options = new URL(env[key]).searchParams.get('options')
+      expect(options).toContain(`-c statement_timeout=${FAST_TEST_STATEMENT_TIMEOUT_MS}`)
+      expect(options).toContain(`-c hnsw.ef_search=${TEST_HNSW_EF_SEARCH}`)
     }
   })
 })

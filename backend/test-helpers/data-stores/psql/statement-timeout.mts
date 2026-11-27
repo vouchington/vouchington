@@ -6,9 +6,12 @@ import {
   beginTransaction,
 } from '@data-stores/psql/setup'
 
-import { TEST_STATEMENT_TIMEOUT_MS } from '../../statement-timeout-constant.mts'
+import { parseTestStatementTimeout } from 'vouchington-tooling/shared-db-scope-guard'
 
-export { TEST_STATEMENT_TIMEOUT_MS }
+/** Session startup deadline; explicit production bounded transactions retain their own budgets. */
+export const TEST_STATEMENT_TIMEOUT_MS = parseTestStatementTimeout(
+  process.env.PG_TEST_STATEMENT_TIMEOUT_MS,
+)
 
 type PoolQuery = typeof read
 

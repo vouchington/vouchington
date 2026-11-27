@@ -1,5 +1,5 @@
 import { createOwnedSqlFixtureLifetime } from '../owned-sql-fixture-lifetime.mts'
-import { registerRetainedRelationCleanupReservation } from '../../../test-helpers/vitest-shared-db-scope-violations.mts'
+import { sharedDbScopeGuard } from '../../../test-helpers/vitest-shared-db-scope-guard.mts'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import { electedRelationMetadata } from '../../services/users/relation-impact-targets.mts'
 import {
@@ -110,7 +110,7 @@ export async function withTestRetainedRelationCleanupReservation<Result>(
         )
         owner.assertOpen()
       }
-      closeReservation = registerRetainedRelationCleanupReservation(query)
+      closeReservation = sharedDbScopeGuard.registerTransactionReservation(query)
     })
     const transaction = query!
     return handler({

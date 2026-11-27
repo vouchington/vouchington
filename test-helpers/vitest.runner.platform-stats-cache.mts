@@ -16,7 +16,9 @@ export default class PlatformStatsCacheRunner extends SharedDbScopeGuardRunner {
     this.onCleanupWorkerContext(() => this.#closeCache())
   }
 
-  override onAfterRunFiles(files: Parameters<SharedDbScopeGuardRunner['onAfterRunFiles']>[0]) {
+  override onAfterRunFiles(
+    files: Parameters<InstanceType<typeof SharedDbScopeGuardRunner>['onAfterRunFiles']>[0],
+  ) {
     const errors: unknown[] = []
     try {
       super.onAfterRunFiles(files)

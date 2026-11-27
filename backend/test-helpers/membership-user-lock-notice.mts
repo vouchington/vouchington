@@ -2,11 +2,11 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { onTestFinished } from 'vitest'
 import { writePool, type PoolClient } from '@data-stores/psql'
 import {
+  observeTestPostgresLockQuery,
   observeTestTransactionLockNotice,
   runPoolObservationExclusively,
 } from 'vouchington-tooling/postgres-test-faults'
 import { testLockNoticeOptions } from './postgres-lock-notice-options.mts'
-import { observeTestPostgresLockQuery } from './postgres-lock-query-observation.mts'
 
 const leaseScope = new AsyncLocalStorage<object>()
 const marker = '/* expireElapsedMemberships: lock user */'

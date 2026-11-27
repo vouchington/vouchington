@@ -1,6 +1,8 @@
-import { vi } from 'vitest'
 import * as psql from '@data-stores/psql'
-import type { QueryExecutor } from '@data-stores/psql'
+import {
+  interceptPostgresTransactionQueriesForTest as interceptTargetTransactionQueries,
+  type TransactionBeginTarget,
+} from 'vouchington-tooling/postgres-test-faults'
 
 /**
  * Run `intercept` before every statement of a default-pool `beginTransaction()` transaction that
@@ -13,18 +15,7 @@ export function interceptPostgresTransactionQueriesForTest(
   matches: (statement: string, values: readonly unknown[]) => boolean,
   intercept: () => Promise<void>,
 ): () => void {
-  const realBegin = psql.beginTransaction
-  const spy = vi.spyOn(psql, 'beginTransaction').mockImplementation(async (...args) => {
-    const transaction = await Reflect.apply(realBegin, psql, args)
-    return new Proxy(transaction, {
-      apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
-        const [input, parameters] = argumentsList
-        const statement = typeof input === 'string' ? input : input.text
-        const values = typeof input === 'string' ? (parameters ?? []) : input.values
-        if (!matches(statement, values)) return Reflect.apply(target, thisArgument, argumentsList)
-        return intercept().then(() => Reflect.apply(target, thisArgument, argumentsList))
-      },
-    })
-  })
-  return () => spy.mockRestore()
+  return interceptTargetTransactionQueries(psql as unknown as TransactionBeginTarget, matches, () =>
+    intercept(),
+  )
 }

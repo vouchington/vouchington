@@ -16,7 +16,7 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
 import { runWithCapturedQueries } from '../../data-stores/psql/query-capture.mts'
-import { installSharedDbScopeObserver } from '../../../test-helpers/vitest-shared-db-scope-observer.mts'
+import { sharedDbScopeGuard } from '../../../test-helpers/vitest-shared-db-scope-guard.mts'
 import { associateCopyrightEmailIntakeWithNotice } from './email-manual-association.mts'
 import { searchCopyrightNoticeAssociationTargets } from './association-search.mts'
 import { copyrightConfig } from './config.mts'
@@ -93,7 +93,7 @@ describe('manual copyright email association', () => {
     const preflight = new Promise<void>(resolve => {
       resolvePreflight = resolve
     })
-    const dispose = installSharedDbScopeObserver(event => {
+    const dispose = sharedDbScopeGuard.installObserver(event => {
       if (
         event.operation === 'associateCopyrightEmailIntakePreflight' &&
         event.scope.kind === 'ids' &&

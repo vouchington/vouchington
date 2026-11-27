@@ -1,11 +1,9 @@
 import { createPlaywrightTimeoutGuard } from 'vouchington-tooling/playwright-config'
 
-// Keep banOverrides disabled until vouchington-tooling tolerates Playwright's internal
-// `_setupArtifacts` call to `testInfo.setTimeout(testInfo.project.timeout)` (`playwright/lib/index.js:78`).
 export const vouchaTimeoutGuard = createPlaywrightTimeoutGuard({
   maxTimeoutMs: 30_000,
   fixtureName: 'vouchaTestTimeout',
-  banOverrides: false,
+  banOverrides: true,
 })
 
 export const playwrightTestTimeout = vouchaTimeoutGuard.testTimeout

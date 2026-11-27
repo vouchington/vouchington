@@ -1,12 +1,6 @@
 import { read } from '@data-stores/psql'
+import { getPublicBaseTableNamesForTest as getBaseTableNames } from 'vouchington-tooling/postgres-test-faults'
 
-export async function getPublicBaseTableNamesForTest(): Promise<Set<string>> {
-  const { rows } = await read<{ table_name: string }>(
-    `/* getPublicBaseTableNamesForTest */
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-        AND table_type = 'BASE TABLE'`,
-  )
-  return new Set(rows.map(row => row.table_name))
+export function getPublicBaseTableNamesForTest(): Promise<Set<string>> {
+  return getBaseTableNames(({ text, values }) => read(text, values))
 }
