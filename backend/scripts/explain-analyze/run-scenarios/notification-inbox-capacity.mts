@@ -61,6 +61,10 @@ export async function runMarkNotificationInboxCapacityScenario(): Promise<void> 
       FROM unnest(${postIds}::uuid[]) WITH ORDINALITY AS input(post_id, ordinal)
       RETURNING id, read_at
     `)
+    // Autovacuum may or may not have described the fresh inbox by capture time. Fix the
+    // statistics so a regression to a join the planner can hash against a partition scan
+    // fails every run instead of only the runs that happen to be analyzed.
+    await write('/* analyzeMarkAllReadInbox */ ANALYZE notifications')
     const unreadIds = rows
       .filter(row => row.read_at === null)
       .map(row => row.id)
