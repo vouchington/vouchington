@@ -20,14 +20,8 @@ export function sortMergedReports(
         return b.cursor_report_count - a.cursor_report_count
     }
     const asc = sort === 'created_at_asc'
-    if (a.cursor_created_at !== b.cursor_created_at)
-      return asc
-        ? a.cursor_created_at < b.cursor_created_at
-          ? -1
-          : 1
-        : a.cursor_created_at > b.cursor_created_at
-          ? -1
-          : 1
+    // Report creation time comes from the UUIDv7 ID, which is also the SQL tie-breaker.
+    if (a.id === b.id) return 0
     return asc ? (a.id < b.id ? -1 : 1) : a.id > b.id ? -1 : 1
   })
 }
@@ -101,11 +95,11 @@ function banEvasionAfterCursor(
     case 'severity': {
       const severityRank = afterCursor.severityRank ?? 0
       const reportCount = afterCursor.reportCount ?? 0
-      return sql` AND (0 < ${severityRank} OR (0 = ${severityRank} AND (1 < ${reportCount} OR (1 = ${reportCount} AND r.id > ${afterCursor.id}::uuid))))`
+      return sql` AND (0 < ${severityRank} OR (0 = ${severityRank} AND (1 < ${reportCount} OR (1 = ${reportCount} AND r.id < ${afterCursor.id}::uuid))))`
     }
     case 'most_reported': {
       const reportCount = afterCursor.reportCount ?? 0
-      return sql` AND (1 < ${reportCount} OR (1 = ${reportCount} AND r.id > ${afterCursor.id}::uuid))`
+      return sql` AND (1 < ${reportCount} OR (1 = ${reportCount} AND r.id < ${afterCursor.id}::uuid))`
     }
     case 'created_at_asc':
       return sql` AND r.id > ${afterCursor.id}::uuid`

@@ -17,42 +17,46 @@ export type ModerationReportCursor = {
   severityRank?: number
 } | null
 
+type RankedIdOrder = 'asc' | 'desc'
+
 export function appendModerationReportCursorPredicate(
   query: SQLStatement,
   sort: ModerationReportSort,
   cursor: Exclude<ModerationReportCursor, null>,
   direction: 'after' | 'before' = 'after',
+  rankedIdOrder: RankedIdOrder = 'asc',
 ): void {
   const after = direction === 'after'
+  const ranked = sort === 'severity' || sort === 'most_reported'
+  const idAscending = ranked ? rankedIdOrder === 'asc' : sort === 'created_at_asc'
+  const idComparator = idAscending === after ? sql`>` : sql`<`
+  if (!ranked) {
+    query
+      .append(sql` AND r.id `)
+      .append(idComparator)
+      .append(sql` ${cursor.id}::uuid`)
+    return
+  }
+
+  const rankComparator = after ? sql`<` : sql`>`
+  const reportCount = cursor.reportCount ?? 0
+  query.append(sql` AND (`)
   if (sort === 'severity') {
-    const reportCount = cursor.reportCount ?? 0
     const severityRank = cursor.severityRank ?? 0
-    query.append(sql` AND (`)
-    query.append(severityRankSql())
-    query.append(after ? sql` < ${severityRank} OR (` : sql` > ${severityRank} OR (`)
-    query.append(severityRankSql())
-    query.append(
-      after
-        ? sql` = ${severityRank} AND (report_counts.report_count < ${reportCount} OR (report_counts.report_count = ${reportCount} AND r.id > ${cursor.id}::uuid))))`
-        : sql` = ${severityRank} AND (report_counts.report_count > ${reportCount} OR (report_counts.report_count = ${reportCount} AND r.id < ${cursor.id}::uuid))))`,
-    )
-    return
+    query
+      .append(severityRankSql())
+      .append(sql` `)
+      .append(rankComparator)
+      .append(sql` ${severityRank} OR (`)
+    query.append(severityRankSql()).append(sql` = ${severityRank} AND (`)
   }
-
-  if (sort === 'most_reported') {
-    const reportCount = cursor.reportCount ?? 0
-    query.append(
-      after
-        ? sql` AND (report_counts.report_count < ${reportCount} OR (report_counts.report_count = ${reportCount} AND r.id > ${cursor.id}::uuid))`
-        : sql` AND (report_counts.report_count > ${reportCount} OR (report_counts.report_count = ${reportCount} AND r.id < ${cursor.id}::uuid))`,
-    )
-    return
-  }
-
-  const comparator = (sort === 'created_at_asc') === after ? sql`>` : sql`<`
-  query.append(sql` AND r.id `)
-  query.append(comparator)
-  query.append(sql` ${cursor.id}::uuid`)
+  query
+    .append(sql`report_counts.report_count `)
+    .append(rankComparator)
+    .append(sql` ${reportCount} OR (report_counts.report_count = ${reportCount} AND r.id `)
+    .append(idComparator)
+    .append(sql` ${cursor.id}::uuid`)
+    .append(sort === 'severity' ? sql`))))` : sql`))`)
 }
 
 export function appendModerationReportOrder(
@@ -60,33 +64,29 @@ export function appendModerationReportOrder(
   sort: ModerationReportSort,
   limit: number,
   reversed = false,
+  rankedIdOrder: RankedIdOrder = 'asc',
 ): void {
-  if (sort === 'severity') {
-    query.append(sql`
-      ORDER BY
-        `)
-    query.append(severityRankSql())
-    query.append(
-      reversed
-        ? sql` ASC, report_counts.report_count ASC, r.id DESC LIMIT ${limit}`
-        : sql` DESC, report_counts.report_count DESC, r.id ASC LIMIT ${limit}`,
-    )
-    return
-  }
+  const ranked = sort === 'severity' || sort === 'most_reported'
+  const idAscending = ranked ? rankedIdOrder === 'asc' : sort === 'created_at_asc'
+  const idDirection = idAscending !== reversed ? sql`ASC` : sql`DESC`
+  const rankDirection = reversed ? sql`ASC` : sql`DESC`
 
-  if (sort === 'most_reported') {
-    query.append(
-      reversed
-        ? sql` ORDER BY report_counts.report_count ASC, r.id DESC LIMIT ${limit}`
-        : sql` ORDER BY report_counts.report_count DESC, r.id ASC LIMIT ${limit}`,
-    )
-    return
-  }
-
-  const direction = (sort === 'created_at_asc') !== reversed ? sql`ASC` : sql`DESC`
-  query.append(sql` ORDER BY r.id `)
-  query.append(direction)
-  query.append(sql` LIMIT ${limit}`)
+  query.append(sql` ORDER BY `)
+  if (sort === 'severity')
+    query
+      .append(severityRankSql())
+      .append(sql` `)
+      .append(rankDirection)
+      .append(sql`, `)
+  if (ranked)
+    query
+      .append(sql`report_counts.report_count `)
+      .append(rankDirection)
+      .append(sql`, `)
+  query
+    .append(sql`r.id `)
+    .append(idDirection)
+    .append(sql` LIMIT ${limit}`)
 }
 
 export function severityRankSql(): SQLStatement {

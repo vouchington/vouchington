@@ -174,8 +174,10 @@ async function fetchPostCommentReports(
   if (escalated === true) {
     query.append(sql` AND r.escalated_at IS NOT NULL`)
   }
-  if (afterCursor) appendModerationReportCursorPredicate(query, sort ?? 'severity', afterCursor)
-  appendModerationReportOrder(query, sort ?? 'severity', limit)
+  const reportSort = sort ?? 'severity'
+  if (afterCursor)
+    appendModerationReportCursorPredicate(query, reportSort, afterCursor, 'after', 'desc')
+  appendModerationReportOrder(query, reportSort, limit, false, 'desc')
 
   const { rows } = await read<PendingModerationReport>(query)
   return rows
