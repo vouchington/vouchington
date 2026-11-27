@@ -14,7 +14,7 @@ export const RETENTION_WORK_SCENARIOS = [
   ...EXISTENCE_FILTER_SCENARIO_IDS,
   ...MODERATION_RERUN_SCENARIO_IDS,
   'moderation-undispatched-judgements-at-cap',
-  'moderation-missing-judgements-backfill-at-cap',
+  'moderation-judgement-backfill-continuation-at-cap',
   'post-embedding-ban-evasion-recovery-at-cap',
   'ai-usage-month-attached',
   'ai-usage-tier-existing',

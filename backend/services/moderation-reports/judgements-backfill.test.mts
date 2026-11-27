@@ -8,26 +8,20 @@ import {
 } from '@voucha/test-helpers'
 import { resolveTestModerationReports } from '@voucha/test-helpers/entities/moderation-report-clusters'
 import crypto from 'node:crypto'
-import { streamEntitiesMissingJudgementBatches } from './judgements-backfill.mts'
+import { listMissingReportJudgementPage } from './judgement-backfill-page.mts'
 
-type MissingJudgementEntity =
-  ReturnType<typeof streamEntitiesMissingJudgementBatches> extends AsyncGenerator<
-    infer Batch extends readonly unknown[]
-  >
-    ? Batch[number]
-    : never
-
-async function collectAll(
-  gen: AsyncGenerator<MissingJudgementEntity[], void, unknown>,
-): Promise<MissingJudgementEntity[]> {
-  const results: MissingJudgementEntity[] = []
-  for await (const batch of gen) {
-    results.push(...batch)
+async function readTarget(kind: 'post' | 'user', targetId: string) {
+  const signedId = BigInt(`0x${targetId.replaceAll('-', '')}`)
+  const bound = (value: bigint) => {
+    const hex = value.toString(16).padStart(32, '0')
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
   }
-  return results
+  return (
+    await listMissingReportJudgementPage(kind, bound(signedId - 1n), bound(signedId + 1n), 1, 1)
+  ).entities
 }
 
-describe('streamEntitiesMissingJudgementBatches', () => {
+describe('listMissingReportJudgementPage', () => {
   it('excludes a post entity that already has a judgement', async () => {
     const author = await createTestUser()
     const reporter = await createTestUser()
@@ -48,9 +42,7 @@ describe('streamEntitiesMissingJudgementBatches', () => {
       triggeringReportId: reportId,
     })
 
-    const results = await collectAll(streamEntitiesMissingJudgementBatches())
-    const found = results.find(r => r.entityId === postId)
-    expect(found).toBeUndefined()
+    expect(await readTarget('post', postId)).toEqual([])
   })
 
   it('returns entity_type comment for posts with post_type=comment', async () => {
@@ -71,19 +63,18 @@ describe('streamEntitiesMissingJudgementBatches', () => {
       rootId: rootPostId,
       parentId: rootPostId,
     })
-    await insertTestModerationReport({
+    const reportId = await insertTestModerationReport({
       reporterUserId: reporter.id,
       entityType: 'comment',
       entityId: commentId,
     })
 
-    const results = await collectAll(streamEntitiesMissingJudgementBatches())
-    const found = results.find(r => r.entityId === commentId)
-    expect(found).toBeDefined()
-    expect(found!.entityType).toBe('comment')
+    expect(await readTarget('post', commentId)).toEqual([
+      { entityId: commentId, entityType: 'comment', triggeringReportId: reportId },
+    ])
   })
 
-  it('returns the most recent report as triggeringReportId', async () => {
+  it('returns the newest report even when it has been resolved', async () => {
     const author = await createTestUser()
     const reporter1 = await createTestUser()
     const reporter2 = await createTestUser()
@@ -105,11 +96,13 @@ describe('streamEntitiesMissingJudgementBatches', () => {
       entityId: postId,
     })
 
-    const results = await collectAll(streamEntitiesMissingJudgementBatches())
-    const found = results.find(r => r.entityId === postId)
-    expect(found).toBeDefined()
-    expect(found!.entityType).toBe('post')
-    expect(found!.triggeringReportId).toBe(latestReportId)
+    await resolveTestModerationReports([latestReportId], 'actioned')
+    expect(await readTarget('post', postId)).toEqual([
+      { entityId: postId, entityType: 'post', triggeringReportId: latestReportId },
+    ])
+
+    await markTestPostDeletedBy(postId, author.id)
+    expect(await readTarget('post', postId)).toEqual([])
   })
 
   it('keeps the newest resolved report for a live post and skips a deleted post', async () => {
@@ -154,23 +147,27 @@ describe('streamEntitiesMissingJudgementBatches', () => {
       markTestPostDeletedBy(deletedPostId, author.id),
     ])
 
-    const results = await collectAll(streamEntitiesMissingJudgementBatches())
-    expect(
-      results.filter(row => row.entityId === livePostId || row.entityId === deletedPostId),
-    ).toEqual([{ entityType: 'post', entityId: livePostId, triggeringReportId: newestReportId }])
+    const [live, deleted] = await Promise.all([
+      readTarget('post', livePostId),
+      readTarget('post', deletedPostId),
+    ])
+    expect(live).toEqual([
+      { entityType: 'post', entityId: livePostId, triggeringReportId: newestReportId },
+    ])
+    expect(deleted).toEqual([])
   })
 
   it('includes a user entity with a report and no judgement', async () => {
     const targetUser = await createTestUser()
     const reporter = await createTestUser()
-    await insertTestModerationReport({
+    const reportId = await insertTestModerationReport({
       reporterUserId: reporter.id,
       entityType: 'user',
       entityId: targetUser.id,
     })
 
-    const results = await collectAll(streamEntitiesMissingJudgementBatches())
-    const found = results.find(r => r.entityId === targetUser.id && r.entityType === 'user')
-    expect(found).toBeDefined()
+    expect(await readTarget('user', targetUser.id)).toEqual([
+      { entityId: targetUser.id, entityType: 'user', triggeringReportId: reportId },
+    ])
   })
 })

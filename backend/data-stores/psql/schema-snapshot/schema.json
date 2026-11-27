@@ -1250,6 +1250,9 @@
     "report_integrity_resolutions": {
       "values": ["dismissed", "penalized"]
     },
+    "report_judgement_backfill_targets": {
+      "values": ["post", "user", "url_hostname", "rss_feed_item"]
+    },
     "reporting_rollup_kinds": {
       "values": ["growth", "moderator_workload"]
     },
@@ -123615,6 +123618,116 @@
       "relationKind": "table",
       "triggers": {
         "trigger_report_integrity_flags_updated_at": "CREATE TRIGGER trigger_report_integrity_flags_updated_at BEFORE UPDATE ON public.report_integrity_flags FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "report_judgement_backfill_cursors": {
+      "checkConstraints": {
+        "report_judgement_backfill_cursors_progress": "CHECK (((is_sweep_complete AND (target_kind = 'post'::report_judgement_backfill_targets) AND (cursor_target_id IS NULL)) OR ((NOT is_sweep_complete) AND (sweep_upper_bound_id IS NOT NULL) AND ((cursor_target_id IS NULL) OR (cursor_target_id < sweep_upper_bound_id)))))",
+        "report_judgement_backfill_cursors_singleton": "CHECK (is_singleton)"
+      },
+      "columns": {
+        "cursor_target_id": {
+          "collation": null,
+          "comment": "Last inspected target UUID in this kind, even if it needed no judgement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "is_singleton": {
+          "collation": null,
+          "comment": "Identifies the shared report judgement backfill cursor.",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "boolean"
+        },
+        "is_sweep_complete": {
+          "collation": null,
+          "comment": "Whether the next run starts a new pass from the beginning.",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "boolean"
+        },
+        "sweep_upper_bound_id": {
+          "collation": null,
+          "comment": "Exclusive UUIDv7 bound fixed for this pass over all target kinds.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "target_kind": {
+          "collation": null,
+          "comment": "Kind of target currently being scanned.",
+          "defaultExpression": "'post'::report_judgement_backfill_targets",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "report_judgement_backfill_targets"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Time the backfill checkpoint last changed.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Checkpoint for the report judgement backfill.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "report_judgement_backfill_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX report_judgement_backfill_cursors_pkey ON public.report_judgement_backfill_cursors USING btree (is_singleton)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "bool_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"],
+        "definition": "PRIMARY KEY (is_singleton)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_report_judgement_backfill_cursors_updated_at": "CREATE TRIGGER trigger_report_judgement_backfill_cursors_updated_at BEFORE UPDATE ON public.report_judgement_backfill_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },

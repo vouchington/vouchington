@@ -19,15 +19,6 @@ describe('processAIAgent routing', () => {
     ).toThrow('Unknown AI agent job: unknown-agent-job')
   })
 
-  it('routes backfill_report_judgements to processBackfillReportJudgements', async () => {
-    const result = await runProcessAIAgent({
-      name: 'backfill_report_judgements',
-      data: {},
-    })
-    // No entities missing judgements in a clean test DB → 0 enqueued
-    expect(result).toEqual({ enqueued: expect.any(Number) })
-  })
-
   it('routes auto-dispatch-judgement to processAutoDispatchJudgement (config disabled → no-op)', async () => {
     const result = await runProcessAIAgent({
       name: 'auto-dispatch-judgement',

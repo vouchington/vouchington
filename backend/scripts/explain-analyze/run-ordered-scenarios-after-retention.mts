@@ -6,6 +6,7 @@ import { runCopyrightUnlinkedEmailRetentionScenario } from './run-scenarios/copy
 import { runCopyrightUnlinkedRecommendationRetentionScenario } from './run-scenarios/copyright-unlinked-recommendation-retention.mts'
 import { runModerationAppealListCapacity } from './run-scenarios/moderation-appeal-list-capacity.mts'
 import { runApiKeyExpiryCapacityScenarios } from './run-scenarios/api-key-expiry-capacity.mts'
+import { runModerationJudgementBackfillContinuationScenario } from './run-scenarios/moderation-judgement-backfill-continuation.mts'
 import { runModerationJudgementMaintenanceScenarios } from './run-scenarios/moderation-judgement-maintenance.mts'
 import { runModerationDigestPageScenarios } from './run-scenarios/moderation-digest-pages.mts'
 import { runModerationTransparencyListCapacity } from './run-scenarios/moderation-transparency-list-capacity.mts'
@@ -26,6 +27,7 @@ export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runModerationReportPostSidecars,
   runCopyrightAiRunRetentionCapacityScenario,
   runModerationJudgementMaintenanceScenarios,
+  runModerationJudgementBackfillContinuationScenario,
   runModerationDigestPageScenarios,
   runPostEmbeddingBanEvasionRecovery,
   runCopyrightExecutionRetentionScenarios,
