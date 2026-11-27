@@ -1,6 +1,8 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
+import type { StripeMembershipApplicationContext } from '../../services/memberships/create-types.mts'
+import { getMembershipRefundTargetByStripeSubscriptionId } from '../../services/memberships/refunds/source-lookup.mts'
 
 export async function releaseMembershipSourceForRebindForTest(
   membershipSourceId: string,
@@ -62,4 +64,24 @@ export async function insertTestRefundSourceBoundaryChange(options: {
       ${options.sourceId}, 'source_observed' FROM identity
     RETURNING id AS "targetId", membership_id AS "membershipId"`)
   return rows[0]!
+}
+
+/** Runs the refund target lookup under a transaction-local session timezone, then rolls it back. */
+export async function getTestMembershipRefundTargetInTimeZone(
+  subscriptionId: string,
+  providerEnvironment: 'test' | 'production',
+  originatedAt: Date,
+  timeZone: 'America/Los_Angeles' | 'UTC',
+  applicationContext?: StripeMembershipApplicationContext,
+) {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* getTestMembershipRefundTargetInTimeZone */
+    SELECT set_config('TimeZone', ${timeZone}, true)`)
+  return await getMembershipRefundTargetByStripeSubscriptionId(
+    subscriptionId,
+    providerEnvironment,
+    originatedAt,
+    applicationContext,
+    transaction,
+  )
 }

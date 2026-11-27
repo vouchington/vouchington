@@ -5,6 +5,7 @@ import {
   createTestSku,
   createTestUser,
   deleteTestMembershipProjectionForRefundSource,
+  getTestMembershipRefundTargetInTimeZone,
   insertTestRefundSourceBoundaryChange,
   releaseMembershipSourceForRebindForTest,
 } from '@voucha/test-helpers'
@@ -101,4 +102,54 @@ describe('refund source change boundaries', () => {
       membershipSourceId: membership.membership_source_id,
     })
   })
+
+  it.each([
+    { season: 'PDT', boundAtIso: '2026-05-07T01:14:34.648Z' },
+    { season: 'PST', boundAtIso: '2026-01-15T01:14:34.648Z' },
+  ])(
+    'selects an in-window change under America/Los_Angeles in $season and ignores post-release changes',
+    async ({ boundAtIso }) => {
+      const user = await createTestUser()
+      const subscriptionId = `sub_refund_dst_${randomUUID()}`
+      const applicationId = `refund-dst-${randomUUID()}`
+      const sku = await createTestSku({ provider_application_id: applicationId })
+      const boundMs = Date.parse(boundAtIso)
+      const boundAt = new Date(boundMs)
+      const inWindowAt = new Date(boundMs + 1000)
+      const releasedAt = new Date(boundMs + 2000)
+      const postReleaseAt = new Date(boundMs + 3000)
+      const membership = await createTestMembership({
+        user_id: user.id,
+        stripe_subscription_id: subscriptionId,
+        provider_environment: 'production',
+        provider_application_id: applicationId,
+        sku_id: sku.id,
+        binding_bound_at: boundAt,
+      })
+      await releaseMembershipSourceForRebindForTest(membership.membership_source_id, releasedAt)
+      const inWindowTarget = await insertTestRefundSourceBoundaryChange({
+        sourceId: membership.membership_source_id,
+        userId: user.id,
+        at: inWindowAt,
+      })
+      await insertTestRefundSourceBoundaryChange({
+        sourceId: membership.membership_source_id,
+        userId: user.id,
+        at: postReleaseAt,
+      })
+      expect(
+        await getTestMembershipRefundTargetInTimeZone(
+          subscriptionId,
+          'production',
+          inWindowAt,
+          'America/Los_Angeles',
+          { applicationId },
+        ),
+      ).toEqual({
+        membershipId: inWindowTarget.membershipId,
+        userId: user.id,
+        membershipSourceId: membership.membership_source_id,
+      })
+    },
+  )
 })

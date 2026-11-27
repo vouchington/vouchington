@@ -53,17 +53,12 @@ export async function getMembershipRefundTargetByStripeSubscriptionId(
   providerEnvironment: 'test' | 'production',
   originatedAt: Date,
   applicationContext: StripeMembershipApplicationContext = DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
+  query: QueryExecutor = read,
 ): Promise<{ membershipId: string; userId: string; membershipSourceId: string } | null> {
-  const { rows } = await read(sql`/* getMembershipRefundTargetByStripeSubscriptionId */
-    WITH refund_source AS MATERIALIZED (
+  const { rows } = await query(sql`/* getMembershipRefundTargetByStripeSubscriptionId */
+    WITH refund_source AS (
       SELECT source.id AS membership_source_id,
-        origin_binding.bound_at, origin_binding.released_at, origin_binding.user_id,
-        uuidv7(
-          origin_binding.bound_at - clock_timestamp() - INTERVAL '1 second'
-        ) AS lower_change_id,
-        CASE WHEN origin_binding.released_at IS NULL THEN NULL ELSE uuidv7(
-          origin_binding.released_at - clock_timestamp() + INTERVAL '1 second'
-        ) END AS upper_change_id
+        origin_binding.bound_at, origin_binding.released_at, origin_binding.user_id
       FROM membership_provider_lineages lineage
       INNER JOIN membership_provider_contexts provider_context
         ON provider_context.id = lineage.membership_provider_context_id
@@ -116,11 +111,6 @@ export async function getMembershipRefundTargetByStripeSubscriptionId(
           membership_change.id AS target_id, 1 AS target_priority
         FROM membership_changes membership_change
         WHERE membership_change.membership_source_id = source.membership_source_id
-          AND membership_change.id >= source.lower_change_id
-          AND membership_change.id < COALESCE(
-            source.upper_change_id,
-            'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid
-          )
           -- Binding writers use CURRENT_TIMESTAMP, which can retain microseconds. UUIDv7
           -- timestamp extraction has millisecond precision, so both bounds require a ceiling.
           AND membership_change.id >= fn_min_uuidv7(
@@ -128,14 +118,15 @@ export async function getMembershipRefundTargetByStripeSubscriptionId(
               WHEN source.bound_at > date_trunc('milliseconds', source.bound_at)
               THEN INTERVAL '1 millisecond' ELSE INTERVAL '0' END
           )
-          AND (
-            source.released_at IS NULL
-            OR membership_change.id < fn_min_uuidv7(
+          AND membership_change.id < CASE
+            WHEN source.released_at IS NULL
+            THEN 'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid
+            ELSE fn_min_uuidv7(
               date_trunc('milliseconds', source.released_at) + CASE
                 WHEN source.released_at > date_trunc('milliseconds', source.released_at)
                 THEN INTERVAL '1 millisecond' ELSE INTERVAL '0' END
             )
-          )
+          END
         ORDER BY membership_change.id DESC
         LIMIT 1)
       ) source_target
