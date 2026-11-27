@@ -1,7 +1,7 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { computeContentSha256, computeDetectionKey, runDetection } from '../detect.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
+import { writeLanguageDetectionResults } from '../write-results.mts'
+import { computeDetectionKey, runDetection } from '../detect.mts'
 
 export async function detectUserLanguage(userId: string): Promise<void> {
   const { rows } = await read<{
@@ -19,27 +19,25 @@ export async function detectUserLanguage(userId: string): Promise<void> {
   if (!user) return
 
   const text = user.markdown
-  const contentSha256 = computeContentSha256(text)
   const detectionKey = computeDetectionKey(text, null)
 
   // Skip if input hasn't changed
-  if (user.lingua_rs_input_sha256 != null) {
-    const existing = user.lingua_rs_input_sha256
-    if (existing.equals(detectionKey)) return
-  }
+  if (user.lingua_rs_input_sha256?.equals(detectionKey)) return
 
   // Users have no declared language for their bio
   const output = await runDetection(text, null)
 
-  await write(sql`/* detectUserLanguage:update */
-    UPDATE users SET
-      lingua_rs_detected_language = ${output.linguaRsDetectedLanguage},
-      lingua_rs_content_sha256 = ${contentSha256},
-      lingua_rs_input_sha256 = ${detectionKey},
-      lingua_rs_results = ${JSON.stringify(output.results)},
-      lingua_rs_detected_at = NOW()
-    WHERE id = ${userId}
-      AND COALESCE(markdown, '') IS NOT DISTINCT FROM ${user.markdown}
-  `)
-  return invalidate.users(userId)
+  await writeLanguageDetectionResults({
+    table: 'users',
+    rows: [
+      {
+        id: userId,
+        detectedLanguage: output.linguaRsDetectedLanguage,
+        contentSha256: output.contentSha256,
+        inputSha256: detectionKey,
+        resultsJson: JSON.stringify(output.results),
+        markdown: user.markdown,
+      },
+    ],
+  })
 }

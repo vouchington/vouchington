@@ -1,7 +1,6 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { runBatch } from './batch-helpers.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
 
 export async function detectCommunityLanguageBatch(ids: string[]): Promise<{ updated: number }> {
   const { rows } = await read<{
@@ -16,35 +15,18 @@ export async function detectCommunityLanguageBatch(ids: string[]): Promise<{ upd
     WHERE id = ANY(${ids}::uuid[])
       AND deleted_at IS NULL
   `)
-  return runBatch(
-    rows.map(r => ({
+  return runBatch({
+    table: 'communities',
+    rows: rows.map(r => ({
       id: r.id,
       text: [r.name, r.markdown].filter(Boolean).join('\n\n'),
       declaredLanguage: r.default_language,
       inputSha256: r.lingua_rs_input_sha256,
-      guard: sql`
-        name IS NOT DISTINCT FROM ${r.name}
-        AND markdown IS NOT DISTINCT FROM ${r.markdown}
-        AND default_language IS NOT DISTINCT FROM ${r.default_language}
-      `,
+      name: r.name,
+      markdown: r.markdown,
+      defaultLanguage: r.default_language,
     })),
-    (id, lang, contentSha256, inputSha256, results, row) => {
-      const update = sql`/* detectCommunityLanguageBatch:update */
-        UPDATE communities SET
-          lingua_rs_detected_language = ${lang},
-          lingua_rs_content_sha256 = ${contentSha256},
-          lingua_rs_input_sha256 = ${inputSha256},
-          lingua_rs_results = ${results},
-          lingua_rs_detected_at = NOW()
-        WHERE id = ${id}
-      `
-      if (row.guard) {
-        update.append(sql` AND `)
-        update.append(row.guard)
-      }
-      return write(update)
-    },
-  )
+  })
 }
 
 export async function detectUserLanguageBatch(ids: string[]): Promise<{ updated: number }> {
@@ -60,32 +42,16 @@ export async function detectUserLanguageBatch(ids: string[]): Promise<{ updated:
       AND markdown IS NOT NULL
       AND markdown != ''
   `)
-  return runBatch(
-    rows.map(r => ({
+  return runBatch({
+    table: 'users',
+    rows: rows.map(r => ({
       id: r.id,
       text: r.markdown ?? '',
       declaredLanguage: null,
       inputSha256: r.lingua_rs_input_sha256,
-      guard: sql`markdown IS NOT DISTINCT FROM ${r.markdown}`,
+      markdown: r.markdown,
     })),
-    async (id, lang, contentSha256, inputSha256, results, row) => {
-      const update = sql`/* detectUserLanguageBatch:update */
-        UPDATE users SET
-          lingua_rs_detected_language = ${lang},
-          lingua_rs_content_sha256 = ${contentSha256},
-          lingua_rs_input_sha256 = ${inputSha256},
-          lingua_rs_results = ${results},
-          lingua_rs_detected_at = NOW()
-        WHERE id = ${id}
-      `
-      if (row.guard) {
-        update.append(sql` AND `)
-        update.append(row.guard)
-      }
-      await write(update)
-      await invalidate.users(id)
-    },
-  )
+  })
 }
 
 export async function detectTopicLanguageBatch(ids: string[]): Promise<{ updated: number }> {
@@ -101,33 +67,15 @@ export async function detectTopicLanguageBatch(ids: string[]): Promise<{ updated
       AND deleted_at IS NULL
       AND merged_into_topic_id IS NULL
   `)
-  return runBatch(
-    rows.map(r => ({
+  return runBatch({
+    table: 'topics',
+    rows: rows.map(r => ({
       id: r.id,
       text: [r.name, r.markdown].filter(Boolean).join('\n\n'),
       declaredLanguage: null,
       inputSha256: r.lingua_rs_input_sha256,
-      guard: sql`
-        name IS NOT DISTINCT FROM ${r.name}
-        AND markdown IS NOT DISTINCT FROM ${r.markdown}
-      `,
+      name: r.name,
+      markdown: r.markdown,
     })),
-    async (id, lang, contentSha256, inputSha256, results, row) => {
-      const update = sql`/* detectTopicLanguageBatch:update */
-        UPDATE topics SET
-          lingua_rs_detected_language = ${lang},
-          lingua_rs_content_sha256 = ${contentSha256},
-          lingua_rs_input_sha256 = ${inputSha256},
-          lingua_rs_results = ${results},
-          lingua_rs_detected_at = NOW()
-        WHERE id = ${id}
-      `
-      if (row.guard) {
-        update.append(sql` AND `)
-        update.append(row.guard)
-      }
-      await write(update)
-      await invalidate.topics(id)
-    },
-  )
+  })
 }

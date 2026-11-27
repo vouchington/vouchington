@@ -11,6 +11,7 @@ import {
   insertLanguageDetectionPostForTest,
 } from '@voucha/test-helpers'
 import { getLanguageDetectionResultForTest } from '@voucha/test-helpers/sql-language-detection-state'
+import { caches } from '@services/entity-cache/caches'
 import { addUrl } from '@services/urls'
 import type { PrivateUser } from '@services/users/types'
 import {
@@ -18,6 +19,7 @@ import {
   detectRssFeedItemLanguageBatch,
   detectCrawlLanguageBatch,
 } from '../batch-detect.mts'
+import { runBatch } from '../batch-helpers.mts'
 
 const ENGLISH = 'The quick brown fox jumps over the lazy dog near the quiet river bank today'
 const GERMAN = 'Die Würde des Menschen ist unantastbar und ihr Schutz ist Verpflichtung aller'
@@ -78,6 +80,102 @@ describe('batch-detect — posts, rss-feed-items, crawls', () => {
       const result = await getLanguageDetectionResultForTest('posts', postId)
       expect(result.lingua_rs_detected_language).toBe('es')
       expect(result.lingua_rs_results).toEqual({ source: 'declared', language: 'es' })
+    })
+
+    it('updates matching rows in one batch and leaves a guarded-out row unchanged and cached', async () => {
+      const matchingPostId = await insertLanguageDetectionPostForTest({
+        createdById: user.id,
+        title: 'Matching post',
+        markdown: ENGLISH,
+      })
+      const guardedOutPostId = await insertLanguageDetectionPostForTest({
+        createdById: user.id,
+        title: 'Edited post',
+        markdown: GERMAN,
+      })
+
+      await Promise.all([
+        caches.posts.set(matchingPostId, { sentinel: 'matching' }),
+        caches.posts.set(guardedOutPostId, { sentinel: 'guarded-out' }),
+      ])
+      try {
+        const result = await runBatch({
+          table: 'posts',
+          rows: [
+            {
+              id: matchingPostId,
+              text: `Matching post\n\n${ENGLISH}`,
+              declaredLanguage: null,
+              inputSha256: null,
+              title: 'Matching post',
+              markdown: ENGLISH,
+            },
+            {
+              id: guardedOutPostId,
+              text: `Edited post\n\n${ENGLISH}`,
+              declaredLanguage: null,
+              inputSha256: null,
+              title: 'Edited post',
+              // Stale snapshot: DB already holds GERMAN, so the per-row guard must skip this row.
+              markdown: ENGLISH,
+            },
+          ],
+        })
+
+        expect(result).toEqual({ updated: 1 })
+
+        const updated = await getLanguageDetectionStateForTest('posts', matchingPostId)
+        expect(updated.lingua_rs_detected_language).toBe('en')
+        expect(updated.lingua_rs_input_sha256).toHaveLength(32)
+        expect(updated.lingua_rs_detected_at).toBeInstanceOf(Date)
+
+        const skipped = await getLanguageDetectionStateForTest('posts', guardedOutPostId)
+        expect(skipped.lingua_rs_detected_language).toBeNull()
+        expect(skipped.lingua_rs_input_sha256).toBeNull()
+        expect(skipped.lingua_rs_detected_at).toBeNull()
+
+        await expect(caches.posts.get(matchingPostId)).resolves.toBeNull()
+        await expect(caches.posts.get(guardedOutPostId)).resolves.toEqual({
+          sentinel: 'guarded-out',
+        })
+      } finally {
+        await caches.posts.delete(matchingPostId, guardedOutPostId)
+      }
+    })
+
+    it('detects multiple posts in one batch and invalidates each updated post cache', async () => {
+      const englishPostId = await insertLanguageDetectionPostForTest({
+        createdById: user.id,
+        title: 'Multi batch EN',
+        markdown: ENGLISH,
+      })
+      const germanPostId = await insertLanguageDetectionPostForTest({
+        createdById: user.id,
+        title: 'Multi batch DE',
+        markdown: GERMAN,
+      })
+
+      await Promise.all([
+        caches.posts.set(englishPostId, { sentinel: 'en' }),
+        caches.posts.set(germanPostId, { sentinel: 'de' }),
+      ])
+      try {
+        expect(await detectPostLanguageBatch([englishPostId, germanPostId])).toEqual({
+          updated: 2,
+        })
+        expect(
+          (await getLanguageDetectionStateForTest('posts', englishPostId))
+            .lingua_rs_detected_language,
+        ).toBe('en')
+        expect(
+          (await getLanguageDetectionStateForTest('posts', germanPostId))
+            .lingua_rs_detected_language,
+        ).toBe('de')
+        await expect(caches.posts.get(englishPostId)).resolves.toBeNull()
+        await expect(caches.posts.get(germanPostId)).resolves.toBeNull()
+      } finally {
+        await caches.posts.delete(englishPostId, germanPostId)
+      }
     })
   })
 

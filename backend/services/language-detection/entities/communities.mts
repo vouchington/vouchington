@@ -1,7 +1,8 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
-import { computeContentSha256, computeDetectionKey, runDetection } from '../detect.mts'
+import { writeLanguageDetectionResults } from '../write-results.mts'
+import { computeDetectionKey, runDetection } from '../detect.mts'
 
 export async function detectCommunityLanguage(communityId: string): Promise<void> {
   const { rows } = await read<{
@@ -27,18 +28,20 @@ export async function detectCommunityLanguage(communityId: string): Promise<void
   if (community.lingua_rs_input_sha256?.equals(detectionKey)) return
 
   const output = await runDetection(text, declaredLanguage)
-  const contentSha256 = computeContentSha256(text)
 
-  await write(sql`/* detectCommunityLanguage:update */
-    UPDATE communities SET
-      lingua_rs_detected_language = ${output.linguaRsDetectedLanguage},
-      lingua_rs_content_sha256 = ${contentSha256},
-      lingua_rs_input_sha256 = ${detectionKey},
-      lingua_rs_results = ${JSON.stringify(output.results)},
-      lingua_rs_detected_at = NOW()
-    WHERE id = ${communityId}
-      AND name IS NOT DISTINCT FROM ${community.name}
-      AND markdown IS NOT DISTINCT FROM ${community.markdown}
-      AND default_language IS NOT DISTINCT FROM ${community.default_language}
-  `)
+  await writeLanguageDetectionResults({
+    table: 'communities',
+    rows: [
+      {
+        id: communityId,
+        detectedLanguage: output.linguaRsDetectedLanguage,
+        contentSha256: output.contentSha256,
+        inputSha256: detectionKey,
+        resultsJson: JSON.stringify(output.results),
+        name: community.name,
+        markdown: community.markdown,
+        defaultLanguage: community.default_language,
+      },
+    ],
+  })
 }

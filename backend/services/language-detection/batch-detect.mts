@@ -1,7 +1,6 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { runBatch } from './batch-helpers.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
 import { firstVisibleRssTextField } from '@modules/utils/rss-text-fields'
 
 export async function detectPostLanguageBatch(ids: string[]): Promise<{ updated: number }> {
@@ -17,36 +16,17 @@ export async function detectPostLanguageBatch(ids: string[]): Promise<{ updated:
     WHERE id = ANY(${ids}::uuid[])
       AND deleted_at IS NULL
   `)
-  return runBatch(
-    rows.map(r => ({
+  return runBatch({
+    table: 'posts',
+    rows: rows.map(r => ({
       id: r.id,
       text: [r.title, r.markdown].filter(Boolean).join('\n\n'),
       declaredLanguage: r.declared_language,
       inputSha256: r.lingua_rs_input_sha256,
-      guard: sql`
-        title IS NOT DISTINCT FROM ${r.title}
-        AND markdown IS NOT DISTINCT FROM ${r.markdown}
-        AND declared_language IS NOT DISTINCT FROM ${r.declared_language}
-      `,
+      title: r.title,
+      markdown: r.markdown,
     })),
-    async (id, lang, contentSha256, inputSha256, results, row) => {
-      const update = sql`/* detectPostLanguageBatch:update */
-        UPDATE posts SET
-          lingua_rs_detected_language = ${lang},
-          lingua_rs_content_sha256 = ${contentSha256},
-          lingua_rs_input_sha256 = ${inputSha256},
-          lingua_rs_results = ${results},
-          lingua_rs_detected_at = NOW()
-        WHERE id = ${id}
-      `
-      if (row.guard) {
-        update.append(sql` AND `)
-        update.append(row.guard)
-      }
-      await write(update)
-      await invalidate.posts(id)
-    },
-  )
+  })
 }
 
 export async function detectRssFeedItemLanguageBatch(ids: string[]): Promise<{ updated: number }> {
@@ -79,8 +59,9 @@ export async function detectRssFeedItemLanguageBatch(ids: string[]): Promise<{ u
     WHERE rfi.id = ANY(${ids}::uuid[])
       AND rfi.deleted_at IS NULL
   `)
-  return runBatch(
-    rows.map(r => {
+  return runBatch({
+    table: 'rss_feed_items',
+    rows: rows.map(r => {
       const d = r.data
       const title = typeof d['title'] === 'string' ? d['title'] : ''
       const content = firstVisibleRssTextField([
@@ -97,29 +78,10 @@ export async function detectRssFeedItemLanguageBatch(ids: string[]): Promise<{ u
         text: [title, content].filter(Boolean).join('\n\n'),
         declaredLanguage: r.declared_language,
         inputSha256: r.lingua_rs_input_sha256,
-        guard: sql`
-          data IS NOT DISTINCT FROM ${JSON.stringify(r.data)}::jsonb
-        `,
+        data: r.data,
       }
     }),
-    async (id, lang, contentSha256, inputSha256, results, row) => {
-      const update = sql`/* detectRssFeedItemLanguageBatch:update */
-        UPDATE rss_feed_items SET
-          lingua_rs_detected_language = ${lang},
-          lingua_rs_content_sha256 = ${contentSha256},
-          lingua_rs_input_sha256 = ${inputSha256},
-          lingua_rs_results = ${results},
-          lingua_rs_detected_at = NOW()
-        WHERE id = ${id}
-      `
-      if (row.guard) {
-        update.append(sql` AND `)
-        update.append(row.guard)
-      }
-      await write(update)
-      await invalidate.rss_feed_items(id)
-    },
-  )
+  })
 }
 
 export async function detectCrawlLanguageBatch(ids: string[]): Promise<{ updated: number }> {
@@ -134,33 +96,16 @@ export async function detectCrawlLanguageBatch(ids: string[]): Promise<{ updated
     FROM crawls
     WHERE id = ANY(${ids}::uuid[])
   `)
-  return runBatch(
-    rows.map(r => ({
+  return runBatch({
+    table: 'crawls',
+    rows: rows.map(r => ({
       id: r.id,
       text: [r.title, r.markdown].filter(Boolean).join('\n\n'),
       declaredLanguage: r.language,
       inputSha256: r.lingua_rs_input_sha256,
-      guard: sql`
-        title IS NOT DISTINCT FROM ${r.title}
-        AND markdown IS NOT DISTINCT FROM ${r.markdown}
-        AND language IS NOT DISTINCT FROM ${r.language}
-      `,
+      title: r.title,
+      markdown: r.markdown,
+      language: r.language,
     })),
-    (id, lang, contentSha256, inputSha256, results, row) => {
-      const update = sql`/* detectCrawlLanguageBatch:update */
-        UPDATE crawls SET
-          lingua_rs_detected_language = ${lang},
-          lingua_rs_content_sha256 = ${contentSha256},
-          lingua_rs_input_sha256 = ${inputSha256},
-          lingua_rs_results = ${results},
-          lingua_rs_detected_at = NOW()
-        WHERE id = ${id}
-      `
-      if (row.guard) {
-        update.append(sql` AND `)
-        update.append(row.guard)
-      }
-      return write(update)
-    },
-  )
+  })
 }
