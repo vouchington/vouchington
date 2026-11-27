@@ -9,12 +9,18 @@ import {
 } from './seed-data/dispatch-work-plans.mts'
 import { runAnalyze } from './seed-data/maintenance.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
-import { AFTER_MEMBERSHIPS_RUNNERS } from './run-ordered-scenarios-after-memberships.mts'
+import {
+  AFTER_MEMBERSHIPS_RUNNERS,
+  AFTER_MEMBERSHIP_CAPACITY_RUNNERS,
+} from './run-ordered-scenarios-after-memberships.mts'
 import { AFTER_COMMUNITIES_RUNNERS } from './run-ordered-scenarios-after-communities.mts'
 import { AFTER_NOTIFICATIONS_RUNNERS } from './run-ordered-scenarios-after-notifications.mts'
 import { AFTER_ACCOUNTS_RSS_RUNNERS } from './run-ordered-scenarios-after-accounts-rss.mts'
 import { AFTER_TOPICS_RUNNERS } from './run-ordered-scenarios-after-topics.mts'
-import { AFTER_RETENTION_RUNNERS } from './run-ordered-scenarios-after-retention.mts'
+import {
+  AFTER_RETENTION_RUNNERS,
+  AFTER_COPYRIGHT_CAPACITY_RUNNERS,
+} from './run-ordered-scenarios-after-retention.mts'
 export type OrderedRunner = () => Promise<unknown>
 // Order matters: earlier scenarios mutate the one shared corpus. See the comments in the
 // early and late files before moving a runner.
@@ -77,6 +83,8 @@ export const AFTER_PARTITION_RUNNERS: readonly OrderedRunner[] = [
   ...AFTER_ACCOUNTS_RSS_RUNNERS,
   ...AFTER_TOPICS_RUNNERS,
   ...AFTER_RETENTION_RUNNERS,
+  ...AFTER_MEMBERSHIP_CAPACITY_RUNNERS,
+  ...AFTER_COPYRIGHT_CAPACITY_RUNNERS,
 ]
 
 /**

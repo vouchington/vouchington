@@ -1,0 +1,104 @@
+import { randomInt } from 'node:crypto'
+import { beginTransaction } from '@data-stores/psql'
+import { seedUser } from '../run-support.mts'
+import { seedUuidAtTimestamp } from './common.mts'
+import { cleanupCopyrightRestoreFixtures } from './copyright-restore-cleanup.mts'
+
+const caseCount = 21
+const targetsPerCase = 40
+const intentsPerTarget = 5
+const targetCount = caseCount * targetsPerCase
+const intentCount = targetCount * intentsPerTarget
+const analyzeSql = `/* analyzeCopyrightRestoreIntents */ ANALYZE
+  copyright_notice_targets, copyright_restrictions, copyright_notice_action_work_items`
+
+export async function seedCopyrightRestoreIntents() {
+  const timestamp = Date.UTC(2000, 0, 1) + randomInt(86_400_000)
+  const ids = (count: number, offset: number) =>
+    Array.from({ length: count }, (_, index) => seedUuidAtTimestamp(timestamp + offset, index))
+  const notices = ids(caseCount, 0)
+  const submissions = ids(caseCount, 1)
+  const [imageId] = ids(1, 2)
+  const placements = ids(targetsPerCase, 3)
+  const targets = ids(targetCount, 4)
+  const restrictions = ids(targetCount, 5)
+  const intents = ids(intentCount, 6)
+  const targetNotices = notices.flatMap(id => Array<string>(targetsPerCase).fill(id))
+  const targetSubmissions = submissions.flatMap(id => Array<string>(targetsPerCase).fill(id))
+  const targetPlacements = notices.flatMap(() => placements)
+  const intentRestrictions = restrictions.flatMap(id => Array<string>(intentsPerTarget).fill(id))
+
+  await using transaction = await beginTransaction()
+  await transaction(
+    `/* seedCopyrightRestoreIntents:notices */ INSERT INTO copyright_notices
+      (id, jurisdiction, legal_basis, received_at, accepted_at, claimant_contact_ciphertext,
+        work_description, policy_version)
+      SELECT id, 'us_dmca', 'copyright', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+        'v1:explain-contact', 'Court hold capacity fixture', 'explain-v1'
+      FROM unnest($1::uuid[]) AS cases(id)`,
+    [notices],
+  )
+  await transaction(
+    `/* seedCopyrightRestoreIntents:submissions */ INSERT INTO copyright_notice_submissions
+      (id, copyright_notice_id, kind, received_at, source_kind, body_ciphertext)
+      SELECT id, notice_id, 'court_or_ccb_hold', CURRENT_TIMESTAMP, 'staff', 'v1:explain-hold'
+      FROM unnest($1::uuid[], $2::uuid[]) AS filings(id, notice_id)`,
+    [submissions, notices],
+  )
+  await transaction(
+    `/* seedCopyrightRestoreIntents:image */ INSERT INTO retained_image_identities (id, created_by_id)
+      VALUES ($1::uuid, $2::uuid)`,
+    [imageId, seedUser.id],
+  )
+  await transaction(
+    `/* seedCopyrightRestoreIntents:placements */ INSERT INTO retained_image_placement_bindings
+      (placement_id, image_id, binding_family)
+      SELECT id, $2::uuid, 'post' FROM unnest($1::uuid[]) AS placements(id)`,
+    [placements, imageId],
+  )
+  await transaction(
+    `/* seedCopyrightRestoreIntents:targets */ INSERT INTO copyright_notice_targets
+      (id, copyright_notice_id, placement_id, placement_revision, hosted_use_url)
+      SELECT id, notice_id, placement_id, 1, 'https://example.test/explain-hold'
+      FROM unnest($1::uuid[], $2::uuid[], $3::uuid[]) AS targets(id, notice_id, placement_id)`,
+    [targets, targetNotices, targetPlacements],
+  )
+  await transaction(
+    `/* seedCopyrightRestoreIntents:restrictions */ INSERT INTO copyright_restrictions
+      (id, copyright_notice_target_id, copyright_notice_submission_id, imposed_at)
+      SELECT id, target_id, submission_id, CURRENT_TIMESTAMP
+      FROM unnest($1::uuid[], $2::uuid[], $3::uuid[]) AS restrictions(id, target_id, submission_id)`,
+    [restrictions, targets, targetSubmissions],
+  )
+  // Seed terminal work directly to model several placement revisions without running media delivery.
+  await transaction(
+    `/* seedCopyrightRestoreIntents:work */ INSERT INTO copyright_notice_action_work_items
+      (id, copyright_restriction_id, expected_placement_revision, action, completed_at_reason,
+        completed_at, attempt_count)
+      SELECT id, restriction_id, slot + 1,
+        (CASE WHEN slot = 0 THEN 'withhold' ELSE 'restore' END)::copyright_notice_action_intent_actions,
+        (CASE WHEN slot = 2 THEN 'completed' ELSE 'blocked' END)::copyright_notice_action_intent_states,
+        CURRENT_TIMESTAMP, 1
+      FROM (
+        SELECT id, restriction_id, ((ordinality - 1) % $3::integer)::integer AS slot
+        FROM unnest($1::uuid[], $2::uuid[]) WITH ORDINALITY AS work(id, restriction_id, ordinality)
+      ) AS fixture`,
+    [intents, intentRestrictions, intentsPerTarget],
+  )
+  await transaction(analyzeSql)
+  await transaction.commit()
+
+  return {
+    noticeId: notices.at(-1)!,
+    eligibleIds: intents
+      .slice(-(targetsPerCase * intentsPerTarget))
+      .filter((_, index) => [1, 3, 4].includes(index % intentsPerTarget)),
+    targetCount,
+    intentCount,
+    cleanup: () =>
+      cleanupCopyrightRestoreFixtures(notices, placements, imageId!, {
+        analyzeSql,
+        hasLegalHoldAssessments: false,
+      }),
+  }
+}

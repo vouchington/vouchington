@@ -5,6 +5,7 @@ import {
 } from './bluesky-authority-corpus.mts'
 import { runBlueskyAuthoritySnapshotScenario } from './bluesky-authority-snapshot.mts'
 import { runApiKeyAdmissionScenarios } from './api-key-admission.mts'
+import { runApiKeyHashLookupScenarios } from './api-key-hash-lookup.mts'
 import { runContentAuthoritySnapshotScenarios } from './content-authority-snapshot.mts'
 import { runOAuthAuthorityScenarios } from './oauth-authority.mts'
 import { runActivityPubVoteAuthorityScenarios } from './activitypub-vote-authority.mts'
@@ -16,6 +17,7 @@ export async function runHotPathLockScopeScenarios(): Promise<void> {
   try {
     await runBlueskyAuthoritySnapshotScenario()
     await runApiKeyAdmissionScenarios()
+    await runApiKeyHashLookupScenarios()
     await runContentAuthoritySnapshotScenarios()
     await runOAuthAuthorityScenarios()
     await runActivityPubVoteAuthorityScenarios()
