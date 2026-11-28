@@ -35,6 +35,10 @@ Never sleep. Register `waitForResponse` before the triggering action, wait for a
 
 Background jobs can take up to a minute. Do not trigger a UI action and wait for the queued job; seed the end state directly with the backend test-helper factories, mock upload endpoints with `page.route()`, and use the RSS import route-mock helper. Turnstile is stubbed by `navigateTo()`, so login specs mock the token endpoint and still assert the submit button is enabled before clicking. Discoverable passkey sign-in cannot be automated reliably with Chrome's headless CDP virtual authenticator; route-mock the options and verify endpoints and stub `navigator.credentials.get`, and keep real WebAuthn verification in backend tests.
 
+## AWS in the browser stack
+
+The browser stack has no AWS account and no AWS Emulator (that serves the Vitest projects), so a request that reaches AWS fails with `Could not load credentials from any providers`, and the UI error monitor fails the test on the resulting 5xx and error toast. `playwright/test-helpers/launch-api.mts` points the backend's Bedrock Runtime client at an in-process stand-in that returns a deterministic embedding, so semantic search and the topic similarity panels work; the credentialed project, which carries real AWS credentials, keeps real Bedrock. Stub any other AWS-backed call with `page.route()` or seed its end state.
+
 ## CF Worker logs
 
 Wrangler logs are written unfiltered to disk and uploaded as `wrangler-logs-<shard>` artifacts; web and backend server logs upload as `playwright-server-logs-shard-<shard>`. The console hides known benign `workerd` client-disconnect writes; the raw lines stay in `wrangler-stderr.log`. Treat `wrangler-events.ndjson` exit and restart events or Playwright connection failures as the signal that the worker actually crashed. A reporter emits `playwright-test-lifecycle` JSON lines with attempt begin and end times so overlapping attempts can be matched to raw Wrangler timestamps; interleaved output alone does not show which request caused an error.
