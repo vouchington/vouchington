@@ -21,20 +21,33 @@ async function lookUpHostedUse(page: Page, path: string) {
 }
 
 test.describe('Signed-out copyright notice filing', () => {
-  test('a missing post gets the same not-found copy and points to the form, not to email', async ({
-    page,
-  }) => {
-    await resetAnonymousBrowserStateBeforeNavigation(page, PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS)
-    await navigateTo(page, '/copyright/notices/new')
-    await expect(page.getByTestId('copyright-notice-form-submit')).toBeAttached()
-    await expect(page.getByTestId('copyright-notice-target-picker-resolve')).toBeAttached()
+  test.describe('Missing post lookup', () => {
+    test.use({
+      allowErrorToasts:
+        'The test looks up a hosted use URL for a post that does not exist on purpose, which shows the "Post not found" error toast',
+    })
 
-    await lookUpHostedUse(page, `/discussion/no-such-post-${randomSuffix()}`)
+    test('a missing post gets the same not-found copy and points to the form, not to email', async ({
+      page,
+    }) => {
+      await resetAnonymousBrowserStateBeforeNavigation(page, PLAYWRIGHT_LOCAL_STORAGE_RESET_KEYS)
+      await navigateTo(page, '/copyright/notices/new')
+      await expect(page.getByTestId('copyright-notice-form-submit')).toBeAttached()
+      await expect(page.getByTestId('copyright-notice-target-picker-resolve')).toBeAttached()
 
-    const notFound = page.getByTestId('copyright-target-not-found')
-    await expect(notFound).toBeVisible()
-    await expect(notFound).not.toContainText(/e-?mail/i)
-    await expect(notFound.getByRole('link')).toHaveAttribute('href', '/copyright/designated-agent')
+      await lookUpHostedUse(page, `/discussion/no-such-post-${randomSuffix()}`)
+      await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
+        'Post not found',
+      )
+
+      const notFound = page.getByTestId('copyright-target-not-found')
+      await expect(notFound).toBeVisible()
+      await expect(notFound).not.toContainText(/e-?mail/i)
+      await expect(notFound.getByRole('link')).toHaveAttribute(
+        'href',
+        '/copyright/designated-agent',
+      )
+    })
   })
 
   test('a signed-out rights holder files a notice and sees how the case is tracked', async ({

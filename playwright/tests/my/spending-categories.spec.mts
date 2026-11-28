@@ -55,11 +55,18 @@ test.describe('My Spending Categories', () => {
     await assertFirstManagerControlVisible(page, 'spending-category-edit-button')
   })
 
-  test('edit form validates empty amount', async ({ page }) => {
-    await clickFirstManagerControl(page, 'spending-category-edit-button')
-    await clearManagerInputWithSelectAll(page, 'spending-category-edit-amount-input')
-    await clickManagerControl(page, 'spending-category-edit-save-button')
-    await assertManagerErrorToast(page, 'Please enter a valid amount')
+  test.describe('Empty amount validation', () => {
+    test.use({
+      allowErrorToasts:
+        'The test submits an empty amount on purpose, which shows the "Please enter a valid amount" validation toast',
+    })
+
+    test('edit form validates empty amount', async ({ page }) => {
+      await clickFirstManagerControl(page, 'spending-category-edit-button')
+      await clearManagerInputWithSelectAll(page, 'spending-category-edit-amount-input')
+      await clickManagerControl(page, 'spending-category-edit-save-button')
+      await assertManagerErrorToast(page, 'Please enter a valid amount')
+    })
   })
 
   test('shows edit cancel, remove confirmation and add submit controls', async ({ page }) => {

@@ -81,37 +81,47 @@ test.describe('Tag Voting', () => {
     await expect(confirmButton).toHaveAttribute('aria-pressed', 'true')
   })
 
-  test('optimistic update reverts on API error', async ({ page, tagVotingDiscussionIds }) => {
-    await navigateToTagVotingDiscussion(page, tagVotingDiscussionIds)
-    await page.setViewportSize({ width: 1280, height: 720 })
-    await waitForVoteButtonHydration(page)
-
-    // Hold the failed vote request open long enough to observe the optimistic state.
-    let failVoteRequest!: () => void
-    const voteRequestFailed = page.waitForEvent(
-      'requestfailed',
-      request =>
-        request.url().includes('/api/v1/entity-relations/') && request.url().includes('/vote'),
-    )
-    await page.route('**/api/v1/entity-relations/*/vote', async route => {
-      await new Promise<void>(resolve => {
-        failVoteRequest = resolve
-      })
-      await route.abort('aborted')
+  test.describe('Failed tag vote', () => {
+    test.use({
+      allowErrorToasts:
+        'The test aborts the vote request on purpose, which shows the "Failed to submit vote" error toast',
     })
 
-    const confirmButton = tagConfirmButton(page)
+    test('optimistic update reverts on API error', async ({ page, tagVotingDiscussionIds }) => {
+      await navigateToTagVotingDiscussion(page, tagVotingDiscussionIds)
+      await page.setViewportSize({ width: 1280, height: 720 })
+      await waitForVoteButtonHydration(page)
 
-    await confirmButton.click()
+      // Hold the failed vote request open long enough to observe the optimistic state.
+      let failVoteRequest!: () => void
+      const voteRequestFailed = page.waitForEvent(
+        'requestfailed',
+        request =>
+          request.url().includes('/api/v1/entity-relations/') && request.url().includes('/vote'),
+      )
+      await page.route('**/api/v1/entity-relations/*/vote', async route => {
+        await new Promise<void>(resolve => {
+          failVoteRequest = resolve
+        })
+        await route.abort('aborted')
+      })
 
-    // Button should first be highlighted optimistically
-    await expect(confirmButton).toHaveAttribute('aria-pressed', 'true')
+      const confirmButton = tagConfirmButton(page)
 
-    failVoteRequest()
-    await voteRequestFailed
+      await confirmButton.click()
 
-    // Button should not be highlighted (optimistic update reverted)
-    await expect(confirmButton).toHaveAttribute('aria-pressed', 'false')
+      // Button should first be highlighted optimistically
+      await expect(confirmButton).toHaveAttribute('aria-pressed', 'true')
+
+      failVoteRequest()
+      await voteRequestFailed
+      await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
+        'Failed to submit vote',
+      )
+
+      // Button should not be highlighted (optimistic update reverted)
+      await expect(confirmButton).toHaveAttribute('aria-pressed', 'false')
+    })
   })
 
   test('vote persists after page refresh', async ({ page, tagVotingDiscussionIds }) => {

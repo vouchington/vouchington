@@ -88,25 +88,34 @@ test.describe('Admin OAuth Clients', () => {
     )
   })
 
-  test('refuses to verify an app renamed after the page loaded', async ({ page }) => {
-    const { owner, app } = await registerOwnedApp()
-    await navigateTo(page, '/admin/oauth-clients?verification=unverified')
-    await expect(page.getByTestId('admin-oauth-clients-filter-unverified')).toBeVisible()
-    const row = clientRow(page, app.client_id)
-    await expect(row).toBeVisible()
+  test.describe('Verification of a renamed app', () => {
+    test.use({
+      allowErrorToasts:
+        'The test verifies an app renamed after the page loaded on purpose, which shows the "OAuth client name or redirect URIs changed" error toast',
+    })
 
-    const renamed = `Renamed Playwright OAuth app ${randomSuffix()}`
-    await updateOwnedOAuthApp(owner.id, app.id, { client_name: renamed })
+    test('refuses to verify an app renamed after the page loaded', async ({ page }) => {
+      const { owner, app } = await registerOwnedApp()
+      await navigateTo(page, '/admin/oauth-clients?verification=unverified')
+      await expect(page.getByTestId('admin-oauth-clients-filter-unverified')).toBeVisible()
+      const row = clientRow(page, app.client_id)
+      await expect(row).toBeVisible()
 
-    const verification = waitForVerificationChange(page, 'PUT')
-    await row.getByTestId('admin-oauth-client-verification-button').click()
-    expect((await verification).status()).toBe(409)
-    await expect(
-      page.locator('[data-sonner-toast]').filter({ hasText: 'name or redirect URIs changed' }),
-    ).toBeVisible()
-    // The refused verification re-fetches the list, so the same app now shows its new name.
-    await expect(row).toContainText(renamed)
-    await expect(row).toContainText('Unverified')
-    await expect(row.getByTestId('admin-oauth-client-verification-button')).toContainText('Verify')
+      const renamed = `Renamed Playwright OAuth app ${randomSuffix()}`
+      await updateOwnedOAuthApp(owner.id, app.id, { client_name: renamed })
+
+      const verification = waitForVerificationChange(page, 'PUT')
+      await row.getByTestId('admin-oauth-client-verification-button').click()
+      expect((await verification).status()).toBe(409)
+      await expect(
+        page.locator('[data-sonner-toast]').filter({ hasText: 'name or redirect URIs changed' }),
+      ).toBeVisible()
+      // The refused verification re-fetches the list, so the same app now shows its new name.
+      await expect(row).toContainText(renamed)
+      await expect(row).toContainText('Unverified')
+      await expect(row.getByTestId('admin-oauth-client-verification-button')).toContainText(
+        'Verify',
+      )
+    })
   })
 })

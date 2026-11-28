@@ -125,60 +125,70 @@ test.describe('My Household', () => {
     await expect(page.getByTestId('household-read-only-copy')).toBeVisible()
   })
 
-  test('removes optimistically, deduplicates the request, and restores the exact row on failure', async ({
-    page,
-  }) => {
-    const suffix = randomSuffix()
-    const owner = await createHouseholdUser(`hh-remove-${suffix}`)
-    const firstMember = await createHouseholdUser(`hh-first-${suffix}`)
-    const secondMember = await createHouseholdUser(`hh-second-${suffix}`)
-    const household = await insertTestHousehold(owner.id)
-    const firstMembership = await addMember(household.id, firstMember, null, NEWER)
-    await addMember(household.id, secondMember, null, OLDER)
-    await loginAndOpenHousehold(page, owner)
-
-    const deleteGate = Promise.withResolvers<void>()
-    let deleteCount = 0
-    await page.route(
-      `**/api/v1/households/${household.id}/memberships/${firstMembership.id}`,
-      async route => {
-        deleteCount += 1
-        await deleteGate.promise
-        await route.fulfill({
-          status: 500,
-          contentType: 'application/json',
-          body: JSON.stringify({ message: 'Injected removal failure' }),
-        })
-      },
-    )
-
-    await page.getByTestId('household-remove').nth(0).click()
-    await expect(page.getByTestId('household-remove-confirmation')).toBeVisible()
-    await page.getByTestId('household-remove-cancel').click()
-    await expect(page.getByTestId('household-member-row')).toHaveCount(2)
-
-    await page.getByTestId('household-remove').nth(0).click()
-    const deleteRequest = page.waitForRequest(
-      request =>
-        new URL(request.url()).pathname ===
-        `/api/v1/households/${household.id}/memberships/${firstMembership.id}`,
-    )
-    await page.getByTestId('household-remove-confirm').evaluate((button: HTMLButtonElement) => {
-      button.click()
-      button.click()
+  test.describe('Failed household member removal', () => {
+    test.use({
+      allowErrorToasts:
+        'The test injects a failing member removal on purpose, which shows the "Injected removal failure" error toast',
     })
-    await deleteRequest
-    await expect(page.getByTestId('household-member-row')).toHaveCount(1)
-    await expect(page.getByTestId('household-member-name').nth(0)).toHaveText(
-      `@${secondMember.username}`,
-    )
 
-    deleteGate.resolve()
-    await expect(page.getByTestId('household-member-row')).toHaveCount(2)
-    await expect(page.getByTestId('household-member-name').nth(0)).toHaveText(
-      `@${firstMember.username}`,
-    )
-    expect(deleteCount).toBe(1)
+    test('removes optimistically, deduplicates the request, and restores the exact row on failure', async ({
+      page,
+    }) => {
+      const suffix = randomSuffix()
+      const owner = await createHouseholdUser(`hh-remove-${suffix}`)
+      const firstMember = await createHouseholdUser(`hh-first-${suffix}`)
+      const secondMember = await createHouseholdUser(`hh-second-${suffix}`)
+      const household = await insertTestHousehold(owner.id)
+      const firstMembership = await addMember(household.id, firstMember, null, NEWER)
+      await addMember(household.id, secondMember, null, OLDER)
+      await loginAndOpenHousehold(page, owner)
+
+      const deleteGate = Promise.withResolvers<void>()
+      let deleteCount = 0
+      await page.route(
+        `**/api/v1/households/${household.id}/memberships/${firstMembership.id}`,
+        async route => {
+          deleteCount += 1
+          await deleteGate.promise
+          await route.fulfill({
+            status: 500,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: 'Injected removal failure' }),
+          })
+        },
+      )
+
+      await page.getByTestId('household-remove').nth(0).click()
+      await expect(page.getByTestId('household-remove-confirmation')).toBeVisible()
+      await page.getByTestId('household-remove-cancel').click()
+      await expect(page.getByTestId('household-member-row')).toHaveCount(2)
+
+      await page.getByTestId('household-remove').nth(0).click()
+      const deleteRequest = page.waitForRequest(
+        request =>
+          new URL(request.url()).pathname ===
+          `/api/v1/households/${household.id}/memberships/${firstMembership.id}`,
+      )
+      await page.getByTestId('household-remove-confirm').evaluate((button: HTMLButtonElement) => {
+        button.click()
+        button.click()
+      })
+      await deleteRequest
+      await expect(page.getByTestId('household-member-row')).toHaveCount(1)
+      await expect(page.getByTestId('household-member-name').nth(0)).toHaveText(
+        `@${secondMember.username}`,
+      )
+
+      deleteGate.resolve()
+      await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
+        'Injected removal failure',
+      )
+      await expect(page.getByTestId('household-member-row')).toHaveCount(2)
+      await expect(page.getByTestId('household-member-name').nth(0)).toHaveText(
+        `@${firstMember.username}`,
+      )
+      expect(deleteCount).toBe(1)
+    })
   })
 
   test('allows different member removals to remain in flight concurrently', async ({ page }) => {
