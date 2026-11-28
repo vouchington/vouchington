@@ -5,6 +5,10 @@ import { buildPageInfo, decodeUuidCursor, isScoreCursor } from '@modules/paginat
 import { collaborativeFeedsCtesSql } from './collaborative-feeds-sql.mts'
 import { rssFollowSignalEligibilitySql } from './rss-follow-signal-eligibility.mts'
 import type { GetRecommendedRssFeedsOptions, GetRecommendedRssFeedsResult } from './types.mts'
+import {
+  getRecommendedRssFeedsWorkLimit,
+  recommendedRssFeedsWorkMaxValues,
+} from './work-limits.mts'
 
 const DEFAULT_LIMIT = 20
 
@@ -33,6 +37,20 @@ export async function getRecommendedRssFeeds(
 
   const params: unknown[] = [currentUserId]
   const limitIdx = params.push(safeLimit + 1)
+  const friendsUserLimitIdx = params.push(
+    getRecommendedRssFeedsWorkLimit('friends_followed_user_limit'),
+  )
+  const friendsUserHardMaxIdx = params.push(
+    recommendedRssFeedsWorkMaxValues.friends_followed_user_limit,
+  )
+  const friendsFeedLimitIdx = params.push(
+    getRecommendedRssFeedsWorkLimit('friends_user_feed_limit'),
+  )
+  const friendsFeedHardMaxIdx = params.push(
+    recommendedRssFeedsWorkMaxValues.friends_user_feed_limit,
+  )
+  const topicLimitIdx = params.push(getRecommendedRssFeedsWorkLimit('topic_followed_topic_limit'))
+  const topicHardMaxIdx = params.push(recommendedRssFeedsWorkMaxValues.topic_followed_topic_limit)
 
   // Build cursor HAVING condition using parameterized values
   let havingCursor = ''
@@ -69,52 +87,69 @@ export async function getRecommendedRssFeeds(
       WHERE subject_id = $1
         AND deleted_at IS NULL
     ),
-    -- Topics the current user follows
+    -- Newest topics the current user follows (idx_relation__user__follow__topic__subject__newest)
     user_followed_topics AS (
       SELECT object_id AS topic_id
       FROM relation__user__follow__topic
       WHERE subject_id = $1
         AND deleted_at IS NULL
+      ORDER BY created_at DESC, object_id DESC
+      LIMIT LEAST($${topicLimitIdx}::bigint, $${topicHardMaxIdx}::bigint)
     ),
-    -- Friends' feeds (weight 3.0)
+    -- Newest eligible accounts the current user follows (idx_relation__user__follow__user__subject__newest)
+    friends_seed_users AS MATERIALIZED (
+      SELECT friend.user_id
+      FROM (
+        SELECT object_id AS user_id
+        FROM relation__user__follow__user
+        WHERE subject_id = $1
+          AND deleted_at IS NULL
+        ORDER BY created_at DESC, object_id DESC
+        LIMIT LEAST($${friendsUserLimitIdx}::bigint, $${friendsUserHardMaxIdx}::bigint)
+      ) friend
+      JOIN users source_user ON source_user.id = friend.user_id
+      CROSS JOIN viewer
+      WHERE ${rssFollowSignalEligibilitySql}
+    ),
+    -- Friends' newest feeds (weight 3.0; bounded by friends_followed_user_limit x friends_user_feed_limit)
     friends_feeds AS (
       SELECT
         ufr.object_id AS feed_id,
         3.0 AS score,
         'friends'::TEXT AS reason
-      FROM relation__user__follow__user ufu
-      JOIN relation__user__follow__rss_feed ufr
-        ON ufr.subject_id = ufu.object_id
-        AND ufr.deleted_at IS NULL
-      JOIN users source_user ON source_user.id = ufr.subject_id
-      CROSS JOIN viewer
+      FROM friends_seed_users friend
+      CROSS JOIN LATERAL (
+        SELECT ufr.object_id
+        FROM relation__user__follow__rss_feed ufr
+        WHERE ufr.subject_id = friend.user_id
+          AND ufr.deleted_at IS NULL
+        ORDER BY ufr.created_at DESC, ufr.object_id DESC
+        LIMIT LEAST($${friendsFeedLimitIdx}::bigint, $${friendsFeedHardMaxIdx}::bigint)
+      ) ufr
       JOIN rss_feeds rf
         ON rf.id = ufr.object_id
         AND rf.deleted_at IS NULL
-      JOIN view_rss_feed_current_states current_state
-        ON current_state.rss_feed_id = rf.id
-        AND current_state.is_enabled = TRUE
-        AND current_state.is_discoverable = TRUE
-      WHERE ufu.subject_id = $1
-        AND ufu.deleted_at IS NULL
-        AND ${rssFollowSignalEligibilitySql}
-        AND NOT EXISTS (SELECT 1 FROM user_followed_feeds WHERE user_followed_feeds.feed_id = ufr.object_id)
+        AND rf.is_enabled = TRUE
+        AND rf.is_discoverable = TRUE
+      WHERE NOT EXISTS (SELECT 1 FROM user_followed_feeds WHERE user_followed_feeds.feed_id = ufr.object_id)
         AND NOT EXISTS (SELECT 1 FROM user_muted_feeds WHERE user_muted_feeds.feed_id = ufr.object_id)
     ),
-    -- Topic-based feeds (weight 2.5)
+    -- Topic-based feeds (weight 2.5; idx_rss_feeds__topic_id__unique maps each topic to at most one live feed)
     topic_feeds AS (
       SELECT
         rf.id AS feed_id,
         2.5 AS score,
         'topic'::TEXT AS reason
       FROM user_followed_topics uft
-      JOIN rss_feeds rf
-        ON rf.topic_id = uft.topic_id
-        AND rf.deleted_at IS NULL
-      JOIN view_rss_feed_current_states current_state
-        ON current_state.rss_feed_id = rf.id
-        AND current_state.is_enabled = TRUE
-        AND current_state.is_discoverable = TRUE
+      CROSS JOIN LATERAL (
+        SELECT rf.id
+        FROM rss_feeds rf
+        WHERE rf.topic_id = uft.topic_id
+          AND rf.deleted_at IS NULL
+          AND rf.is_enabled = TRUE
+          AND rf.is_discoverable = TRUE
+        LIMIT 1
+      ) rf
       WHERE NOT EXISTS (SELECT 1 FROM user_followed_feeds WHERE user_followed_feeds.feed_id = rf.id)
         AND NOT EXISTS (SELECT 1 FROM user_muted_feeds WHERE user_muted_feeds.feed_id = rf.id)
     ),
