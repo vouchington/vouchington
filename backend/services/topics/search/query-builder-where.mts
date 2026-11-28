@@ -36,7 +36,6 @@ export function buildTopicSearchBaseWhereClauses(
     ...(options.hashtag_topic_ids && options.hashtag_topic_ids.length > 0
       ? [sql`t.id = ANY(${options.hashtag_topic_ids})`]
       : []),
-    ...(state.hasSemanticSignal ? [sql`t.bedrock_nova_multimodal_v1_embedding IS NOT NULL`] : []),
     ...(state.hasSimilarTopicSearch ? [sql`t.id <> ${options.similar_topic_id!}`] : []),
     ...(options.slugs && options.slugs.length > 0 ? [sql`t.slug = ANY(${options.slugs})`] : []),
     ...(options.topic_types && options.topic_types.length > 0

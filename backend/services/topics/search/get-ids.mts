@@ -3,9 +3,8 @@ import type { TopicSearchOptions, TopicSearchResult } from './types.mts'
 import { buildTopicSearchQueryBody } from './query-builder.mts'
 import sql from 'sql-template-strings'
 import { detectTopicSort } from '@modules/search-utils'
-import { read, readWithHnswSettings } from '@data-stores/psql'
+import { HNSW_SEARCH_DEFAULT_SETTINGS, read, readWithHnswSettings } from '@data-stores/psql'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
-import { SEMANTIC_TOPIC_SEARCH_SETTINGS } from './query-builder-semantic.mts'
 import { getTopicSearchState } from './query-builder-state.mts'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
@@ -91,7 +90,7 @@ export async function getTopicIds(options: TopicSearchOptions = {}): Promise<Top
   query.append(body)
 
   const { rows } = state.hasSemanticSignal
-    ? await readWithHnswSettings<TopicSearchRow>(query, SEMANTIC_TOPIC_SEARCH_SETTINGS)
+    ? await readWithHnswSettings<TopicSearchRow>(query, HNSW_SEARCH_DEFAULT_SETTINGS)
     : await read<TopicSearchRow>(query)
 
   // Detect if there's a next page

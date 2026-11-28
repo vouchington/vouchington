@@ -46,6 +46,36 @@ describe('buildSemanticNearestCte', () => {
     expect(cte.values).toEqual([])
   })
 
+  it('builds a CROSS JOIN LATERAL prefix CTE when lateralAnchor is provided', () => {
+    const cte = buildSemanticNearestCte({
+      selectColumns: ['t.id', 't.name'],
+      from: 'topics t',
+      embeddingColumn: 't.bedrock_nova_multimodal_v1_embedding',
+      whereClauses: ['t.deleted_at IS NULL'],
+      candidateLimit: 200,
+      maxCandidateLimit: 500,
+      lateralAnchor: {
+        cte: 'similar_topic_embedding',
+        outerSelectColumns: ['nearest.id', 'nearest.name'],
+      },
+    })
+
+    expect(cte.text).toContain('semantic_nearest AS MATERIALIZED (')
+    expect(cte.text).toContain(
+      'nearest.id,\n        nearest.name,\n        nearest.embedding_distance',
+    )
+    expect(cte.text).toContain('FROM similar_topic_embedding anchor_embedding')
+    expect(cte.text).toContain('CROSS JOIN LATERAL (')
+    expect(cte.text).toContain(
+      '(t.bedrock_nova_multimodal_v1_embedding <=> anchor_embedding.embedding) AS embedding_distance',
+    )
+    expect(cte.text).toContain(
+      'ORDER BY t.bedrock_nova_multimodal_v1_embedding <=> anchor_embedding.embedding',
+    )
+    expect(cte.text).toContain('LIMIT LEAST(200, 500)')
+    expect(cte.text).toContain(') nearest')
+  })
+
   it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
     'rejects invalid candidateLimit %s',
     invalid => {

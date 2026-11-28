@@ -1,4 +1,4 @@
-import { SEMANTIC_TOPIC_SEARCH_SETTINGS } from '@services/topics/search/query-builder-semantic'
+import { HNSW_SEARCH_DEFAULT_SETTINGS } from '@data-stores/psql'
 import { runAndCapture, seedTopicId } from '../run-support.mts'
 import { getTopicIds } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -32,7 +32,7 @@ export async function runSemanticTopicSearchScenario(): Promise<void> {
     },
     'cursor',
     'buildTopicSearchQuery',
-    { localSettings: SEMANTIC_TOPIC_SEARCH_SETTINGS },
+    { localSettings: HNSW_SEARCH_DEFAULT_SETTINGS },
   )
 
   registerScenarioContract('topic-search-similar-topic', {
@@ -59,6 +59,6 @@ export async function runSemanticTopicSearchScenario(): Promise<void> {
     },
     'cursor',
     'buildTopicSearchQuery',
-    { localSettings: SEMANTIC_TOPIC_SEARCH_SETTINGS },
+    { localSettings: HNSW_SEARCH_DEFAULT_SETTINGS },
   )
 }

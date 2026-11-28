@@ -7,19 +7,23 @@ export function assertBoundedSemanticNearestPlan(
     scenarioId: string
     relation: string
     limit: number
+    maxProcessed?: number
   },
 ): void {
   if (result.scenario_id !== options.scenarioId) return
+  const maxProcessed = options.maxProcessed ?? options.limit
   const nodes = collectPlanNodes(result.plan)
   const candidate = nodes.find(node => node['Subplan Name'] === 'CTE semantic_nearest')
+  const candidateNodes = candidate ? collectPlanNodes(candidate) : []
+  const limitNode = candidateNodes.find(node => node['Node Type'] === 'Limit')
   if (
     !candidate ||
-    candidate['Node Type'] !== 'Limit' ||
-    Number(candidate['Actual Rows']) > options.limit
+    !limitNode ||
+    Number(candidate['Actual Rows']) > options.limit ||
+    Number(limitNode['Actual Rows']) > options.limit
   ) {
     throw new Error(`${result.name} must materialize a bounded semantic_nearest prefix`)
   }
-  const candidateNodes = collectPlanNodes(candidate)
   const orderedVectorScan = candidateNodes.some(
     node =>
       node['Node Type'] === 'Index Scan' &&
@@ -47,9 +51,9 @@ export function assertBoundedSemanticNearestPlan(
   const processed = nodes
     .filter(node => baseRelationName(node) === options.relation)
     .reduce((sum, node) => sum + processedRows(node), 0)
-  if (processed > options.limit) {
+  if (processed > maxProcessed) {
     throw new Error(
-      `${result.name} processed ${processed} rows from ${options.relation}; expected at most ${options.limit}`,
+      `${result.name} processed ${processed} rows from ${options.relation}; expected at most ${maxProcessed}`,
     )
   }
 }

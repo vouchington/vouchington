@@ -35,7 +35,7 @@ function buildPlanResult(
     name: 'toolsSearchTopicsSemantic',
     scenario_id: overrides.scenarioId ?? 'tools-topic-search-semantic',
     plan_cache_mode: overrides.planCacheMode ?? 'force_generic_plan',
-    query_text: 'SELECT id FROM semantic_nearest',
+    query_text: 'tools semantic topic fixture',
     execution_time_ms: 1.5,
     planning_time_ms: 0.2,
     timestamp: '2026-01-01T00:00:00.000Z',
