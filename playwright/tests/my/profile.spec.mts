@@ -5,6 +5,9 @@ import { withCleanUser } from '../../helpers/auth.mts'
 import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 
 test.describe('My Profile', () => {
+  test.use({
+    allowErrorToasts: 'One test asserts the blocked-domain error toast',
+  })
   test.use({ storageState: AUTH_STATE })
 
   test('displays page heading', async ({ page }) => {

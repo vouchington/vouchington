@@ -14,6 +14,7 @@ import {
   withMonitoredPage as withBrowserIssueMonitoring,
   type BrowserIssueMonitor,
 } from 'vouchington-tooling/playwright'
+import { monitorUiErrors, type ExpectedServerError } from './ui-error-monitor.mts'
 import { browserTestOptions } from './browser-test-options.mts'
 import { guardPlaywrightTestTimeouts, playwrightTestTimeout } from '../config/test-timeout.mts'
 
@@ -24,6 +25,13 @@ interface BrowserErrorFixtures {
 interface BrowserErrorFixtureArgs {
   context: BrowserContext
   vouchaTestTimeout?: void
+}
+
+interface UiErrorFixtures {
+  allowErrorPage: string | undefined
+  allowErrorToasts: string | undefined
+  expectedServerErrors: ExpectedServerError[]
+  uiErrors: void
 }
 
 const monitorBrowserErrors = createBrowserErrorsFixture({
@@ -39,9 +47,38 @@ export async function browserErrorsFixture(
   await monitorBrowserErrors({ context }, run, testInfo)
 }
 
+export async function uiErrorsFixture(
+  {
+    context,
+    allowErrorPage,
+    allowErrorToasts,
+    expectedServerErrors,
+  }: Pick<UiErrorFixtures, 'allowErrorPage' | 'allowErrorToasts' | 'expectedServerErrors'> & {
+    context: BrowserContext
+  },
+  run: () => Promise<void>,
+  testInfo: TestInfo,
+) {
+  const monitor = await monitorUiErrors(context, {
+    allowErrorPage,
+    allowErrorToasts,
+    expectedServerErrors,
+  })
+  await run()
+  const failures = monitor.failures()
+  if (failures.length > 0 && testInfo.status === 'passed') {
+    throw new Error(`Unexpected app errors during the test:\n${failures.join('\n')}`)
+  }
+}
+
 export const test = runnablePlaywrightTest(
-  guardPlaywrightTestTimeouts(base).extend<BrowserErrorFixtures>({
+  guardPlaywrightTestTimeouts(base).extend<BrowserErrorFixtures & UiErrorFixtures>({
     browserErrors: [browserErrorsFixture, { auto: true }],
+    // Set via test.use() with a reason; each opts a spec out of one failure class on purpose.
+    allowErrorPage: [undefined, { option: true }],
+    allowErrorToasts: [undefined, { option: true }],
+    expectedServerErrors: [[], { option: true }],
+    uiErrors: [uiErrorsFixture, { auto: true }],
   }),
 )
 

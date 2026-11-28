@@ -8,6 +8,9 @@ import { SHORT_WAIT_TIMEOUT_MS } from '../../helpers/timeouts.mts'
 // API responses with 429 status codes.
 
 test.describe('rate limit error handling', () => {
+  test.use({
+    allowErrorToasts: 'Asserts the rate-limit toast shown for a mocked 429',
+  })
   test.use({ storageState: AUTH_STATE })
 
   test('shows rate limit toast with retry time on 429 response', async ({ page }) => {

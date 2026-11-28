@@ -45,6 +45,12 @@ test('staff issue guest access, then ask for information or revoke it', async ({
   ).toBeAttached()
 })
 
+test.use({
+  expectedServerErrors: [
+    { pattern: /\/guest-capabilities/, reason: 'Mocked 500 asserts the reload control' },
+  ],
+})
+
 test('a failed guest access list can be reloaded', async ({ page }) => {
   const fixture = await createCopyrightCaseFixture()
   await page.route('**/api/v1/copyright-notices/*/guest-capabilities*', route =>

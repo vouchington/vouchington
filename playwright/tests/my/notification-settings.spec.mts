@@ -3,6 +3,11 @@ import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('My Notification Settings', () => {
+  test.use({
+    expectedServerErrors: [
+      { pattern: /\/email-preferences/, reason: 'Mocked 500 asserts the retry state' },
+    ],
+  })
   test.use({ storageState: AUTH_STATE })
 
   test('shows email notification settings controls', async ({ page }) => {

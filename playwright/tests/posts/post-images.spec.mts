@@ -17,6 +17,11 @@ import { setPostOpenAIModerationFlaggedOnly } from '../../../backend/test-helper
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 
 test.describe('Post Images', () => {
+  test.use({
+    expectedServerErrors: [
+      { pattern: /\/moderation\/exposure/, reason: 'Mocked 503 asserts the exposure gate retry' },
+    ],
+  })
   test.use({ storageState: AUTH_STATE })
 
   test('shows upload button in post form', async ({ page }) => {

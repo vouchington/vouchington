@@ -35,6 +35,11 @@ test.describe('Admin Memberships', () => {
 })
 
 test.describe('Admin Memberships — grant flow', () => {
+  test.use({
+    expectedServerErrors: [
+      { pattern: /\/memberships\/plans/, reason: 'Mocked 500 asserts the plans failure message' },
+    ],
+  })
   test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('force-remount clears user input after a successful grant', async ({ page }) => {

@@ -42,6 +42,15 @@ async function loginAndOpenHousehold(page: Page, user: PrivateUser) {
 }
 
 test.describe('My Household', () => {
+  test.use({
+    expectedServerErrors: [
+      {
+        pattern: /\/households\/.+\/memberships\//,
+        reason: 'Mocked 500 asserts membership removal failure',
+      },
+    ],
+  })
+
   test('manages only the newest owned household and renders every shared household read-only', async ({
     page,
   }) => {

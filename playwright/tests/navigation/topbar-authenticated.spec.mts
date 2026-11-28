@@ -9,6 +9,12 @@ import {
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 
 test.describe('Topbar - authenticated', () => {
+  test.use({
+    allowErrorToasts: 'Asserts the logout failure toast',
+    expectedServerErrors: [
+      { pattern: /\/api\/v1\/auth\/logout/, reason: 'Mocked 500 logout failure' },
+    ],
+  })
   test.use({ storageState: AUTH_STATE })
 
   test('shows profile avatar button instead of Sign In', async ({ page }) => {

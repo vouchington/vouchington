@@ -15,6 +15,10 @@ async function openStory(page: Parameters<typeof navigateTo>[0], id: string) {
 }
 
 test.describe('status page and error page rendering', () => {
+  test.use({
+    allowErrorPage: 'Storybook stories deliberately render the error pages under test',
+  })
+
   test('404 route renders StatusPage with correct data-pw attributes', async ({ page }) => {
     const response = await page.goto('/this-route-does-not-exist-404-check')
     expect(response?.status()).toBe(404)
