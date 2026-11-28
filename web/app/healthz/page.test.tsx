@@ -6,6 +6,6 @@ describe('HealthzPage', () => {
   it('renders an ok marker', () => {
     render(<HealthzPage />)
 
-    expect(screen.getByText('ok')).toBeDefined()
+    expect(screen.getByText('ok')).toBeInTheDocument()
   })
 })

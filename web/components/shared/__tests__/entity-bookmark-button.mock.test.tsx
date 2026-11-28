@@ -61,7 +61,7 @@ describe('EntityBookmarkButton', () => {
     await act(async () => {
       await mockGetEntityBookmarks.mock.results.at(-1)!.value
     })
-    expect(screen.getByRole('button', { name: 'Subscribed to Posts' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Subscribed to Posts' })).toBeInTheDocument()
     expect(mockGetEntityBookmarks).toHaveBeenCalledWith('topic', 'topic-1')
   })
 
@@ -131,7 +131,7 @@ describe('EntityBookmarkButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Subscribe' }))
 
-    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeInTheDocument()
     await act(async () => {
       await mockBookmarkEntity.mock.results.at(-1)!.value
     })
@@ -147,7 +147,7 @@ describe('EntityBookmarkButton', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeInTheDocument()
 
     rerender(
       <EntityBookmarkButton
@@ -160,7 +160,7 @@ describe('EntityBookmarkButton', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeInTheDocument()
   })
 
   it('resets display state immediately when the entity changes', async () => {
@@ -181,7 +181,7 @@ describe('EntityBookmarkButton', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeInTheDocument()
 
     rerender(
       <EntityBookmarkButton
@@ -218,7 +218,7 @@ describe('EntityBookmarkButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Subscribe' }))
 
-    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeInTheDocument()
 
     rerender(
       <EntityBookmarkButton
@@ -236,6 +236,6 @@ describe('EntityBookmarkButton', () => {
       await mockBookmarkEntity.mock.results.at(-1)!.value.catch(() => undefined)
     })
 
-    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeInTheDocument()
   })
 })

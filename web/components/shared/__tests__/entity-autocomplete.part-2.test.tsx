@@ -24,7 +24,7 @@ describe('EntityAutocomplete', () => {
     await act(async () => {
       vi.advanceTimersByTime(300)
     })
-    expect(screen.getByText('card')).toBeDefined()
+    expect(screen.getByText('card')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('card'))
 
@@ -36,7 +36,7 @@ describe('EntityAutocomplete', () => {
     expect(screen.queryByTestId('command-empty')).toBeNull()
 
     fireEvent.focus(input)
-    expect(screen.getByText('card')).toBeDefined()
+    expect(screen.getByText('card')).toBeInTheDocument()
   })
 
   it('clears results on select when configured', async () => {

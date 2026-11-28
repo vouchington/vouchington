@@ -63,7 +63,7 @@ describe('PostLockMenuItem', () => {
         lockedAt={null}
       />,
     )
-    expect(screen.getByRole('menuitem', { name: 'Lock' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Lock' })).toBeInTheDocument()
   })
 
   it('renders "Unlock" label when post is locked', () => {
@@ -73,7 +73,7 @@ describe('PostLockMenuItem', () => {
         lockedAt='2024-01-01T00:00:00Z'
       />,
     )
-    expect(screen.getByRole('menuitem', { name: 'Unlock' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Unlock' })).toBeInTheDocument()
   })
 
   it('clicking calls handleToggle', () => {
@@ -94,6 +94,6 @@ describe('PostLockMenuItem', () => {
         lockedAt={null}
       />,
     )
-    expect(screen.getByTestId('post-detail-lock-button')).toBeDefined()
+    expect(screen.getByTestId('post-detail-lock-button')).toBeInTheDocument()
   })
 })

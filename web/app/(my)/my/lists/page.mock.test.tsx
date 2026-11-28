@@ -68,7 +68,7 @@ describe('MyListsPage', () => {
     mockRequireCurrentUser.mockResolvedValue(baseUser)
     mockGetMyLists.mockResolvedValue(emptyListsResponse)
     render(await MyListsPage())
-    expect(screen.getByText(/you have no lists yet/i)).toBeDefined()
+    expect(screen.getByText(/you have no lists yet/i)).toBeInTheDocument()
   })
 
   it('renders list items when lists exist', async () => {

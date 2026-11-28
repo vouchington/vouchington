@@ -19,7 +19,7 @@ describe('CommunityListAutocomplete', () => {
         onSelect={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(screen.getByPlaceholderText('Search topics...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search topics...')).toBeInTheDocument()
   })
 
   it('renders rss_feed placeholder', () => {
@@ -30,7 +30,7 @@ describe('CommunityListAutocomplete', () => {
         onSelect={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(screen.getByPlaceholderText('Search sources...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search sources...')).toBeInTheDocument()
   })
 
   it('renders post placeholder', () => {
@@ -40,7 +40,7 @@ describe('CommunityListAutocomplete', () => {
         onSelect={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(screen.getByPlaceholderText('Search posts...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search posts...')).toBeInTheDocument()
   })
 
   it('renders url_hostname placeholder', () => {
@@ -50,7 +50,7 @@ describe('CommunityListAutocomplete', () => {
         onSelect={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(screen.getByPlaceholderText('Search domains...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search domains...')).toBeInTheDocument()
   })
 
   it('renders url placeholder', () => {
@@ -60,6 +60,6 @@ describe('CommunityListAutocomplete', () => {
         onSelect={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(screen.getByPlaceholderText('Search URLs...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search URLs...')).toBeInTheDocument()
   })
 })

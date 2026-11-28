@@ -122,7 +122,7 @@ describe('IDENTITY_REQUIRED gate — global Discuss', () => {
     fireEvent.click(container.querySelector('[data-pw="news-discuss-button"]') as HTMLElement)
 
     await waitFor(() => {
-      expect(screen.getByTestId('username-required-dialog-stub')).toBeDefined()
+      expect(screen.getByTestId('username-required-dialog-stub')).toBeInTheDocument()
     })
     expect(toast.error).not.toHaveBeenCalled()
     expect(mockPush).not.toHaveBeenCalled()
@@ -160,7 +160,7 @@ describe('IDENTITY_REQUIRED gate — global Discuss', () => {
     fireEvent.click(container.querySelector('[data-pw="news-discuss-button"]') as HTMLElement)
 
     await waitFor(() => {
-      expect(screen.getByTestId('username-required-dialog-stub')).toBeDefined()
+      expect(screen.getByTestId('username-required-dialog-stub')).toBeInTheDocument()
     })
     fireEvent.click(screen.getByTestId('username-dialog-set'))
 

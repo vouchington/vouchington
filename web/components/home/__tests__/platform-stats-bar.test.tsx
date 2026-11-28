@@ -32,8 +32,8 @@ describe('PlatformStatsBar', () => {
       />,
     )
 
-    expect(screen.getByText('5')).toBeDefined()
-    expect(screen.getByText('Topics')).toBeDefined()
+    expect(screen.getByText('5')).toBeInTheDocument()
+    expect(screen.getByText('Topics')).toBeInTheDocument()
     expect(screen.queryByText('Data Points')).toBeNull()
     expect(screen.queryByText('Trusted Domains')).toBeNull()
     expect(screen.queryByText('Reviews')).toBeNull()
@@ -57,13 +57,13 @@ describe('PlatformStatsBar', () => {
   it('renders visible stats with compact number formatting', () => {
     render(<PlatformStatsBar data={makeStats()} />)
 
-    expect(screen.getByText('1.3K')).toBeDefined()
-    expect(screen.getByText('Data Points')).toBeDefined()
-    expect(screen.getByText('24')).toBeDefined()
-    expect(screen.getByText('Topics')).toBeDefined()
-    expect(screen.getByText('12')).toBeDefined()
-    expect(screen.getByText('Reviews')).toBeDefined()
-    expect(screen.getByText('9')).toBeDefined()
-    expect(screen.getByText('Trusted Domains')).toBeDefined()
+    expect(screen.getByText('1.3K')).toBeInTheDocument()
+    expect(screen.getByText('Data Points')).toBeInTheDocument()
+    expect(screen.getByText('24')).toBeInTheDocument()
+    expect(screen.getByText('Topics')).toBeInTheDocument()
+    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(screen.getByText('Reviews')).toBeInTheDocument()
+    expect(screen.getByText('9')).toBeInTheDocument()
+    expect(screen.getByText('Trusted Domains')).toBeInTheDocument()
   })
 })

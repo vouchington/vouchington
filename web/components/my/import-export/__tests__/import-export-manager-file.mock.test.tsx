@@ -141,7 +141,7 @@ describe('ImportExportManager — file import and stream', () => {
     await waitFor(() => {
       expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
     })
-    expect(screen.getByText(/Processing… 1 \/ 2/)).toBeDefined()
+    expect(screen.getByText(/Processing… 1 \/ 2/)).toBeInTheDocument()
   })
 
   it('swallows AbortError from stream without calling onError', async () => {

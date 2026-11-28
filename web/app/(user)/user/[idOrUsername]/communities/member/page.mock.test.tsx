@@ -72,7 +72,7 @@ describe('UserMemberCommunitiesRoute', () => {
       params: Promise.resolve({ idOrUsername: 'alice' }),
     })
     render(result)
-    expect(screen.getByTestId('paginated-community-list')).toBeDefined()
+    expect(screen.getByTestId('paginated-community-list')).toBeInTheDocument()
   })
 
   it('uses an encoded continuation endpoint for the requested profile', async () => {
@@ -81,8 +81,8 @@ describe('UserMemberCommunitiesRoute', () => {
       params: Promise.resolve({ idOrUsername: 'alice/example' }),
     })
     render(result)
-    expect(screen.getByText('/api/v1/users/alice%2Fexample/communities/member')).toBeDefined()
-    expect(screen.getByText('c1')).toBeDefined()
-    expect(screen.getByText('c2')).toBeDefined()
+    expect(screen.getByText('/api/v1/users/alice%2Fexample/communities/member')).toBeInTheDocument()
+    expect(screen.getByText('c1')).toBeInTheDocument()
+    expect(screen.getByText('c2')).toBeInTheDocument()
   })
 })

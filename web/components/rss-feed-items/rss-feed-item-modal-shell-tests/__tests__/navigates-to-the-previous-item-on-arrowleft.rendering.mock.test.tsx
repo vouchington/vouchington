@@ -108,7 +108,7 @@ describe('RssFeedItemModalShell rendering', () => {
       </RssFeedItemModalShell>,
     )
 
-    expect(screen.getByText('Plain Title')).toBeDefined()
+    expect(screen.getByText('Plain Title')).toBeInTheDocument()
     // No anchor wrapping the title
     const links = screen.queryAllByRole('link', { name: 'Plain Title' })
     expect(links).toHaveLength(0)
@@ -126,7 +126,7 @@ describe('RssFeedItemModalShell rendering', () => {
       </RssFeedItemModalShell>,
     )
 
-    expect(screen.getByText('Unsafe Title')).toBeDefined()
+    expect(screen.getByText('Unsafe Title')).toBeInTheDocument()
     // No anchor must be rendered for unsafe schemes
     const links = screen.queryAllByRole('link', { name: 'Unsafe Title' })
     expect(links).toHaveLength(0)
@@ -236,7 +236,7 @@ describe('RssFeedItemModalShell rendering', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeDefined()
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
     })
     expect(mockScrollIntoView).not.toHaveBeenCalled()
   })

@@ -1,0 +1,69 @@
+# Temporary local copy of the no-mistakes rule `throwing-query`
+# (jongleberry/no-mistakes#4812, https://github.com/jongleberry/no-mistakes/issues/4812).
+# Delete this file once no-mistakes ships that rule and this repository enables it.
+# It is syntactic: it sees a query only when expect() wraps the call directly. A query
+# bound to a variable first (const el = screen.getByRole(...); expect(el).toBeDefined())
+# is not reported; the type-aware no-mistakes rule covers that.
+id: web-no-throwing-query-weak-matcher
+language: Tsx
+severity: error
+message: >-
+  getBy*, getAllBy*, findBy* and findAllBy* already throw when nothing matches, so
+  toBeDefined, toBeTruthy and not.toBeNull add nothing. Use toBeInTheDocument for a single element
+  and a toHaveLength matcher for an array.
+files:
+  - 'web/**/*.ts'
+  - 'web/**/*.tsx'
+  - 'web/**/*.mts'
+  - 'integration-tests/**/*.ts'
+  - 'integration-tests/**/*.tsx'
+  - 'integration-tests/**/*.mts'
+rule:
+  any:
+    - pattern: expect($QUERY).toBeDefined()
+    - pattern: expect($QUERY).toBeTruthy()
+    - pattern: expect($QUERY).not.toBeNull()
+constraints:
+  QUERY:
+    any:
+      - matches: throwing-query-call
+      - kind: await_expression
+        has:
+          matches: throwing-query-call
+utils:
+  throwing-query-call:
+    kind: call_expression
+    has:
+      field: function
+      any:
+        - kind: identifier
+          regex: '^(get|find)(All)?By'
+        - kind: member_expression
+          has:
+            field: property
+            regex: '^(get|find)(All)?By'
+examples:
+  - code: expect(screen.getByRole('button')).toBeDefined()
+    isValid: false
+    file: web/components/a.test.tsx
+  - code: expect(within(row).getAllByText('x')).toBeTruthy()
+    isValid: false
+    file: web/components/a.test.tsx
+  - code: expect(await screen.findByText('x')).not.toBeNull()
+    isValid: false
+    file: web/components/a.test.tsx
+  - code: expect(getByTestId('x')).toBeDefined()
+    isValid: false
+    file: web/components/a.test.tsx
+  - code: expect(screen.getByRole('button')).toBeInTheDocument()
+    isValid: true
+    file: web/components/a.test.tsx
+  - code: expect(screen.queryByRole('button')).toBeTruthy()
+    isValid: true
+    file: web/components/a.test.tsx
+  - code: expect(screen.getByRole('button').textContent).toBeDefined()
+    isValid: true
+    file: web/components/a.test.tsx
+  - code: "const el = screen.getByRole('button'); expect(el).toBeDefined()"
+    isValid: true
+    file: web/components/a.test.tsx

@@ -42,7 +42,7 @@ describe('GroupThreadHeader', () => {
         currentUserId='u-1'
       />,
     )
-    expect(screen.getByText('Conversation')).toBeDefined()
+    expect(screen.getByText('Conversation')).toBeInTheDocument()
   })
 
   it('renders participant username labels when others exist', () => {
@@ -57,7 +57,7 @@ describe('GroupThreadHeader', () => {
         currentUserId='u-1'
       />,
     )
-    expect(screen.getByText('@alice, @bob')).toBeDefined()
+    expect(screen.getByText('@alice, @bob')).toBeInTheDocument()
   })
 
   it('renders "+N more" suffix when more than 3 others', () => {
@@ -74,7 +74,7 @@ describe('GroupThreadHeader', () => {
         currentUserId='u-1'
       />,
     )
-    expect(screen.getByText('@alice, @bob, @charlie +1 more')).toBeDefined()
+    expect(screen.getByText('@alice, @bob, @charlie +1 more')).toBeInTheDocument()
   })
 
   it('filters out current user from displayed avatars', () => {

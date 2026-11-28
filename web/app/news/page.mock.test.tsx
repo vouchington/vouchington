@@ -116,13 +116,13 @@ describe('NewsPage', () => {
   it('renders the feed view toggle on the news page', async () => {
     const ui = await NewsPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('feed view toggle')).toBeDefined()
+    expect(screen.getByText('feed view toggle')).toBeInTheDocument()
   })
 
   it('renders the page heading', async () => {
     const ui = await NewsPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('News')).toBeDefined()
+    expect(screen.getByText('News')).toBeInTheDocument()
   })
 
   it('preserves legacy topics query params for bookmarked news URLs', async () => {
@@ -184,6 +184,6 @@ describe('NewsPage', () => {
     const ui = await NewsPage({ searchParams: Promise.resolve({ q: '???' }) })
     render(ui)
 
-    expect(screen.getByText('Query is invalid')).toBeDefined()
+    expect(screen.getByText('Query is invalid')).toBeInTheDocument()
   })
 })

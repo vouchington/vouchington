@@ -74,7 +74,7 @@ describe('EntityBookmarkButton Edge Cases', () => {
     })
     expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
 
-    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeInTheDocument()
     expect(mockToastError).toHaveBeenCalledWith('Failed to update bookmark. Please try again.')
   })
 
@@ -101,7 +101,7 @@ describe('EntityBookmarkButton Edge Cases', () => {
     })
     expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
 
-    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeInTheDocument()
     expect(mockToastError).toHaveBeenCalledWith('Custom rate limit message')
   })
 

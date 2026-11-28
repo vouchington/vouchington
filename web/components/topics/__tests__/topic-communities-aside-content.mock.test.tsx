@@ -89,7 +89,7 @@ describe('TopicCommunitiesAsideContent', () => {
         t={t}
       />,
     )
-    expect(screen.getByText('Communities about this topic')).toBeDefined()
+    expect(screen.getByText('Communities about this topic')).toBeInTheDocument()
   })
 
   it('renders aside with data-pw attribute', () => {
@@ -151,7 +151,7 @@ describe('TopicCommunitiesAsideContent', () => {
         t={t}
       />,
     )
-    expect(screen.getByText(/42 members/)).toBeDefined()
+    expect(screen.getByText(/42 members/)).toBeInTheDocument()
   })
 
   it('omits member count when no metrics are provided for the community', () => {

@@ -45,7 +45,7 @@ describe('TopicRecommendationsTable', () => {
 
     expect(screen.queryByRole('button', { name: 'Withdraw' })).toBeNull()
     // Non-owner, non-admin: no action buttons (approve/reject also hidden since not admin)
-    expect(screen.getByText('Proposed Topic')).toBeDefined()
+    expect(screen.getByText('Proposed Topic')).toBeInTheDocument()
   })
 
   it('does not show Withdraw for approved recommendations or admins', () => {
@@ -62,8 +62,8 @@ describe('TopicRecommendationsTable', () => {
   it('shows quick Approve and Reject buttons for admins on pending rows', () => {
     renderTable({ isAdmin: true })
 
-    expect(screen.getByRole('button', { name: 'Approve' })).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Reject' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reject' })).toBeInTheDocument()
   })
 
   it('quick-approves from the row without opening modal', async () => {

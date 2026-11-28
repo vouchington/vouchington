@@ -184,7 +184,7 @@ describe('EntityBookmarkButton', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Follow' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Follow' })).toBeInTheDocument()
 
     // Simulate a sibling proxy_follow button toggling — same predicate triggers refetch
     await act(async () => {
@@ -192,7 +192,7 @@ describe('EntityBookmarkButton', () => {
       await mockGetEntityBookmarks.mock.results.at(-1)!.value
     })
 
-    expect(screen.getByRole('button', { name: 'Following' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Following' })).toBeInTheDocument()
     expect(mockGetEntityBookmarks).toHaveBeenCalledWith('community', 'community-1')
   })
 
@@ -216,7 +216,7 @@ describe('EntityBookmarkButton', () => {
     })
 
     expect(mockGetEntityBookmarks).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: 'Follow' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Follow' })).toBeInTheDocument()
   })
 
   it('does not refetch when own instance emits a bookmark change', async () => {

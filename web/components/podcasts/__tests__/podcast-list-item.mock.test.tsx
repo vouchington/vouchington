@@ -46,7 +46,7 @@ function makeFeed(overrides: Partial<ViewRssFeed> = {}): ViewRssFeed {
 describe('PodcastListItem', () => {
   it('renders the podcast title as a link', () => {
     render(<PodcastListItem feed={makeFeed()} />)
-    expect(screen.getByText('Test Podcast (Podcast)')).toBeDefined()
+    expect(screen.getByText('Test Podcast (Podcast)')).toBeInTheDocument()
   })
 
   it('renders cover art when podcast_show provides a cover_art_url', () => {
@@ -66,7 +66,7 @@ describe('PodcastListItem', () => {
 
   it('renders a mic placeholder when no cover art is available', () => {
     render(<PodcastListItem feed={makeFeed()} />)
-    expect(screen.getByTestId('mic-icon')).toBeDefined()
+    expect(screen.getByTestId('mic-icon')).toBeInTheDocument()
   })
 
   it('renders the author name', () => {
@@ -80,7 +80,7 @@ describe('PodcastListItem', () => {
       },
     })
     render(<PodcastListItem feed={feed} />)
-    expect(screen.getByText('NPR')).toBeDefined()
+    expect(screen.getByText('NPR')).toBeInTheDocument()
   })
 
   it('renders the explicit badge when is_explicit is true', () => {
@@ -94,7 +94,7 @@ describe('PodcastListItem', () => {
       },
     })
     render(<PodcastListItem feed={feed} />)
-    expect(screen.getByText('Explicit')).toBeDefined()
+    expect(screen.getByText('Explicit')).toBeInTheDocument()
   })
 
   it('renders linked category chips when topic_slug is set', () => {
@@ -113,7 +113,7 @@ describe('PodcastListItem', () => {
       categories: [{ category_text: 'business', topic_id: null, topic_slug: null }],
     })
     render(<PodcastListItem feed={feed} />)
-    expect(screen.getByText('business')).toBeDefined()
+    expect(screen.getByText('business')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'business' })).toBeNull()
   })
 })

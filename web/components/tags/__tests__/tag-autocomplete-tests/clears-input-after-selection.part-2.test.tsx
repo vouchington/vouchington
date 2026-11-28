@@ -44,7 +44,7 @@ describe('TagAutocomplete', () => {
       target: { value: 'example' },
     })
 
-    await waitFor(() => expect(screen.getByText('example.com/some/page')).toBeDefined(), {
+    await waitFor(() => expect(screen.getByText('example.com/some/page')).toBeInTheDocument(), {
       timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
     })
 

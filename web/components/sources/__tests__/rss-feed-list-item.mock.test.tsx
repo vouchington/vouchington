@@ -25,7 +25,7 @@ describe('RssFeedListItem routing', () => {
 
     render(<RssFeedListItem feed={feed} />)
 
-    expect(screen.getByTestId('podcast-list-item')).toBeDefined()
+    expect(screen.getByTestId('podcast-list-item')).toBeInTheDocument()
     expect(screen.queryByTestId('video-list-item')).toBeNull()
     expect(screen.queryByTestId('article-list-item')).toBeNull()
   })
@@ -35,7 +35,7 @@ describe('RssFeedListItem routing', () => {
 
     render(<RssFeedListItem feed={feed} />)
 
-    expect(screen.getByTestId('video-list-item')).toBeDefined()
+    expect(screen.getByTestId('video-list-item')).toBeInTheDocument()
     expect(screen.queryByTestId('podcast-list-item')).toBeNull()
     expect(screen.queryByTestId('article-list-item')).toBeNull()
   })
@@ -45,7 +45,7 @@ describe('RssFeedListItem routing', () => {
 
     render(<RssFeedListItem feed={feed} />)
 
-    expect(screen.getByTestId('article-list-item')).toBeDefined()
+    expect(screen.getByTestId('article-list-item')).toBeInTheDocument()
     expect(screen.queryByTestId('podcast-list-item')).toBeNull()
     expect(screen.queryByTestId('video-list-item')).toBeNull()
   })
@@ -55,7 +55,7 @@ describe('RssFeedListItem routing', () => {
 
     render(<RssFeedListItem feed={feed} />)
 
-    expect(screen.getByTestId('article-list-item')).toBeDefined()
+    expect(screen.getByTestId('article-list-item')).toBeInTheDocument()
     expect(screen.queryByTestId('podcast-list-item')).toBeNull()
     expect(screen.queryByTestId('video-list-item')).toBeNull()
   })

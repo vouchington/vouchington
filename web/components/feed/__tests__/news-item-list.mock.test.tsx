@@ -145,12 +145,12 @@ describe('NewsItemList', () => {
 
   it('renders all items in results', () => {
     renderWithFeedStyle(<NewsItemList data={mockData} />)
-    expect(screen.getByText('First Article')).toBeDefined()
+    expect(screen.getByText('First Article')).toBeInTheDocument()
   })
 
   it('shows empty state when results is empty', () => {
     renderWithFeedStyle(<NewsItemList data={{ ...mockData, results: [], rss_feed_items: {} }} />)
-    expect(screen.getByText('No news found')).toBeDefined()
+    expect(screen.getByText('No news found')).toBeInTheDocument()
   })
 
   it('skips rendering a result that has no matching rss_feed_items entry', () => {
@@ -168,7 +168,7 @@ describe('NewsItemList', () => {
     }
 
     renderWithFeedStyle(<NewsItemList data={sharedData} />)
-    expect(screen.getByText('First Article')).toBeDefined()
+    expect(screen.getByText('First Article')).toBeInTheDocument()
   })
 
   it('passes compact view to NewsItemCard when feedStyle is compact', () => {
@@ -176,12 +176,12 @@ describe('NewsItemList', () => {
     // In compact mode, excerpt is hidden
     expect(screen.queryByText('First article excerpt.')).toBeNull()
     // Title still visible
-    expect(screen.getByText('First Article')).toBeDefined()
+    expect(screen.getByText('First Article')).toBeInTheDocument()
   })
 
   it('shows excerpt in summary view', () => {
     renderWithFeedStyle(<NewsItemList data={mockData} />, 'summary')
-    expect(screen.getByText('First article excerpt.')).toBeDefined()
+    expect(screen.getByText('First article excerpt.')).toBeInTheDocument()
   })
 
   it('accumulates items from the next page when loadMore is triggered', async () => {
@@ -197,7 +197,7 @@ describe('NewsItemList', () => {
       />,
     )
 
-    expect(screen.getByText('First Article')).toBeDefined()
+    expect(screen.getByText('First Article')).toBeInTheDocument()
     expect(screen.queryByText('Second Article')).toBeNull()
 
     const loadMore = mockReceiveLoadMore.mock.calls.at(-1)![0] as () => Promise<void>
@@ -205,8 +205,8 @@ describe('NewsItemList', () => {
       await loadMore()
     })
 
-    expect(screen.getByText('First Article')).toBeDefined()
-    expect(screen.getByText('Second Article')).toBeDefined()
+    expect(screen.getByText('First Article')).toBeInTheDocument()
+    expect(screen.getByText('Second Article')).toBeInTheDocument()
   })
 
   it('resets accumulated pages when initialData changes (filter/sort update)', async () => {
@@ -226,8 +226,8 @@ describe('NewsItemList', () => {
     await act(async () => {
       await loadMore()
     })
-    expect(screen.getByText('First Article')).toBeDefined()
-    expect(screen.getByText('Second Article')).toBeDefined()
+    expect(screen.getByText('First Article')).toBeInTheDocument()
+    expect(screen.getByText('Second Article')).toBeInTheDocument()
 
     const newData = makePage('item-3', 'New Filter Article', 'New excerpt.', false, null)
     rerender(
@@ -242,7 +242,7 @@ describe('NewsItemList', () => {
 
     expect(screen.queryByText('First Article')).toBeNull()
     expect(screen.queryByText('Second Article')).toBeNull()
-    expect(screen.getByText('New Filter Article')).toBeDefined()
+    expect(screen.getByText('New Filter Article')).toBeInTheDocument()
   })
 
   it('preserves accumulated pages when rerendered with same page_info but new object reference', async () => {
@@ -262,8 +262,8 @@ describe('NewsItemList', () => {
     await act(async () => {
       await loadMore()
     })
-    expect(screen.getByText('First Article')).toBeDefined()
-    expect(screen.getByText('Second Article')).toBeDefined()
+    expect(screen.getByText('First Article')).toBeInTheDocument()
+    expect(screen.getByText('Second Article')).toBeInTheDocument()
 
     // Rerender with a structurally identical page_info but a new object reference —
     // simulates a server re-render triggered by modal navigation (?rss_item= changing).
@@ -279,7 +279,7 @@ describe('NewsItemList', () => {
     )
 
     // Both pages must still be visible — the same fingerprint must not trigger a reset.
-    expect(screen.getByText('First Article')).toBeDefined()
-    expect(screen.getByText('Second Article')).toBeDefined()
+    expect(screen.getByText('First Article')).toBeInTheDocument()
+    expect(screen.getByText('Second Article')).toBeInTheDocument()
   })
 })

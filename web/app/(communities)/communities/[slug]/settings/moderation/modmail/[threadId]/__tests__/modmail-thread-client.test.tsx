@@ -25,7 +25,7 @@ describe('ModmailThreadClient', () => {
         isMod
       />,
     )
-    expect(screen.getByText('No messages yet.')).toBeDefined()
+    expect(screen.getByText('No messages yet.')).toBeInTheDocument()
   })
 
   it('renders modmail-thread-view data-pw attribute', () => {
@@ -53,7 +53,7 @@ describe('ModmailThreadClient', () => {
         isMod={false}
       />,
     )
-    expect(screen.getByText('Message msg-1')).toBeDefined()
+    expect(screen.getByText('Message msg-1')).toBeInTheDocument()
   })
 
   it('shows resolve button for mods on open threads', () => {

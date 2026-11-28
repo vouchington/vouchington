@@ -37,9 +37,9 @@ describe('UserProfileHeader', () => {
   })
   it('renders display name and username', () => {
     const { container } = render(<UserProfileHeader user={baseUser} />)
-    expect(screen.getByRole('heading', { level: 1 })).toBeDefined()
-    expect(screen.getByText('Alice Example')).toBeDefined()
-    expect(screen.getByText('@alice')).toBeDefined()
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
+    expect(screen.getByText('Alice Example')).toBeInTheDocument()
+    expect(screen.getByText('@alice')).toBeInTheDocument()
     expect(container.querySelector('[data-pw="user-profile-header"]')).not.toBeNull()
   })
 
@@ -71,8 +71,8 @@ describe('UserProfileHeader', () => {
         }}
       />,
     )
-    expect(screen.getByText(/3 reviews/)).toBeDefined()
-    expect(screen.getByText(/5 discussions/)).toBeDefined()
+    expect(screen.getByText(/3 reviews/)).toBeInTheDocument()
+    expect(screen.getByText(/5 discussions/)).toBeInTheDocument()
   })
 
   it('shows a capped header count as a compact count with a plus sign', () => {
@@ -103,7 +103,7 @@ describe('UserProfileHeader', () => {
         }}
       />,
     )
-    expect(screen.getByText(/1K\+ reviews/)).toBeDefined()
+    expect(screen.getByText(/1K\+ reviews/)).toBeInTheDocument()
   })
 
   it('shows the exact header count', () => {
@@ -134,7 +134,7 @@ describe('UserProfileHeader', () => {
         }}
       />,
     )
-    expect(screen.getByText(/1,000 reviews/)).toBeDefined()
+    expect(screen.getByText(/1,000 reviews/)).toBeInTheDocument()
   })
 
   it('signed-out (no currentUserId): FollowButton renders, no subscribe bookmark button', async () => {
@@ -159,7 +159,7 @@ describe('UserProfileHeader', () => {
     render(<UserProfileHeader user={baseUser} />)
     // canFollow = 'user-xyz' !== 'user-abc' = true → FollowButton slot renders
     // Subscribe to Posts was moved to UserActionsAside — not rendered in this component
-    expect(await screen.findByTestId('follow-button')).toBeDefined()
+    expect(await screen.findByTestId('follow-button')).toBeInTheDocument()
     expect(screen.queryByTestId('subscribe-button')).toBeNull()
   })
 
@@ -188,7 +188,7 @@ describe('UserProfileHeader', () => {
     ['ai_agent', 'AI Agent'],
   ] as const)('shows the public %s author label', (account_type, label) => {
     render(<UserProfileHeader user={{ ...baseUser, account_type }} />)
-    expect(screen.getByText(label)).toBeDefined()
+    expect(screen.getByText(label)).toBeInTheDocument()
   })
 
   it('renders profile links when profileLinks is non-empty', () => {
@@ -206,7 +206,7 @@ describe('UserProfileHeader', () => {
         ]}
       />,
     )
-    expect(screen.getByTestId('user-profile-links')).toBeDefined()
+    expect(screen.getByTestId('user-profile-links')).toBeInTheDocument()
   })
 
   it('does not render profile links when profileLinks is empty', () => {

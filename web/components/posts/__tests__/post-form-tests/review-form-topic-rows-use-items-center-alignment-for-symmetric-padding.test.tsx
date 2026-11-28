@@ -90,8 +90,8 @@ describe('PostForm', () => {
         initialReviewTopic={{ id: 'seeded-topic', name: 'Seeded Card' }}
       />,
     )
-    expect(screen.getByRole('radiogroup', { name: /Rating for Seeded Card/i })).toBeDefined()
-    expect(screen.getByTestId('topic-autocomplete')).toBeDefined()
+    expect(screen.getByRole('radiogroup', { name: /Rating for Seeded Card/i })).toBeInTheDocument()
+    expect(screen.getByTestId('topic-autocomplete')).toBeInTheDocument()
   })
 
   it('initialDiscussionCategories seeds category rows', () => {

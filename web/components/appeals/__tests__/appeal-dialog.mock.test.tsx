@@ -33,14 +33,14 @@ vi.mock(
 describe('AppealDialog', () => {
   it('renders "File an appeal" trigger button', () => {
     render(<AppealDialog warningId='warn-1' />)
-    expect(screen.getByRole('button', { name: 'File an appeal' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'File an appeal' })).toBeInTheDocument()
   })
 
   it('opens dialog when trigger is clicked and passes warningId as targetId', async () => {
     render(<AppealDialog warningId='warn-42' />)
     fireEvent.click(screen.getByRole('button', { name: 'File an appeal' }))
 
-    expect(await screen.findByTestId('appeal-form-stub')).toBeDefined()
+    expect(await screen.findByTestId('appeal-form-stub')).toBeInTheDocument()
     expect(screen.getByTestId('target-type').textContent).toBe('warning')
     expect(screen.getByTestId('target-id').textContent).toBe('warn-42')
   })
@@ -49,7 +49,7 @@ describe('AppealDialog', () => {
     render(<AppealDialog communityBanId='ban-7' />)
     fireEvent.click(screen.getByRole('button', { name: 'File an appeal' }))
 
-    expect(await screen.findByTestId('appeal-form-stub')).toBeDefined()
+    expect(await screen.findByTestId('appeal-form-stub')).toBeInTheDocument()
     expect(screen.getByTestId('target-type').textContent).toBe('ban')
     expect(screen.getByTestId('target-id').textContent).toBe('ban-7')
   })
@@ -58,7 +58,7 @@ describe('AppealDialog', () => {
     render(<AppealDialog postId='post-9' />)
     fireEvent.click(screen.getByRole('button', { name: 'File an appeal' }))
 
-    expect(await screen.findByTestId('appeal-form-stub')).toBeDefined()
+    expect(await screen.findByTestId('appeal-form-stub')).toBeInTheDocument()
     expect(screen.getByTestId('target-type').textContent).toBe('removal')
     expect(screen.getByTestId('target-id').textContent).toBe('post-9')
   })
@@ -67,7 +67,7 @@ describe('AppealDialog', () => {
     render(<AppealDialog warningId='warn-1' />)
     fireEvent.click(screen.getByRole('button', { name: 'File an appeal' }))
 
-    expect(await screen.findByTestId('appeal-form-stub')).toBeDefined()
+    expect(await screen.findByTestId('appeal-form-stub')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Trigger success' }))
 

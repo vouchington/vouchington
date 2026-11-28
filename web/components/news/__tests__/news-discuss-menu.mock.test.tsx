@@ -70,7 +70,7 @@ describe('NewsDiscussMenu', () => {
         communityDiscussionUrls={EMPTY_URLS}
       />,
     )
-    expect(screen.getByText('3 Posts')).toBeDefined()
+    expect(screen.getByText('3 Posts')).toBeInTheDocument()
   })
 
   it('collapses to single Discuss button when canDiscuss only', () => {
@@ -84,7 +84,7 @@ describe('NewsDiscussMenu', () => {
     const btn = container.querySelector('[data-pw="news-discuss-button"]')
     expect(btn).not.toBeNull()
     expect(btn?.tagName.toLowerCase()).toBe('button')
-    expect(screen.getByText('Discuss')).toBeDefined()
+    expect(screen.getByText('Discuss')).toBeInTheDocument()
     expect(screen.queryByTestId('dropdown-separator')).toBeNull()
   })
 
@@ -98,7 +98,7 @@ describe('NewsDiscussMenu', () => {
     )
     const btn = container.querySelector('[data-pw="news-discuss-button"]')
     expect(btn).not.toBeNull()
-    expect(screen.getByText('My Discussion')).toBeDefined()
+    expect(screen.getByText('My Discussion')).toBeInTheDocument()
   })
 
   it('renders dropdown when multiple actions (1 post + canDiscuss)', () => {
@@ -109,9 +109,9 @@ describe('NewsDiscussMenu', () => {
         communityDiscussionUrls={EMPTY_URLS}
       />,
     )
-    expect(screen.getByText('1 Post')).toBeDefined()
+    expect(screen.getByText('1 Post')).toBeInTheDocument()
     expect(container.querySelector('[data-pw="news-discuss-create-item"]')).not.toBeNull()
-    expect(screen.getByTestId('dropdown-separator')).toBeDefined()
+    expect(screen.getByTestId('dropdown-separator')).toBeInTheDocument()
   })
 
   it('renders post links when signed-out and has posts', () => {
@@ -122,6 +122,6 @@ describe('NewsDiscussMenu', () => {
         communityDiscussionUrls={EMPTY_URLS}
       />,
     )
-    expect(screen.getByText('Signed-out Post')).toBeDefined()
+    expect(screen.getByText('Signed-out Post')).toBeInTheDocument()
   })
 })

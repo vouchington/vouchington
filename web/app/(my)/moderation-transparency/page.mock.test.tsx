@@ -49,7 +49,7 @@ describe('ModerationTransparencyPage', () => {
     render(await ModerationTransparencyPage({ searchParams: Promise.resolve({}) }))
 
     expect(getModerationTransparencyOrNullMock).toHaveBeenCalledWith({ range: '30d' })
-    expect(screen.getByTestId('moderation-transparency-panel')).toBeDefined()
+    expect(screen.getByTestId('moderation-transparency-panel')).toBeInTheDocument()
     expect(panelMock).toHaveBeenCalledWith(
       expect.objectContaining({ transparency: makeTransparency() }),
       undefined,

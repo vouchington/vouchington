@@ -66,8 +66,8 @@ describe('AsideColumn', () => {
       </Wrapper>,
     )
 
-    expect(screen.getByRole('complementary')).toBeDefined()
-    expect(screen.getByTestId('page-aside')).toBeDefined()
+    expect(screen.getByRole('complementary')).toBeInTheDocument()
+    expect(screen.getByTestId('page-aside')).toBeInTheDocument()
   })
 
   it('hides aside on mobile for infinite scroll pages', () => {
@@ -141,7 +141,7 @@ describe('AsideColumn', () => {
       </Wrapper>,
     )
 
-    expect(screen.getByRole('complementary')).toBeDefined()
+    expect(screen.getByRole('complementary')).toBeInTheDocument()
   })
 
   it('ScrollArea uses definite height (not max-height) so Radix Viewport can scroll', () => {
@@ -184,7 +184,7 @@ describe('AsideColumn', () => {
     })
 
     // The aside element must still be in the DOM so stateful aside children stay mounted.
-    expect(screen.getByRole('complementary')).not.toBeNull()
+    expect(screen.getByRole('complementary')).toBeInTheDocument()
     // Width-based collapse on desktop: w-0 and min-w-0 animate the aside out of view
     expect(aside.className).toContain('lg:w-0')
     expect(aside.className).toContain('lg:min-w-0')

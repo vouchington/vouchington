@@ -131,7 +131,7 @@ describe('LandingPageEditor', () => {
     expect(addButton.disabled).toBe(false)
 
     fireEvent.click(addButton)
-    expect(screen.getByText('My Link')).toBeDefined()
+    expect(screen.getByText('My Link')).toBeInTheDocument()
 
     fireEvent.click(pw(container, 'landing-page-save-content'))
     await waitFor(() => expect(mockReplace).toHaveBeenCalled())
@@ -203,7 +203,7 @@ describe('LandingPageEditor', () => {
         username='tester'
       />,
     )
-    expect(screen.getByText('Existing')).toBeDefined()
+    expect(screen.getByText('Existing')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
     expect(screen.queryByText('Existing')).toBeNull()
   })

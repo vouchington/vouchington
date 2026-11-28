@@ -77,6 +77,6 @@ describe('HostnameListItem — blocked badge visibility', () => {
         isAdmin
       />,
     )
-    expect(screen.getByText('Blocked')).toBeDefined()
+    expect(screen.getByText('Blocked')).toBeInTheDocument()
   })
 })

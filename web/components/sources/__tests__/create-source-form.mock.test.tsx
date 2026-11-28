@@ -83,8 +83,8 @@ describe('CreateSourceForm', () => {
   it('renders textarea and submit button', () => {
     render(<CreateSourceForm />)
 
-    expect(screen.getByRole('textbox', { name: /RSS Feed URLs/i })).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Submit Source' })).toBeDefined()
+    expect(screen.getByRole('textbox', { name: /RSS Feed URLs/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Submit Source' })).toBeInTheDocument()
   })
 
   it('submit button is disabled when textarea is empty', () => {
@@ -217,6 +217,6 @@ describe('CreateSourceForm', () => {
     await waitFor(() => {
       expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0')
     })
-    expect(screen.getByText(/Processing|Done/)).toBeDefined()
+    expect(screen.getByText(/Processing|Done/)).toBeInTheDocument()
   })
 })

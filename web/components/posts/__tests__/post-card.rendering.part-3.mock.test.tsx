@@ -139,7 +139,7 @@ describe('PostCard', () => {
       />,
     )
 
-    expect(screen.getByText('Rendered HTML excerpt')).toBeDefined()
+    expect(screen.getByText('Rendered HTML excerpt')).toBeInTheDocument()
     expect(mockGenerateExcerpt).not.toHaveBeenCalled()
   })
 
@@ -224,7 +224,7 @@ describe('PostCard', () => {
         />,
       )
 
-      expect(screen.getByText('Staff-visible plain excerpt')).toBeDefined()
+      expect(screen.getByText('Staff-visible plain excerpt')).toBeInTheDocument()
       expect(mockGenerateExcerpt).toHaveBeenCalledWith('Staff **review** markdown.', 200)
     })
 

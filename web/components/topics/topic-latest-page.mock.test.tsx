@@ -82,11 +82,11 @@ describe('TopicLatestPage', () => {
         limit: 25,
       },
     })
-    expect(screen.getByText('news list')).toBeDefined()
-    expect(screen.getByText('/api/v1/rss-feed-items')).toBeDefined()
-    expect(screen.getByText(JSON.stringify({ topic: 'topic-1', limit: 25 }))).toBeDefined()
+    expect(screen.getByText('news list')).toBeInTheDocument()
+    expect(screen.getByText('/api/v1/rss-feed-items')).toBeInTheDocument()
+    expect(screen.getByText(JSON.stringify({ topic: 'topic-1', limit: 25 }))).toBeInTheDocument()
     expect(
       screen.getByText('modal:/topic/topic-1/latest:{"rss_item":"feed-1:test-guid-1"}'),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 })

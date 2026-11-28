@@ -99,12 +99,12 @@ describe('PageWithAside', () => {
   describe('with aside', () => {
     it('renders AsideDrawer', () => {
       render(<PageWithAside aside={TestAside}>content</PageWithAside>)
-      expect(screen.getByTestId('aside-drawer')).toBeDefined()
+      expect(screen.getByTestId('aside-drawer')).toBeInTheDocument()
     })
 
     it('renders AsideColumn', () => {
       render(<PageWithAside aside={TestAside}>content</PageWithAside>)
-      expect(screen.getByTestId('aside-column')).toBeDefined()
+      expect(screen.getByTestId('aside-column')).toBeInTheDocument()
     })
 
     it('passes aside content to both AsideDrawer and AsideColumn', () => {

@@ -42,7 +42,7 @@ describe('PostForm image state', () => {
     // Wait for upload to complete (caption input appears)
     await waitFor(
       () => {
-        expect(screen.getByPlaceholderText('Caption (optional)')).toBeDefined()
+        expect(screen.getByPlaceholderText('Caption (optional)')).toBeInTheDocument()
       },
       { timeout: IMAGE_UPLOAD_WAIT_TIMEOUT },
     )

@@ -112,9 +112,9 @@ describe('MembershipsAdminPage', () => {
 
   it('renders the heading and user search input', () => {
     render(<MembershipsAdminPage />)
-    expect(screen.getByRole('heading', { name: /memberships admin/i })).toBeDefined()
-    expect(screen.getByLabelText('Search users')).toBeDefined()
-    expect(screen.getByRole('button', { name: /grant/i })).toBeDefined()
+    expect(screen.getByRole('heading', { name: /memberships admin/i })).toBeInTheDocument()
+    expect(screen.getByLabelText('Search users')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /grant/i })).toBeInTheDocument()
   })
 
   it('selecting a user updates userId state', () => {
@@ -132,7 +132,7 @@ describe('MembershipsAdminPage', () => {
       expect(mockFetchPlans).toHaveBeenCalledOnce()
     })
     await waitFor(() => {
-      expect(screen.getByRole('option', { name: /sku-plus-monthly/i })).toBeDefined()
+      expect(screen.getByRole('option', { name: /sku-plus-monthly/i })).toBeInTheDocument()
     })
   })
 
@@ -147,7 +147,7 @@ describe('MembershipsAdminPage', () => {
     const [planSelect] = screen.getAllByRole('combobox')
     fireEvent.change(planSelect!, { target: { value: 'plus' } })
 
-    expect(await screen.findByRole('option', { name: /9,99.*US\$/ })).toBeDefined()
+    expect(await screen.findByRole('option', { name: /9,99.*US\$/ })).toBeInTheDocument()
     expect(screen.queryByRole('option', { name: /\$9\.99/ })).toBeNull()
   })
 
@@ -157,7 +157,7 @@ describe('MembershipsAdminPage', () => {
     const [planSelect] = screen.getAllByRole('combobox')
     fireEvent.change(planSelect!, { target: { value: 'plus' } })
     await waitFor(() => {
-      expect(screen.getByText(/failed to load sku/i)).toBeDefined()
+      expect(screen.getByText(/failed to load sku/i)).toBeInTheDocument()
     })
   })
 
@@ -181,7 +181,7 @@ describe('MembershipsAdminPage', () => {
       expect(mockGrantMembership).toHaveBeenCalledWith('user-abc', 'plus', 'sku-plus-monthly', 30)
     })
     await waitFor(() => {
-      expect(screen.getByText(/granted successfully/i)).toBeDefined()
+      expect(screen.getByText(/granted successfully/i)).toBeInTheDocument()
     })
     // User input should be reset
     expect((screen.getByLabelText('Search users') as unknown as HTMLInputElement).value).toBe('')
@@ -228,7 +228,7 @@ describe('MembershipsAdminPage', () => {
     await waitFor(() => {
       expect(
         screen.getByText(/grant queued.*activate when the current membership ends/i),
-      ).toBeDefined()
+      ).toBeInTheDocument()
     })
     expect(screen.queryByText(/granted successfully/i)).toBeNull()
   })

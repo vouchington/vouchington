@@ -68,7 +68,7 @@ describe('NewsSourcesPage', () => {
   it('renders the page header', async () => {
     const ui = await NewsSourcesPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('News Sources')).toBeDefined()
+    expect(screen.getByText('News Sources')).toBeInTheDocument()
   })
 
   it('calls getRssFeeds with feed_type=article', async () => {
@@ -81,7 +81,7 @@ describe('NewsSourcesPage', () => {
   it('shows empty state when no news sources found', async () => {
     const ui = await NewsSourcesPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('No news sources found')).toBeDefined()
+    expect(screen.getByText('No news sources found')).toBeInTheDocument()
   })
 
   it('shows search error when getRssFeeds rejects with a recognisable error', async () => {
@@ -89,7 +89,7 @@ describe('NewsSourcesPage', () => {
     mockGetListSearchErrorMessage.mockReturnValue('Invalid search parameters')
     const ui = await NewsSourcesPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('Invalid search parameters')).toBeDefined()
+    expect(screen.getByText('Invalid search parameters')).toBeInTheDocument()
   })
 
   it('renders RssFeedListItem for each result when results are non-empty', async () => {

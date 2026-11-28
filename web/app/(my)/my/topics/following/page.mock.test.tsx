@@ -47,7 +47,7 @@ describe('MyTopicsFollowingPage', () => {
   it('renders the page heading when authenticated', async () => {
     mockRequireCurrentUser.mockResolvedValue(baseUser)
     render(await MyTopicsFollowingPage())
-    expect(screen.getByTestId('bookmark-page-header')).toBeDefined()
+    expect(screen.getByTestId('bookmark-page-header')).toBeInTheDocument()
   })
 
   it('calls getUserTopicsCollection with the current user id and following listType', async () => {

@@ -47,7 +47,7 @@ describe('TagAutocomplete', () => {
     await settleInitialQuery()
     fireEvent.change(input, { target: { value: 'chase' } })
 
-    await waitFor(() => expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined(), {
+    await waitFor(() => expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument(), {
       timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
     })
 
@@ -65,7 +65,7 @@ describe('TagAutocomplete', () => {
     const input = screen.getByPlaceholderText('Search topics...')
     await settleInitialQuery()
     fireEvent.change(input, { target: { value: 'chase' } })
-    expect(screen.getByTestId('command-empty')).toBeDefined()
+    expect(screen.getByTestId('command-empty')).toBeInTheDocument()
 
     fireEvent.keyDown(input, { key: 'Escape' })
     expect(screen.queryByTestId('command-empty')).toBeNull()
@@ -78,7 +78,7 @@ describe('TagAutocomplete', () => {
         onSelect={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(screen.getByPlaceholderText('Search urls...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search urls...')).toBeInTheDocument()
   })
 
   it('searches URLs and shows results by hostname + pathname', async () => {
@@ -106,7 +106,7 @@ describe('TagAutocomplete', () => {
       target: { value: 'example' },
     })
 
-    await waitFor(() => expect(screen.getByText('example.com/some/page')).toBeDefined(), {
+    await waitFor(() => expect(screen.getByText('example.com/some/page')).toBeInTheDocument(), {
       timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
     })
   })

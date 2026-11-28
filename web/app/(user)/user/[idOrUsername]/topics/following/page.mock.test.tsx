@@ -65,8 +65,8 @@ describe('UserFollowingTopicsRoute', () => {
     })
     render(result)
 
-    expect(screen.getByTestId('paginated-topic-list')).toBeDefined()
-    expect(screen.getByText('/api/v1/users/alice%2Fexample/topics/following')).toBeDefined()
-    expect(screen.getByText('topic-1')).toBeDefined()
+    expect(screen.getByTestId('paginated-topic-list')).toBeInTheDocument()
+    expect(screen.getByText('/api/v1/users/alice%2Fexample/topics/following')).toBeInTheDocument()
+    expect(screen.getByText('topic-1')).toBeInTheDocument()
   })
 })

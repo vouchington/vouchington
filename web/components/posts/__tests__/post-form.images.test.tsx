@@ -122,7 +122,7 @@ describe('PostForm image state', () => {
     const captionInput = screen.getByPlaceholderText('Caption (optional)') as HTMLInputElement
     const longCaption = 'a'.repeat(950)
     fireEvent.change(captionInput, { target: { value: longCaption } })
-    expect(screen.getByText('950/1000')).toBeDefined()
+    expect(screen.getByText('950/1000')).toBeInTheDocument()
   })
 
   it('does not show character count when caption is under 900 chars', () => {
@@ -147,7 +147,7 @@ describe('PostForm image state', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByPlaceholderText('Caption (optional)')).toBeDefined()
+        expect(screen.getByPlaceholderText('Caption (optional)')).toBeInTheDocument()
       },
       { timeout: IMAGE_UPLOAD_WAIT_TIMEOUT },
     )

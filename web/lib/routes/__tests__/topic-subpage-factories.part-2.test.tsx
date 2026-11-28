@@ -58,7 +58,7 @@ describe('topic factory functions', () => {
         searchParams: Promise.resolve({}),
       })
       render(result)
-      expect(screen.getByTestId('topic-reviews-page')).toBeDefined()
+      expect(screen.getByTestId('topic-reviews-page')).toBeInTheDocument()
     })
 
     it('calls notFound when reviews are not allowed', async () => {
@@ -105,7 +105,7 @@ describe('topic factory functions', () => {
         searchParams: Promise.resolve({}),
       })
       render(result)
-      expect(screen.getByTestId('topic-data-points-page')).toBeDefined()
+      expect(screen.getByTestId('topic-data-points-page')).toBeInTheDocument()
     })
   })
 

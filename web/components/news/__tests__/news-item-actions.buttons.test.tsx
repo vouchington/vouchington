@@ -20,7 +20,7 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
         relatedPosts={[]}
       />,
     )
-    expect(screen.getByTestId('news-discuss-menu')).toBeDefined()
+    expect(screen.getByTestId('news-discuss-menu')).toBeInTheDocument()
   })
 
   it('renders HideButton when logged in', () => {
@@ -31,7 +31,7 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
       />,
     )
 
-    expect(screen.getByTestId('hide-button')).toBeDefined()
+    expect(screen.getByTestId('hide-button')).toBeInTheDocument()
   })
 
   it('does NOT render HideButton when not logged in', () => {

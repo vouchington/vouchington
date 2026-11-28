@@ -72,14 +72,14 @@ describe('ConnectSocialAside', () => {
     } as User)
     const result = await ConnectSocialAside()
     render(result as ReactElement)
-    expect(screen.getByText('Connect your accounts')).toBeDefined()
+    expect(screen.getByText('Connect your accounts')).toBeInTheDocument()
   })
 
   it('renders when no accounts are connected', async () => {
     mockGetCurrentUser.mockResolvedValue(baseUser)
     const result = await ConnectSocialAside()
     render(result as ReactElement)
-    expect(screen.getByText('Connect your accounts')).toBeDefined()
+    expect(screen.getByText('Connect your accounts')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Connect accounts' }).getAttribute('href')).toBe(
       '/my/identity',
     )

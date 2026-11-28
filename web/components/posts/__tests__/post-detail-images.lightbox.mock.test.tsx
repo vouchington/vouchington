@@ -54,7 +54,7 @@ describe('PostDetail image lightbox', () => {
     expect(screen.queryByRole('button', { name: 'Close lightbox' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'View full size image' }))
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Close lightbox' })).toBeDefined(),
+      expect(screen.getByRole('button', { name: 'Close lightbox' })).toBeInTheDocument(),
     )
     expect(screen.getByRole('button', { name: 'Close lightbox' }).parentElement).toHaveAttribute(
       'data-start-index',
@@ -95,7 +95,7 @@ describe('PostDetail image lightbox', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'View full size image' }))
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Close lightbox' })).toBeDefined(),
+      expect(screen.getByRole('button', { name: 'Close lightbox' })).toBeInTheDocument(),
     )
     fireEvent.click(screen.getByRole('button', { name: 'Close lightbox' }))
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Close lightbox' })).toBeNull())

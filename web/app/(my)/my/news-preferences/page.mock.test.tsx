@@ -51,8 +51,8 @@ describe('NewsPreferencesPage', () => {
         limit: PUBLISHER_TYPE_SLUGS.length,
       },
     })
-    expect(screen.getByText('Type A')).toBeDefined()
-    expect(screen.getByText('Type B')).toBeDefined()
+    expect(screen.getByText('Type A')).toBeInTheDocument()
+    expect(screen.getByText('Type B')).toBeInTheDocument()
   })
 
   it('passes empty array to form when API returns no topics', async () => {

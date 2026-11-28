@@ -119,10 +119,10 @@ describe('DynamicConfigNamespacePanel', () => {
       />,
     )
 
-    expect(screen.getByText('Feature Flags')).toBeDefined()
+    expect(screen.getByText('Feature Flags')).toBeInTheDocument()
     expect(screen.getAllByText('memberships').length).toBeGreaterThan(0)
-    expect(screen.getByText('rollout_percent')).toBeDefined()
-    expect(screen.getByText('admin')).toBeDefined()
+    expect(screen.getByText('rollout_percent')).toBeInTheDocument()
+    expect(screen.getByText('admin')).toBeInTheDocument()
     await waitFor(() => expect(cookieMocks.getFeatureFlagSnapshot).toHaveBeenCalled())
   })
 

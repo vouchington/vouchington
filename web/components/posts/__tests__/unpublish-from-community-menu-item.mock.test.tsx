@@ -109,8 +109,8 @@ describe('UnpublishFromCommunityMenuItem', () => {
         postId='post-1'
       />,
     )
-    expect(screen.getByRole('menuitem', { name: 'Unpublish' })).toBeDefined()
-    expect(screen.getByTestId('post-unpublish-from-community-trigger')).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Unpublish' })).toBeInTheDocument()
+    expect(screen.getByTestId('post-unpublish-from-community-trigger')).toBeInTheDocument()
   })
 
   it('dialog is initially closed', () => {
@@ -131,7 +131,7 @@ describe('UnpublishFromCommunityMenuItem', () => {
       />,
     )
     fireEvent.click(screen.getByRole('menuitem'))
-    expect(screen.getByTestId('unpublish-alert-dialog')).toBeDefined()
+    expect(screen.getByTestId('unpublish-alert-dialog')).toBeInTheDocument()
   })
 
   it('dialog has the correct data-pw attribute', () => {
@@ -142,7 +142,7 @@ describe('UnpublishFromCommunityMenuItem', () => {
       />,
     )
     fireEvent.click(screen.getByRole('menuitem'))
-    expect(screen.getByTestId('post-unpublish-from-community-dialog')).toBeDefined()
+    expect(screen.getByTestId('post-unpublish-from-community-dialog')).toBeInTheDocument()
   })
 
   it('clicking confirm calls handleUnpublish', () => {
@@ -167,6 +167,6 @@ describe('UnpublishFromCommunityMenuItem', () => {
     )
     fireEvent.click(screen.getByRole('menuitem'))
     fireEvent.click(screen.getByTestId('post-unpublish-from-community-confirm'))
-    expect(await screen.findByRole('menuitem', { name: 'Unpublished' })).toBeDefined()
+    expect(await screen.findByRole('menuitem', { name: 'Unpublished' })).toBeInTheDocument()
   })
 })

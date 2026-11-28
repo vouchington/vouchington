@@ -21,8 +21,8 @@ describe('AppSidebar Bookmarks — Media intents', () => {
 
     it('shows Episode Bookmarks and Source Bookmarks groups for authenticated users', () => {
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.getByText('Episode Bookmarks')).toBeDefined()
-      expect(screen.getByText('Source Bookmarks')).toBeDefined()
+      expect(screen.getByText('Episode Bookmarks')).toBeInTheDocument()
+      expect(screen.getByText('Source Bookmarks')).toBeInTheDocument()
     })
 
     it('Saved Episodes link has correct href', () => {
@@ -53,8 +53,8 @@ describe('AppSidebar Bookmarks — Media intents', () => {
 
     it('shows Video Bookmarks and Source Bookmarks groups for authenticated users', () => {
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.getByText('Video Bookmarks')).toBeDefined()
-      expect(screen.getByText('Source Bookmarks')).toBeDefined()
+      expect(screen.getByText('Video Bookmarks')).toBeInTheDocument()
+      expect(screen.getByText('Source Bookmarks')).toBeInTheDocument()
     })
 
     it('Saved Videos link has correct href', () => {

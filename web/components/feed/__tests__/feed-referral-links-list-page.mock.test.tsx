@@ -56,8 +56,8 @@ describe('FeedReferralLinksListPage', () => {
 
     render(ui)
 
-    expect(screen.getByText('feed top section')).toBeDefined()
-    expect(screen.getByText('empty state')).toBeDefined()
+    expect(screen.getByText('feed top section')).toBeInTheDocument()
+    expect(screen.getByText('empty state')).toBeInTheDocument()
   })
 
   it('renders feed list when results are present', async () => {
@@ -91,7 +91,7 @@ describe('FeedReferralLinksListPage', () => {
 
     render(ui)
 
-    expect(screen.getByText('feed list')).toBeDefined()
+    expect(screen.getByText('feed list')).toBeInTheDocument()
   })
 
   it('shows list search error when API returns an error', async () => {
@@ -103,7 +103,7 @@ describe('FeedReferralLinksListPage', () => {
 
     render(ui)
 
-    expect(screen.getByText('bad request')).toBeDefined()
+    expect(screen.getByText('bad request')).toBeInTheDocument()
   })
 
   it('passes correct feedType from mutual config', async () => {

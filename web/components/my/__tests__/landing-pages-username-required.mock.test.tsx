@@ -38,10 +38,10 @@ describe('LandingPagesUsernameRequired', () => {
 
   it('renders the heading, description, and CTA button', () => {
     render(<LandingPagesUsernameRequired />)
-    expect(screen.getByRole('heading', { name: /landing pages/i })).toBeDefined()
-    expect(screen.getByText(/a username is required/i)).toBeDefined()
-    expect(screen.getByRole('button', { name: /choose a username/i })).toBeDefined()
-    expect(screen.getByRole('link', { name: /go to identity settings/i })).toBeDefined()
+    expect(screen.getByRole('heading', { name: /landing pages/i })).toBeInTheDocument()
+    expect(screen.getByText(/a username is required/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /choose a username/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /go to identity settings/i })).toBeInTheDocument()
   })
 
   it('opens the username dialog when the CTA button is clicked', async () => {
@@ -50,7 +50,7 @@ describe('LandingPagesUsernameRequired', () => {
     await waitFor(() => {
       expect(
         screen.getByRole('dialog', { name: /choose a username to create landing pages/i }),
-      ).toBeDefined()
+      ).toBeInTheDocument()
     })
   })
 
@@ -60,7 +60,7 @@ describe('LandingPagesUsernameRequired', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /choose a username/i }))
     await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeDefined()
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
     })
 
     const input = screen.getByRole('textbox')
@@ -78,7 +78,7 @@ describe('LandingPagesUsernameRequired', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /choose a username/i }))
     await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeDefined()
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
     })
 
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))

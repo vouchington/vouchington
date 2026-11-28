@@ -135,7 +135,7 @@ describe('TopicSourcesAside', () => {
       />,
     )
 
-    expect(screen.getByText('Example Feed')).not.toBeNull()
+    expect(screen.getByText('Example Feed')).toBeInTheDocument()
     // No <a> element for the source title
     const links = [...container.querySelectorAll('a')] as HTMLElement[]
     const sourceLink = links.find(a => a.textContent === 'Example Feed')

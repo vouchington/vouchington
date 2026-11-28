@@ -224,7 +224,7 @@ describe('PostDetail byline and layout', () => {
         html=''
       />,
     )
-    expect(screen.getByText('Posted by Anonymous')).toBeDefined()
+    expect(screen.getByText('Posted by Anonymous')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Posted by/i })).toBeNull()
   })
 

@@ -47,11 +47,11 @@ describe('SuspensionBanner', () => {
     })
     const { container } = render(<SuspensionBanner notice={{ reason: null }} />)
     expect(container.querySelector('[data-pw="suspension-banner"]')).not.toBeNull()
-    expect(screen.getByText('Your account has been suspended')).toBeDefined()
+    expect(screen.getByText('Your account has been suspended')).toBeInTheDocument()
     expect(
       screen.getByText('Your account access has been restricted by a moderator.'),
-    ).toBeDefined()
-    expect(screen.getByRole('link', { name: 'Learn more' })).toBeDefined()
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Learn more' })).toBeInTheDocument()
   })
 
   it('renders banner with reason when user has a suspension reason', () => {
@@ -63,7 +63,7 @@ describe('SuspensionBanner', () => {
       <SuspensionBanner notice={{ reason: 'Violation of community guidelines.' }} />,
     )
     expect(container.querySelector('[data-pw="suspension-banner"]')).not.toBeNull()
-    expect(screen.getByText('Violation of community guidelines.')).toBeDefined()
+    expect(screen.getByText('Violation of community guidelines.')).toBeInTheDocument()
   })
 
   it('links "Learn more" to /my/account-status', () => {

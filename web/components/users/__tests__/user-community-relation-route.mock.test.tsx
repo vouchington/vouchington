@@ -75,7 +75,7 @@ describe('UserCommunityRelationRoute', () => {
     })
 
     render(result as React.ReactElement)
-    expect(screen.getByTestId('empty-state')).toBeDefined()
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument()
     expect(screen.queryByTestId('community-card')).toBeNull()
   })
 

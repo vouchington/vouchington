@@ -58,7 +58,7 @@ describe('household page invitation integration', () => {
   })
   it('resets local household cursor history on a server refresh even when household IDs are unchanged', () => {
     const view = render(<HouseholdPageContent {...props} />)
-    expect(screen.getByText('@alice')).not.toBeNull()
+    expect(screen.getByText('@alice')).toBeInTheDocument()
     const nextSection = makeSection({ isOwner: false, memberships: [] })
     view.rerender(
       <HouseholdPageContent
@@ -70,6 +70,6 @@ describe('household page invitation integration', () => {
       />,
     )
     expect(screen.queryByText('@alice')).toBeNull()
-    expect(screen.getByText('No members yet.')).not.toBeNull()
+    expect(screen.getByText('No members yet.')).toBeInTheDocument()
   })
 })

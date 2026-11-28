@@ -23,7 +23,7 @@ describe('FeedReferralLinksPage', () => {
 
     render(ui)
 
-    expect(screen.getByText('referral links page')).toBeDefined()
+    expect(screen.getByText('referral links page')).toBeInTheDocument()
     expect(mockFeedReferralLinksListPage.mock.calls[0]![0]).toEqual({
       config: feedRouteConfigData['referral-links'],
     })

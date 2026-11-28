@@ -17,7 +17,7 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
       />,
     )
 
-    expect(screen.getByTestId('trailing')).toBeDefined()
+    expect(screen.getByTestId('trailing')).toBeInTheDocument()
   })
 
   it('does not render trailingAction wrapper when trailingAction is not provided', () => {

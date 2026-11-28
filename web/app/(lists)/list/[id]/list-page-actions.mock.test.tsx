@@ -86,7 +86,7 @@ describe('ListPageActions', () => {
     render(<ListPageActions listId='list-1' />)
     expect(screen.queryByTestId('import-dialog')).toBeNull()
     fireEvent.click(document.querySelector('[data-pw="list-import-community"]')!)
-    expect(screen.getByTestId('import-dialog')).not.toBeNull()
+    expect(screen.getByTestId('import-dialog')).toBeInTheDocument()
   })
 
   it('calls router.refresh after import completes', () => {

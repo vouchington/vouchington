@@ -17,7 +17,7 @@ describe('ErrorBoundary', () => {
         <div>child content</div>
       </ErrorBoundary>,
     )
-    expect(screen.getByText('child content')).toBeDefined()
+    expect(screen.getByText('child content')).toBeInTheDocument()
     expect(screen.queryByText('fallback')).toBeNull()
   })
 
@@ -31,6 +31,6 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     )
 
-    expect(screen.getByText('fallback')).toBeDefined()
+    expect(screen.getByText('fallback')).toBeInTheDocument()
   })
 })

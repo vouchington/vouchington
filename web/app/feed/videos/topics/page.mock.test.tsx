@@ -23,7 +23,7 @@ describe('FeedVideosTopicsPage', () => {
 
     render(ui)
 
-    expect(screen.getByText('feed videos topics page')).toBeDefined()
+    expect(screen.getByText('feed videos topics page')).toBeInTheDocument()
     expect(mockFeedNewsListPage.mock.calls[0]![0]).toEqual({
       config: feedRouteConfigData['videos/topics'],
       searchParams: {},

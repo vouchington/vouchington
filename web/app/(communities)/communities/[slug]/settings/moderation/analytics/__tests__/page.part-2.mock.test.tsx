@@ -59,7 +59,7 @@ describe('CommunityModerationAnalyticsPage site moderator fallback', () => {
 
     render(await renderModerationAnalyticsPage())
 
-    expect(screen.getByTestId('dashboard')).toBeDefined()
+    expect(screen.getByTestId('dashboard')).toBeInTheDocument()
     expect(transparencyPanelMock).toHaveBeenCalledWith(
       expect.objectContaining({ transparency: null }),
       undefined,

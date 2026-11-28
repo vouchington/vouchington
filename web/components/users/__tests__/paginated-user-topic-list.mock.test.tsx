@@ -58,7 +58,7 @@ describe('PaginatedUserTopicList', () => {
       after: 'cursor-1',
     })
     expect(screen.getAllByText('topic-1')).toHaveLength(1)
-    expect(screen.getByText('topic-2')).toBeDefined()
+    expect(screen.getByText('topic-2')).toBeInTheDocument()
   })
 
   it('preserves the first page after failure and retries the continuation', async () => {
@@ -79,12 +79,12 @@ describe('PaginatedUserTopicList', () => {
       await receiveLoadMore.mock.calls.at(-1)![0]()
     })
 
-    expect(screen.getByText('topic-1')).toBeDefined()
+    expect(screen.getByText('topic-1')).toBeInTheDocument()
     await act(async () => {
       screen.getByRole('button', { name: 'Retry' }).click()
     })
 
-    expect(await screen.findByText('topic-2')).toBeDefined()
+    expect(await screen.findByText('topic-2')).toBeInTheDocument()
     expect(getPaginatedPage).toHaveBeenCalledTimes(2)
   })
 
@@ -107,6 +107,6 @@ describe('PaginatedUserTopicList', () => {
     expect(getPaginatedPage).toHaveBeenCalledWith('/api/v1/users/alice/topics/following', {
       after: 'cursor-1',
     })
-    expect(await screen.findByText('topic-2')).toBeDefined()
+    expect(await screen.findByText('topic-2')).toBeInTheDocument()
   })
 })

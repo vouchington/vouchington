@@ -24,7 +24,7 @@ describe('DomainTrustBadge', () => {
         countDown={1}
       />,
     )
-    expect(screen.getByText('Neutral')).toBeDefined()
+    expect(screen.getByText('Neutral')).toBeInTheDocument()
   })
 
   it('renders Distrusted label for distrusted domain', () => {
@@ -35,7 +35,7 @@ describe('DomainTrustBadge', () => {
         countDown={6}
       />,
     )
-    expect(screen.getByText('Distrusted')).toBeDefined()
+    expect(screen.getByText('Distrusted')).toBeInTheDocument()
   })
 
   it('renders Unrated label when no votes', () => {
@@ -46,7 +46,7 @@ describe('DomainTrustBadge', () => {
         countDown={0}
       />,
     )
-    expect(screen.getByText('Unrated')).toBeDefined()
+    expect(screen.getByText('Unrated')).toBeInTheDocument()
   })
 
   it('renders a link to domain page when hostname is provided', () => {

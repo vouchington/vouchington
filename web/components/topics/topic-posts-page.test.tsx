@@ -51,7 +51,7 @@ describe('TopicPostsPage', () => {
     const ui = await TopicPostsPage({ id: 'topic-1', searchParams: { q: '#missing' } })
     render(ui)
 
-    expect(screen.getByText('Topic #missing was not found')).toBeDefined()
+    expect(screen.getByText('Topic #missing was not found')).toBeInTheDocument()
     expect(screen.queryByText(/"topics"/)).toBeNull()
   })
 })

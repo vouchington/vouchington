@@ -41,7 +41,7 @@ describe('IdentityVerificationContent', () => {
           verificationStatus='verified'
         />,
       )
-      expect(screen.getByRole('heading', { name: /^verified$/i })).toBeDefined()
+      expect(screen.getByRole('heading', { name: /^verified$/i })).toBeInTheDocument()
     })
 
     it('renders the save preferences button', () => {
@@ -51,7 +51,7 @@ describe('IdentityVerificationContent', () => {
           verificationStatus='verified'
         />,
       )
-      expect(screen.getByRole('button', { name: /save preferences/i })).toBeDefined()
+      expect(screen.getByRole('button', { name: /save preferences/i })).toBeInTheDocument()
     })
 
     it('calls updateMyIdentityVerificationDisplayPreferences on save', async () => {
@@ -81,7 +81,7 @@ describe('IdentityVerificationContent', () => {
       )
       fireEvent.click(screen.getByRole('button', { name: /save preferences/i }))
       await waitFor(() => {
-        expect(screen.getByText('Display preferences saved.')).toBeDefined()
+        expect(screen.getByText('Display preferences saved.')).toBeInTheDocument()
       })
       expect(mockOnSuccess).toHaveBeenCalledWith('Display preferences saved.')
     })
@@ -99,7 +99,7 @@ describe('IdentityVerificationContent', () => {
       )
       fireEvent.click(screen.getByRole('button', { name: /save preferences/i }))
       await waitFor(() => {
-        expect(screen.getByText('Forbidden')).toBeDefined()
+        expect(screen.getByText('Forbidden')).toBeInTheDocument()
       })
       expect(mockOnError).toHaveBeenCalledWith(expect.any(ApiError), {
         fallback: 'Failed to update display preferences.',
@@ -116,7 +116,7 @@ describe('IdentityVerificationContent', () => {
           verificationStatus='failed'
         />,
       )
-      expect(screen.getByRole('heading', { name: /verification failed/i })).toBeDefined()
+      expect(screen.getByRole('heading', { name: /verification failed/i })).toBeInTheDocument()
     })
 
     it('renders the Try Again button', () => {
@@ -126,7 +126,7 @@ describe('IdentityVerificationContent', () => {
           verificationStatus='failed'
         />,
       )
-      expect(screen.getByRole('button', { name: /try again/i })).toBeDefined()
+      expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
     })
   })
 
@@ -138,7 +138,7 @@ describe('IdentityVerificationContent', () => {
           verificationStatus='duplicate_id'
         />,
       )
-      expect(screen.getByRole('heading', { name: /id already in use/i })).toBeDefined()
+      expect(screen.getByRole('heading', { name: /id already in use/i })).toBeInTheDocument()
     })
 
     it('renders a Contact Support link', () => {

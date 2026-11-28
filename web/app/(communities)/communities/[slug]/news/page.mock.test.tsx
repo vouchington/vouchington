@@ -185,7 +185,7 @@ describe('CommunityNewsPage', () => {
     })
     render(result)
 
-    expect(screen.getByText('Invalid search syntax')).toBeDefined()
+    expect(screen.getByText('Invalid search syntax')).toBeInTheDocument()
     expect(screen.queryByTestId('news-list')).toBeNull()
   })
 

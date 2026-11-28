@@ -75,9 +75,9 @@ describe('TopicCategoryTagsAside', () => {
     mockGetEntityRelations.mockResolvedValue(emptyResponse)
     const result = await TopicCategoryTagsAside({ topic: makeTopic(), isAuthenticated: true })
     render(result)
-    expect(screen.getByText('Categories')).toBeDefined()
-    expect(screen.getByText('No categories yet')).toBeDefined()
-    expect(screen.getByTestId('manage-tags-dialog')).toBeDefined()
+    expect(screen.getByText('Categories')).toBeInTheDocument()
+    expect(screen.getByText('No categories yet')).toBeInTheDocument()
+    expect(screen.getByTestId('manage-tags-dialog')).toBeInTheDocument()
   })
 
   it('passes topicApiId (UUID) to getEntityRelations, not slug', async () => {
@@ -120,7 +120,7 @@ describe('TopicCategoryTagsAside', () => {
       isAuthenticated: true,
     })
     render(result)
-    expect(screen.getByTestId('manage-tags-dialog')).toBeDefined()
+    expect(screen.getByTestId('manage-tags-dialog')).toBeInTheDocument()
     expect(mockManageTagsDialog.mock.lastCall?.[0]?.manageHref).toBe('/source/npr/tags/category')
   })
 })

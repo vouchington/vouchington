@@ -51,7 +51,7 @@ describe('comment collapse for a signed-in viewer', () => {
 
     expect(bookmarkEntity).toHaveBeenCalledWith('post', '1', 'hide')
     expect(setPreference).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: 'Expand comment thread' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Expand comment thread' })).toBeInTheDocument()
   })
 
   it('starts collapsed from the server hide bookmark and expands with an unbookmark', async () => {
@@ -90,7 +90,7 @@ describe('comment collapse for a signed-in viewer', () => {
         screen.getAllByTestId('markdown').some(el => el.textContent === '<p>Comment 2</p>'),
       ).toBe(true),
     )
-    expect(screen.getByRole('button', { name: 'Load more' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Load more' })).toBeInTheDocument()
   })
 
   it('shows a comment awaiting moderation without its author', () => {

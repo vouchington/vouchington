@@ -73,7 +73,7 @@ describe('UpgradeMembershipAside', () => {
     } as Awaited<ReturnType<typeof getMembership>>)
     const result = await UpgradeMembershipAside()
     render(result as ReactElement)
-    expect(screen.getByText('Upgrade to Plus')).toBeDefined()
+    expect(screen.getByText('Upgrade to Plus')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View plans' }).getAttribute('href')).toBe('/plans')
   })
 

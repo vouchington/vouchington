@@ -277,7 +277,7 @@ describe('SettingsNav', () => {
     mockPathname = '/my/identity'
     render(<SettingsNav />)
     expect(screen.queryByRole('tablist')).toBeNull()
-    expect(screen.getByRole('menubar')).toBeTruthy()
+    expect(screen.getByRole('menubar')).toBeInTheDocument()
   })
 
   it('no second-row pill links rendered', () => {

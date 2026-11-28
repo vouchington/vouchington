@@ -88,8 +88,8 @@ describe('UserTopicList', () => {
         emptyDescription='Nothing here.'
       />,
     )
-    expect(screen.getByTestId('empty-state')).toBeDefined()
-    expect(screen.getByText('No topics')).toBeDefined()
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument()
+    expect(screen.getByText('No topics')).toBeInTheDocument()
   })
 
   it('renders a TopicCard for each topic without relationAction', () => {
@@ -101,8 +101,8 @@ describe('UserTopicList', () => {
         emptyDescription='Nothing here.'
       />,
     )
-    expect(screen.getByTestId('topic-card-t-1')).toBeDefined()
-    expect(screen.getByTestId('topic-card-t-2')).toBeDefined()
+    expect(screen.getByTestId('topic-card-t-1')).toBeInTheDocument()
+    expect(screen.getByTestId('topic-card-t-2')).toBeInTheDocument()
     expect(screen.queryByTestId('empty-state')).toBeNull()
   })
 
@@ -143,8 +143,8 @@ describe('UserTopicList', () => {
         relationAction={muteConfig}
       />,
     )
-    expect(screen.getByTestId('relation-action-t-1')).toBeDefined()
-    expect(screen.getByTestId('relation-action-t-2')).toBeDefined()
+    expect(screen.getByTestId('relation-action-t-1')).toBeInTheDocument()
+    expect(screen.getByTestId('relation-action-t-2')).toBeInTheDocument()
   })
 
   it('does not render RelationManagementAction when no relationAction', () => {

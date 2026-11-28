@@ -68,7 +68,7 @@ describe('LandingPageEditorPage', () => {
   it('renders the username-required gate when the user has no username', async () => {
     mockGetCurrentUser.mockResolvedValue({ username: null })
     render(await LandingPageEditorPage({ params: Promise.resolve({ slug: 'my-page' }) }))
-    expect(screen.getByTestId('username-required')).toBeDefined()
+    expect(screen.getByTestId('username-required')).toBeInTheDocument()
   })
 
   it('calls notFound when the slug does not resolve', async () => {

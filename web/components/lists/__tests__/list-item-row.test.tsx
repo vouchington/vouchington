@@ -31,34 +31,34 @@ describe('ListItemRow', () => {
     const { getByText } = render(
       <ListItemRow item={makeItem({ item_type: 'post', media_type: null })} />,
     )
-    expect(getByText('Post')).not.toBeNull()
+    expect(getByText('Post')).toBeInTheDocument()
   })
 
   it('shows Article badge for rss_feed_item with article media_type', () => {
     const { getByText } = render(<ListItemRow item={makeItem({ media_type: 'article' })} />)
-    expect(getByText('Article')).not.toBeNull()
+    expect(getByText('Article')).toBeInTheDocument()
   })
 
   it('shows Video badge for video media_type', () => {
     const { getByText } = render(<ListItemRow item={makeItem({ media_type: 'video' })} />)
-    expect(getByText('Video')).not.toBeNull()
+    expect(getByText('Video')).toBeInTheDocument()
   })
 
   it('shows Podcast badge for audio media_type', () => {
     const { getByText } = render(<ListItemRow item={makeItem({ media_type: 'audio' })} />)
-    expect(getByText('Podcast')).not.toBeNull()
+    expect(getByText('Podcast')).toBeInTheDocument()
   })
 
   it('falls back to Article for unknown media_type', () => {
     const { getByText } = render(<ListItemRow item={makeItem({ media_type: 'unknown' })} />)
-    expect(getByText('Article')).not.toBeNull()
+    expect(getByText('Article')).toBeInTheDocument()
   })
 
   it('renders the entity label without exposing its ID', () => {
     const { getByText, queryByText } = render(
       <ListItemRow item={makeItem({ entity_id: 'abc-123', entity_label: 'Saved story' })} />,
     )
-    expect(getByText('Saved story')).not.toBeNull()
+    expect(getByText('Saved story')).toBeInTheDocument()
     expect(queryByText('abc-123')).toBeNull()
   })
 

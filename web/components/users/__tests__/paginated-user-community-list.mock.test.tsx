@@ -56,7 +56,7 @@ describe('PaginatedUserCommunityList', () => {
       after: 'cursor-1',
     })
     expect(screen.getAllByText('community-1')).toHaveLength(1)
-    expect(screen.getByText('community-2')).toBeDefined()
+    expect(screen.getByText('community-2')).toBeInTheDocument()
   })
 
   it('preserves the first page after failure and retries the continuation', async () => {
@@ -77,12 +77,12 @@ describe('PaginatedUserCommunityList', () => {
       await receiveLoadMore.mock.calls.at(-1)![0]()
     })
 
-    expect(screen.getByText('community-1')).toBeDefined()
+    expect(screen.getByText('community-1')).toBeInTheDocument()
     await act(async () => {
       screen.getByRole('button', { name: 'Retry' }).click()
     })
 
-    expect(await screen.findByText('community-2')).toBeDefined()
+    expect(await screen.findByText('community-2')).toBeInTheDocument()
     expect(getPaginatedPage).toHaveBeenCalledTimes(2)
   })
 
@@ -105,6 +105,6 @@ describe('PaginatedUserCommunityList', () => {
     expect(getPaginatedPage).toHaveBeenCalledWith('/api/v1/users/alice/communities/member', {
       after: 'cursor-1',
     })
-    expect(await screen.findByText('community-2')).toBeDefined()
+    expect(await screen.findByText('community-2')).toBeInTheDocument()
   })
 })

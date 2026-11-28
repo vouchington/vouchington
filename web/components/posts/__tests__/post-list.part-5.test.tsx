@@ -41,8 +41,8 @@ describe('PostList', () => {
       await loadMore()
     })
 
-    expect(screen.getByText('First Post')).toBeDefined()
-    expect(screen.getByText('Second Post')).toBeDefined()
-    expect(screen.getByText('Third Post')).toBeDefined()
+    expect(screen.getByText('First Post')).toBeInTheDocument()
+    expect(screen.getByText('Second Post')).toBeInTheDocument()
+    expect(screen.getByText('Third Post')).toBeInTheDocument()
   })
 })

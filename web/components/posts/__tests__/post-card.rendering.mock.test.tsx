@@ -91,12 +91,12 @@ describe('PostCard', () => {
 
   it('renders post title', () => {
     render(<PostCard post={mockPost} />)
-    expect(screen.getByText('Test Post Title')).toBeDefined()
+    expect(screen.getByText('Test Post Title')).toBeInTheDocument()
   })
 
   it('renders post type badge', () => {
     render(<PostCard post={mockPost} />)
-    expect(screen.getByText('Discussion')).toBeDefined()
+    expect(screen.getByText('Discussion')).toBeInTheDocument()
   })
 
   it('renders raw positive and negative vote counts', () => {
@@ -117,13 +117,13 @@ describe('PostCard', () => {
         metrics={mockMetrics}
       />,
     )
-    expect(screen.getByText('5 comments')).toBeDefined()
+    expect(screen.getByText('5 comments')).toBeInTheDocument()
   })
 
   it('renders excerpt from markdown', () => {
     render(<PostCard post={mockPost} />)
     // Markdown should be stripped to plain text
-    expect(screen.getByText(/This is a test post/)).toBeDefined()
+    expect(screen.getByText(/This is a test post/)).toBeInTheDocument()
   })
 
   it('sets content lang on plain-text excerpts using declared language before detected language', () => {
@@ -185,7 +185,7 @@ describe('PostCard', () => {
 
     render(<PostCard post={reviewPost} />)
     // Should show topic name in review badge row
-    expect(screen.getByText(/Chase Sapphire Reserve/)).toBeDefined()
+    expect(screen.getByText(/Chase Sapphire Reserve/)).toBeInTheDocument()
   })
 
   it('handles zero votes gracefully', () => {
@@ -218,7 +218,7 @@ describe('PostCard', () => {
     it('renders FollowerShareActions when hideBookmarkActions is not set and shareable', () => {
       mockPostCardUser.current = { account_type: null, id: 'viewer-99', roles: [] } as User
       render(<PostCard post={mockPost} />)
-      expect(screen.getByTestId('follower-share-actions')).toBeDefined()
+      expect(screen.getByTestId('follower-share-actions')).toBeInTheDocument()
     })
   })
 })

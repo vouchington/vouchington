@@ -138,8 +138,8 @@ describe('TopicList', () => {
 
   it('renders all topics in results', () => {
     render(<TopicList data={mockData} />)
-    expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined()
-    expect(screen.getByText('World of Hyatt')).toBeDefined()
+    expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument()
+    expect(screen.getByText('World of Hyatt')).toBeInTheDocument()
   })
 
   it('renders empty state when no results', () => {
@@ -150,7 +150,7 @@ describe('TopicList', () => {
     }
 
     render(<TopicList data={emptyData} />)
-    expect(screen.getByText('No topics found')).toBeDefined()
+    expect(screen.getByText('No topics found')).toBeInTheDocument()
   })
 
   it('handles missing topics gracefully', () => {
@@ -177,7 +177,7 @@ describe('TopicList', () => {
     }
 
     render(<TopicList data={dataWithMissingTopic} />)
-    expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined()
+    expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument()
     expect(screen.queryByText('Missing Topic')).toBeNull()
   })
 
@@ -216,7 +216,7 @@ describe('TopicList', () => {
       />,
     )
 
-    expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined()
+    expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument()
     expect(screen.queryByText('World of Hyatt')).toBeNull()
 
     const loadMore = mockReceiveLoadMore.mock.calls.at(-1)![0] as () => Promise<void>
@@ -224,8 +224,8 @@ describe('TopicList', () => {
       await loadMore()
     })
 
-    expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined()
-    expect(screen.getByText('World of Hyatt')).toBeDefined()
+    expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument()
+    expect(screen.getByText('World of Hyatt')).toBeInTheDocument()
   })
 
   it('resets accumulated pages when initialData changes (filter/sort update)', async () => {
@@ -245,8 +245,8 @@ describe('TopicList', () => {
     await act(async () => {
       await loadMore()
     })
-    expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined()
-    expect(screen.getByText('World of Hyatt')).toBeDefined()
+    expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument()
+    expect(screen.getByText('World of Hyatt')).toBeInTheDocument()
 
     const newData = makePage('topic-3', 'Delta SkyMiles', false, null)
     rerender(
@@ -259,6 +259,6 @@ describe('TopicList', () => {
 
     expect(screen.queryByText('Chase Sapphire Reserve')).toBeNull()
     expect(screen.queryByText('World of Hyatt')).toBeNull()
-    expect(screen.getByText('Delta SkyMiles')).toBeDefined()
+    expect(screen.getByText('Delta SkyMiles')).toBeInTheDocument()
   })
 })

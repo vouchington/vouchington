@@ -64,7 +64,7 @@ describe('CommunityProxyBookmarkButton', () => {
     const inactiveLabel = t(
       'extracted.communities.communityProxyBookmarkButton.virtuallyFollow_724e5f77',
     )
-    expect(screen.getByRole('button', { name: inactiveLabel })).toBeDefined()
+    expect(screen.getByRole('button', { name: inactiveLabel })).toBeInTheDocument()
     expect(entityBookmarkButton).toHaveBeenCalledWith(
       expect.objectContaining({
         entityType: 'community',

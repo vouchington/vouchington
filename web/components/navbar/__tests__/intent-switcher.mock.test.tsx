@@ -78,7 +78,7 @@ describe('IntentSwitcher', () => {
     expect(screen.queryByTestId('intent-switcher-item-landing-pages')).toBeNull()
     expect(screen.queryByTestId('intent-switcher-item-friends')).toBeNull()
     // 'news' is always visible
-    expect(screen.getByTestId('intent-switcher-item-news')).toBeDefined()
+    expect(screen.getByTestId('intent-switcher-item-news')).toBeInTheDocument()
   })
 
   it('filters role-gated and auth-gated intents from anonymous users', () => {
@@ -98,7 +98,7 @@ describe('IntentSwitcher', () => {
     render(<IntentSwitcher variant='navbar' />)
     // Moderation intent is now requiresAuth (not role-gated) — non-admin authed users
     // see the "My Cases" group items (My Appeals, My Disputes)
-    expect(screen.getByTestId('intent-switcher-item-moderation')).toBeDefined()
+    expect(screen.getByTestId('intent-switcher-item-moderation')).toBeInTheDocument()
     // growth is still role-gated — non-admin users cannot see it
     expect(screen.queryByTestId('intent-switcher-item-growth')).toBeNull()
   })

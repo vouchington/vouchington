@@ -120,7 +120,7 @@ describe('TopicCard — fediverse_instance', () => {
 
   it('renders the "Unclassified" software-row fallback', () => {
     render(<TopicCard topic={mockInstanceTopic} />)
-    expect(screen.getByText('Unclassified')).toBeDefined()
+    expect(screen.getByText('Unclassified')).toBeInTheDocument()
   })
 
   it('renders classified software and version with a rated trust badge', () => {
@@ -144,14 +144,14 @@ describe('TopicCard — fediverse_instance', () => {
         }}
       />,
     )
-    expect(screen.getByText('mastodon 4.4.0')).toBeDefined()
-    expect(screen.getByText('Trusted')).toBeDefined()
+    expect(screen.getByText('mastodon 4.4.0')).toBeInTheDocument()
+    expect(screen.getByText('Trusted')).toBeInTheDocument()
     expect(screen.queryByText('Unclassified')).toBeNull()
   })
 
   it('renders a trust badge showing "Unrated" when no hostnameElection is supplied', () => {
     render(<TopicCard topic={mockInstanceTopic} />)
-    expect(screen.getByText('Unrated')).toBeDefined()
+    expect(screen.getByText('Unrated')).toBeInTheDocument()
   })
 
   it('falls back to a plain "Unrated" link when the topic has no hostname', () => {

@@ -53,9 +53,9 @@ describe('SocialMechanics', () => {
   it('renders all mechanic cards with correct links', () => {
     render(<SocialMechanics t={t} />)
 
-    expect(screen.getByText('Flexible Forum')).toBeDefined()
-    expect(screen.getByText('Topics as Votable Tags')).toBeDefined()
-    expect(screen.getByText('Community-Curated Lists')).toBeDefined()
+    expect(screen.getByText('Flexible Forum')).toBeInTheDocument()
+    expect(screen.getByText('Topics as Votable Tags')).toBeInTheDocument()
+    expect(screen.getByText('Community-Curated Lists')).toBeInTheDocument()
 
     const listLink = screen
       .getAllByRole('link')

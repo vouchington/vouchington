@@ -68,7 +68,7 @@ describe('CommunityHeader', () => {
 
     render(<CommunityHeader community={community} />)
 
-    expect(screen.getByRole('button', { name: 'follow' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'follow' })).toBeInTheDocument()
     expect(communityProxyBookmarkButton).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'follow' }),
     )

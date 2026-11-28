@@ -36,7 +36,7 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Posts (8)' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Posts (8)' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Reviews (5)' })).toBeNull()
   })
 
@@ -59,8 +59,8 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Posts (6)' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Reviews (4)' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Posts (6)' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Reviews (4)' })).toBeInTheDocument()
   })
 
   it('shows Referral Links tab for referral_program topic type', () => {
@@ -75,8 +75,8 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Posts (1)' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Referral Links' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Posts (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Referral Links' })).toBeInTheDocument()
   })
 
   it('shows Referral Links tab when referralProgramId is set', () => {
@@ -92,8 +92,8 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Posts (1)' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Referral Links' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Posts (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Referral Links' })).toBeInTheDocument()
   })
 
   it('hides Referral Links tab when referralProgramId is null', () => {
@@ -109,7 +109,7 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Posts (1)' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Posts (1)' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Referral Links' })).toBeNull()
   })
 
@@ -125,7 +125,7 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Manage Tags' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Manage Tags' })).toBeInTheDocument()
   })
 
   it('activates Manage Tags tab when pathname matches /tags/ sub-path', () => {
@@ -180,8 +180,8 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menubar')).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Posts' })).toBeDefined()
+    expect(screen.getByRole('menubar')).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Posts' })).toBeInTheDocument()
   })
 
   it('hides Posts tab when all post counts are 0 and not on /posts', () => {
@@ -203,6 +203,6 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
     )
 
     expect(screen.queryByRole('menuitem', { name: /^Posts/ })).toBeNull()
-    expect(screen.getByRole('menuitem', { name: 'News (5)' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'News (5)' })).toBeInTheDocument()
   })
 })

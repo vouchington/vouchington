@@ -88,12 +88,14 @@ describe('TopicNewsPage', () => {
         limit: 25,
       },
     })
-    expect(screen.getByText('news list')).toBeDefined()
-    expect(screen.getByText('/api/v1/rss-feed-items')).toBeDefined()
-    expect(screen.getByText(JSON.stringify({ category_topic: 'topic-1', limit: 25 }))).toBeDefined()
+    expect(screen.getByText('news list')).toBeInTheDocument()
+    expect(screen.getByText('/api/v1/rss-feed-items')).toBeInTheDocument()
+    expect(
+      screen.getByText(JSON.stringify({ category_topic: 'topic-1', limit: 25 })),
+    ).toBeInTheDocument()
     expect(
       screen.getByText('modal:/topic/topic-1/news:{"rss_item":"feed-1:test-guid-1"}'),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('renders recoverable hashtag search errors inline', async () => {
@@ -108,7 +110,7 @@ describe('TopicNewsPage', () => {
     })
     render(ui)
 
-    expect(screen.getByText('Topic #missing was not found')).toBeDefined()
+    expect(screen.getByText('Topic #missing was not found')).toBeInTheDocument()
     expect(screen.queryByText('news list')).toBeNull()
   })
 })

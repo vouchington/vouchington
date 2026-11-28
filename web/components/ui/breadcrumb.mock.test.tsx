@@ -42,9 +42,9 @@ describe('Breadcrumbs', () => {
         ]}
       />,
     )
-    expect(screen.getByText('Home')).toBeDefined()
-    expect(screen.getByText('Topics')).toBeDefined()
-    expect(screen.getByText('Create')).toBeDefined()
+    expect(screen.getByText('Home')).toBeInTheDocument()
+    expect(screen.getByText('Topics')).toBeInTheDocument()
+    expect(screen.getByText('Create')).toBeInTheDocument()
   })
 
   it('renders the last item as the current page', () => {
@@ -155,8 +155,8 @@ describe('Breadcrumbs', () => {
     )
     expect(keyWarnings).toHaveLength(0)
 
-    expect(screen.getByText('Topics')).toBeDefined()
-    expect(screen.getByText('Create')).toBeDefined()
+    expect(screen.getByText('Topics')).toBeInTheDocument()
+    expect(screen.getByText('Create')).toBeInTheDocument()
 
     consoleSpy.mockRestore()
   })

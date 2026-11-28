@@ -44,25 +44,25 @@ function renderDialog(open: boolean) {
 describe('KeyboardShortcutsDialog', () => {
   it('renders dialog title when open', () => {
     renderDialog(true)
-    expect(screen.getByRole('heading', { name: /keyboard shortcuts/i })).toBeDefined()
+    expect(screen.getByRole('heading', { name: /keyboard shortcuts/i })).toBeInTheDocument()
   })
 
   it('renders Navigation category', () => {
     renderDialog(true)
-    expect(screen.getByText('Navigation')).toBeDefined()
+    expect(screen.getByText('Navigation')).toBeInTheDocument()
   })
 
   it('renders General category', () => {
     renderDialog(true)
-    expect(screen.getByText('General')).toBeDefined()
+    expect(screen.getByText('General')).toBeInTheDocument()
   })
 
   it('renders all shortcut descriptions', () => {
     renderDialog(true)
-    expect(screen.getByText('Open the global search dialog')).toBeDefined()
-    expect(screen.getByText('Expand or collapse the sidebar')).toBeDefined()
-    expect(screen.getByText('Go to preferences (signed-in users)')).toBeDefined()
-    expect(screen.getByText('Open this keyboard shortcuts dialog')).toBeDefined()
+    expect(screen.getByText('Open the global search dialog')).toBeInTheDocument()
+    expect(screen.getByText('Expand or collapse the sidebar')).toBeInTheDocument()
+    expect(screen.getByText('Go to preferences (signed-in users)')).toBeInTheDocument()
+    expect(screen.getByText('Open this keyboard shortcuts dialog')).toBeInTheDocument()
   })
 
   it('contains link to /article/keyboard-shortcuts', () => {
@@ -88,8 +88,8 @@ describe('KeyboardShortcutsDialog', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Moderation Shortcuts' })).toBeDefined()
-    expect(screen.getByText('Move to the next moderation queue item')).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Moderation Shortcuts' })).toBeInTheDocument()
+    expect(screen.getByText('Move to the next moderation queue item')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /view all shortcuts/i })).toBeNull()
   })
 })

@@ -158,7 +158,7 @@ describe('EntityBookmarkButton sibling refetch', () => {
       </>,
     )
 
-    expect(screen.getByRole('button', { name: 'Following' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Following' })).toBeInTheDocument()
     expect(mockGetEntityBookmarks).not.toHaveBeenCalled()
 
     // Click Mute — backend also removes the follow
@@ -174,6 +174,6 @@ describe('EntityBookmarkButton sibling refetch', () => {
     })
     expect(mockGetEntityBookmarks).toHaveBeenCalledWith('topic', 'topic-99')
 
-    expect(screen.getByRole('button', { name: 'Follow' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Follow' })).toBeInTheDocument()
   })
 })

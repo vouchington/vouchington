@@ -70,7 +70,7 @@ describe('AddCommunityListItemForm', () => {
         itemType='topic'
       />,
     )
-    expect(screen.getByTestId('autocomplete-input')).toBeDefined()
+    expect(screen.getByTestId('autocomplete-input')).toBeInTheDocument()
   })
 
   it('adds a topic when topic is selected', async () => {

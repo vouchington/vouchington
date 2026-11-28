@@ -46,7 +46,7 @@ describe('TopicDetailTabs admin tab visibility', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: /Settings/i })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: /Settings/i })).toBeInTheDocument()
   })
 
   it('does not show Settings tab when isAdmin=false', () => {
@@ -132,8 +132,8 @@ describe('TopicDetailTabs admin tab visibility', () => {
       />,
     )
 
-    expect(screen.getByRole('menubar')).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: /Settings/i })).toBeDefined()
+    expect(screen.getByRole('menubar')).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /Settings/i })).toBeInTheDocument()
   })
 })
 

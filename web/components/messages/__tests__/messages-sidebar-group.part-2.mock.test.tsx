@@ -50,7 +50,7 @@ describe('MessagesSidebarGroupView', () => {
 
   it('always renders the "All Messages" link', () => {
     const { getByText } = render(<MessagesSidebarGroupView {...defaultProps} />)
-    expect(getByText('All Messages')).toBeDefined()
+    expect(getByText('All Messages')).toBeInTheDocument()
   })
 
   it('renders conversation titles', () => {
@@ -61,7 +61,7 @@ describe('MessagesSidebarGroupView', () => {
         conversations={conversations}
       />,
     )
-    expect(getByText('Alice')).toBeDefined()
-    expect(getByText('Bob')).toBeDefined()
+    expect(getByText('Alice')).toBeInTheDocument()
+    expect(getByText('Bob')).toBeInTheDocument()
   })
 })

@@ -63,7 +63,7 @@ describe('HideButton', () => {
         entityId='item-1'
       />,
     )
-    expect(screen.getByRole('button', { name: 'Hide' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Hide' })).toBeInTheDocument()
   })
   it('renders with aria-label "Unhide" when initialActive=true', () => {
     render(
@@ -73,7 +73,7 @@ describe('HideButton', () => {
         initialActive
       />,
     )
-    expect(screen.getByRole('button', { name: 'Unhide' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Unhide' })).toBeInTheDocument()
   })
   it('calls bookmarkEntity on click when not hidden', async () => {
     render(
@@ -140,7 +140,7 @@ describe('HideButton', () => {
         entityId='item-1'
       />,
     )
-    expect(screen.getByTestId('eye-off-icon')).toBeDefined()
+    expect(screen.getByTestId('eye-off-icon')).toBeInTheDocument()
   })
   it('does not dispatch rss-item-hidden when unhiding', async () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent')

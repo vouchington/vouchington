@@ -38,7 +38,7 @@ describe('MFA re-authentication verification panes', () => {
       screen.getByRole('textbox', {
         name: 'Enter the 6-digit code from your authenticator app',
       }),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('accepts a full base32 email code and requires deliberate verification', () => {
@@ -131,8 +131,10 @@ describe('MFA re-authentication verification panes', () => {
       />,
     )
 
-    expect(screen.getByText('A code was already sent to your email. Enter it below.')).toBeDefined()
-    expect(screen.getByRole('textbox', { name: 'Verification code' })).toBeDefined()
+    expect(
+      screen.getByText('A code was already sent to your email. Enter it below.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Verification code' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Resend in 30s' })).toBeDisabled()
   })
 })

@@ -82,11 +82,11 @@ describe('AdminAiCostsPage', () => {
 
     render(await AdminAiCostsPage({ searchParams: Promise.resolve({}) }))
 
-    expect(screen.getByText('10.000')).toBeDefined()
-    expect(screen.getByText('20.000')).toBeDefined()
-    expect(screen.getByText('30.000')).toBeDefined()
-    expect(screen.getByText(/0,005 US\$.*1 solicitud sin precio/)).toBeDefined()
-    expect(screen.getByText(/0,005 US\$.*40.000 solicitudes sin precio/)).toBeDefined()
+    expect(screen.getByText('10.000')).toBeInTheDocument()
+    expect(screen.getByText('20.000')).toBeInTheDocument()
+    expect(screen.getByText('30.000')).toBeInTheDocument()
+    expect(screen.getByText(/0,005 US\$.*1 solicitud sin precio/)).toBeInTheDocument()
+    expect(screen.getByText(/0,005 US\$.*40.000 solicitudes sin precio/)).toBeInTheDocument()
     expect(screen.queryByText(/unpriced/)).toBeNull()
     expect(screen.queryByText('10,000')).toBeNull()
   })
@@ -101,10 +101,10 @@ describe('AdminAiCostsPage', () => {
     render(page)
 
     expect(requireAdminMock).toHaveBeenCalled()
-    expect(screen.getByTestId('breadcrumbs')).toBeDefined()
-    expect(screen.getByText('AI Costs')).toBeDefined()
+    expect(screen.getByTestId('breadcrumbs')).toBeInTheDocument()
+    expect(screen.getByText('AI Costs')).toBeInTheDocument()
     expect(document.querySelector('[data-pw="admin-ai-costs-row"]')).not.toBeNull()
-    expect(screen.getByText('test-community')).toBeDefined()
+    expect(screen.getByText('test-community')).toBeInTheDocument()
     expect(getAiCostTotalsMock).toHaveBeenCalledWith({ after: undefined, limit: 25 })
   })
 
@@ -118,7 +118,7 @@ describe('AdminAiCostsPage', () => {
     render(page)
 
     expect(document.querySelector('[data-pw="admin-ai-costs-empty"]')).not.toBeNull()
-    expect(screen.getByText('No AI usage recorded yet.')).toBeDefined()
+    expect(screen.getByText('No AI usage recorded yet.')).toBeInTheDocument()
   })
 
   it('forwards and renders an opaque continuation cursor', async () => {

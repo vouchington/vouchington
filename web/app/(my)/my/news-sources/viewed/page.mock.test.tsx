@@ -38,7 +38,7 @@ describe('MyNewsSourcesViewedPage', () => {
   it('renders the page heading when authenticated', async () => {
     mockRequireCurrentUser.mockResolvedValue(baseUser)
     render(await MyNewsSourcesViewedPage())
-    expect(screen.getByTestId('bookmark-page-header')).toBeDefined()
+    expect(screen.getByTestId('bookmark-page-header')).toBeInTheDocument()
   })
 
   it('renders UserViewedRssFeedRoute with article feedType', async () => {

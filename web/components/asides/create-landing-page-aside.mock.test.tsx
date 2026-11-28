@@ -69,7 +69,7 @@ describe('CreateLandingPageAside', () => {
     mockHasLandingPage.mockResolvedValue(false)
     const result = await CreateLandingPageAside()
     render(result as ReactElement)
-    expect(screen.getByText('Create your landing page')).toBeDefined()
+    expect(screen.getByText('Create your landing page')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Build it' }).getAttribute('href')).toBe(
       '/my/landing-pages',
     )

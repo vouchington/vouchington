@@ -79,8 +79,8 @@ describe('TriggerUrlCrawlButton', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: /trigger crawl/i })).toBeDefined()
-    expect(screen.getByRole('button', { name: /trigger rss sync/i })).toBeDefined()
+    expect(screen.getByRole('button', { name: /trigger crawl/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /trigger rss sync/i })).toBeInTheDocument()
   })
 
   it('calls refreshRssFeed and shows success toast on Trigger RSS Sync click', async () => {

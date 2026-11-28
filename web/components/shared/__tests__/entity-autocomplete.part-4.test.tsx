@@ -27,7 +27,7 @@ describe('EntityAutocomplete', () => {
     })
 
     expect(search).toHaveBeenCalledWith('', expect.any(AbortSignal))
-    expect(screen.getByText('seed')).toBeDefined()
+    expect(screen.getByText('seed')).toBeInTheDocument()
   })
 
   it('does not search on focus of an empty query by default', () => {
@@ -48,7 +48,7 @@ describe('EntityAutocomplete', () => {
     await act(async () => {
       vi.advanceTimersByTime(300)
     })
-    expect(screen.getByText('card')).toBeDefined()
+    expect(screen.getByText('card')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('card'))
 
@@ -56,6 +56,6 @@ describe('EntityAutocomplete', () => {
     // The popover (and its command-empty sibling) only renders while `open` is true; its
     // presence after select proves closeOnSelect=false did not close the popover.
     expect(screen.queryByTestId('command-empty')).not.toBeNull()
-    expect(screen.getByText('card')).toBeDefined()
+    expect(screen.getByText('card')).toBeInTheDocument()
   })
 })

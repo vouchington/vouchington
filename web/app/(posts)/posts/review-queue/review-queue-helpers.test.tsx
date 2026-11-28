@@ -19,7 +19,7 @@ describe('ModerationSummary', () => {
       />,
     )
 
-    expect(screen.getByText(label)).toBeDefined()
+    expect(screen.getByText(label)).toBeInTheDocument()
   })
 
   it.each([

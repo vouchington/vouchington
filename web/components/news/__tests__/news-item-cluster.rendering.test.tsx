@@ -18,7 +18,7 @@ describe('NewsItemCluster rendering', () => {
         view='summary'
       />,
     )
-    expect(screen.getByText('Primary Article')).toBeDefined()
+    expect(screen.getByText('Primary Article')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /related/i })).toBeNull()
     expect(container.querySelector('[data-pw="news-item-card"]')).not.toBeNull()
     expect(container.querySelector('[data-pw="news-item-cluster"]')).toBeNull()
@@ -34,7 +34,7 @@ describe('NewsItemCluster rendering', () => {
       />,
     )
     expect(container.querySelector('[data-pw="news-item-cluster"]')).not.toBeNull()
-    expect(screen.getByText('My Story')).toBeDefined()
+    expect(screen.getByText('My Story')).toBeInTheDocument()
   })
 
   it('displays story title when provided', () => {
@@ -46,7 +46,7 @@ describe('NewsItemCluster rendering', () => {
         view='summary'
       />,
     )
-    expect(screen.getByText('AI Breakthrough')).toBeDefined()
+    expect(screen.getByText('AI Breakthrough')).toBeInTheDocument()
   })
 
   it('story title is a link to the story-post when storyPost is provided', () => {
@@ -87,7 +87,7 @@ describe('NewsItemCluster rendering', () => {
         view='summary'
       />,
     )
-    expect(screen.getByText('Official source')).toBeDefined()
+    expect(screen.getByText('Official source')).toBeInTheDocument()
   })
 
   it('collapses headerless story with no members to standalone NewsItemCard and displays official badge', () => {
@@ -106,6 +106,6 @@ describe('NewsItemCluster rendering', () => {
     )
     expect(container.querySelector('[data-pw="news-item-card"]')).not.toBeNull()
     expect(container.querySelector('[data-pw="news-item-cluster"]')).toBeNull()
-    expect(screen.getByText('Official source')).toBeDefined()
+    expect(screen.getByText('Official source')).toBeInTheDocument()
   })
 })

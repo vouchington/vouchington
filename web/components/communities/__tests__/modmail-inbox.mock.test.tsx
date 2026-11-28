@@ -115,7 +115,7 @@ describe('ModmailInbox', () => {
       />,
     )
     await waitFor(() => {
-      expect(screen.getByText('No modmail threads yet.')).toBeDefined()
+      expect(screen.getByText('No modmail threads yet.')).toBeInTheDocument()
     })
   })
 
@@ -132,7 +132,7 @@ describe('ModmailInbox', () => {
     )
     await waitFor(() => {
       expect(screen.getByTestId !== undefined).toBe(true)
-      expect(screen.getByText(/user-1/i)).toBeDefined()
+      expect(screen.getByText(/user-1/i)).toBeInTheDocument()
     })
   })
 
@@ -187,7 +187,7 @@ describe('ModmailInbox', () => {
         initialData={null}
       />,
     )
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
     expect(screen.queryByText('No modmail threads yet.')).toBeNull()
   })
 
@@ -254,7 +254,7 @@ describe('ModmailInbox', () => {
       />,
     )
     await waitFor(() => {
-      expect(screen.getByText('Anonymous request')).toBeDefined()
+      expect(screen.getByText('Anonymous request')).toBeInTheDocument()
     })
   })
 })

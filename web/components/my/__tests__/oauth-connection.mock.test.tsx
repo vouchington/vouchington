@@ -66,7 +66,7 @@ describe('OAuthConnection', () => {
         initialAccount={null}
       />,
     )
-    expect(screen.getByRole('heading', { level: 2 })).toBeDefined()
+    expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument()
   })
 
   it('shows login button when disconnected', () => {
@@ -76,7 +76,7 @@ describe('OAuthConnection', () => {
         initialAccount={null}
       />,
     )
-    expect(screen.getByTestId('oauth-login-btn')).toBeDefined()
+    expect(screen.getByTestId('oauth-login-btn')).toBeInTheDocument()
   })
 
   it('hides everything when disconnected and provider becomes unavailable', () => {
@@ -115,8 +115,8 @@ describe('OAuthConnection', () => {
     )
 
     expect((container.firstChild as HTMLElement).hidden).toBe(false)
-    expect(screen.getByText('Test User')).toBeDefined()
-    expect(screen.getByText('Disconnect')).toBeDefined()
+    expect(screen.getByText('Test User')).toBeInTheDocument()
+    expect(screen.getByText('Disconnect')).toBeInTheDocument()
   })
 
   it('shows when disconnected and provider becomes available', () => {
@@ -129,7 +129,7 @@ describe('OAuthConnection', () => {
     act(() => {
       capturedOnAvailabilityChange.fn?.(true)
     })
-    expect(screen.getByTestId('oauth-login-btn')).toBeDefined()
+    expect(screen.getByTestId('oauth-login-btn')).toBeInTheDocument()
   })
 
   it('shows connected section regardless of initial providerAvailable state', () => {
@@ -142,8 +142,8 @@ describe('OAuthConnection', () => {
       />,
     )
     expect((container.firstChild as HTMLElement).hidden).toBe(false)
-    expect(screen.getByText('Test User')).toBeDefined()
-    expect(screen.getByText('Disconnect')).toBeDefined()
+    expect(screen.getByText('Test User')).toBeInTheDocument()
+    expect(screen.getByText('Disconnect')).toBeInTheDocument()
   })
 
   it('heading has correct data-pw attribute', () => {

@@ -44,7 +44,7 @@ describe('ButtonGroup', () => {
         <button type='button'>Block</button>
       </ButtonGroup>,
     )
-    expect(getByText('Mute')).toBeDefined()
-    expect(getByText('Block')).toBeDefined()
+    expect(getByText('Mute')).toBeInTheDocument()
+    expect(getByText('Block')).toBeInTheDocument()
   })
 })

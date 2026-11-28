@@ -145,8 +145,8 @@ describe('ParticipantsPanel', () => {
 
   it('renders participant list with usernames', () => {
     renderOwner()
-    expect(screen.getByText('@owneruser')).toBeDefined()
-    expect(screen.getByText('@memberuser')).toBeDefined()
+    expect(screen.getByText('@owneruser')).toBeInTheDocument()
+    expect(screen.getByText('@memberuser')).toBeInTheDocument()
   })
 
   it('owner sees remove button for other participants', () => {

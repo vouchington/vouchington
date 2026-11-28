@@ -105,8 +105,8 @@ describe('DeletePostMenuItem', () => {
 
   it('renders a delete menu item with trash icon', () => {
     render(<DeletePostMenuItem postIdOrSlug='post-1' />)
-    expect(screen.getByRole('menuitem')).toBeDefined()
-    expect(screen.getByTestId('trash-icon')).toBeDefined()
+    expect(screen.getByRole('menuitem')).toBeInTheDocument()
+    expect(screen.getByTestId('trash-icon')).toBeInTheDocument()
   })
 
   it('dialog is initially closed', () => {
@@ -117,7 +117,7 @@ describe('DeletePostMenuItem', () => {
   it('clicking the menu item opens the confirm dialog', () => {
     render(<DeletePostMenuItem postIdOrSlug='post-1' />)
     fireEvent.click(screen.getByRole('menuitem'))
-    expect(screen.getByTestId('delete-alert-dialog')).toBeDefined()
+    expect(screen.getByTestId('delete-alert-dialog')).toBeInTheDocument()
   })
 
   it('confirm button is rendered inside the dialog with data-pw', () => {

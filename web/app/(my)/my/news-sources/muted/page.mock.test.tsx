@@ -38,7 +38,7 @@ describe('MyNewsSourcesMutedPage', () => {
   it('renders the page heading when authenticated', async () => {
     mockRequireCurrentUser.mockResolvedValue(baseUser)
     render(await MyNewsSourcesMutedPage())
-    expect(screen.getByTestId('bookmark-page-header')).toBeDefined()
+    expect(screen.getByTestId('bookmark-page-header')).toBeInTheDocument()
   })
 
   it('renders UserRssFeedRelationRoute with article feedType', async () => {

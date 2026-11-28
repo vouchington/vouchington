@@ -123,8 +123,8 @@ describe('NewsItemCard compact view', () => {
         view='compact'
       />,
     )
-    expect(screen.getByText('Test Article Title')).toBeDefined()
-    expect(screen.getByText('Tech Weekly')).toBeDefined()
+    expect(screen.getByText('Test Article Title')).toBeInTheDocument()
+    expect(screen.getByText('Tech Weekly')).toBeInTheDocument()
     expect(screen.queryByText('This is a test article excerpt.')).toBeNull()
   })
 

@@ -99,7 +99,7 @@ describe('CreateReviewPage', () => {
     })
     const result = await CreateReviewPage({ searchParams: createPostPageEmptySearchParams })
     render(result)
-    expect(screen.getByTestId('contribution-gated-cta')).toBeDefined()
+    expect(screen.getByTestId('contribution-gated-cta')).toBeInTheDocument()
     expect(screen.queryByTestId('post-form')).toBeNull()
   })
 })

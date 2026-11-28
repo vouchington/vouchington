@@ -190,7 +190,7 @@ describe('createTopicSourceCrawlDetailPage', () => {
     expect(screen.getByTestId('source-crawl-outcome-banner')).toHaveTextContent(
       'extracted.manageSource.crawlHistorySection.success_6f488f09',
     )
-    expect(screen.getByText('200')).toBeDefined()
+    expect(screen.getByText('200')).toBeInTheDocument()
     expect(screen.queryByTestId('source-crawl-feed-items')).toBeNull()
   })
 
@@ -219,6 +219,6 @@ describe('createTopicSourceCrawlDetailPage', () => {
     )
     expect(
       screen.getByText('extracted.manageSource.crawlHistorySection.itemNumber_49d8f8b4'),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 })

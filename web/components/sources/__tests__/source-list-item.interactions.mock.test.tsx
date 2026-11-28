@@ -219,8 +219,8 @@ describe('SourceListItem voting and subscribe interactions', () => {
     )
 
     // Both follow buttons render (async via nextDynamic) with their data-pw test-ids
-    expect(await findByTestId('source-list-follow-source-button')).toBeTruthy()
-    expect(await findByTestId('source-list-follow-topic-button')).toBeTruthy()
+    expect(await findByTestId('source-list-follow-source-button')).toBeInTheDocument()
+    expect(await findByTestId('source-list-follow-topic-button')).toBeInTheDocument()
   })
 
   it('passes isFollowingTopic=true to the Follow Topic button', async () => {

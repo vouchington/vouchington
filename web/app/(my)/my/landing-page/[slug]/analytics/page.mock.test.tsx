@@ -57,7 +57,7 @@ describe('LandingPageAnalyticsPage', () => {
   it('renders the analytics dashboard for a resolved slug', async () => {
     mockGetCurrentUser.mockResolvedValue({ username: 'tester' })
     render(await LandingPageAnalyticsPage({ params: Promise.resolve({ slug: 'my-page' }) }))
-    expect(screen.getByTestId('analytics-dashboard')).toBeDefined()
+    expect(screen.getByTestId('analytics-dashboard')).toBeInTheDocument()
   })
 
   it('calls notFound when unauthenticated', async () => {

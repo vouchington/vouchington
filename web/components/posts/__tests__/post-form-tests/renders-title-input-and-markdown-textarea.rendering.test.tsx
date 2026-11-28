@@ -29,8 +29,8 @@ describe('PostForm rendering', () => {
 
   it('renders title input and markdown textarea', () => {
     render(<PostForm postType='discussion' />)
-    expect(screen.getByPlaceholderText('Give your post a title...')).toBeDefined()
-    expect(screen.getByPlaceholderText('Write your post...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Give your post a title...')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Write your post...')).toBeInTheDocument()
   })
 
   it('renders hidden honeypot inputs with correct attributes', () => {
@@ -50,8 +50,8 @@ describe('PostForm rendering', () => {
   it('renders anonymous toggle inside Advanced section', () => {
     render(<PostForm postType='discussion' />)
     fireEvent.click(screen.getByText('Advanced'))
-    expect(screen.getByLabelText('Post anonymously')).toBeDefined()
-    expect(screen.getByText('Only you and admins will see the author.')).toBeDefined()
+    expect(screen.getByLabelText('Post anonymously')).toBeInTheDocument()
+    expect(screen.getByText('Only you and admins will see the author.')).toBeInTheDocument()
   })
 
   it('toggles anonymous state when the description text is clicked', () => {
@@ -79,15 +79,15 @@ describe('PostForm rendering', () => {
       />,
     )
     fireEvent.click(screen.getByText('Advanced'))
-    expect(screen.getByText('Visibility')).toBeDefined()
+    expect(screen.getByText('Visibility')).toBeInTheDocument()
   })
 
   it('shows rating selector for review type in create mode', () => {
     render(<PostForm postType='review' />)
-    expect(screen.getByRole('radiogroup', { name: /Rating for topic 1/i })).toBeDefined()
-    expect(screen.getByRole('radio', { name: '1 star' })).toBeDefined()
-    expect(screen.getByRole('radio', { name: '5 stars' })).toBeDefined()
-    expect(screen.getByTestId('topic-autocomplete')).toBeDefined()
+    expect(screen.getByRole('radiogroup', { name: /Rating for topic 1/i })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '1 star' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '5 stars' })).toBeInTheDocument()
+    expect(screen.getByTestId('topic-autocomplete')).toBeInTheDocument()
   })
 
   it('shows rating selector and topic autocomplete for review in edit mode', () => {
@@ -119,11 +119,11 @@ describe('PostForm rendering', () => {
         post={reviewPost}
       />,
     )
-    expect(screen.getByRole('radiogroup', { name: /Rating for Travel card/i })).toBeDefined()
+    expect(screen.getByRole('radiogroup', { name: /Rating for Travel card/i })).toBeInTheDocument()
     expect(screen.queryByText('topic-1')).toBeNull()
-    expect(screen.getByRole('radio', { name: '1 star' })).toBeDefined()
+    expect(screen.getByRole('radio', { name: '1 star' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: '4 stars' })).toBeChecked()
-    expect(screen.getByTestId('topic-autocomplete')).toBeDefined()
+    expect(screen.getByTestId('topic-autocomplete')).toBeInTheDocument()
   })
 
   it('does not show rating or topic autocomplete for discussion', () => {

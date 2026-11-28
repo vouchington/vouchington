@@ -45,7 +45,7 @@ describe('CommunityListAutocomplete', () => {
     fireEvent.change(screen.getByPlaceholderText('Search domains...'), {
       target: { value: 'points' },
     })
-    await waitFor(() => expect(screen.getByText('thepointsguy.com')).toBeDefined(), {
+    await waitFor(() => expect(screen.getByText('thepointsguy.com')).toBeInTheDocument(), {
       timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
     })
     fireEvent.click(screen.getByText('thepointsguy.com'))
@@ -78,7 +78,7 @@ describe('CommunityListAutocomplete', () => {
     })
 
     await waitFor(
-      () => expect(screen.getByText('thepointsguy.com/guide/best-cards')).toBeDefined(),
+      () => expect(screen.getByText('thepointsguy.com/guide/best-cards')).toBeInTheDocument(),
       { timeout: AUTOCOMPLETE_WAIT_TIMEOUT },
     )
   })
@@ -110,7 +110,7 @@ describe('CommunityListAutocomplete', () => {
     await settleInitialQuery()
     fireEvent.change(input, { target: { value: 'chase' } })
 
-    await waitFor(() => expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined(), {
+    await waitFor(() => expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument(), {
       timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
     })
 
@@ -128,7 +128,7 @@ describe('CommunityListAutocomplete', () => {
     const input = screen.getByPlaceholderText('Search topics...')
     await settleInitialQuery()
     fireEvent.change(input, { target: { value: 'chase' } })
-    expect(screen.getByTestId('command-empty')).toBeDefined()
+    expect(screen.getByTestId('command-empty')).toBeInTheDocument()
 
     fireEvent.keyDown(input, { key: 'Escape' })
     expect(screen.queryByTestId('command-empty')).toBeNull()

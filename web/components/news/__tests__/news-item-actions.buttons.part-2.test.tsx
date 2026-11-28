@@ -19,7 +19,7 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
       />,
     )
 
-    expect(screen.getByTestId('save-button')).toBeDefined()
+    expect(screen.getByTestId('save-button')).toBeInTheDocument()
   })
 
   it('does NOT render SaveButton when not logged in', () => {

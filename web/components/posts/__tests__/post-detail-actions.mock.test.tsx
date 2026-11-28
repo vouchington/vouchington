@@ -100,8 +100,8 @@ describe('PostDetailActions', () => {
 
   it('signed-in: Save and Hide buttons visible', () => {
     render(<PostDetailActions {...defaultProps} />)
-    expect(screen.getByText('Save')).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Hide' })).toBeDefined()
+    expect(screen.getByText('Save')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Hide' })).toBeInTheDocument()
   })
 
   it('does not render comment count in the action row', () => {

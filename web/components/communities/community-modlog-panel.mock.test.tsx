@@ -91,7 +91,7 @@ describe('CommunityModlogPanel', () => {
         initialData={emptyData}
       />,
     )
-    expect(screen.getByText('Moderator Action Log')).toBeDefined()
+    expect(screen.getByText('Moderator Action Log')).toBeInTheDocument()
   })
 
   it('renders empty state', () => {
@@ -115,8 +115,8 @@ describe('CommunityModlogPanel', () => {
       />,
     )
     expect(container.querySelector('[data-pw="community-modlog-row"]')).toBeTruthy()
-    expect(screen.getByText('ban')).toBeDefined()
-    expect(screen.getByText('Spam')).toBeDefined()
+    expect(screen.getByText('ban')).toBeInTheDocument()
+    expect(screen.getByText('Spam')).toBeInTheDocument()
   })
 
   it('loads more actions when Load more button is clicked', async () => {

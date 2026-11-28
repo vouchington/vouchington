@@ -198,7 +198,7 @@ describe('AsideDrawer', () => {
       fireEvent.click(button)
     })
 
-    expect(screen.getByTestId('page-aside-drawer')).toBeDefined()
+    expect(screen.getByTestId('page-aside-drawer')).toBeInTheDocument()
   })
 
   it('resets mobileSheetOpen on mount so stale state from a no-aside route does not pop the drawer', () => {
@@ -260,6 +260,6 @@ describe('AsideDrawer', () => {
       fireEvent.click(button)
     })
 
-    expect(screen.getByTestId('page-aside-drawer')).toBeDefined()
+    expect(screen.getByTestId('page-aside-drawer')).toBeInTheDocument()
   })
 })

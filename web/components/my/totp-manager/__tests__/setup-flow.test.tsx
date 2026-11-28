@@ -47,7 +47,7 @@ describe('TOTP setup flow', () => {
       screen.getByRole('textbox', {
         name: 'Authenticator name (optional)',
       }),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('labels the setup code input with the visible instruction', () => {
@@ -57,7 +57,7 @@ describe('TOTP setup flow', () => {
       screen.getByRole('textbox', {
         name: 'Enter the 6-digit code from your authenticator app to confirm',
       }),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('uses unique control ids when repeated setup flows render', () => {

@@ -115,11 +115,11 @@ describe('OAuthConsentPage', () => {
     })
     render(ui)
 
-    expect(screen.getByText('Example app wants access to Voucha')).toBeDefined()
+    expect(screen.getByText('Example app wants access to Voucha')).toBeInTheDocument()
     expect(screen.getByText('app.example')).toBeInTheDocument()
     expect(screen.getByText('Unverified app')).toBeInTheDocument()
-    expect(screen.getByText('https://api.voucha.ai/api/v1/mcp')).toBeDefined()
-    expect(screen.getByText('post-relations.owned-private:write')).toBeDefined()
+    expect(screen.getByText('https://api.voucha.ai/api/v1/mcp')).toBeInTheDocument()
+    expect(screen.getByText('post-relations.owned-private:write')).toBeInTheDocument()
     expect(
       screen.getByText(
         'Allow this credential to add relations and tags to your own private posts.',

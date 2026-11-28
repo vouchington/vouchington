@@ -26,8 +26,8 @@ describe('NewsItemCluster story expand/collapse interactions', () => {
         view='summary'
       />,
     )
-    expect(screen.getByText('Primary Article')).toBeDefined()
-    expect(screen.getByRole('button', { name: /2 related articles/i })).toBeDefined()
+    expect(screen.getByText('Primary Article')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /2 related articles/i })).toBeInTheDocument()
   })
 
   it('uses singular "1 related article" for single story item', () => {
@@ -39,7 +39,7 @@ describe('NewsItemCluster story expand/collapse interactions', () => {
         view='summary'
       />,
     )
-    expect(screen.getByRole('button', { name: /1 related article$/i })).toBeDefined()
+    expect(screen.getByRole('button', { name: /1 related article$/i })).toBeInTheDocument()
   })
 
   it('expands to show story items on click', () => {
@@ -98,7 +98,7 @@ describe('NewsItemCluster story expand/collapse interactions', () => {
     )
     expect(container.querySelector('.scrollbar-hide')).not.toBeNull()
     await waitFor(() => {
-      expect(screen.getByTestId('news-item-vote')).toBeDefined()
+      expect(screen.getByTestId('news-item-vote')).toBeInTheDocument()
     })
   })
 

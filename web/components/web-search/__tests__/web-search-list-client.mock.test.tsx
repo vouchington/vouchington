@@ -68,7 +68,7 @@ describe('WebSearchListClient', () => {
         query='test'
       />,
     )
-    expect(screen.getByText('No results found')).toBeTruthy()
+    expect(screen.getByText('No results found')).toBeInTheDocument()
   })
 
   it('renders result items when results are present', () => {
@@ -87,6 +87,6 @@ describe('WebSearchListClient', () => {
       />,
     )
     expect(screen.getAllByTestId('web-search-result-item')).toHaveLength(1)
-    expect(screen.getByText('https://example.com/page')).toBeTruthy()
+    expect(screen.getByText('https://example.com/page')).toBeInTheDocument()
   })
 })

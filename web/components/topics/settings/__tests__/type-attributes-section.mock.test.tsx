@@ -100,9 +100,9 @@ describe('TypeAttributesSection', () => {
         typeAttrSaving={false}
       />,
     )
-    expect(screen.getByTestId('topic-autocomplete-company_topic_id')).toBeDefined()
+    expect(screen.getByTestId('topic-autocomplete-company_topic_id')).toBeInTheDocument()
     // Visible field label rendered by TopicIdAttribute's <Label>
-    expect(screen.getByText('Company')).toBeDefined()
+    expect(screen.getByText('Company')).toBeInTheDocument()
     // No raw "Company ID" text input
     expect(screen.queryByPlaceholderText('Company topic ID')).toBeNull()
   })
@@ -118,8 +118,8 @@ describe('TypeAttributesSection', () => {
         typeAttrSaving={false}
       />,
     )
-    expect(screen.getByTestId('topic-autocomplete-company_topic_id')).toBeDefined()
-    expect(screen.getByTestId('topic-autocomplete-rewards_program_id')).toBeDefined()
+    expect(screen.getByTestId('topic-autocomplete-company_topic_id')).toBeInTheDocument()
+    expect(screen.getByTestId('topic-autocomplete-rewards_program_id')).toBeInTheDocument()
   })
 
   it('renders four TopicAutocompletes and an annual_fee decimal text input for card type', () => {
@@ -133,10 +133,10 @@ describe('TypeAttributesSection', () => {
         typeAttrSaving={false}
       />,
     )
-    expect(screen.getByTestId('topic-autocomplete-bank_topic_id')).toBeDefined()
-    expect(screen.getByTestId('topic-autocomplete-brand_topic_id')).toBeDefined()
-    expect(screen.getByTestId('topic-autocomplete-rewards_program_id')).toBeDefined()
-    expect(screen.getByTestId('topic-autocomplete-referral_program_id')).toBeDefined()
+    expect(screen.getByTestId('topic-autocomplete-bank_topic_id')).toBeInTheDocument()
+    expect(screen.getByTestId('topic-autocomplete-brand_topic_id')).toBeInTheDocument()
+    expect(screen.getByTestId('topic-autocomplete-rewards_program_id')).toBeInTheDocument()
+    expect(screen.getByTestId('topic-autocomplete-referral_program_id')).toBeInTheDocument()
     const annualFeeInput = screen.getByRole('textbox', { name: /annual fee/i }) as HTMLInputElement
     expect(annualFeeInput.name).toBe('annual_fee_amount')
   })
@@ -152,8 +152,8 @@ describe('TypeAttributesSection', () => {
         typeAttrSaving={false}
       />,
     )
-    expect(screen.getByTestId('topic-autocomplete-rewards_program_id')).toBeDefined()
-    expect(screen.getByTestId('topic-autocomplete-lifetime_version_id')).toBeDefined()
+    expect(screen.getByTestId('topic-autocomplete-rewards_program_id')).toBeInTheDocument()
+    expect(screen.getByTestId('topic-autocomplete-lifetime_version_id')).toBeInTheDocument()
     const orderIndexInput = screen.getByRole('spinbutton') as HTMLInputElement
     expect(orderIndexInput.name).toBe('order_index')
   })

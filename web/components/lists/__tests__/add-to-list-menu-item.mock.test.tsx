@@ -165,7 +165,7 @@ describe('AddToListMenuItem', () => {
       />,
     )
     fireEvent.click(screen.getByTestId('dropdown-menu-item'))
-    expect(screen.getByTestId('dialog')).toBeTruthy()
+    expect(screen.getByTestId('dialog')).toBeInTheDocument()
     expect(document.querySelector('[data-pw="add-to-list-dialog"]')).not.toBeNull()
   })
 
@@ -204,7 +204,7 @@ describe('AddToListMenuItem', () => {
     )
     fireEvent.click(screen.getByTestId('dropdown-menu-item'))
     await waitFor(() => screen.getByText('Favourites'))
-    expect(screen.getByLabelText('Favourites')).not.toBeNull()
+    expect(screen.getByLabelText('Favourites')).toBeInTheDocument()
   })
 
   it('renders checked state for lists that already contain the item', async () => {
@@ -262,6 +262,6 @@ describe('AddToListMenuItem', () => {
       />,
     )
     fireEvent.click(screen.getByTestId('dropdown-menu-item'))
-    await waitFor(() => expect(screen.getByText(/no lists yet/i)).toBeTruthy())
+    await waitFor(() => expect(screen.getByText(/no lists yet/i)).toBeInTheDocument())
   })
 })

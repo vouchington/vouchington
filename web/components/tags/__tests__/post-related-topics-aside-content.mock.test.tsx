@@ -62,7 +62,7 @@ describe('PostRelatedTopicsAsideContent', () => {
         showManageButton={false}
       />,
     )
-    expect(screen.getByText('Categories')).toBeDefined()
+    expect(screen.getByText('Categories')).toBeInTheDocument()
     expect(screen.queryByText('Related Topics')).toBeNull()
   })
 
@@ -74,7 +74,7 @@ describe('PostRelatedTopicsAsideContent', () => {
         showManageButton
       />,
     )
-    expect(screen.getByTestId('manage-tags-dialog')).toBeDefined()
+    expect(screen.getByTestId('manage-tags-dialog')).toBeInTheDocument()
     expect(mockManageTagsDialog.mock.lastCall?.[0]?.manageHref).toBe(
       '/discussion/post-1/tags/topic',
     )

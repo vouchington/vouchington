@@ -57,7 +57,7 @@ describe('topic factory functions', () => {
         children: <span data-pw='child' />,
       })
       render(result)
-      expect(screen.getByTestId('child')).toBeDefined()
+      expect(screen.getByTestId('child')).toBeInTheDocument()
     })
   })
 
@@ -91,7 +91,7 @@ describe('topic factory functions', () => {
         searchParams: Promise.resolve({}),
       })
       render(result)
-      expect(screen.getByTestId('topic-posts-page')).toBeDefined()
+      expect(screen.getByTestId('topic-posts-page')).toBeInTheDocument()
     })
 
     it('calls notFound when topic is not found', async () => {

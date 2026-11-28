@@ -48,7 +48,7 @@ describe('PostDetail rendering', () => {
       />,
     )
 
-    expect(screen.getByText('Credit Cards')).toBeDefined()
+    expect(screen.getByText('Credit Cards')).toBeInTheDocument()
   })
 
   it('does not show comment count in action bar', () => {
@@ -89,7 +89,7 @@ describe('PostDetail rendering', () => {
       />,
     )
 
-    expect(await screen.findByRole('button', { name: /subscribe/i })).toBeDefined()
+    expect(await screen.findByRole('button', { name: /subscribe/i })).toBeInTheDocument()
   })
 
   it('renders comment details without constructing a rootless canonical discussion source', () => {

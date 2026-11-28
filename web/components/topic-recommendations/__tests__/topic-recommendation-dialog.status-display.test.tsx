@@ -65,8 +65,8 @@ describe('TopicRecommendationDialogStatusInfo', () => {
       />,
     )
     expect(container.querySelector('[data-pw="topic-recommendation-approved-info"]')).not.toBeNull()
-    expect(screen.getByText('Approved')).toBeDefined()
-    expect(screen.getByText('@adminuser')).toBeDefined()
+    expect(screen.getByText('Approved')).toBeInTheDocument()
+    expect(screen.getByText('@adminuser')).toBeInTheDocument()
     expect(
       container.querySelector('[data-pw="topic-recommendation-view-topic-link"]'),
     ).not.toBeNull()
@@ -82,8 +82,8 @@ describe('TopicRecommendationDialogStatusInfo', () => {
         users={undefined}
       />,
     )
-    expect(screen.getByText('Approved')).toBeDefined()
-    expect(screen.getByText(/an admin/)).toBeDefined()
+    expect(screen.getByText('Approved')).toBeInTheDocument()
+    expect(screen.getByText(/an admin/)).toBeInTheDocument()
     expect(screen.queryByText('@adminuser')).toBeNull()
   })
 
@@ -130,9 +130,9 @@ describe('TopicRecommendationDialogStatusInfo', () => {
       />,
     )
     expect(container.querySelector('[data-pw="topic-recommendation-rejected-info"]')).not.toBeNull()
-    expect(screen.getByText('Rejected')).toBeDefined()
-    expect(screen.getByText('@adminuser')).toBeDefined()
-    expect(screen.getByText(/Already covered by existing topic/)).toBeDefined()
+    expect(screen.getByText('Rejected')).toBeInTheDocument()
+    expect(screen.getByText('@adminuser')).toBeInTheDocument()
+    expect(screen.getByText(/Already covered by existing topic/)).toBeInTheDocument()
   })
 
   it('renders rejected info without rejection reason when not set', () => {
@@ -146,7 +146,7 @@ describe('TopicRecommendationDialogStatusInfo', () => {
         users={reviewerUsers}
       />,
     )
-    expect(screen.getByText('Rejected')).toBeDefined()
+    expect(screen.getByText('Rejected')).toBeInTheDocument()
     expect(screen.queryByText(/Reason:/)).toBeNull()
   })
 
@@ -159,6 +159,6 @@ describe('TopicRecommendationDialogStatusInfo', () => {
         users={undefined}
       />,
     )
-    expect(screen.getByText(/unknown date/)).toBeDefined()
+    expect(screen.getByText(/unknown date/)).toBeInTheDocument()
   })
 })

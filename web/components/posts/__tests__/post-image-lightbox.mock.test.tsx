@@ -108,7 +108,7 @@ describe('PostImageLightbox', () => {
         alt='Post'
       />,
     )
-    expect(screen.getByTestId('dialog')).toBeDefined()
+    expect(screen.getByTestId('dialog')).toBeInTheDocument()
   })
 
   it('gives the dialog a screen reader description', () => {
@@ -121,7 +121,7 @@ describe('PostImageLightbox', () => {
         alt='Post'
       />,
     )
-    expect(screen.getByText('View full-size post images.')).toBeDefined()
+    expect(screen.getByText('View full-size post images.')).toBeInTheDocument()
 
     rerender(
       <PostImageLightbox
@@ -132,7 +132,7 @@ describe('PostImageLightbox', () => {
         alt='Post'
       />,
     )
-    expect(screen.getByText('View full-size post image.')).toBeDefined()
+    expect(screen.getByText('View full-size post image.')).toBeInTheDocument()
   })
 
   it('renders a carousel for multiple images', () => {
@@ -145,7 +145,7 @@ describe('PostImageLightbox', () => {
         alt='Post'
       />,
     )
-    expect(screen.getByTestId('carousel')).toBeDefined()
+    expect(screen.getByTestId('carousel')).toBeInTheDocument()
     expect(screen.getAllByTestId('carousel-item')).toHaveLength(2)
   })
 
@@ -160,7 +160,7 @@ describe('PostImageLightbox', () => {
       />,
     )
     expect(screen.queryByTestId('carousel')).toBeNull()
-    expect(screen.getByAltText('First image')).toBeDefined()
+    expect(screen.getByAltText('First image')).toBeInTheDocument()
   })
 
   it('shows the caption for a single image', () => {
@@ -173,7 +173,7 @@ describe('PostImageLightbox', () => {
         alt='Post'
       />,
     )
-    expect(screen.getByText('First image')).toBeDefined()
+    expect(screen.getByText('First image')).toBeInTheDocument()
   })
 
   it('calls onOpenChange(false) when the dialog close button is triggered', () => {

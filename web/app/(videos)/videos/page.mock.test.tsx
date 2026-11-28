@@ -21,7 +21,7 @@ describe('VideosPage', () => {
   it('renders the page header', async () => {
     const ui = await VideosPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('Videos')).toBeDefined()
+    expect(screen.getByText('Videos')).toBeInTheDocument()
   })
 
   it('calls getRssFeedItems with media_type=video', async () => {
@@ -34,6 +34,6 @@ describe('VideosPage', () => {
   it('renders the feed view toggle', async () => {
     const ui = await VideosPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('feed view toggle')).toBeDefined()
+    expect(screen.getByText('feed view toggle')).toBeInTheDocument()
   })
 })

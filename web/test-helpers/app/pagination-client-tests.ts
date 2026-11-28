@@ -104,7 +104,7 @@ export function registerPaginationClientTests(options: PaginationClientTests): v
     clickLoadMore(container)
     rerenderOtherContext(rerender)
     pending.resolve(terminalPage([staleMessage()]))
-    await waitFor(() => expect(screen.getByText('Message fresh')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('Message fresh')).toBeInTheDocument())
     expect(screen.queryByText('Message stale')).toBeNull()
   })
 
@@ -114,10 +114,10 @@ export function registerPaginationClientTests(options: PaginationClientTests): v
     const { container } = renderInitial()
     clickLoadMore(container)
     const retry = await screen.findByRole('button', { name: 'Retry' })
-    expect(screen.getByText('Message newest')).toBeDefined()
+    expect(screen.getByText('Message newest')).toBeInTheDocument()
     expect(onError).toHaveBeenCalledWith(error, expect.any(Object))
     fireEvent.click(retry)
-    await waitFor(() => expect(screen.getByText('Message older')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('Message older')).toBeInTheDocument())
     expect(fetchPage).toHaveBeenCalledTimes(2)
   })
 }

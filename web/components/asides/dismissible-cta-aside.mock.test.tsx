@@ -27,8 +27,8 @@ describe('DismissibleCtaAside', () => {
     )
 
     expect(container.querySelector('[data-pw="cta-aside"]')).not.toBeNull()
-    expect(screen.getByText('Create something')).toBeDefined()
-    expect(screen.getByText('Start a useful workflow.')).toBeDefined()
+    expect(screen.getByText('Create something')).toBeInTheDocument()
+    expect(screen.getByText('Start a useful workflow.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Create' }).getAttribute('href')).toBe('/new')
   })
 })

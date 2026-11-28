@@ -7,9 +7,9 @@ configure({ testIdAttribute: 'data-pw' })
 describe('ManageTagsCard', () => {
   it('renders heading and children with Card wrapper by default', () => {
     render(<ManageTagsCard heading='Category'>tag content</ManageTagsCard>)
-    expect(screen.getByRole('heading', { name: 'Category' })).toBeDefined()
-    expect(screen.getByText('tag content')).toBeDefined()
-    expect(screen.getByTestId('card')).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Category' })).toBeInTheDocument()
+    expect(screen.getByText('tag content')).toBeInTheDocument()
+    expect(screen.getByTestId('card')).toBeInTheDocument()
   })
 
   it('renders heading and children without Card wrapper when hideCardStyles is true', () => {
@@ -21,8 +21,8 @@ describe('ManageTagsCard', () => {
         tag content
       </ManageTagsCard>,
     )
-    expect(screen.getByRole('heading', { name: 'Topics' })).toBeDefined()
-    expect(screen.getByText('tag content')).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Topics' })).toBeInTheDocument()
+    expect(screen.getByText('tag content')).toBeInTheDocument()
     expect(screen.queryByTestId('card')).toBeNull()
   })
 })

@@ -75,7 +75,7 @@ describe('PostRelatedUrlsAsideContent', () => {
         showManageButton={false}
       />,
     )
-    expect(screen.getByText('Related Links')).toBeDefined()
+    expect(screen.getByText('Related Links')).toBeInTheDocument()
   })
 
   it('wires the manage dialog when showManageButton is true', () => {
@@ -86,7 +86,7 @@ describe('PostRelatedUrlsAsideContent', () => {
         showManageButton
       />,
     )
-    expect(screen.getByTestId('manage-tags-dialog')).toBeDefined()
+    expect(screen.getByTestId('manage-tags-dialog')).toBeInTheDocument()
     expect(mockManageTagsDialog.mock.lastCall?.[0]?.manageHref).toBe('/discussion/post-1/tags/url')
   })
 

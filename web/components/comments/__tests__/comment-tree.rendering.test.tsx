@@ -31,10 +31,10 @@ describe('comment-tree', () => {
         />,
       )
 
-      expect(screen.getByText('Comments')).toBeDefined()
-      expect(screen.getByLabelText('Sort comments')).toBeDefined()
-      expect(screen.getByRole('option', { name: 'Best' })).toBeDefined()
-      expect(screen.getByRole('option', { name: 'New' })).toBeDefined()
+      expect(screen.getByText('Comments')).toBeInTheDocument()
+      expect(screen.getByLabelText('Sort comments')).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: 'Best' })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: 'New' })).toBeInTheDocument()
     })
 
     it('updates threaded comment order when sort dropdown changes', () => {

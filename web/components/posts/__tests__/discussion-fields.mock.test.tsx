@@ -109,13 +109,13 @@ function Wrapper({
 describe('DiscussionFields', () => {
   it('renders Add Category button with no categories', () => {
     render(<Wrapper />)
-    expect(screen.getByText('Add Category')).toBeDefined()
+    expect(screen.getByText('Add Category')).toBeInTheDocument()
     expect(screen.queryAllByTestId('topic-autocomplete')).toHaveLength(0)
   })
 
   it('renders pre-seeded category row', () => {
     render(<Wrapper initialCategories={[makeEntry({ topicName: 'My Topic' })]} />)
-    expect(screen.getByText('My Topic')).toBeDefined()
+    expect(screen.getByText('My Topic')).toBeInTheDocument()
     expect(screen.getAllByTestId('topic-autocomplete')).toHaveLength(1)
   })
 
@@ -143,7 +143,7 @@ describe('DiscussionFields', () => {
 
   it('shows remove button even for a single row (allows removing to zero)', () => {
     render(<Wrapper initialCategories={[makeEntry()]} />)
-    expect(screen.getByRole('button', { name: 'Remove category' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Remove category' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Remove category' }))
     expect(screen.queryAllByTestId('topic-autocomplete')).toHaveLength(0)
   })
@@ -216,7 +216,7 @@ describe('DiscussionFields', () => {
     render(<Wrapper initialCategories={[makeEntry({ key: 'k1', topicName: 'Alpha' })]} />)
     const changeBtn = screen.getByTestId('autocomplete-change')
     fireEvent.click(changeBtn)
-    expect(screen.getByText('New Topic')).toBeDefined()
+    expect(screen.getByText('New Topic')).toBeInTheDocument()
   })
 
   it('focuses the newly added category input', () => {

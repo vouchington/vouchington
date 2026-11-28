@@ -15,7 +15,7 @@ describe('PageHeader', () => {
         description='Read community stories.'
       />,
     )
-    expect(screen.getByText('Read community stories.')).toBeDefined()
+    expect(screen.getByText('Read community stories.')).toBeInTheDocument()
   })
 
   it('does not render a description element when description is omitted', () => {

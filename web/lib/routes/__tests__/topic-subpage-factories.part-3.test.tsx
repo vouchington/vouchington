@@ -76,7 +76,7 @@ describe('topic factory functions', () => {
 
       const result = await ReferralLinksPage({ params: Promise.resolve({ id: 'topic-1' }) })
       render(result)
-      expect(screen.getByText('Referral Links')).toBeDefined()
+      expect(screen.getByText('Referral Links')).toBeInTheDocument()
     })
   })
 

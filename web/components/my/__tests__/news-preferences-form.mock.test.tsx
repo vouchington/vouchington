@@ -49,8 +49,8 @@ describe('NewsPreferencesForm', () => {
       makePublisherType({ id: 't-2', name: 'Corporate Media', slug: 'corporate-media' }),
     ]
     render(<NewsPreferencesForm publisherTypes={types} />)
-    expect(screen.getByText('Mainstream Media')).toBeDefined()
-    expect(screen.getByText('Corporate Media')).toBeDefined()
+    expect(screen.getByText('Mainstream Media')).toBeInTheDocument()
+    expect(screen.getByText('Corporate Media')).toBeInTheDocument()
   })
 
   it('renders EntityBookmarkButton with mute preset for each type', () => {
@@ -89,6 +89,6 @@ describe('NewsPreferencesForm', () => {
   it('renders the Muted Publisher Types label', () => {
     const types = [makePublisherType()]
     render(<NewsPreferencesForm publisherTypes={types} />)
-    expect(screen.getByText('Muted Publisher Types')).toBeDefined()
+    expect(screen.getByText('Muted Publisher Types')).toBeInTheDocument()
   })
 })

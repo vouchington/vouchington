@@ -74,9 +74,9 @@ describe('ManageCategoriesMenuItem', () => {
   it('renders a manage categories menu item and wires the dialog props', () => {
     render(<ManageCategoriesMenuItem entityId='item-1' />)
 
-    expect(screen.getByRole('menuitem', { name: /manage categories/i })).toBeDefined()
-    expect(screen.getByTestId('tag-icon')).toBeDefined()
-    expect(screen.getByTestId('manage-tags-dialog')).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: /manage categories/i })).toBeInTheDocument()
+    expect(screen.getByTestId('tag-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('manage-tags-dialog')).toBeInTheDocument()
     expect(mockManageTagsDialog.mock.lastCall?.[0]).toMatchObject({
       entityType: 'rss_feed_item',
       entityId: 'item-1',

@@ -101,7 +101,7 @@ describe('TopicAutocomplete', () => {
         onChange={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(screen.getByPlaceholderText('Search topics...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search topics...')).toBeInTheDocument()
   })
 
   it('uses a caller-provided accessible name for specialized topic searches', () => {
@@ -115,7 +115,7 @@ describe('TopicAutocomplete', () => {
       />,
     )
 
-    expect(screen.getByRole('textbox', { name: 'Search referral programs' })).toBeDefined()
+    expect(screen.getByRole('textbox', { name: 'Search referral programs' })).toBeInTheDocument()
   })
 
   it('shows provided label as initial value', () => {
@@ -140,7 +140,7 @@ describe('TopicAutocomplete', () => {
     )
     const input = screen.getByPlaceholderText('Search topics...')
     fireEvent.change(input, { target: { value: 'chase' } })
-    expect(screen.getByTestId('command-empty')).toBeDefined()
+    expect(screen.getByTestId('command-empty')).toBeInTheDocument()
   })
 
   it('calls onChange when a topic is selected', async () => {
@@ -192,7 +192,7 @@ describe('TopicAutocomplete', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined()
+        expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument()
       },
       { timeout: 500 },
     )

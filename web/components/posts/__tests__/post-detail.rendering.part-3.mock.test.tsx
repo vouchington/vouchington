@@ -31,7 +31,7 @@ describe('PostDetail rendering', () => {
       />,
     )
 
-    expect(await screen.findByTestId('post-detail-overflow-trigger')).toBeDefined()
+    expect(await screen.findByTestId('post-detail-overflow-trigger')).toBeInTheDocument()
   })
 
   it('omits overflow menu when not logged in', () => {
@@ -64,6 +64,6 @@ describe('PostDetail rendering', () => {
       />,
     )
 
-    expect(screen.getByText('Test content here')).toBeDefined()
+    expect(screen.getByText('Test content here')).toBeInTheDocument()
   })
 })

@@ -163,6 +163,6 @@ describe('CommunityPage', () => {
     })
 
     render(result)
-    expect(screen.getByText('Topic #missing was not found')).toBeDefined()
+    expect(screen.getByText('Topic #missing was not found')).toBeInTheDocument()
   })
 })

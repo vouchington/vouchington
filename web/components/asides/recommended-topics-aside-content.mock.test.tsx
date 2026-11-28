@@ -71,7 +71,7 @@ describe('RecommendedTopicsAsideContent', () => {
     expect(screen.getByRole('link', { name: 'Visa Platinum' }).getAttribute('href')).toBe(
       '/topics/visa-platinum',
     )
-    expect(screen.getByRole('link', { name: 'Chase Sapphire' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Chase Sapphire' })).toBeInTheDocument()
   })
 
   it('renders a link to /my/topics/dismissed-recommendations', () => {
@@ -127,7 +127,7 @@ describe('RecommendedTopicsAsideContent', () => {
       />,
     )
     expect(screen.queryByRole('link', { name: 'Visa Platinum' })).toBeNull()
-    expect(screen.getByRole('link', { name: 'Chase Sapphire' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Chase Sapphire' })).toBeInTheDocument()
   })
 
   it('hides blocked topics from initialBookmarks', () => {
@@ -139,6 +139,6 @@ describe('RecommendedTopicsAsideContent', () => {
       />,
     )
     expect(screen.queryByRole('link', { name: 'Visa Platinum' })).toBeNull()
-    expect(screen.getByRole('link', { name: 'Chase Sapphire' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Chase Sapphire' })).toBeInTheDocument()
   })
 })

@@ -210,8 +210,8 @@ describe('PostCardFooter', () => {
           hideBookmarkActions={false}
         />,
       )
-      expect(screen.getByTestId('save-button')).toBeDefined()
-      expect(screen.getByTestId('hide-button')).toBeDefined()
+      expect(screen.getByTestId('save-button')).toBeInTheDocument()
+      expect(screen.getByTestId('hide-button')).toBeInTheDocument()
     })
   })
 })

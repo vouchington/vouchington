@@ -158,7 +158,9 @@ describe('PostForm content lock (can_edit_content)', () => {
         post={{ ...mockDiscussion, can_edit_content: false }}
       />,
     )
-    expect(screen.getByText('Title and content can no longer be edited after 1 day.')).toBeDefined()
+    expect(
+      screen.getByText('Title and content can no longer be edited after 1 day.'),
+    ).toBeInTheDocument()
   })
 
   it('disables discussion category controls and excludes categories from a locked edit', async () => {

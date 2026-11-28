@@ -10,7 +10,7 @@ describe('DomainDetailTabs', () => {
   it('renders overview content and no tab elements when only overview is provided', () => {
     render(<DomainDetailTabs>{overviewContent}</DomainDetailTabs>)
 
-    expect(screen.getByText('overview content')).toBeDefined()
+    expect(screen.getByText('overview content')).toBeInTheDocument()
     expect(screen.queryAllByRole('tab')).toHaveLength(0)
   })
 
@@ -22,8 +22,8 @@ describe('DomainDetailTabs', () => {
       </DomainDetailTabs>,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Overview' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Moderation' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Overview' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Moderation' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Crawlers' })).toBeNull()
   })
 
@@ -36,9 +36,9 @@ describe('DomainDetailTabs', () => {
       </DomainDetailTabs>,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Overview' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Moderation' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Crawlers' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Overview' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Moderation' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Crawlers' })).toBeInTheDocument()
   })
 
   it('shows overview content by default', () => {
@@ -50,7 +50,7 @@ describe('DomainDetailTabs', () => {
       </DomainDetailTabs>,
     )
 
-    expect(screen.getByText('overview content')).toBeDefined()
+    expect(screen.getByText('overview content')).toBeInTheDocument()
   })
 
   it('initial active item is Overview', () => {

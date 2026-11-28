@@ -106,7 +106,7 @@ describe('SourcesListClient', () => {
         searchParams={{ q: 'fintech' }}
       />,
     )
-    expect(screen.getByTestId('source-list-item')).toBeDefined()
+    expect(screen.getByTestId('source-list-item')).toBeInTheDocument()
     expect(screen.getByText('Feed One')).toBeVisible()
   })
 })

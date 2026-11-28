@@ -45,7 +45,7 @@ describe('NewsDiscussMenu part 2', () => {
         }}
       />,
     )
-    expect(screen.getByTestId('community-discussion-action')).toBeDefined()
+    expect(screen.getByTestId('community-discussion-action')).toBeInTheDocument()
   })
 
   it('data-pw="news-discuss-button" present in collapsed single-discuss branch', () => {
@@ -69,7 +69,7 @@ describe('NewsDiscussMenu part 2', () => {
         communityDiscussionUrls={EMPTY_URLS}
       />,
     )
-    expect(screen.getByTestId('community-discussion-action')).toBeDefined()
+    expect(screen.getByTestId('community-discussion-action')).toBeInTheDocument()
     expect(container.querySelector('[data-pw="news-discuss-create-item"]')).not.toBeNull()
   })
 })

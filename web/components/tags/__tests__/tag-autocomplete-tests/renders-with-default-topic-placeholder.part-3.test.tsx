@@ -43,7 +43,7 @@ describe('TagAutocomplete', () => {
       target: { value: 'chase' },
     })
 
-    await waitFor(() => expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined(), {
+    await waitFor(() => expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument(), {
       timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
     })
 

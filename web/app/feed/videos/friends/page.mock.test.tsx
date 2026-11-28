@@ -23,7 +23,7 @@ describe('FeedVideosFriendsPage', () => {
 
     render(ui)
 
-    expect(screen.getByText('feed videos friends page')).toBeDefined()
+    expect(screen.getByText('feed videos friends page')).toBeInTheDocument()
     expect(mockFeedNewsListPage.mock.calls[0]![0]).toEqual({
       config: feedRouteConfigData['videos/friends'],
       searchParams: {},

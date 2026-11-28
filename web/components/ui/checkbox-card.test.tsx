@@ -13,9 +13,9 @@ describe('CheckboxCard', () => {
         description='My description'
       />,
     )
-    expect(screen.getByText('My label')).toBeDefined()
-    expect(screen.getByText('My description')).toBeDefined()
-    expect(screen.getByRole('checkbox')).toBeDefined()
+    expect(screen.getByText('My label')).toBeInTheDocument()
+    expect(screen.getByText('My description')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox')).toBeInTheDocument()
   })
 
   it('reflects checked state', () => {

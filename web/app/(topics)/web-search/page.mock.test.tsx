@@ -96,13 +96,13 @@ describe('WebSearchPage', () => {
   it('shows empty state when no query is given', async () => {
     const ui = await WebSearchPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('Search the web')).toBeTruthy()
+    expect(screen.getByText('Search the web')).toBeInTheDocument()
   })
 
   it('shows results list when a query of 3+ chars is provided', async () => {
     const ui = await WebSearchPage({ searchParams: Promise.resolve({ query: 'example' }) })
     render(ui)
-    expect(screen.getByText('web search results')).toBeTruthy()
+    expect(screen.getByText('web search results')).toBeInTheDocument()
   })
 
   it('shows error message when search fails with a recognized error', async () => {
@@ -111,6 +111,6 @@ describe('WebSearchPage', () => {
     mockIsListSearchErrorResult.mockReturnValue(true)
     const ui = await WebSearchPage({ searchParams: Promise.resolve({ query: 'example' }) })
     render(ui)
-    expect(screen.getByText('Search is temporarily unavailable')).toBeTruthy()
+    expect(screen.getByText('Search is temporarily unavailable')).toBeInTheDocument()
   })
 })

@@ -147,14 +147,14 @@ describe('DataPointFields', () => {
   it('shows profile section after selecting credit_card vertical', () => {
     render(<Wrapper userFinancialProfile={profileWithData} />)
     fireEvent.change(getVerticalSelect(), { target: { value: 'credit_card' } })
-    expect(screen.getByTestId('profile-fields')).toBeDefined()
+    expect(screen.getByTestId('profile-fields')).toBeInTheDocument()
     expect(screen.getByTestId('profile-vertical').textContent).toBe('credit_card')
   })
 
   it('shows profile section after selecting bank_account vertical', () => {
     render(<Wrapper userFinancialProfile={profileWithData} />)
     fireEvent.change(getVerticalSelect(), { target: { value: 'bank_account' } })
-    expect(screen.getByTestId('profile-fields')).toBeDefined()
+    expect(screen.getByTestId('profile-fields')).toBeInTheDocument()
     expect(screen.getByTestId('profile-vertical').textContent).toBe('bank_account')
   })
 
@@ -182,14 +182,14 @@ describe('DataPointFields', () => {
   it('renders credit-card-fields when credit_card vertical is selected', () => {
     render(<Wrapper />)
     fireEvent.change(getVerticalSelect(), { target: { value: 'credit_card' } })
-    expect(screen.getByTestId('credit-card-fields')).toBeDefined()
+    expect(screen.getByTestId('credit-card-fields')).toBeInTheDocument()
     expect(screen.queryByTestId('bank-account-fields')).toBeNull()
   })
 
   it('renders bank-account-fields when bank_account vertical is selected', () => {
     render(<Wrapper />)
     fireEvent.change(getVerticalSelect(), { target: { value: 'bank_account' } })
-    expect(screen.getByTestId('bank-account-fields')).toBeDefined()
+    expect(screen.getByTestId('bank-account-fields')).toBeInTheDocument()
     expect(screen.queryByTestId('credit-card-fields')).toBeNull()
   })
 
@@ -202,7 +202,7 @@ describe('DataPointFields', () => {
   it('profile section visible for null-field profile too', () => {
     render(<Wrapper userFinancialProfile={profileWithAllNullFields} />)
     fireEvent.change(getVerticalSelect(), { target: { value: 'credit_card' } })
-    expect(screen.getByTestId('profile-fields')).toBeDefined()
+    expect(screen.getByTestId('profile-fields')).toBeInTheDocument()
   })
 
   it('clears credit-card-only keys when switching to bank_account', () => {

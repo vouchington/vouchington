@@ -47,7 +47,7 @@ describe('TopCommunities', () => {
   it('renders error fallback when data is null', () => {
     render(<TopCommunities data={null} />)
 
-    expect(screen.getByText('Unable to load communities.')).toBeDefined()
+    expect(screen.getByText('Unable to load communities.')).toBeInTheDocument()
     expect(screen.queryByTestId('top-communities')).toBeNull()
     expect(screen.queryByTestId('top-communities-empty')).toBeNull()
   })
@@ -57,7 +57,7 @@ describe('TopCommunities', () => {
 
     render(<TopCommunities data={projectTopCommunities(data)} />)
 
-    expect(screen.getByTestId('top-communities-empty')).toBeDefined()
+    expect(screen.getByTestId('top-communities-empty')).toBeInTheDocument()
     expect(screen.queryByTestId('top-communities')).toBeNull()
   })
 
@@ -67,11 +67,11 @@ describe('TopCommunities', () => {
 
     render(<TopCommunities data={projectTopCommunities(data)} />)
 
-    expect(screen.getByTestId('top-communities')).toBeDefined()
+    expect(screen.getByTestId('top-communities')).toBeInTheDocument()
     expect(screen.queryByTestId('top-communities-empty')).toBeNull()
     const link = screen.getByRole('link', { name: /Credit Card Fans/ })
     expect(link.getAttribute('href')).toBe('/communities/credit-card-fans')
-    expect(screen.getByRole('link', { name: 'Browse all communities →' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Browse all communities →' })).toBeInTheDocument()
   })
 
   it('formats member counts with the resolved UI locale', () => {

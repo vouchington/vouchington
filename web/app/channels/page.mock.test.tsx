@@ -128,7 +128,7 @@ describe('ChannelsPage', () => {
   it('renders the page header', async () => {
     const ui = await ChannelsPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('Channels')).toBeDefined()
+    expect(screen.getByText('Channels')).toBeInTheDocument()
   })
 
   it('calls getRssFeeds with feed_type=video', async () => {
@@ -141,7 +141,7 @@ describe('ChannelsPage', () => {
   it('shows empty state when no channels found', async () => {
     const ui = await ChannelsPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('No channels found')).toBeDefined()
+    expect(screen.getByText('No channels found')).toBeInTheDocument()
   })
 
   it('shows search error when getRssFeeds rejects with a recognisable error', async () => {
@@ -149,7 +149,7 @@ describe('ChannelsPage', () => {
     mockGetListSearchErrorMessage.mockReturnValue('Invalid search parameters')
     const ui = await ChannelsPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('Invalid search parameters')).toBeDefined()
+    expect(screen.getByText('Invalid search parameters')).toBeInTheDocument()
   })
 
   it('renders RssFeedListItem for each result when results are non-empty', async () => {

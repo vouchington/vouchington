@@ -171,7 +171,9 @@ describe('CommentPermalink', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Comment on Root Post' })).toBeDefined()
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Comment on Root Post' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /root post/i })).toHaveAttribute(
       'href',
       '/discussion/root-post',

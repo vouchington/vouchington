@@ -31,7 +31,7 @@ describe('PostList', () => {
       await loadMore()
     })
     expect(getPaginatedPage).toHaveBeenCalledWith('/api/v1/posts', { after: 'cursor1' })
-    expect(screen.getByText('Later Post')).toBeDefined()
+    expect(screen.getByText('Later Post')).toBeInTheDocument()
   })
 
   it('shows the empty state when a next page has no usable cursor', () => {
@@ -42,7 +42,7 @@ describe('PostList', () => {
         nextPageEndpoint='/api/v1/posts'
       />,
     )
-    expect(screen.getByText('No posts found')).toBeDefined()
+    expect(screen.getByText('No posts found')).toBeInTheDocument()
   })
 
   it('fetches the next page with the correct cursor and params', async () => {

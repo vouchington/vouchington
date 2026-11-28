@@ -16,7 +16,7 @@ describe('PodcastEpisodesPage', () => {
   it('renders the page header', async () => {
     const ui = await PodcastEpisodesPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('Podcast Episodes')).toBeDefined()
+    expect(screen.getByText('Podcast Episodes')).toBeInTheDocument()
   })
 
   it('calls getRssFeedItems with media_type=audio', async () => {
@@ -29,6 +29,6 @@ describe('PodcastEpisodesPage', () => {
   it('renders the feed view toggle', async () => {
     const ui = await PodcastEpisodesPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('feed view toggle')).toBeDefined()
+    expect(screen.getByText('feed view toggle')).toBeInTheDocument()
   })
 })

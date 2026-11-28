@@ -114,7 +114,7 @@ describe('TopicCommunitiesAside', () => {
     mockGetCommunities.mockResolvedValue(makeCommunityResponse(['c1', 'c2']))
     const ui = await TopicCommunitiesAside({ topic: makeTopic() })
     render(ui)
-    expect(screen.getByTestId('topic-communities-aside-content')).toBeDefined()
+    expect(screen.getByTestId('topic-communities-aside-content')).toBeInTheDocument()
     expect(screen.getByTestId('topic-communities-aside-content').textContent).toBe('2')
   })
 
@@ -122,7 +122,7 @@ describe('TopicCommunitiesAside', () => {
     mockGetCurrentUser.mockResolvedValue({ id: 'user-1', username: 'testuser' })
     const ui = await TopicCommunitiesAside({ topic: makeTopic() })
     render(ui)
-    expect(screen.getByTestId('topic-communities-aside-streaming')).toBeDefined()
+    expect(screen.getByTestId('topic-communities-aside-streaming')).toBeInTheDocument()
   })
 
   it('renders null when getCommunities throws (catch returns null)', async () => {

@@ -73,7 +73,7 @@ export function registerTopicTagAsideContentTests(options: {
 
   it(`renders ${heading} heading`, () => {
     renderAside({ showManageButton: false })
-    expect(screen.getByText(heading)).toBeDefined()
+    expect(screen.getByText(heading)).toBeInTheDocument()
   })
 
   it('does not render the manage dialog when showManageButton is false', () => {
@@ -83,7 +83,7 @@ export function registerTopicTagAsideContentTests(options: {
 
   it('wires the manage dialog using topic slug for card topic type', () => {
     renderAside({ topic: { topic_type: 'card' }, showManageButton: true })
-    expect(screen.getByTestId('manage-tags-dialog')).toBeDefined()
+    expect(screen.getByTestId('manage-tags-dialog')).toBeInTheDocument()
     expect(manageHref()).toBe(cardManageHref)
   })
 

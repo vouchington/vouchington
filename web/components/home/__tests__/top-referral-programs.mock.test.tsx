@@ -45,7 +45,7 @@ describe('TopReferralPrograms', () => {
   it('renders error fallback when data is null', () => {
     render(<TopReferralPrograms data={null} />)
 
-    expect(screen.getByText('Unable to load referral programs.')).toBeDefined()
+    expect(screen.getByText('Unable to load referral programs.')).toBeInTheDocument()
     expect(screen.queryByTestId('top-referral-programs')).toBeNull()
     expect(screen.queryByTestId('top-referral-programs-empty')).toBeNull()
   })
@@ -55,7 +55,7 @@ describe('TopReferralPrograms', () => {
 
     render(<TopReferralPrograms data={projectTopReferralPrograms(data)} />)
 
-    expect(screen.getByTestId('top-referral-programs-empty')).toBeDefined()
+    expect(screen.getByTestId('top-referral-programs-empty')).toBeInTheDocument()
     expect(screen.queryByTestId('top-referral-programs')).toBeNull()
   })
 
@@ -65,10 +65,10 @@ describe('TopReferralPrograms', () => {
 
     render(<TopReferralPrograms data={projectTopReferralPrograms(data)} />)
 
-    expect(screen.getByTestId('top-referral-programs')).toBeDefined()
+    expect(screen.getByTestId('top-referral-programs')).toBeInTheDocument()
     expect(screen.queryByTestId('top-referral-programs-empty')).toBeNull()
     const link = screen.getByRole('link', { name: 'Chase Sapphire' })
     expect(link.getAttribute('href')).toBe('/referral-programs/chase-sapphire/referral-links')
-    expect(screen.getByRole('link', { name: 'Browse all referral programs →' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Browse all referral programs →' })).toBeInTheDocument()
   })
 })

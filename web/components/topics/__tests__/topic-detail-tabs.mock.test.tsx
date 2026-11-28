@@ -90,7 +90,7 @@ describe('TopicDetailTabs slug routing', () => {
       />,
     )
 
-    expect(screen.getByRole('link', { name: 'Related Topics' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Related Topics' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Publisher Type' })).toBeNull()
   })
 
@@ -105,7 +105,7 @@ describe('TopicDetailTabs slug routing', () => {
       />,
     )
 
-    expect(screen.getByRole('link', { name: 'Publisher Type' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Publisher Type' })).toBeInTheDocument()
   })
 
   it('falls back to topicId in tab hrefs when topicSlug is absent', () => {

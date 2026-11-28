@@ -48,12 +48,12 @@ describe('ReportDialog', () => {
 
   it('renders reason radios when open', () => {
     render(<ReportDialog {...defaultProps} />)
-    expect(screen.getByRole('radio', { name: 'Spam' })).toBeDefined()
-    expect(screen.getByRole('radio', { name: 'Harassment' })).toBeDefined()
-    expect(screen.getByRole('radio', { name: 'Misinformation' })).toBeDefined()
-    expect(screen.getByRole('radio', { name: 'Illegal content' })).toBeDefined()
-    expect(screen.getByRole('radio', { name: 'Vote manipulation' })).toBeDefined()
-    expect(screen.getByRole('radio', { name: 'Other' })).toBeDefined()
+    expect(screen.getByRole('radio', { name: 'Spam' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Harassment' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Misinformation' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Illegal content' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Vote manipulation' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Other' })).toBeInTheDocument()
   })
 
   it('submit button is disabled until a reason is selected', () => {
@@ -91,7 +91,7 @@ describe('ReportDialog', () => {
     await act(async () => {
       await mockSubmitReport.mock.results.at(-1)!.value
     })
-    expect(screen.getByText(/report submitted/i)).toBeDefined()
+    expect(screen.getByText(/report submitted/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Submit report' })).toBeNull()
     expect(mockSubmitReport).toHaveBeenCalledWith({
       entityType: 'post',
@@ -122,7 +122,7 @@ describe('ReportDialog', () => {
     // Dialog stays open — onOpenChange should not have been called with false by the submit
     expect(onOpenChange).not.toHaveBeenCalledWith(false)
     // Form is still visible
-    expect(screen.getByRole('radio', { name: 'Spam' })).toBeDefined()
+    expect(screen.getByRole('radio', { name: 'Spam' })).toBeInTheDocument()
   })
 
   it('shows inline error on 422', async () => {
@@ -137,13 +137,13 @@ describe('ReportDialog', () => {
     await act(async () => {
       await mockSubmitReport.mock.results.at(-1)!.value.catch(() => undefined)
     })
-    expect(screen.getByRole('alert')).toBeDefined()
+    expect(screen.getByRole('alert')).toBeInTheDocument()
   })
 
   it('shows success state immediately on reopen when sessionStorage flag is set', () => {
     sessionStorage.setItem('report:post:post-1', 'submitted')
     render(<ReportDialog {...defaultProps} />)
-    expect(screen.getByText(/report submitted/i)).toBeDefined()
+    expect(screen.getByText(/report submitted/i)).toBeInTheDocument()
   })
 
   it('updates success state when another report control submits the same entity', async () => {
@@ -154,6 +154,6 @@ describe('ReportDialog', () => {
       )
     })
 
-    expect(screen.getByText(/report submitted/i)).toBeDefined()
+    expect(screen.getByText(/report submitted/i)).toBeInTheDocument()
   })
 })

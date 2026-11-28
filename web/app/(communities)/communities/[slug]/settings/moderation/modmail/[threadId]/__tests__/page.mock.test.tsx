@@ -217,7 +217,7 @@ describe('ModmailThreadPage (communities)', () => {
       params: Promise.resolve({ slug: 'test-community', threadId: 't1' }),
     })
     render(jsx)
-    expect(screen.getByText('client')).toBeDefined()
+    expect(screen.getByText('client')).toBeInTheDocument()
   })
 
   it('redirects to /login when user is not logged in', async () => {

@@ -80,7 +80,7 @@ describe('BlueskyConnection', () => {
 
   it('renders the heading when the flag is on', () => {
     render(<BlueskyConnection initialAccount={null} />)
-    expect(screen.getByRole('heading', { level: 2, name: 'Bluesky' })).toBeDefined()
+    expect(screen.getByRole('heading', { level: 2, name: 'Bluesky' })).toBeInTheDocument()
     expect(document.querySelector('[data-pw="bluesky-connection-heading"]')).not.toBeNull()
   })
 
@@ -160,7 +160,7 @@ describe('BlueskyConnection', () => {
 
   it('shows the handle and disconnect button when connected', () => {
     render(<BlueskyConnection initialAccount={mockAccount} />)
-    expect(screen.getByText('alice.bsky.social')).toBeDefined()
+    expect(screen.getByText('alice.bsky.social')).toBeInTheDocument()
     expect(
       document.querySelector('[data-pw="bluesky-connection-disconnect-button"]'),
     ).not.toBeNull()
@@ -169,7 +169,7 @@ describe('BlueskyConnection', () => {
 
   it('falls back to the DID when the handle has not resolved', () => {
     render(<BlueskyConnection initialAccount={{ did: 'did:plc:abc123xyz', handle: null }} />)
-    expect(screen.getByText('did:plc:abc123xyz')).toBeDefined()
+    expect(screen.getByText('did:plc:abc123xyz')).toBeInTheDocument()
   })
 
   it('disconnects and clears the account on click', async () => {

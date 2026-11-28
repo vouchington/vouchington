@@ -75,7 +75,7 @@ describe('PaginatedUserRssFeedList', () => {
       after: 'cursor-1',
       feed_type: 'podcast',
     })
-    expect(await screen.findByText('feed-2')).toBeDefined()
+    expect(await screen.findByText('feed-2')).toBeInTheDocument()
   })
 
   it('shows the empty state when there is no continuation', () => {
@@ -88,6 +88,6 @@ describe('PaginatedUserRssFeedList', () => {
       />,
     )
 
-    expect(screen.getByText('No followed podcasts')).toBeDefined()
+    expect(screen.getByText('No followed podcasts')).toBeInTheDocument()
   })
 })

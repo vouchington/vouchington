@@ -24,7 +24,7 @@ describe('VideoEmbed', () => {
         title='Test Video'
       />,
     )
-    expect(getByRole('button', { name: /play test video/i })).toBeTruthy()
+    expect(getByRole('button', { name: /play test video/i })).toBeInTheDocument()
   })
 
   it('renders iframe with allow-same-origin in sandbox after clicking play', () => {
@@ -67,7 +67,7 @@ describe('VideoEmbed', () => {
       />,
     )
     expect(queryByRole('button', { name: /play/i })).toBeNull()
-    expect(getByRole('link', { name: /watch on youtube/i })).toBeTruthy()
+    expect(getByRole('link', { name: /watch on youtube/i })).toBeInTheDocument()
   })
 
   it('renders external link fallback for untrusted platform', () => {
@@ -79,7 +79,7 @@ describe('VideoEmbed', () => {
       />,
     )
     expect(queryByRole('button', { name: /play/i })).toBeNull()
-    expect(getByRole('link', { name: /watch on dailymotion/i })).toBeTruthy()
+    expect(getByRole('link', { name: /watch on dailymotion/i })).toBeInTheDocument()
   })
 
   it('renders external link fallback for peertube (trusted but no embed URL)', () => {
@@ -91,7 +91,7 @@ describe('VideoEmbed', () => {
       />,
     )
     expect(queryByRole('button', { name: /play/i })).toBeNull()
-    expect(getByRole('link', { name: /watch on peertube/i })).toBeTruthy()
+    expect(getByRole('link', { name: /watch on peertube/i })).toBeInTheDocument()
   })
 
   it('renders an external link fallback for an unsafe API player URL', () => {
@@ -104,7 +104,7 @@ describe('VideoEmbed', () => {
       />,
     )
     expect(queryByRole('button', { name: /play/i })).toBeNull()
-    expect(getByRole('link', { name: /watch on youtube/i })).toBeTruthy()
+    expect(getByRole('link', { name: /watch on youtube/i })).toBeInTheDocument()
   })
 
   it('rejects a player URL that does not match its normalized platform', () => {
@@ -117,7 +117,7 @@ describe('VideoEmbed', () => {
       />,
     )
     expect(queryByRole('button', { name: /play/i })).toBeNull()
-    expect(getByRole('link', { name: /watch on vimeo/i })).toBeTruthy()
+    expect(getByRole('link', { name: /watch on vimeo/i })).toBeInTheDocument()
   })
 
   it.each([
@@ -134,6 +134,6 @@ describe('VideoEmbed', () => {
       />,
     )
     expect(queryByRole('button', { name: /play/i })).toBeNull()
-    expect(getByRole('link', { name: /watch on youtube/i })).toBeTruthy()
+    expect(getByRole('link', { name: /watch on youtube/i })).toBeInTheDocument()
   })
 })

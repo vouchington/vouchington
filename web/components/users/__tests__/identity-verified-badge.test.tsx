@@ -5,7 +5,7 @@ import { IdentityVerifiedBadge } from '../identity-verified-badge'
 describe('IdentityVerifiedBadge', () => {
   it('renders the badge trigger with expected text', () => {
     render(<IdentityVerifiedBadge />)
-    expect(screen.getByText('ID Verified')).toBeDefined()
+    expect(screen.getByText('ID Verified')).toBeInTheDocument()
   })
 
   it('has data-pw attribute on the badge trigger', () => {
@@ -21,8 +21,8 @@ describe('IdentityVerifiedBadge', () => {
 
     fireEvent.click(screen.getByText('ID Verified'))
 
-    expect(screen.getByRole('dialog')).toBeDefined()
-    expect(screen.getByRole('heading', { name: 'ID Verified' })).toBeDefined()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'ID Verified' })).toBeInTheDocument()
   })
 
   it('dialog contains the expected disclaimer copy', () => {
@@ -33,7 +33,7 @@ describe('IdentityVerifiedBadge', () => {
       screen.getByText(
         /This account completed an identity verification check\. Legal name is private unless the user chooses to show it\. This badge does not mean the account is endorsed by us or that its posts are trustworthy\./,
       ),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('applies custom className to the badge trigger', () => {

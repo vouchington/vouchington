@@ -81,29 +81,29 @@ describe('AdminReviewQueueClient', () => {
   it('renders queued posts and provider-neutral moderation summaries', () => {
     const { container } = render(<AdminReviewQueueClient initialData={makeResponse()} />)
 
-    expect(screen.getByRole('heading', { name: 'Review Queue' })).toBeDefined()
-    expect(screen.getByText('Flagged post')).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Review Queue' })).toBeInTheDocument()
+    expect(screen.getByText('Flagged post')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Flagged post' }).getAttribute('href')).toBe(
       '/discussion/flagged-post',
     )
     expect(screen.getByText('Flagged post')).toHaveAttribute('lang', 'ar')
     expect(screen.getByText('Flagged post')).toHaveAttribute('dir', 'rtl')
     expect(screen.queryByRole('link', { name: 'Flagged comment' })).toBeNull()
-    expect(screen.getByText('Flagged comment')).toBeDefined()
+    expect(screen.getByText('Flagged comment')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Flagged topic' }).getAttribute('href')).toBe(
       '/topic-recommendations?q=Flagged%20topic',
     )
     const flaggedPostRow = screen.getByText('Flagged post').closest('tr')
     expect(flaggedPostRow).not.toBeNull()
     expect(within(flaggedPostRow!).getAllByText('Rejected')).toHaveLength(2)
-    expect(within(flaggedPostRow!).getByText('flagged')).toBeDefined()
+    expect(within(flaggedPostRow!).getByText('flagged')).toBeInTheDocument()
     expect(screen.queryByText('provider flagged')).toBeNull()
     expect(screen.queryByText('OpenAI:')).toBeNull()
     expect(screen.queryByText('Spam:')).toBeNull()
     const flaggedTopicRow = screen.getByText('Flagged topic').closest('tr')
     expect(flaggedTopicRow).not.toBeNull()
-    expect(within(flaggedTopicRow!).getByText('pending')).toBeDefined()
-    expect(screen.getByText('3 queued posts, 2 flagged by automated checks')).toBeDefined()
+    expect(within(flaggedTopicRow!).getByText('pending')).toBeInTheDocument()
+    expect(screen.getByText('3 queued posts, 2 flagged by automated checks')).toBeInTheDocument()
     expect(container.querySelector('[data-pw="moderation-sla-badge"]')).not.toBeNull()
   })
 
@@ -142,11 +142,11 @@ describe('AdminReviewQueueClient', () => {
       expect(mockUpdateAdminReviewQueuePost).toHaveBeenCalledWith('comment-1', 'rejected')
     })
     await waitFor(() => {
-      expect(screen.getByText('Flagged comment')).toBeDefined()
+      expect(screen.getByText('Flagged comment')).toBeInTheDocument()
     })
     const rejectedCommentRow = screen.getByText('Flagged comment').closest('tr')
     expect(rejectedCommentRow).not.toBeNull()
-    expect(within(rejectedCommentRow!).getByText('Rejected')).toBeDefined()
+    expect(within(rejectedCommentRow!).getByText('Rejected')).toBeInTheDocument()
     expect(mockToastSuccess).toHaveBeenCalledWith('Post rejected')
   })
 
@@ -160,16 +160,18 @@ describe('AdminReviewQueueClient', () => {
       />,
     )
 
-    expect(screen.getByText('No posts need review.')).toBeDefined()
+    expect(screen.getByText('No posts need review.')).toBeInTheDocument()
   })
 
   it('renders Mark for Re-review button for each post', () => {
     render(<AdminReviewQueueClient initialData={makeResponse()} />)
 
-    expect(screen.getByRole('button', { name: /Mark for re-review Flagged post/i })).toBeDefined()
+    expect(
+      screen.getByRole('button', { name: /Mark for re-review Flagged post/i }),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Mark for re-review Flagged comment/i }),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('clicking Mark for Re-review calls markPostForReview and toasts success', async () => {
@@ -183,7 +185,7 @@ describe('AdminReviewQueueClient', () => {
       expect(mockMarkPostForReview).toHaveBeenCalledWith('post-1')
     })
     await waitFor(() => {
-      expect(screen.getByText('Flagged post')).toBeDefined()
+      expect(screen.getByText('Flagged post')).toBeInTheDocument()
     })
     expect(mockToastSuccess).toHaveBeenCalledWith('Post marked for re-review')
   })

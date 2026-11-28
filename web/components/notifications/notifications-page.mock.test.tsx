@@ -167,7 +167,7 @@ describe('notifications-page', () => {
         />,
       )
 
-      expect(screen.getByText('post_reply')).toBeDefined()
+      expect(screen.getByText('post_reply')).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }))
 
       await waitFor(() => expect(mockMarkAllMyNotificationsRead).toHaveBeenCalled())

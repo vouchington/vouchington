@@ -88,7 +88,7 @@ describe('OAuthConnectionsSection', () => {
 
     render(<OAuthConnectionsSection accounts={emptyAccounts} />)
 
-    expect(await screen.findByRole('button', { name: 'Connect github' })).toBeDefined()
+    expect(await screen.findByRole('button', { name: 'Connect github' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Connect facebook' })).toBeNull()
   })
 
@@ -105,8 +105,8 @@ describe('OAuthConnectionsSection', () => {
       />,
     )
 
-    expect(screen.getByText('GitHub User')).toBeDefined()
-    expect(screen.getByText('Disconnect')).toBeDefined()
+    expect(screen.getByText('GitHub User')).toBeInTheDocument()
+    expect(screen.getByText('Disconnect')).toBeInTheDocument()
   })
 
   it('offers LinkedIn broker connection without a public client ID when backend web mode is enabled', async () => {

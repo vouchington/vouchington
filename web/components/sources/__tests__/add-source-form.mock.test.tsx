@@ -71,17 +71,17 @@ describe('AddSourceForm', () => {
 
   it('renders with correct input label for news kind', () => {
     render(<AddSourceForm kind='news' />)
-    expect(screen.getByText('Feed URL')).toBeDefined()
+    expect(screen.getByText('Feed URL')).toBeInTheDocument()
   })
 
   it('renders with correct input label for podcast kind', () => {
     render(<AddSourceForm kind='podcast' />)
-    expect(screen.getByText('Podcast RSS URL')).toBeDefined()
+    expect(screen.getByText('Podcast RSS URL')).toBeInTheDocument()
   })
 
   it('renders with correct input label for video kind', () => {
     render(<AddSourceForm kind='video' />)
-    expect(screen.getByText('Channel URL')).toBeDefined()
+    expect(screen.getByText('Channel URL')).toBeInTheDocument()
   })
 
   it('submit button is disabled when url is empty', () => {

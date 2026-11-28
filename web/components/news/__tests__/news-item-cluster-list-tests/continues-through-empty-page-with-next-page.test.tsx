@@ -49,7 +49,7 @@ describe('NewsItemClusterList empty page with a next page', () => {
     expect(screen.queryByText('No news found')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
 
-    expect(await screen.findByText('Older Article')).toBeDefined()
+    expect(await screen.findByText('Older Article')).toBeInTheDocument()
     expect(getPaginatedPage).toHaveBeenCalledWith(endpoint, { after: 'cursor-1' })
   })
 
@@ -62,7 +62,7 @@ describe('NewsItemClusterList empty page with a next page', () => {
       { nextPageEndpoint: endpoint },
     )
 
-    expect(screen.getByText('No news found')).toBeDefined()
+    expect(screen.getByText('No news found')).toBeInTheDocument()
   })
 
   it('shows the empty state once the last page is empty', async () => {
@@ -74,7 +74,7 @@ describe('NewsItemClusterList empty page with a next page', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
 
-    await waitFor(() => expect(screen.getByText('No news found')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('No news found')).toBeInTheDocument())
   })
 
   it('pauses automatic loading after five more pages add articles to the same story', async () => {

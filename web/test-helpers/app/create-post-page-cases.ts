@@ -52,7 +52,7 @@ export function registerCreatePostPageCases(options: {
     mockGetMyContributionStatus.mockResolvedValue(createPostPageAllowedStatus)
     const result = await Page({ searchParams: createPostPageEmptySearchParams })
     render(result)
-    expect(screen.getByTestId('post-form')).toBeDefined()
+    expect(screen.getByTestId('post-form')).toBeInTheDocument()
     expect(screen.queryByTestId('contribution-gated-cta')).toBeNull()
   })
 
@@ -84,9 +84,9 @@ export function registerCreatePostPageCases(options: {
     mockGetMyContributionStatus.mockResolvedValue(gatedStatus)
     const result = await Page({ searchParams: createPostPageEmptySearchParams })
     render(result)
-    expect(screen.getByTestId('contribution-gated-cta')).toBeDefined()
+    expect(screen.getByTestId('contribution-gated-cta')).toBeInTheDocument()
     expect(screen.queryByTestId('post-form')).toBeNull()
-    expect(screen.getByText(actionNoun)).toBeDefined()
+    expect(screen.getByText(actionNoun)).toBeInTheDocument()
   })
 
   it('renders CTA and hides form when email_verification_required', async () => {
@@ -97,7 +97,7 @@ export function registerCreatePostPageCases(options: {
     })
     const result = await Page({ searchParams: createPostPageEmptySearchParams })
     render(result)
-    expect(screen.getByTestId('contribution-gated-cta')).toBeDefined()
+    expect(screen.getByTestId('contribution-gated-cta')).toBeInTheDocument()
     expect(screen.queryByTestId('post-form')).toBeNull()
   })
 
@@ -106,7 +106,7 @@ export function registerCreatePostPageCases(options: {
     mockGetMyContributionStatus.mockRejectedValue(new Error('API error'))
     const result = await Page({ searchParams: createPostPageEmptySearchParams })
     render(result)
-    expect(screen.getByTestId('post-form')).toBeDefined()
+    expect(screen.getByTestId('post-form')).toBeInTheDocument()
     expect(screen.queryByTestId('contribution-gated-cta')).toBeNull()
   })
 }
