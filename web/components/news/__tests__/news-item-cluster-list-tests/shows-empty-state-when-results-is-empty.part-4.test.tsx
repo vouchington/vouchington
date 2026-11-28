@@ -93,6 +93,6 @@ describe('NewsItemClusterList', () => {
       page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
     }
     renderClusterList(data)
-    expect(screen.getByText('Existing Article')).toBeDefined()
+    expect(screen.getByText('Existing Article')).toBeInTheDocument()
   })
 })

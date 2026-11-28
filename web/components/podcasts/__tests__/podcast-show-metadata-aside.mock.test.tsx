@@ -73,8 +73,8 @@ describe('PodcastShowMetadataAside', () => {
         feed={feed}
       />,
     )
-    expect(screen.getByTestId('aside-accordion')).toBeDefined()
-    expect(screen.getByText('About this podcast')).toBeDefined()
+    expect(screen.getByTestId('aside-accordion')).toBeInTheDocument()
+    expect(screen.getByText('About this podcast')).toBeInTheDocument()
   })
 
   it('renders cover art when cover_art_url is set', async () => {
@@ -113,7 +113,7 @@ describe('PodcastShowMetadataAside', () => {
         feed={feed}
       />,
     )
-    expect(screen.getByTestId('mic-icon')).toBeDefined()
+    expect(screen.getByTestId('mic-icon')).toBeInTheDocument()
   })
 
   it('renders author name', async () => {
@@ -132,7 +132,7 @@ describe('PodcastShowMetadataAside', () => {
         feed={feed}
       />,
     )
-    expect(screen.getByText('By NPR')).toBeDefined()
+    expect(screen.getByText('By NPR')).toBeInTheDocument()
   })
 
   it('renders explicit badge when is_explicit is true', async () => {
@@ -151,7 +151,7 @@ describe('PodcastShowMetadataAside', () => {
         feed={feed}
       />,
     )
-    expect(screen.getByText('Explicit')).toBeDefined()
+    expect(screen.getByText('Explicit')).toBeInTheDocument()
   })
 
   it('renders linked category chips when topic_slug is set', async () => {
@@ -179,7 +179,7 @@ describe('PodcastShowMetadataAside', () => {
         feed={feed}
       />,
     )
-    expect(screen.getByText('news')).toBeDefined()
+    expect(screen.getByText('news')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'news' })).toBeNull()
   })
 
@@ -193,6 +193,6 @@ describe('PodcastShowMetadataAside', () => {
         feed={feed}
       />,
     )
-    expect(screen.getByTestId('aside-accordion')).toBeDefined()
+    expect(screen.getByTestId('aside-accordion')).toBeInTheDocument()
   })
 })

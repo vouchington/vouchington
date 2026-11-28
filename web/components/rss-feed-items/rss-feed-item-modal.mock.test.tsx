@@ -142,8 +142,8 @@ describe('RssFeedItemModal', () => {
       }),
     )
 
-    expect(screen.getByText('Description from the YouTube RSS media payload.')).toBeDefined()
-    expect(screen.getByText(/12 views/)).toBeDefined()
+    expect(screen.getByText('Description from the YouTube RSS media payload.')).toBeInTheDocument()
+    expect(screen.getByText(/12 views/)).toBeInTheDocument()
     expect(mockRssFeedItemViewTracker).toHaveBeenCalledWith(
       expect.objectContaining({ itemId: ITEM_ID }),
       undefined,
@@ -206,8 +206,8 @@ describe('RssFeedItemModal', () => {
       }),
     )
 
-    expect(screen.getByRole('heading', { name: 'Embed-only title' })).toBeDefined()
-    expect(screen.getByText('Embed-only description')).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Embed-only title' })).toBeInTheDocument()
+    expect(screen.getByText('Embed-only description')).toBeInTheDocument()
     expect(screen.queryByText('No article summary available.')).toBeNull()
   })
 

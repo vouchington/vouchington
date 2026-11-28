@@ -89,8 +89,8 @@ describe('UserPostRelationList', () => {
         emptyDescription='Nothing here.'
       />,
     )
-    expect(screen.getByTestId('empty-state')).toBeDefined()
-    expect(screen.getByText('No posts')).toBeDefined()
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument()
+    expect(screen.getByText('No posts')).toBeInTheDocument()
   })
 
   it('renders a PostCard for each post without relationAction', () => {
@@ -102,8 +102,8 @@ describe('UserPostRelationList', () => {
         emptyDescription='Nothing here.'
       />,
     )
-    expect(screen.getByTestId('post-card-p-1')).toBeDefined()
-    expect(screen.getByTestId('post-card-p-2')).toBeDefined()
+    expect(screen.getByTestId('post-card-p-1')).toBeInTheDocument()
+    expect(screen.getByTestId('post-card-p-2')).toBeInTheDocument()
     expect(screen.queryByTestId('empty-state')).toBeNull()
   })
 
@@ -162,8 +162,8 @@ describe('UserPostRelationList', () => {
         onRemoved={onRemoved}
       />,
     )
-    expect(screen.getByTestId('relation-action-p-1')).toBeDefined()
-    expect(screen.getByTestId('relation-action-p-2')).toBeDefined()
+    expect(screen.getByTestId('relation-action-p-1')).toBeInTheDocument()
+    expect(screen.getByTestId('relation-action-p-2')).toBeInTheDocument()
     expect(mockRelationManagementAction).toHaveBeenCalledWith(
       expect.objectContaining({ entityId: 'p-1', config: savedConfig, onRemoved }),
     )

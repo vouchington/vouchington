@@ -38,7 +38,7 @@ describe('MyPodcastsViewedPage', () => {
   it('renders the page heading when authenticated', async () => {
     mockRequireCurrentUser.mockResolvedValue(baseUser)
     render(await MyPodcastsViewedPage())
-    expect(screen.getByTestId('bookmark-page-header')).toBeDefined()
+    expect(screen.getByTestId('bookmark-page-header')).toBeInTheDocument()
   })
 
   it('renders UserViewedRssFeedRoute with podcast feedType', async () => {

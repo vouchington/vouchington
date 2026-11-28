@@ -114,7 +114,7 @@ describe('EntityAutocomplete', () => {
     const input = screen.getByPlaceholderText('Search things...')
 
     fireEvent.change(input, { target: { value: 'card' } })
-    expect(screen.getByTestId('command-empty')).toBeDefined()
+    expect(screen.getByTestId('command-empty')).toBeInTheDocument()
 
     fireEvent.keyDown(input, { key: 'Escape' })
     expect(screen.queryByTestId('command-empty')).toBeNull()

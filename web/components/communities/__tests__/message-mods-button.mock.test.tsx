@@ -61,7 +61,7 @@ describe('MessageModsButton', () => {
 
   it('renders the Message Mods button', () => {
     render(<MessageModsButton communitySlug='test-community' />)
-    expect(screen.getByText('Message Mods')).toBeDefined()
+    expect(screen.getByText('Message Mods')).toBeInTheDocument()
   })
 
   it('has the message-mods-button data-pw attribute', () => {

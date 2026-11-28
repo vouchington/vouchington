@@ -102,8 +102,8 @@ describe('PostAuthorAside', () => {
         postType='discussion'
       />,
     )
-    expect(screen.getByText('Hello world')).toBeDefined()
-    expect(screen.getByText('Read more →')).toBeDefined()
+    expect(screen.getByText('Hello world')).toBeInTheDocument()
+    expect(screen.getByText('Read more →')).toBeInTheDocument()
   })
 
   it('marks the bio with the author detected language', () => {
@@ -165,7 +165,7 @@ describe('PostAuthorAside', () => {
         postType='discussion'
       />,
     )
-    expect(await screen.findByRole('button', { name: 'Follow' })).toBeDefined()
+    expect(await screen.findByRole('button', { name: 'Follow' })).toBeInTheDocument()
   })
 
   it('hides FollowButton when viewing own post', async () => {

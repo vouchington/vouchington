@@ -59,19 +59,19 @@ describe('UserLink', () => {
 
   it('renders @username as default child', () => {
     const { getByText } = render(<UserLink user={{ id: 'u1', username: 'alice' }} />)
-    expect(getByText('@alice')).toBeTruthy()
+    expect(getByText('@alice')).toBeInTheDocument()
   })
 
   it('renders id as default child when no username', () => {
     const { getByText } = render(<UserLink user={{ id: 'u1', username: null }} />)
-    expect(getByText('u1')).toBeTruthy()
+    expect(getByText('u1')).toBeInTheDocument()
   })
 
   it('renders custom children', () => {
     const { getByText } = render(
       <UserLink user={{ id: 'u1', username: 'alice' }}>Alice Smith</UserLink>,
     )
-    expect(getByText('Alice Smith')).toBeTruthy()
+    expect(getByText('Alice Smith')).toBeInTheDocument()
   })
 
   it('has data-pw user-link', () => {

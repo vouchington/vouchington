@@ -60,8 +60,8 @@ describe('PopularCommunitiesAside', () => {
     mockGetCommunities.mockResolvedValue(makeResponse(['1', '2']))
     const result = await PopularCommunitiesAside()
     render(result as ReactElement)
-    expect(screen.getByText('Community 1')).toBeDefined()
-    expect(screen.getByText('Community 2')).toBeDefined()
+    expect(screen.getByText('Community 1')).toBeInTheDocument()
+    expect(screen.getByText('Community 2')).toBeInTheDocument()
   })
 
   it('slices to at most 3 communities even if more are returned', async () => {

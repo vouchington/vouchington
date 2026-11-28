@@ -70,6 +70,6 @@ describe('CommentNode', () => {
     )
 
     expect(screen.queryByTestId('markdown')).toBeNull()
-    expect(screen.getByText('Hello')).toBeDefined()
+    expect(screen.getByText('Hello')).toBeInTheDocument()
   })
 })

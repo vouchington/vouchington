@@ -154,7 +154,7 @@ describe('ResultGroups', () => {
       />,
     )
 
-    expect(screen.getByText('Test Card')).not.toBeNull()
+    expect(screen.getByText('Test Card')).toBeInTheDocument()
     fireEvent.click(screen.getByText('Test Card'))
     expect(pushRoute).toHaveBeenCalledWith('/card/test-card')
     expect(onOpenChange).toHaveBeenCalledWith(false)
@@ -182,7 +182,7 @@ describe('ResultGroups', () => {
       />,
     )
 
-    expect(screen.getByText('Test Article')).not.toBeNull()
+    expect(screen.getByText('Test Article')).toBeInTheDocument()
     fireEvent.click(screen.getByText('Test Article'))
     expect(pushRoute).toHaveBeenCalledWith('/article/post-1')
     expect(onOpenChange).toHaveBeenCalledWith(false)

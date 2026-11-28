@@ -68,7 +68,7 @@ describe('UserProfileHeader', () => {
         user={{ ...baseUser, verification_status: 'verified', is_verified_badge_visible: true }}
       />,
     )
-    expect(screen.getByTestId('identity-verified-badge')).toBeDefined()
+    expect(screen.getByTestId('identity-verified-badge')).toBeInTheDocument()
   })
 
   it('does not render IdentityVerifiedBadge when verification_status=verified but is_verified_badge_visible=false', () => {
@@ -96,7 +96,7 @@ describe('UserProfileHeader', () => {
 
   it('renders verified_display_name when present', () => {
     render(<UserProfileHeader user={{ ...baseUser, verified_display_name: 'Alice S.' }} />)
-    expect(screen.getByText('Alice S.')).toBeDefined()
+    expect(screen.getByText('Alice S.')).toBeInTheDocument()
   })
 
   it('does not render verified_display_name when absent', () => {

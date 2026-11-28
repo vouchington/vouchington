@@ -196,7 +196,7 @@ describe('CommentNodeActions', () => {
         node={makeNode(post)}
       />,
     )
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 
   it('isAuthenticated=true, isOwner=false, can_delete=false: no Edit or Delete', () => {
@@ -244,7 +244,7 @@ describe('CommentNodeActions', () => {
     )
     expect(screen.queryByRole('button', { name: /Reply/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /Quote/i })).toBeNull()
-    expect(screen.getByRole('link', { name: 'Permalink' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Permalink' })).toBeInTheDocument()
   })
 
   it('hides Reply and Quote buttons when the comment is locked', () => {
@@ -257,7 +257,7 @@ describe('CommentNodeActions', () => {
     )
     expect(screen.queryByRole('button', { name: /Reply/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /Quote/i })).toBeNull()
-    expect(screen.getByRole('link', { name: 'Permalink' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Permalink' })).toBeInTheDocument()
   })
 
   it('Permalink link is always visible', () => {
@@ -268,6 +268,6 @@ describe('CommentNodeActions', () => {
         node={makeNode(post)}
       />,
     )
-    expect(screen.getByRole('link', { name: 'Permalink' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Permalink' })).toBeInTheDocument()
   })
 })

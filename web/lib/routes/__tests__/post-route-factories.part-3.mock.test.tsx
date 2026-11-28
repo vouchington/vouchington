@@ -176,7 +176,7 @@ describe('createPostDetailPage — ReviewDisputeEntry gate', () => {
 
     const result = await ReviewDetailPage({ params: Promise.resolve({ id: 'post-1' }) })
     render(result)
-    expect(screen.getByTestId('review-dispute-entry')).toBeDefined()
+    expect(screen.getByTestId('review-dispute-entry')).toBeInTheDocument()
   })
 
   it('does not render ReviewDisputeEntry when user is not logged in', async () => {

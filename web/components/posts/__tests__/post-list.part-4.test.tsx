@@ -37,8 +37,8 @@ describe('PostList', () => {
     await act(async () => {
       await loadMore()
     })
-    expect(screen.getByText('First Post')).toBeDefined()
-    expect(screen.getByText('Second Post')).toBeDefined()
+    expect(screen.getByText('First Post')).toBeInTheDocument()
+    expect(screen.getByText('Second Post')).toBeInTheDocument()
 
     // Simulate a server re-render with new initialData (e.g. sort changed)
     const newData = makePage('post-3', 'New Filter Post', false, null)
@@ -55,7 +55,7 @@ describe('PostList', () => {
     // Stale accumulated pages are discarded; only the new page is visible
     expect(screen.queryByText('First Post')).toBeNull()
     expect(screen.queryByText('Second Post')).toBeNull()
-    expect(screen.getByText('New Filter Post')).toBeDefined()
+    expect(screen.getByText('New Filter Post')).toBeInTheDocument()
   })
 
   it('passes priority=true to first card and priority=false to subsequent cards', () => {

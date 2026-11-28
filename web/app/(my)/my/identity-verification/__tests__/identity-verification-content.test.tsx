@@ -38,7 +38,7 @@ describe('IdentityVerificationContent', () => {
           verificationStatus='unverified'
         />,
       )
-      expect(screen.getByRole('heading', { name: /get id verified/i })).toBeDefined()
+      expect(screen.getByRole('heading', { name: /get id verified/i })).toBeInTheDocument()
     })
 
     it('renders the start verification button', () => {
@@ -48,7 +48,7 @@ describe('IdentityVerificationContent', () => {
           verificationStatus='unverified'
         />,
       )
-      expect(screen.getByRole('button', { name: /verify my identity/i })).toBeDefined()
+      expect(screen.getByRole('button', { name: /verify my identity/i })).toBeInTheDocument()
     })
 
     it('shows verification fee in the description', () => {
@@ -59,7 +59,7 @@ describe('IdentityVerificationContent', () => {
           verificationFee='$9.99'
         />,
       )
-      expect(screen.getByText(/\$9\.99/)).toBeDefined()
+      expect(screen.getByText(/\$9\.99/)).toBeInTheDocument()
     })
 
     it('redirects to checkout URL on start button click', async () => {
@@ -88,7 +88,7 @@ describe('IdentityVerificationContent', () => {
       )
       fireEvent.click(screen.getByRole('button', { name: /verify my identity/i }))
       await waitFor(() => {
-        expect(screen.getByText('Not eligible')).toBeDefined()
+        expect(screen.getByText('Not eligible')).toBeInTheDocument()
       })
     })
 
@@ -102,7 +102,7 @@ describe('IdentityVerificationContent', () => {
       )
       fireEvent.click(screen.getByRole('button', { name: /verify my identity/i }))
       await waitFor(() => {
-        expect(screen.getByText('Failed to start verification.')).toBeDefined()
+        expect(screen.getByText('Failed to start verification.')).toBeInTheDocument()
       })
     })
   })
@@ -115,7 +115,7 @@ describe('IdentityVerificationContent', () => {
           verificationStatus='payment_pending'
         />,
       )
-      expect(screen.getByRole('heading', { name: /payment in progress/i })).toBeDefined()
+      expect(screen.getByRole('heading', { name: /payment in progress/i })).toBeInTheDocument()
     })
 
     it('renders no action button', () => {
@@ -137,7 +137,7 @@ describe('IdentityVerificationContent', () => {
           verificationStatus='identity_pending'
         />,
       )
-      expect(screen.getByRole('heading', { name: /verification in progress/i })).toBeDefined()
+      expect(screen.getByRole('heading', { name: /verification in progress/i })).toBeInTheDocument()
     })
 
     it('renders a Continue Verification button', () => {
@@ -147,7 +147,7 @@ describe('IdentityVerificationContent', () => {
           verificationStatus='identity_pending'
         />,
       )
-      expect(screen.getByRole('button', { name: /continue verification/i })).toBeDefined()
+      expect(screen.getByRole('button', { name: /continue verification/i })).toBeInTheDocument()
     })
   })
 })

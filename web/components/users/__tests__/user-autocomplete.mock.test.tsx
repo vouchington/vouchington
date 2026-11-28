@@ -98,7 +98,7 @@ describe('UserAutocomplete', () => {
         onChange={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(screen.getByPlaceholderText('Search users...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search users...')).toBeInTheDocument()
   })
 
   it('shows provided label as initial value', () => {
@@ -123,7 +123,7 @@ describe('UserAutocomplete', () => {
     )
     const input = screen.getByPlaceholderText('Search users...')
     fireEvent.change(input, { target: { value: 'ali' } })
-    expect(screen.getByTestId('command-empty')).toBeDefined()
+    expect(screen.getByTestId('command-empty')).toBeInTheDocument()
   })
 
   it('shows user results after fetch', async () => {
@@ -154,7 +154,7 @@ describe('UserAutocomplete', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('alice')).toBeDefined()
+        expect(screen.getByText('alice')).toBeInTheDocument()
       },
       { timeout: 500 },
     )
@@ -189,7 +189,7 @@ describe('UserAutocomplete', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('alice')).toBeDefined()
+        expect(screen.getByText('alice')).toBeInTheDocument()
       },
       { timeout: 500 },
     )

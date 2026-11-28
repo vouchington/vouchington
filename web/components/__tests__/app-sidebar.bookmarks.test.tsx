@@ -20,7 +20,7 @@ describe('AppSidebar Bookmarks', () => {
 
     it('shows Bookmarks group for authenticated users', () => {
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.getByText('Bookmarks')).toBeDefined()
+      expect(screen.getByText('Bookmarks')).toBeInTheDocument()
     })
 
     it('Saved Posts link has correct href', () => {
@@ -43,7 +43,7 @@ describe('AppSidebar Bookmarks', () => {
 
     it('shows Bookmarks group for authenticated users', () => {
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.getByText('Bookmarks')).toBeDefined()
+      expect(screen.getByText('Bookmarks')).toBeInTheDocument()
     })
 
     it('Followed Topics link has correct href', () => {
@@ -66,7 +66,7 @@ describe('AppSidebar Bookmarks', () => {
 
     it('shows Bookmarks group for authenticated users', () => {
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.getByText('Bookmarks')).toBeDefined()
+      expect(screen.getByText('Bookmarks')).toBeInTheDocument()
     })
 
     it('Saved Links link has correct href', () => {
@@ -107,8 +107,8 @@ describe('AppSidebar Bookmarks', () => {
 
     it('shows News Bookmarks and Source Bookmarks groups for authenticated users', () => {
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.getByText('News Bookmarks')).toBeDefined()
-      expect(screen.getByText('Source Bookmarks')).toBeDefined()
+      expect(screen.getByText('News Bookmarks')).toBeInTheDocument()
+      expect(screen.getByText('Source Bookmarks')).toBeInTheDocument()
     })
 
     it('Saved News link has correct href', () => {
@@ -145,7 +145,7 @@ describe('AppSidebar Bookmarks', () => {
 
     it('shows Bookmarks group for authenticated users', () => {
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.getByText('Bookmarks')).toBeDefined()
+      expect(screen.getByText('Bookmarks')).toBeInTheDocument()
     })
 
     it('Following link has correct href', () => {

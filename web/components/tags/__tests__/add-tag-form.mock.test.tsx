@@ -84,7 +84,7 @@ describe('AddTagForm', () => {
         objectType='topic'
       />,
     )
-    expect(screen.getByPlaceholderText('Search for topics to tag...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search for topics to tag...')).toBeInTheDocument()
   })
   it('renders a TagAutocomplete for posts', () => {
     render(
@@ -95,7 +95,7 @@ describe('AddTagForm', () => {
         objectType='post'
       />,
     )
-    expect(screen.getByPlaceholderText('Search for posts to tag...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search for posts to tag...')).toBeInTheDocument()
   })
 
   it('renders a TagAutocomplete for urls', () => {
@@ -107,7 +107,7 @@ describe('AddTagForm', () => {
         objectType='url'
       />,
     )
-    expect(screen.getByPlaceholderText('Search for urls to tag...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search for urls to tag...')).toBeInTheDocument()
   })
 
   it('calls createEntityRelation when item is selected', async () => {
@@ -219,7 +219,7 @@ describe('AddTagForm', () => {
           enumOptions={mockEnumOptions}
         />,
       )
-      expect(screen.getByRole('combobox', { name: /select publisher type/i })).toBeDefined()
+      expect(screen.getByRole('combobox', { name: /select publisher type/i })).toBeInTheDocument()
       expect(screen.queryByTestId('autocomplete-input')).toBeNull()
     })
 
@@ -250,7 +250,7 @@ describe('AddTagForm', () => {
         />,
       )
       // Only pt-3 is available — trigger should still render
-      expect(screen.getByRole('combobox')).toBeDefined()
+      expect(screen.getByRole('combobox')).toBeInTheDocument()
     })
 
     it('returns null when all options are excluded', () => {

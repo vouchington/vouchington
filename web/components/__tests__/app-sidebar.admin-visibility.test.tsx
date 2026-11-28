@@ -52,7 +52,7 @@ describe('AppSidebar Admin section visibility', () => {
     setMockPathname('/copyright/email-review')
     renderSidebar({ id: 'u1', roles: ['moderator'] } as User)
 
-    expect(screen.getByRole('link', { name: /^Email Intake$/i })).toBeDefined()
+    expect(screen.getByRole('link', { name: /^Email Intake$/i })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /^Review Queue$/i })).toBeNull()
     expect(screen.queryByRole('link', { name: /^Reports$/i })).toBeNull()
   })
@@ -76,8 +76,8 @@ describe('AppSidebar Admin section visibility', () => {
   it('shows Engineering intent for administrators on engineering routes', () => {
     setMockPathname('/admin/queues')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
-    expect(screen.getByText('Operations')).toBeDefined()
-    expect(screen.getByRole('link', { name: /Dynamic Config/i })).toBeDefined()
+    expect(screen.getByText('Operations')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Dynamic Config/i })).toBeInTheDocument()
     expect(screen.queryByText('Design')).toBeNull()
   })
 
@@ -98,8 +98,8 @@ describe('AppSidebar Admin section visibility', () => {
   it('shows moderation admin links for administrators', () => {
     setMockPathname('/reports')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
-    expect(screen.getByText('Review Queue')).toBeDefined()
-    expect(screen.getByText('Vote Integrity')).toBeDefined()
+    expect(screen.getByText('Review Queue')).toBeInTheDocument()
+    expect(screen.getByText('Vote Integrity')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Review Queue/i }).getAttribute('href')).toBe(
       '/posts/review-queue',
     )
@@ -114,7 +114,7 @@ describe('AppSidebar Admin section visibility', () => {
   it('shows membership administration for administrators', () => {
     setMockPathname('/memberships/grants')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
-    expect(screen.getByText('Memberships')).toBeDefined()
+    expect(screen.getByText('Memberships')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Memberships/i }).getAttribute('href')).toBe(
       '/memberships/grants',
     )
@@ -123,11 +123,11 @@ describe('AppSidebar Admin section visibility', () => {
   it('shows Engineering admin links for administrators', () => {
     setMockPathname('/admin/queues')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
-    expect(screen.getByText('Queues')).toBeDefined()
-    expect(screen.getByText('PostgreSQL')).toBeDefined()
-    expect(screen.getByText('Valkey')).toBeDefined()
-    expect(screen.getByRole('link', { name: /Dynamic Config/i })).toBeDefined()
-    expect(screen.getByText('Operations')).toBeDefined()
+    expect(screen.getByText('Queues')).toBeInTheDocument()
+    expect(screen.getByText('PostgreSQL')).toBeInTheDocument()
+    expect(screen.getByText('Valkey')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Dynamic Config/i })).toBeInTheDocument()
+    expect(screen.getByText('Operations')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Queues/i }).getAttribute('href')).toBe('/admin/queues')
     expect(screen.getByRole('link', { name: /PostgreSQL/i }).getAttribute('href')).toBe(
       '/admin/postgresql',
@@ -141,7 +141,7 @@ describe('AppSidebar Admin section visibility', () => {
   it('shows Topics admin links (RSS Feed Categories) for administrators', () => {
     setMockPathname('/topics')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
-    expect(screen.getByText('RSS Feed Categories')).toBeDefined()
+    expect(screen.getByText('RSS Feed Categories')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /RSS Feed Categories/i }).getAttribute('href')).toBe(
       '/rss-feed-categories',
     )
@@ -150,7 +150,7 @@ describe('AppSidebar Admin section visibility', () => {
   it('shows Posts admin links for administrators', () => {
     setMockPathname('/posts')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
-    expect(screen.getByText('Curated Asides')).toBeDefined()
+    expect(screen.getByText('Curated Asides')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Curated Asides/i }).getAttribute('href')).toBe(
       '/curated-asides/topics',
     )
@@ -159,8 +159,8 @@ describe('AppSidebar Admin section visibility', () => {
   it('shows Topics admin links for administrators', () => {
     setMockPathname('/topics')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
-    expect(screen.getByText('Create Topic')).toBeDefined()
-    expect(screen.getByText('Topic Aliases')).toBeDefined()
+    expect(screen.getByText('Create Topic')).toBeInTheDocument()
+    expect(screen.getByText('Topic Aliases')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Create Topic/i }).getAttribute('href')).toBe(
       '/topics/create',
     )
@@ -175,7 +175,7 @@ describe('AppSidebar Admin section visibility', () => {
   it('shows URLs link in Web Search browse for authenticated users', () => {
     setMockPathname('/domains')
     renderSidebar({ id: 'u1', roles: ['user'] } as User)
-    expect(screen.getByText('URLs')).toBeDefined()
+    expect(screen.getByText('URLs')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /^URLs$/i }).getAttribute('href')).toBe('/urls')
   })
 

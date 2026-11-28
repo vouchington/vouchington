@@ -56,8 +56,8 @@ describe('ModmailThreadClient — actions and error handling', () => {
         isMod
       />,
     )
-    expect(screen.getByText('Member: subject-user')).toBeDefined()
-    expect(screen.getByText('Assigned to: mod-user')).toBeDefined()
+    expect(screen.getByText('Member: subject-user')).toBeInTheDocument()
+    expect(screen.getByText('Assigned to: mod-user')).toBeInTheDocument()
   })
 
   it('renders message with null created_by_id as System', () => {
@@ -78,7 +78,7 @@ describe('ModmailThreadClient — actions and error handling', () => {
         isMod={false}
       />,
     )
-    expect(screen.getByText('Member')).toBeDefined()
+    expect(screen.getByText('Member')).toBeInTheDocument()
   })
 
   it('calls onError when getModmailMessagesClient fails', async () => {

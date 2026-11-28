@@ -141,7 +141,7 @@ describe('NewsItemCluster', () => {
         />,
       )
 
-      expect(getByPw(container, 'news-item-card')).toBeDefined()
+      expect(getByPw(container, 'news-item-card')).toBeInTheDocument()
     })
 
     it('renders "Discuss" button inside the card when logged in', () => {
@@ -170,7 +170,7 @@ describe('NewsItemCluster', () => {
         />,
       )
 
-      expect(screen.getByText('Official source')).toBeDefined()
+      expect(screen.getByText('Official source')).toBeInTheDocument()
     })
   })
 
@@ -231,8 +231,8 @@ describe('NewsItemCluster', () => {
         />,
       )
 
-      expect(screen.getByText('Big Tech News')).toBeDefined()
-      expect(screen.getByText(/Event:/)).toBeDefined()
+      expect(screen.getByText('Big Tech News')).toBeInTheDocument()
+      expect(screen.getByText(/Event:/)).toBeInTheDocument()
     })
 
     it('renders each expanded story item with its own action row', () => {
@@ -268,7 +268,7 @@ describe('NewsItemCluster', () => {
         />,
       )
 
-      expect(screen.getByText('Related by topic and timing')).toBeDefined()
+      expect(screen.getByText('Related by topic and timing')).toBeInTheDocument()
     })
   })
 })

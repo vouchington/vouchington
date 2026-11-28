@@ -109,9 +109,9 @@ describe('UserVouchFollowContext', () => {
 
     await renderRsc(UserVouchFollowContext({ id: 'user-2' }))
 
-    expect(screen.getByText('From People You Follow')).toBeDefined()
-    expect(screen.getByText('Positive signals for this user')).toBeDefined()
-    expect(screen.getByText('Negative signals for this user')).toBeDefined()
-    expect(screen.getByText('voucher')).toBeDefined()
+    expect(screen.getByText('From People You Follow')).toBeInTheDocument()
+    expect(screen.getByText('Positive signals for this user')).toBeInTheDocument()
+    expect(screen.getByText('Negative signals for this user')).toBeInTheDocument()
+    expect(screen.getByText('voucher')).toBeInTheDocument()
   })
 })

@@ -77,8 +77,8 @@ describe('PaginatedUserSearchResults', () => {
       limit: 25,
       after: 'cursor-1',
     })
-    expect(screen.getByTestId('user-user-1')).toBeDefined()
-    expect(screen.getByTestId('user-user-2')).toBeDefined()
+    expect(screen.getByTestId('user-user-1')).toBeInTheDocument()
+    expect(screen.getByTestId('user-user-2')).toBeInTheDocument()
   })
 
   it('merges the muted sidecar across pages, keeping first-page values on conflict', async () => {
@@ -125,12 +125,12 @@ describe('PaginatedUserSearchResults', () => {
       await receiveLoadMore.mock.calls.at(-1)![0]()
     })
 
-    expect(screen.getByTestId('user-user-1')).toBeDefined()
+    expect(screen.getByTestId('user-user-1')).toBeInTheDocument()
     await act(async () => {
       screen.getByRole('button', { name: 'Retry' }).click()
     })
 
-    expect(await screen.findByTestId('user-user-2')).toBeDefined()
+    expect(await screen.findByTestId('user-user-2')).toBeInTheDocument()
     expect(getPaginatedPage).toHaveBeenCalledTimes(2)
   })
 })

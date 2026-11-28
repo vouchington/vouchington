@@ -56,9 +56,9 @@ describe('DeleteCommentButton', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: /Delete/i }))
-    expect(await screen.findByText('Delete this comment?')).toBeDefined()
-    expect(screen.getByText('This cannot be undone.')).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDefined()
+    expect(await screen.findByText('Delete this comment?')).toBeInTheDocument()
+    expect(screen.getByText('This cannot be undone.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
   })
 
   it('shows success toast and calls onDeleted on successful delete', async () => {

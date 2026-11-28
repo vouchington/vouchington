@@ -154,7 +154,7 @@ describe('HostnameModerationControls', () => {
     const blockedSwitch = document.querySelector('[data-pw="hostname-blocked-switch"]')!
     fireEvent.click(blockedSwitch)
     await waitFor(() => {
-      expect(screen.getByRole('alertdialog')).toBeDefined()
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     })
   })
 
@@ -179,7 +179,7 @@ describe('HostnameModerationControls', () => {
     const blockedSwitch = document.querySelector('[data-pw="hostname-blocked-switch"]')!
     fireEvent.click(blockedSwitch)
     await waitFor(() => {
-      expect(screen.getByRole('alertdialog')).toBeDefined()
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     })
   })
 

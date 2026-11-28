@@ -67,7 +67,7 @@ describe('ReferralValidationsSettingsView', () => {
   it('shows the empty state and the link form', () => {
     renderView([])
 
-    expect(screen.getByRole('heading', { name: 'Link a validation' })).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Link a validation' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Manage all validations' })).toHaveAttribute(
       'href',
       basePath,
@@ -76,7 +76,7 @@ describe('ReferralValidationsSettingsView', () => {
       'data-program',
       'program-amex',
     )
-    expect(screen.getByText('No validation sets linked to this program.')).toBeDefined()
+    expect(screen.getByText('No validation sets linked to this program.')).toBeInTheDocument()
     expect(screen.queryByRole('list')).toBeNull()
   })
 
@@ -87,7 +87,7 @@ describe('ReferralValidationsSettingsView', () => {
       'href',
       `${basePath}/validation-chase-sapphire`,
     )
-    expect(screen.getByText('Use the public referral link.')).toBeDefined()
+    expect(screen.getByText('Use the public referral link.')).toBeInTheDocument()
     expect(screen.getByTestId('unlink-validation-chase-sapphire')).toHaveAttribute(
       'data-program',
       'program-amex',
@@ -101,7 +101,7 @@ describe('ReferralValidationsSettingsView', () => {
   it('omits help text when the validation has none', () => {
     renderView([validation({ id: 'validation-empty-help', user_help_text: '' })])
 
-    expect(screen.getByRole('link', { name: 'chase-sapphire-reserve' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'chase-sapphire-reserve' })).toBeInTheDocument()
     expect(screen.queryByText('Use the public referral link.')).toBeNull()
   })
 })

@@ -36,7 +36,7 @@ describe('WebSearchResultItem', () => {
 
   it('renders hostname when present', () => {
     render(<WebSearchResultItem result={makeItem()} />)
-    expect(screen.getByText('example.com')).toBeTruthy()
+    expect(screen.getByText('example.com')).toBeInTheDocument()
   })
 
   it('renders snippet with highlighted marks', () => {
@@ -67,7 +67,7 @@ describe('WebSearchResultItem', () => {
 
   it('renders URL match hint when snippet is null and match_type is url', () => {
     render(<WebSearchResultItem result={makeItem({ snippet: null, match_type: 'url' })} />)
-    expect(screen.getByText('URL match')).toBeTruthy()
+    expect(screen.getByText('URL match')).toBeInTheDocument()
   })
 
   it('does not render snippet area when snippet is null and match_type is content', () => {

@@ -110,7 +110,7 @@ describe('PodcastCategoryPage', () => {
       searchParams: Promise.resolve({}),
     })
     render(ui)
-    expect(screen.getByText('Technology Podcasts')).toBeDefined()
+    expect(screen.getByText('Technology Podcasts')).toBeInTheDocument()
   })
 
   it('calls getRssFeeds with the category slug', async () => {
@@ -130,7 +130,7 @@ describe('PodcastCategoryPage', () => {
       searchParams: Promise.resolve({}),
     })
     render(ui)
-    expect(screen.getByText('Tech Podcast')).toBeDefined()
+    expect(screen.getByText('Tech Podcast')).toBeInTheDocument()
   })
 
   it('shows an empty state when no podcasts found in category', async () => {
@@ -139,7 +139,7 @@ describe('PodcastCategoryPage', () => {
       searchParams: Promise.resolve({}),
     })
     render(ui)
-    expect(screen.getByText('No Technology podcasts found')).toBeDefined()
+    expect(screen.getByText('No Technology podcasts found')).toBeInTheDocument()
   })
 
   it('capitalizes hyphenated category names correctly', async () => {
@@ -148,7 +148,7 @@ describe('PodcastCategoryPage', () => {
       searchParams: Promise.resolve({}),
     })
     render(ui)
-    expect(screen.getByText('True Crime Podcasts')).toBeDefined()
+    expect(screen.getByText('True Crime Podcasts')).toBeInTheDocument()
   })
 
   it('passes q search param to getRssFeeds', async () => {
@@ -169,7 +169,7 @@ describe('PodcastCategoryPage', () => {
       searchParams: Promise.resolve({}),
     })
     render(ui)
-    expect(screen.getByText('Invalid search parameters')).toBeDefined()
+    expect(screen.getByText('Invalid search parameters')).toBeInTheDocument()
   })
 
   it('renders RssFeedListItem for each result when results are non-empty', async () => {

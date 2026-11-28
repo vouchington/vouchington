@@ -79,7 +79,7 @@ describe('ReferralLinkFeedList', () => {
 
   it('renders default empty state when no results and no emptyState prop', () => {
     render(<ReferralLinkFeedList data={emptyData} />)
-    expect(screen.getByText('default empty state')).toBeDefined()
+    expect(screen.getByText('default empty state')).toBeInTheDocument()
   })
 
   it('renders custom emptyState prop when no results', () => {
@@ -89,7 +89,7 @@ describe('ReferralLinkFeedList', () => {
         emptyState={<div>custom empty</div>}
       />,
     )
-    expect(screen.getByText('custom empty')).toBeDefined()
+    expect(screen.getByText('custom empty')).toBeInTheDocument()
   })
 
   it('keeps an empty page inside infinite scroll when its cursor has more data', () => {
@@ -124,8 +124,8 @@ describe('ReferralLinkFeedList', () => {
 
     render(<ReferralLinkFeedList data={emptyData} />)
 
-    expect(screen.getByTestId('mock-feed-card')).toBeDefined()
-    expect(screen.getByText('item-1')).toBeDefined()
+    expect(screen.getByTestId('mock-feed-card')).toBeInTheDocument()
+    expect(screen.getByText('item-1')).toBeInTheDocument()
   })
 
   it('keeps a short page inside infinite scroll when its cursor has more data', () => {
@@ -148,7 +148,7 @@ describe('ReferralLinkFeedList', () => {
       />,
     )
 
-    expect(screen.getByTestId('mock-feed-card')).toBeDefined()
+    expect(screen.getByTestId('mock-feed-card')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Load more' })).toBeEnabled()
     expect(screen.getByTestId('infinite-scroll')).toHaveAttribute(
       'data-end-cursor',
@@ -176,7 +176,7 @@ describe('ReferralLinkFeedList', () => {
       />,
     )
 
-    expect(screen.getByTestId('mock-feed-card')).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeDefined()
+    expect(screen.getByTestId('mock-feed-card')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
   })
 })

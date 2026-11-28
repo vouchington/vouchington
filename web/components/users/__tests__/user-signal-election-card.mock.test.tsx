@@ -71,10 +71,10 @@ describe('UserSignalElectionCard', () => {
     expect(
       container.querySelector('[data-pw="user-signal-vote-choice"][data-vote-choice="disavow"]'),
     ).not.toBeNull()
-    expect(screen.getByText('Signal Check')).toBeDefined()
-    expect(screen.getByText('Choose a signal.')).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Approve profile' })).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Reject profile' })).toBeDefined()
+    expect(screen.getByText('Signal Check')).toBeInTheDocument()
+    expect(screen.getByText('Choose a signal.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Approve profile' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reject profile' })).toBeInTheDocument()
   })
 
   it('submits the configured choice and success toast', async () => {

@@ -17,7 +17,7 @@ describe('TopicCard', () => {
 
   it('renders topic name', () => {
     const { container } = render(<TopicCard topic={mockTopic} />)
-    expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined()
+    expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument()
     expect(container.querySelector('[data-pw="topic-card"]')).not.toBeNull()
   })
 
@@ -32,7 +32,7 @@ describe('TopicCard', () => {
 
   it('renders topic description', () => {
     render(<TopicCard topic={mockTopic} />)
-    expect(screen.getByText(/Premium travel rewards/)).toBeDefined()
+    expect(screen.getByText(/Premium travel rewards/)).toBeInTheDocument()
   })
 
   it('marks the description with the detected topic language', () => {
@@ -80,7 +80,7 @@ describe('TopicCard', () => {
       />,
     )
     // Average rating = (0*1 + 1*2 + 2*3 + 5*4 + 12*5) / 20 = 4.4
-    expect(screen.getByText('4.4')).toBeDefined()
+    expect(screen.getByText('4.4')).toBeInTheDocument()
   })
 
   it('renders review count', () => {
@@ -91,7 +91,7 @@ describe('TopicCard', () => {
       />,
     )
     // Total reviews = 0 + 1 + 2 + 5 + 12 = 20
-    expect(screen.getByText(/20 reviews/)).toBeDefined()
+    expect(screen.getByText(/20 reviews/)).toBeInTheDocument()
   })
 
   it('renders follower count', () => {
@@ -101,7 +101,7 @@ describe('TopicCard', () => {
         metrics={mockMetrics}
       />,
     )
-    expect(screen.getByText(/150 followers/)).toBeDefined()
+    expect(screen.getByText(/150 followers/)).toBeInTheDocument()
   })
 
   describe('hideBookmarkActions', () => {
@@ -125,8 +125,8 @@ describe('TopicCard', () => {
           hideBookmarkActions={false}
         />,
       )
-      expect(await screen.findByTestId('follow-button')).toBeDefined()
-      expect(await screen.findByTestId('mute-button')).toBeDefined()
+      expect(await screen.findByTestId('follow-button')).toBeInTheDocument()
+      expect(await screen.findByTestId('mute-button')).toBeInTheDocument()
     })
   })
 })

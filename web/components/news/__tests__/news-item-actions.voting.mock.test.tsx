@@ -30,7 +30,7 @@ describe('NewsItemActions voting', () => {
     renderNewsItemActions()
 
     await waitFor(() => {
-      expect(screen.getByTestId('news-item-vote')).toBeDefined()
+      expect(screen.getByTestId('news-item-vote')).toBeInTheDocument()
     })
   })
 
@@ -103,7 +103,7 @@ describe('NewsItemActions voting', () => {
 
     await waitFor(() => {
       // Counts visible in modal — consistent with the row variant.
-      expect(screen.getByTestId('news-item-modal-vote')).toBeDefined()
+      expect(screen.getByTestId('news-item-modal-vote')).toBeInTheDocument()
       expect(screen.getByTestId('count-up').textContent).toBe('5')
       expect(screen.getByTestId('count-down').textContent).toBe('2')
       // the semantic control uses its compact default.

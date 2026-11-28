@@ -96,7 +96,7 @@ describe('household invitation actions', () => {
       />,
     )
     expect(screen.getAllByRole('listitem')[0]!.textContent).toContain('A Voucha member')
-    expect(screen.getByRole('link', { name: '@alex' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: '@alex' })).toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)
   })
   it('sends a selected user once while pending, and keeps duplicate responses as one row', async () => {
@@ -211,7 +211,7 @@ describe('household invitation actions', () => {
       const expected =
         action === 'accept' ? api.acceptHouseholdInvitation : api.declineHouseholdInvitation
       expect(expected).toHaveBeenCalledExactlyOnceWith(invitation.id)
-      expect(screen.getByText('No pending invitations.')).not.toBeNull()
+      expect(screen.getByText('No pending invitations.')).toBeInTheDocument()
       expect(nav.refresh).toHaveBeenCalledOnce()
     },
   )
@@ -269,7 +269,7 @@ describe('household invitation actions', () => {
       limit: 25,
     })
     expect(document.querySelectorAll('[data-pw="household-invitation-row"]')).toHaveLength(2)
-    expect(screen.getByRole('link', { name: '@later' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: '@later' })).toBeInTheDocument()
     await act(async () =>
       fireEvent.click(screen.getAllByRole('button', { name: 'Revoke invitation' })[0]!),
     )
@@ -295,6 +295,6 @@ describe('household invitation actions', () => {
         initialPage={makeHouseholdInvitationPage([])}
       />,
     )
-    expect(screen.getByText('No pending invitations.')).not.toBeNull()
+    expect(screen.getByText('No pending invitations.')).toBeInTheDocument()
   })
 })

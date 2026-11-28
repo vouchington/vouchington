@@ -151,7 +151,7 @@ describe('IDENTITY_REQUIRED gate — community Discuss', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit dialog' }))
 
     await waitFor(() => {
-      expect(screen.getByTestId('username-dialog-set')).toBeDefined()
+      expect(screen.getByTestId('username-dialog-set')).toBeInTheDocument()
     })
     expect(mockTurnstileReset).not.toHaveBeenCalled()
     expect(mockOnError).not.toHaveBeenCalled()
@@ -182,7 +182,7 @@ describe('IDENTITY_REQUIRED gate — community Discuss', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit dialog' }))
 
     await waitFor(() => {
-      expect(screen.getByTestId('username-dialog-set')).toBeDefined()
+      expect(screen.getByTestId('username-dialog-set')).toBeInTheDocument()
     })
     fireEvent.click(screen.getByTestId('username-dialog-set'))
 

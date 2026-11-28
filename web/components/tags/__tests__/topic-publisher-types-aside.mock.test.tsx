@@ -85,9 +85,9 @@ describe('TopicPublisherTypesAside', () => {
     mockGetEntityRelations.mockResolvedValue(emptyResponse)
     const result = await TopicPublisherTypesAside({ topic: makeTopic(), isAuthenticated: true })
     render(result)
-    expect(screen.getByText('Publisher Type')).toBeDefined()
-    expect(screen.getByText('No publisher type set')).toBeDefined()
-    expect(screen.getByTestId('manage-tags-dialog')).toBeDefined()
+    expect(screen.getByText('Publisher Type')).toBeInTheDocument()
+    expect(screen.getByText('No publisher type set')).toBeInTheDocument()
+    expect(screen.getByTestId('manage-tags-dialog')).toBeInTheDocument()
   })
 
   it('passes positiveNetVoteScore: true to getEntityRelations for all users', async () => {
@@ -137,7 +137,7 @@ describe('TopicPublisherTypesAside', () => {
     })
     render(result)
 
-    expect(screen.getByTestId('manage-tags-dialog')).toBeDefined()
+    expect(screen.getByTestId('manage-tags-dialog')).toBeInTheDocument()
     expect(mockManageTagsDialog.mock.lastCall?.[0]?.manageHref).toBe(
       '/source/npr/tags/publisher_type',
     )

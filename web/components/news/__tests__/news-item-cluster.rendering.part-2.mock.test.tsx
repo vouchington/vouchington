@@ -64,7 +64,7 @@ describe('NewsItemCluster rendering', () => {
         relatedPosts={relatedPosts}
       />,
     )
-    expect(screen.getByText('Discussion about article')).toBeDefined()
+    expect(screen.getByText('Discussion about article')).toBeInTheDocument()
   })
 
   it('renders "Discuss" button when logged in with no related posts', () => {
@@ -76,7 +76,7 @@ describe('NewsItemCluster rendering', () => {
         relatedPosts={[]}
       />,
     )
-    expect(screen.getByText('Discuss')).toBeDefined()
+    expect(screen.getByText('Discuss')).toBeInTheDocument()
   })
 
   it('renders neither discussions nor button when logged out with no related posts', () => {

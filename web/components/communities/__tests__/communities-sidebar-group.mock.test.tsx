@@ -129,7 +129,7 @@ describe('CommunitiesSidebarGroup', () => {
     window.dispatchEvent(new CustomEvent('communities:created', { detail: newCommunity }))
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /Newly Created Community/i })).toBeDefined()
+      expect(screen.getByRole('link', { name: /Newly Created Community/i })).toBeInTheDocument()
     })
   })
 
@@ -173,12 +173,12 @@ describe('CommunitiesSidebarGroup', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /Newly Created Community/i })).toBeDefined()
+      expect(screen.getByRole('link', { name: /Newly Created Community/i })).toBeInTheDocument()
       expect(
         screen.getByRole('link', {
           name: /Voucha Quality Filters With An Extra Long Sidebar Label/i,
         }),
-      ).toBeDefined()
+      ).toBeInTheDocument()
     })
   })
 })

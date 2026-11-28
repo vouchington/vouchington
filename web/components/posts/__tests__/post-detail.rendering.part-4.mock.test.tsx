@@ -68,8 +68,8 @@ describe('PostDetail rendering', () => {
       />,
     )
 
-    expect(screen.getByRole('link', { name: 'Chase: 5 out of 5 stars' })).toBeDefined()
-    expect(screen.getByRole('link', { name: 'Citi: 2 out of 5 stars' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Chase: 5 out of 5 stars' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Citi: 2 out of 5 stars' })).toBeInTheDocument()
     expect(screen.queryAllByRole('img')).toHaveLength(0)
   })
 
@@ -82,7 +82,7 @@ describe('PostDetail rendering', () => {
       />,
     )
 
-    expect(screen.getByText('Moderator-visible body')).toBeDefined()
+    expect(screen.getByText('Moderator-visible body')).toBeInTheDocument()
   })
 
   it('renders trimmed authored titles while retaining their language metadata', () => {

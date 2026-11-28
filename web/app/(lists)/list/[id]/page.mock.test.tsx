@@ -174,7 +174,7 @@ describe('ListPage', () => {
     mockGetListItems.mockResolvedValue(emptyItemsResponse)
     mockGetCurrentUser.mockResolvedValue({ id: 'user-1' })
     render(await ListPage({ params: Promise.resolve({ id: 'list-1' }) }))
-    expect(screen.getByTestId('list-page-actions')).toBeTruthy()
+    expect(screen.getByTestId('list-page-actions')).toBeInTheDocument()
   })
 
   it('hides actions for non-owner', async () => {

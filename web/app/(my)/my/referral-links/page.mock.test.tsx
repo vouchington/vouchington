@@ -68,7 +68,7 @@ describe('MyReferralLinksPage', () => {
 
     render(await MyReferralLinksPage())
 
-    expect(screen.getByText(/failedToLoadReferralLinksPlease/)).toBeDefined()
+    expect(screen.getByText(/failedToLoadReferralLinksPlease/)).toBeInTheDocument()
   })
 
   it('passes hasPlusTier=false to the manager for a free-tier owner', async () => {

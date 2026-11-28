@@ -104,9 +104,9 @@ describe('AdminModlogPage', () => {
   it('renders the heading, empty state, and pagination', async () => {
     const page = await AdminModlogPage({ searchParams: Promise.resolve({}) })
     render(page)
-    expect(screen.getByText('Mod Log')).toBeDefined()
-    expect(screen.getByText('No moderation actions found.')).toBeDefined()
-    expect(screen.getByTestId('admin-pagination')).toBeDefined()
+    expect(screen.getByText('Mod Log')).toBeInTheDocument()
+    expect(screen.getByText('No moderation actions found.')).toBeInTheDocument()
+    expect(screen.getByTestId('admin-pagination')).toBeInTheDocument()
   })
   it.each([
     [{ username: 'moderator' }, 'moderator'],
@@ -120,9 +120,9 @@ describe('AdminModlogPage', () => {
     })
     const page = await AdminModlogPage({ searchParams: Promise.resolve({}) })
     render(page)
-    expect(screen.getByText(label)).toBeDefined()
-    expect(screen.getByText('ban')).toBeDefined()
-    expect(screen.getByText('Spam')).toBeDefined()
+    expect(screen.getByText(label)).toBeInTheDocument()
+    expect(screen.getByText('ban')).toBeInTheDocument()
+    expect(screen.getByText('Spam')).toBeInTheDocument()
   })
   it('renders System for actions with no actor', async () => {
     serverApiGetMock.mockResolvedValue({
@@ -133,7 +133,7 @@ describe('AdminModlogPage', () => {
     })
     const page = await AdminModlogPage({ searchParams: Promise.resolve({}) })
     render(page)
-    expect(screen.getByText('System')).toBeDefined()
+    expect(screen.getByText('System')).toBeInTheDocument()
   })
 
   it('calls serverApi with after cursor when provided', async () => {

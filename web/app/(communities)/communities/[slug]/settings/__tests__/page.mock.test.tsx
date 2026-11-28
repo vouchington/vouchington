@@ -94,7 +94,7 @@ describe('CommunitySettingsPage', () => {
     })
     render(page as unknown as ReactNode)
 
-    expect(screen.getByTestId('community-settings-form')).toBeDefined()
+    expect(screen.getByTestId('community-settings-form')).toBeInTheDocument()
   })
 
   it('redirects unauthenticated users to login', async () => {

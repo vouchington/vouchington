@@ -52,8 +52,8 @@ describe('TagItem — topic', () => {
         objectType='topic'
       />,
     )
-    expect(screen.getByText('Chase')).toBeDefined()
-    expect(screen.getByText('Card')).toBeDefined()
+    expect(screen.getByText('Chase')).toBeInTheDocument()
+    expect(screen.getByText('Card')).toBeInTheDocument()
   })
 
   it('falls back to "Topic" label for generic topic type', () => {
@@ -66,7 +66,7 @@ describe('TagItem — topic', () => {
         objectType='topic'
       />,
     )
-    expect(screen.getByText('Topic')).toBeDefined()
+    expect(screen.getByText('Topic')).toBeInTheDocument()
   })
 
   it('renders the generic Topic badge for an unknown relation topic type', () => {
@@ -94,8 +94,8 @@ describe('TagItem — post', () => {
         objectType='post'
       />,
     )
-    expect(screen.getByText('My Post')).toBeDefined()
-    expect(screen.getByText('Discussion')).toBeDefined()
+    expect(screen.getByText('My Post')).toBeInTheDocument()
+    expect(screen.getByText('Discussion')).toBeInTheDocument()
   })
 
   it('shows Story label for story posts', () => {
@@ -108,7 +108,7 @@ describe('TagItem — post', () => {
         objectType='post'
       />,
     )
-    expect(screen.getByText('Story')).toBeDefined()
+    expect(screen.getByText('Story')).toBeInTheDocument()
   })
 })
 
@@ -145,7 +145,7 @@ describe('TagItem — url', () => {
         objectType='url'
       />,
     )
-    expect(screen.getByText('Tech Article')).toBeDefined()
+    expect(screen.getByText('Tech Article')).toBeInTheDocument()
   })
 
   it('renders stripped url fallback when no crawl', () => {

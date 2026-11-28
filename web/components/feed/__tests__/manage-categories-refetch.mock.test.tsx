@@ -201,7 +201,7 @@ describe('ManageCategoriesMenuItem — refetch after add form reports a new tag'
 
     // The lazy form double signals a completed add through the real content callback.
     const selectBtn = await waitFor(() => screen.getByTestId('autocomplete-select'))
-    expect(screen.getByTestId('tag-list')).toBeDefined()
+    expect(screen.getByTestId('tag-list')).toBeInTheDocument()
     expect(screen.queryByTestId('tag-item')).toBeNull()
     expect(selectBtn).toHaveAttribute('data-entity-type', 'rss_feed_item')
     expect(selectBtn).toHaveAttribute('data-entity-id', 'item-1')
@@ -215,7 +215,7 @@ describe('ManageCategoriesMenuItem — refetch after add form reports a new tag'
 
     // The tag should appear immediately without a page reload (fetch #2 triggered by onTagAdded)
     await waitFor(() => {
-      expect(screen.getByText('topic-amazon')).toBeDefined()
+      expect(screen.getByText('topic-amazon')).toBeInTheDocument()
     })
 
     expect(mockFetchEntityRelations).toHaveBeenCalledTimes(2)

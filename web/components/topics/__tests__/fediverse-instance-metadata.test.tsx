@@ -37,12 +37,12 @@ describe('FediverseInstanceMetadata', () => {
       />,
     )
 
-    expect(screen.getByText('mastodon 4.4.0')).toBeDefined()
-    expect(screen.getByText('activitypub')).toBeDefined()
-    expect(screen.getByText('1,200')).toBeDefined()
-    expect(screen.getByText('340')).toBeDefined()
-    expect(screen.getByText('Open')).toBeDefined()
-    expect(screen.getByText('Trusted')).toBeDefined()
+    expect(screen.getByText('mastodon 4.4.0')).toBeInTheDocument()
+    expect(screen.getByText('activitypub')).toBeInTheDocument()
+    expect(screen.getByText('1,200')).toBeInTheDocument()
+    expect(screen.getByText('340')).toBeInTheDocument()
+    expect(screen.getByText('Open')).toBeInTheDocument()
+    expect(screen.getByText('Trusted')).toBeInTheDocument()
   })
 
   it('renders explicit unavailable and unrated fallbacks', () => {
@@ -55,7 +55,7 @@ describe('FediverseInstanceMetadata', () => {
     )
 
     expect(screen.getAllByText('Unknown')).toHaveLength(5)
-    expect(screen.getByText('Unrated')).toBeDefined()
+    expect(screen.getByText('Unrated')).toBeInTheDocument()
   })
 
   it('renders a localized unrated link instead of a domain badge without a hostname', () => {

@@ -17,9 +17,9 @@ describe('FlushConcernsCard', () => {
       />,
     )
 
-    expect(screen.getByText('Flush Concerns')).toBeDefined()
+    expect(screen.getByText('Flush Concerns')).toBeInTheDocument()
     for (const concern of FLUSH_CONCERNS) {
-      expect(screen.getByText(concern)).toBeDefined()
+      expect(screen.getByText(concern)).toBeInTheDocument()
     }
     expect(screen.getAllByRole('button', { name: 'Flush' })).toHaveLength(FLUSH_CONCERNS.length)
   })

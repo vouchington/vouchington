@@ -12,12 +12,12 @@ describe('AppSidebar', () => {
   describe('News intent Browse group', () => {
     it('shows Browse group for unauthenticated users', () => {
       renderSidebar()
-      expect(screen.getByText('Browse')).toBeDefined()
+      expect(screen.getByText('Browse')).toBeInTheDocument()
     })
 
     it('shows Browse group for authenticated users', () => {
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.getByText('Browse')).toBeDefined()
+      expect(screen.getByText('Browse')).toBeInTheDocument()
     })
 
     it('hides My News Feed for unauthenticated users', () => {
@@ -116,7 +116,7 @@ describe('AppSidebar', () => {
       renderSidebar()
       expect(screen.queryByText('Voucha Referral Program')).toBeNull()
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.getByText('Voucha Referral Program')).toBeDefined()
+      expect(screen.getByText('Voucha Referral Program')).toBeInTheDocument()
     })
   })
 })

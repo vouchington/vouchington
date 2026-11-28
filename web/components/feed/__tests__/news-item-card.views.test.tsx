@@ -41,7 +41,7 @@ describe('NewsItemCard summary view (default)', () => {
       data: { ...mockItem.data, contentSnippet: undefined, description: 'Description text' },
     }
     render(<NewsItemCard item={item} />)
-    expect(screen.getByText('Description text')).toBeDefined()
+    expect(screen.getByText('Description text')).toBeInTheDocument()
   })
 
   it('falls back to media:description for YouTube excerpts', () => {
@@ -57,7 +57,7 @@ describe('NewsItemCard summary view (default)', () => {
       },
     }
     render(<NewsItemCard item={item} />)
-    expect(screen.getByText('YouTube description text.')).toBeDefined()
+    expect(screen.getByText('YouTube description text.')).toBeInTheDocument()
   })
 
   it('renders YouTube statistics as a dedicated metadata row', () => {

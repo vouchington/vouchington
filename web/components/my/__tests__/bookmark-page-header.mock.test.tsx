@@ -42,7 +42,7 @@ describe('BookmarkPageHeader', () => {
 
   it('renders breadcrumbs nav', () => {
     render(<BookmarkPageHeader routeKey='news-items/saved' />)
-    expect(screen.getByRole('navigation', { name: /breadcrumb/i })).toBeDefined()
+    expect(screen.getByRole('navigation', { name: /breadcrumb/i })).toBeInTheDocument()
   })
 
   it('renders optional actions slot', () => {
@@ -52,6 +52,6 @@ describe('BookmarkPageHeader', () => {
         actions={<button type='button'>Add</button>}
       />,
     )
-    expect(screen.getByRole('button', { name: 'Add' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument()
   })
 })

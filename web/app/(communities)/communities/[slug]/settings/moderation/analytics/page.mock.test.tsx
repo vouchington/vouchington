@@ -52,7 +52,7 @@ describe('CommunityModerationAnalyticsPage', () => {
 
     expect(getCommunityModerationAnalyticsMock).not.toHaveBeenCalled()
     expect(screen.queryByTestId('dashboard')).toBeNull()
-    expect(screen.getByTestId('transparency-panel')).toBeDefined()
+    expect(screen.getByTestId('transparency-panel')).toBeInTheDocument()
     expect(transparencyPanelMock).toHaveBeenCalledWith(
       expect.objectContaining({ transparency, showTitle: false }),
       undefined,
@@ -78,8 +78,8 @@ describe('CommunityModerationAnalyticsPage', () => {
     expect(getCommunityModerationTransparencyMock).toHaveBeenCalledWith('test-community', {
       range: '90d',
     })
-    expect(screen.getByTestId('dashboard')).toBeDefined()
-    expect(screen.getByTestId('transparency-panel')).toBeDefined()
+    expect(screen.getByTestId('dashboard')).toBeInTheDocument()
+    expect(screen.getByTestId('transparency-panel')).toBeInTheDocument()
     expect(dashboardMock).toHaveBeenCalledWith(
       expect.objectContaining({
         basePath: '/communities/test-community/settings/moderation/analytics',
@@ -97,7 +97,7 @@ describe('CommunityModerationAnalyticsPage', () => {
 
       render(await renderModerationAnalyticsPage())
 
-      expect(screen.getByTestId('dashboard')).toBeDefined()
+      expect(screen.getByTestId('dashboard')).toBeInTheDocument()
       expect(transparencyPanelMock).not.toHaveBeenCalled()
     },
   )

@@ -37,6 +37,6 @@ describe('DismissibleAside', () => {
         </DismissibleAside>,
       )
     })
-    expect(screen.getByText('Different key content')).toBeDefined()
+    expect(screen.getByText('Different key content')).toBeInTheDocument()
   })
 })

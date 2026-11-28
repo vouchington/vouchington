@@ -139,7 +139,7 @@ describe('SourcesPage', () => {
     expect(mockSourcesFilterForm).toHaveBeenCalledWith(
       expect.objectContaining({ defaultPublisherType: 'blog' }),
     )
-    expect(screen.getByTestId('sources-filter-form')).toBeDefined()
+    expect(screen.getByTestId('sources-filter-form')).toBeInTheDocument()
   })
 
   it('calls getRssFeeds without topics or topic_match params', async () => {
@@ -174,7 +174,7 @@ describe('SourcesPage', () => {
     })
     render(ui)
 
-    expect(screen.getByTestId('list-search-error')).toBeDefined()
+    expect(screen.getByTestId('list-search-error')).toBeInTheDocument()
     expect(screen.getByTestId('list-search-error').textContent).toContain('Topic not found')
   })
 

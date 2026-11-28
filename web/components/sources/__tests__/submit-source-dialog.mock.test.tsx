@@ -18,7 +18,7 @@ describe('SubmitSourceButton', () => {
     render(<SubmitSourceButton />)
     expect(screen.queryByText('Submit a Source')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Submit Source' }))
-    expect(screen.getByText('Submit a Source')).toBeDefined()
+    expect(screen.getByText('Submit a Source')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'mock-submit' }))
     expect(screen.queryByText('Submit a Source')).toBeNull()
   })

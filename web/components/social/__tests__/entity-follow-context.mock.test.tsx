@@ -77,8 +77,8 @@ describe('entity follow context', () => {
 
     await renderRsc(PostFollowContext({ id: 'post-1' }))
 
-    expect(screen.getByText('Positive signals for this post')).toBeDefined()
-    expect(screen.getByText('Negative signals for this post')).toBeDefined()
+    expect(screen.getByText('Positive signals for this post')).toBeInTheDocument()
+    expect(screen.getByText('Negative signals for this post')).toBeInTheDocument()
   })
 
   it('labels topic sign buckets as positive and negative signals', async () => {
@@ -91,8 +91,8 @@ describe('entity follow context', () => {
 
     await renderRsc(TopicFollowContext({ id: 'topic-1' }))
 
-    expect(screen.getByText('Positive signals for this topic')).toBeDefined()
-    expect(screen.getByText('Negative signals for this topic')).toBeDefined()
+    expect(screen.getByText('Positive signals for this topic')).toBeInTheDocument()
+    expect(screen.getByText('Negative signals for this topic')).toBeInTheDocument()
   })
 
   it('hides an empty topic follow context from a legacy response', async () => {
@@ -215,8 +215,8 @@ describe('entity follow context', () => {
 
     await renderRsc(RssFeedItemFollowContext({ id: 'item-1' }))
 
-    expect(screen.getByText('Positive signals for this item')).toBeDefined()
-    expect(screen.getByText('Negative signals for this item')).toBeDefined()
+    expect(screen.getByText('Positive signals for this item')).toBeInTheDocument()
+    expect(screen.getByText('Negative signals for this item')).toBeInTheDocument()
   })
 })
 

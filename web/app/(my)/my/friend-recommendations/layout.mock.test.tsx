@@ -32,6 +32,6 @@ describe('FindFriendsLayout', () => {
     const result = await FindFriendsLayout({ children: <main>content</main> })
     const { getByRole, getByText } = render(result)
     expect(getByRole('heading')).toHaveTextContent('Find Friends')
-    expect(getByText('content')).toBeTruthy()
+    expect(getByText('content')).toBeInTheDocument()
   })
 })

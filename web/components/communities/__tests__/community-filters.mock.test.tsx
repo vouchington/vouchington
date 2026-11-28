@@ -26,11 +26,11 @@ vi.mock(
 describe('CommunityFilters', () => {
   it('renders search input with placeholder "Search by text or #topic"', () => {
     render(<CommunityFilters />)
-    expect(screen.getByPlaceholderText('Search by text or #topic')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search by text or #topic')).toBeInTheDocument()
   })
 
   it('passes searchLabel for accessible labeling', () => {
     render(<CommunityFilters />)
-    expect(screen.getByLabelText('Search communities by text or topic')).toBeDefined()
+    expect(screen.getByLabelText('Search communities by text or topic')).toBeInTheDocument()
   })
 })

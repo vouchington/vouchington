@@ -76,7 +76,7 @@ describe('DirectMessagePage', () => {
     mockGetConversation.mockResolvedValueOnce(null)
     const jsx = await DirectMessagePage({ params: Promise.resolve({ conversationId: 'conv-1' }) })
     render(jsx)
-    expect(screen.getByText('client')).toBeDefined()
+    expect(screen.getByText('client')).toBeInTheDocument()
   })
 
   it('calls notFound when thread is missing', async () => {

@@ -60,6 +60,6 @@ describe('PostgreSQLHeader', () => {
         loading
       />,
     )
-    expect(screen.getByText('Refreshing...')).toBeDefined()
+    expect(screen.getByText('Refreshing...')).toBeInTheDocument()
   })
 })

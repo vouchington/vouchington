@@ -103,7 +103,7 @@ describe('RssFeedItemModalShell', () => {
       </RssFeedItemModalShell>,
     )
 
-    expect(screen.getByTestId('header-details')).toBeDefined()
+    expect(screen.getByTestId('header-details')).toBeInTheDocument()
     expect(screen.getByTestId('header-details').textContent).toBe('source · date')
   })
 

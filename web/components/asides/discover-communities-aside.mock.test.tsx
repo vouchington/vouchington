@@ -50,6 +50,6 @@ describe('DiscoverCommunitiesAside', () => {
     mockHasJoinedCommunity.mockResolvedValue(false)
     const result = await DiscoverCommunitiesAside()
     render(result as ReactElement)
-    expect(screen.getByTestId('popular-communities-aside')).toBeDefined()
+    expect(screen.getByTestId('popular-communities-aside')).toBeInTheDocument()
   })
 })

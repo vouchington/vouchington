@@ -116,7 +116,7 @@ describe('post tag route factory functions', () => {
         params: Promise.resolve({ id: 'post-1', objectType: 'topic' }),
       })
       render(result)
-      expect(screen.getByTestId('manage-post-tags')).toBeDefined()
+      expect(screen.getByTestId('manage-post-tags')).toBeInTheDocument()
     })
   })
 })

@@ -49,6 +49,6 @@ describe('MyPodcastEpisodesHiddenPage', () => {
   it('renders the page heading when authenticated', async () => {
     mockRequireCurrentUser.mockResolvedValue(baseUser)
     render(await MyPodcastEpisodesHiddenPage({ searchParams: Promise.resolve({}) }))
-    expect(screen.getByTestId('bookmark-page-header')).toBeDefined()
+    expect(screen.getByTestId('bookmark-page-header')).toBeInTheDocument()
   })
 })

@@ -46,7 +46,7 @@ describe('HoverableCard', () => {
     )
     const card = container.firstElementChild
 
-    expect(screen.getByText('Featured')).toBeDefined()
+    expect(screen.getByText('Featured')).toBeInTheDocument()
     expect(card?.getAttribute('aria-label')).toBe('Featured card')
     expect(card?.getAttribute('data-pw')).toBe('hoverable-card')
   })

@@ -100,7 +100,7 @@ describe('MessagesInboxClient', () => {
         initialEndCursor={null}
       />,
     )
-    expect(screen.getByText('No messages yet.')).toBeDefined()
+    expect(screen.getByText('No messages yet.')).toBeInTheDocument()
   })
 
   it('renders conversation items', () => {
@@ -122,7 +122,7 @@ describe('MessagesInboxClient', () => {
         initialEndCursor={null}
       />,
     )
-    expect(screen.getByText('alice')).toBeDefined()
+    expect(screen.getByText('alice')).toBeInTheDocument()
   })
 
   it('shows load more button when hasMore is true', () => {
@@ -133,7 +133,7 @@ describe('MessagesInboxClient', () => {
         initialEndCursor='cursor-1'
       />,
     )
-    expect(screen.getByText('Load more')).toBeDefined()
+    expect(screen.getByText('Load more')).toBeInTheDocument()
   })
 
   it('does not show load more button when hasMore is false', () => {
@@ -214,7 +214,7 @@ describe('MessagesInboxClient', () => {
     await waitFor(() => {
       expect(mockGetMyMessagesClient).toHaveBeenNthCalledWith(1)
       expect(mockGetMyMessagesClient).toHaveBeenNthCalledWith(2, 'refreshed-cursor')
-      expect(screen.getByText('displaced')).toBeDefined()
+      expect(screen.getByText('displaced')).toBeInTheDocument()
     })
   })
 
@@ -237,7 +237,7 @@ describe('MessagesInboxClient', () => {
         fallback: 'Failed to load more conversations',
       })
     })
-    expect(screen.getByText('Retry')).toBeDefined()
+    expect(screen.getByText('Retry')).toBeInTheDocument()
   })
 
   it('uses the same continuation action for automatic and manual loading', async () => {
@@ -277,6 +277,6 @@ describe('MessagesInboxClient', () => {
         initialEndCursor={null}
       />,
     )
-    expect(screen.getByText('Group Chat')).toBeDefined()
+    expect(screen.getByText('Group Chat')).toBeInTheDocument()
   })
 })

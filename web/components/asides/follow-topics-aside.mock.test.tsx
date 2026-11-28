@@ -70,7 +70,7 @@ describe('FollowTopicsAside', () => {
     mockFollowsAnyTopic.mockResolvedValue(false)
     const result = await FollowTopicsAside()
     render(result as ReactElement)
-    expect(screen.getByText('Follow topics')).toBeDefined()
+    expect(screen.getByText('Follow topics')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Browse topics' }).getAttribute('href')).toBe('/topics')
   })
 })

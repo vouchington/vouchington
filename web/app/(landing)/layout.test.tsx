@@ -9,6 +9,6 @@ describe('LandingPageLayout', () => {
         <div data-pw='child'>content</div>
       </LandingPageLayout>,
     )
-    expect(screen.getByText('content')).toBeDefined()
+    expect(screen.getByText('content')).toBeInTheDocument()
   })
 })

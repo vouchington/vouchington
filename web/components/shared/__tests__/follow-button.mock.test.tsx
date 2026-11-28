@@ -114,7 +114,7 @@ describe('follow-button', () => {
           isFollowing={false}
         />,
       )
-      expect(screen.getByRole('button', { name: 'Follow' })).toBeDefined()
+      expect(screen.getByRole('button', { name: 'Follow' })).toBeInTheDocument()
     })
 
     it('renders "Following" when following', () => {
@@ -125,7 +125,7 @@ describe('follow-button', () => {
           isFollowing
         />,
       )
-      expect(screen.getByRole('button', { name: 'Following' })).toBeDefined()
+      expect(screen.getByRole('button', { name: 'Following' })).toBeInTheDocument()
     })
 
     it('optimistically toggles to Following on click when not following', async () => {
@@ -138,7 +138,7 @@ describe('follow-button', () => {
         />,
       )
       fireEvent.click(screen.getByRole('button', { name: 'Follow' }))
-      expect(screen.getByRole('button', { name: 'Following' })).toBeDefined()
+      expect(screen.getByRole('button', { name: 'Following' })).toBeInTheDocument()
       await act(async () => {
         await mockBookmarkEntity.mock.results.at(-1)!.value
       })
@@ -155,7 +155,7 @@ describe('follow-button', () => {
         />,
       )
       fireEvent.click(screen.getByRole('button', { name: 'Following' }))
-      expect(screen.getByRole('button', { name: 'Follow' })).toBeDefined()
+      expect(screen.getByRole('button', { name: 'Follow' })).toBeInTheDocument()
       await act(async () => {
         await mockUnbookmarkEntity.mock.results.at(-1)!.value
       })
@@ -176,7 +176,7 @@ describe('follow-button', () => {
         await mockBookmarkEntity.mock.results.at(-1)!.value.catch(() => undefined)
       })
       expect(mockToastError).toHaveBeenCalled()
-      expect(screen.getByRole('button', { name: 'Follow' })).toBeDefined()
+      expect(screen.getByRole('button', { name: 'Follow' })).toBeInTheDocument()
     })
 
     it('reverts to Following and shows error toast when unbookmarkEntity fails', async () => {
@@ -193,7 +193,7 @@ describe('follow-button', () => {
         await mockUnbookmarkEntity.mock.results.at(-1)!.value.catch(() => undefined)
       })
       expect(mockToastError).toHaveBeenCalled()
-      expect(screen.getByRole('button', { name: 'Following' })).toBeDefined()
+      expect(screen.getByRole('button', { name: 'Following' })).toBeInTheDocument()
     })
 
     it('renders tooltip text when tooltip prop is provided', () => {
@@ -205,8 +205,8 @@ describe('follow-button', () => {
           tooltip="They'll be notified when you follow them"
         />,
       )
-      expect(screen.getByRole('tooltip')).toBeDefined()
-      expect(screen.getByText("They'll be notified when you follow them")).toBeDefined()
+      expect(screen.getByRole('tooltip')).toBeInTheDocument()
+      expect(screen.getByText("They'll be notified when you follow them")).toBeInTheDocument()
     })
 
     it('renders nothing when the viewer is the user target', () => {
@@ -272,7 +272,7 @@ describe('follow-button', () => {
             tooltip='Follow this topic to see its posts in your feed'
           />,
         )
-        expect(screen.getByText('Sign in to follow')).toBeDefined()
+        expect(screen.getByText('Sign in to follow')).toBeInTheDocument()
       })
     })
   })

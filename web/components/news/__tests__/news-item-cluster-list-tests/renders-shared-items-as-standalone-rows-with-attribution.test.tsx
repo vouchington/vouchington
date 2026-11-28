@@ -38,7 +38,7 @@ describe('NewsItemClusterList', () => {
 
     renderClusterList(data)
 
-    expect(screen.getByText('Shared by')).toBeDefined()
+    expect(screen.getByText('Shared by')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '@sharer' })).toHaveAttribute('href', '/user/sharer')
     expect(screen.getAllByText('Shared Article')).toHaveLength(2)
   })

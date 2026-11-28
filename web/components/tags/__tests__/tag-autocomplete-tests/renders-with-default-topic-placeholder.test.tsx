@@ -22,7 +22,7 @@ describe('TagAutocomplete', () => {
         onSelect={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(screen.getByPlaceholderText('Search topics...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search topics...')).toBeInTheDocument()
   })
 
   it('renders with custom placeholder', () => {
@@ -33,7 +33,7 @@ describe('TagAutocomplete', () => {
         onSelect={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(screen.getByPlaceholderText('Find a post')).toBeDefined()
+    expect(screen.getByPlaceholderText('Find a post')).toBeInTheDocument()
   })
 
   it('shows empty state when no results for topic search', () => {
@@ -45,7 +45,7 @@ describe('TagAutocomplete', () => {
     )
     const input = screen.getByPlaceholderText('Search topics...')
     fireEvent.change(input, { target: { value: 'chase' } })
-    expect(screen.getByTestId('command-empty')).toBeDefined()
+    expect(screen.getByTestId('command-empty')).toBeInTheDocument()
   })
 
   it('searches topics and shows results', async () => {
@@ -75,7 +75,7 @@ describe('TagAutocomplete', () => {
       target: { value: 'chase' },
     })
 
-    await waitFor(() => expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined(), {
+    await waitFor(() => expect(screen.getByText('Chase Sapphire Reserve')).toBeInTheDocument(), {
       timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
     })
   })

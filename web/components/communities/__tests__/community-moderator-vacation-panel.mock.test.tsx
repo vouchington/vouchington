@@ -133,7 +133,7 @@ describe('CommunityModeratorVacationPanel', () => {
 
     const toggle = screen.getByRole('switch', { name: 'On vacation' })
     expect(toggle.getAttribute('aria-checked')).toBe('true')
-    expect(screen.getByTestId('select-mock')).toBeDefined()
+    expect(screen.getByTestId('select-mock')).toBeInTheDocument()
   })
 
   it('updates digest suppression independently from vacation state', async () => {
@@ -184,7 +184,7 @@ describe('CommunityModeratorVacationPanel', () => {
     })
     fireEvent.click(toggle)
     await waitFor(() => expect(toggle.getAttribute('aria-checked')).toBe('false'))
-    expect(screen.getByTestId('select-mock')).toBeDefined()
+    expect(screen.getByTestId('select-mock')).toBeInTheDocument()
   })
 
   it('enables vacation mode when toggle is clicked from inactive', async () => {
@@ -204,7 +204,7 @@ describe('CommunityModeratorVacationPanel', () => {
       expect(mockOnSuccess).toHaveBeenCalledWith('Vacation mode enabled')
     })
 
-    expect(screen.getByTestId('select-mock')).toBeDefined()
+    expect(screen.getByTestId('select-mock')).toBeInTheDocument()
   })
 
   it('disables vacation mode when toggle is clicked from active', async () => {

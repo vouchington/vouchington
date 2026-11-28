@@ -217,7 +217,7 @@ describe('NewsItemClusterList', () => {
     renderWithProvider(data)
     fireEvent.click(screen.getByRole('button', { name: /1 related article/i }))
 
-    expect(screen.getByTestId('score-vote-election-2')).toBeDefined()
+    expect(screen.getByTestId('score-vote-election-2')).toBeInTheDocument()
     expect(screen.getByTestId('existing-vote-choice-election-2').textContent).toBe('disavow')
   })
 

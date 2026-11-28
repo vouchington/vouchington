@@ -64,7 +64,7 @@ describe('SaveButton', () => {
         entityId='item-1'
       />,
     )
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
   })
   it('renders with aria-label "Saved" when initialActive=true', () => {
     render(
@@ -74,7 +74,7 @@ describe('SaveButton', () => {
         initialActive
       />,
     )
-    expect(screen.getByRole('button', { name: 'Saved' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Saved' })).toBeInTheDocument()
   })
   it('calls bookmarkEntity on click when not saved', async () => {
     render(
@@ -125,7 +125,7 @@ describe('SaveButton', () => {
         entityId='item-1'
       />,
     )
-    expect(screen.getByTestId('bookmark-icon')).toBeDefined()
+    expect(screen.getByTestId('bookmark-icon')).toBeInTheDocument()
   })
   it('renders the bookmark-check icon when saved', () => {
     render(
@@ -135,7 +135,7 @@ describe('SaveButton', () => {
         initialActive
       />,
     )
-    expect(screen.getByTestId('bookmark-check-icon')).toBeDefined()
+    expect(screen.getByTestId('bookmark-check-icon')).toBeInTheDocument()
   })
   it('prevents menu close and saves from SaveMenuItem', async () => {
     render(

@@ -23,6 +23,6 @@ describe('topic viewer count input exhaustion', () => {
         metrics={fixture.topic_metrics}
       />,
     )
-    expect(screen.getByRole('menuitem', { name: 'Posts (0+)' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Posts (0+)' })).toBeInTheDocument()
   })
 })

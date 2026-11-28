@@ -18,7 +18,7 @@ describe('SearchInput', () => {
 
   it('renders the placeholder on the input', () => {
     render(<SearchInput placeholder='Search posts...' />)
-    expect(screen.getByPlaceholderText('Search posts...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search posts...')).toBeInTheDocument()
   })
 
   it('uses type=search with CSS to suppress the native WebKit clear button', () => {

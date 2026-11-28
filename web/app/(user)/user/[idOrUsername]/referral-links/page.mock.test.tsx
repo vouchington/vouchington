@@ -103,9 +103,9 @@ describe('UserReferralLinksRoute', () => {
     render(await UserReferralLinksRoute({ params: Promise.resolve({ idOrUsername: 'alex' }) }))
 
     expect(mockGetUserReferralLinksList).toHaveBeenCalledWith('user-alex')
-    expect(screen.getByTestId('user-referral-links-page')).toBeDefined()
-    expect(screen.getByText('user-alex')).toBeDefined()
-    expect(screen.getByText('Chase Sapphire')).toBeDefined()
-    expect(screen.getByText(/noReferralLinksFound/)).toBeDefined()
+    expect(screen.getByTestId('user-referral-links-page')).toBeInTheDocument()
+    expect(screen.getByText('user-alex')).toBeInTheDocument()
+    expect(screen.getByText('Chase Sapphire')).toBeInTheDocument()
+    expect(screen.getByText(/noReferralLinksFound/)).toBeInTheDocument()
   })
 })

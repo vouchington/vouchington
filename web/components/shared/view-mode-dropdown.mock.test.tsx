@@ -93,7 +93,7 @@ describe('ViewModeDropdown', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'View: Card' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'View: Card' })).toBeInTheDocument()
     expect(container.querySelector('[data-pw="post-view-toggle-card"]')).not.toBeNull()
     expect(container.querySelector('[data-pw="post-view-toggle-compact"]')).not.toBeNull()
   })
@@ -147,8 +147,8 @@ describe('ViewModeDropdown', () => {
 
     // Target menu items by exact accessible name.
     // The trigger has aria-label='View: Card' so getByRole({ name: 'Card' }) matches only the menu item.
-    expect(screen.getByRole('button', { name: 'Card' })).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Compact' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Card' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Compact' })).toBeInTheDocument()
   })
 
   it('calls onValueChange when selecting a view option', () => {

@@ -87,7 +87,7 @@ describe('CommentNode', () => {
     )
 
     expect(screen.queryByTestId('user-link')).toBeNull()
-    expect(screen.getByText('Anonymous')).toBeDefined()
+    expect(screen.getByText('Anonymous')).toBeInTheDocument()
   })
 
   it('renders plain span [deleted] for deleted comment (no link)', () => {

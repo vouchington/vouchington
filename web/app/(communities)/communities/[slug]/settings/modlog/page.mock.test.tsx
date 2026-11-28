@@ -85,7 +85,7 @@ describe('CommunityModlogPage', () => {
     const page = await CommunityModlogPage({ params: Promise.resolve({ slug: 'test-community' }) })
     render(page as unknown as ReactNode)
 
-    expect(screen.getByTestId('modlog-panel')).toBeDefined()
+    expect(screen.getByTestId('modlog-panel')).toBeInTheDocument()
   })
 
   it('renders the modlog panel for a moderator', async () => {
@@ -98,7 +98,7 @@ describe('CommunityModlogPage', () => {
     const page = await CommunityModlogPage({ params: Promise.resolve({ slug: 'test-community' }) })
     render(page as unknown as ReactNode)
 
-    expect(screen.getByTestId('modlog-panel')).toBeDefined()
+    expect(screen.getByTestId('modlog-panel')).toBeInTheDocument()
   })
 
   it('renders the modlog panel for an admin user (no membership)', async () => {
@@ -108,7 +108,7 @@ describe('CommunityModlogPage', () => {
     const page = await CommunityModlogPage({ params: Promise.resolve({ slug: 'test-community' }) })
     render(page as unknown as ReactNode)
 
-    expect(screen.getByTestId('modlog-panel')).toBeDefined()
+    expect(screen.getByTestId('modlog-panel')).toBeInTheDocument()
   })
 
   it('redirects unauthenticated users to login', async () => {

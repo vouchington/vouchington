@@ -49,6 +49,6 @@ describe('MyNewsItemsViewedPage', () => {
   it('renders the page heading when authenticated', async () => {
     mockRequireCurrentUser.mockResolvedValue(baseUser)
     render(await MyNewsItemsViewedPage({ searchParams: Promise.resolve({}) }))
-    expect(screen.getByTestId('bookmark-page-header')).toBeDefined()
+    expect(screen.getByTestId('bookmark-page-header')).toBeInTheDocument()
   })
 })

@@ -81,7 +81,7 @@ describe('BlockHostnameQuickAdd', () => {
     fireEvent.change(input, { target: { value: 'example.com' } })
     fireEvent.submit(document.querySelector('[data-pw="block-hostname-quick-add"]')!)
     await waitFor(() => {
-      expect(screen.getByRole('alertdialog')).toBeDefined()
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     })
   })
 

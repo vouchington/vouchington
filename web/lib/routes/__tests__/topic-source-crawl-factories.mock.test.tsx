@@ -171,7 +171,7 @@ describe('createTopicSourceCrawlsPage', () => {
     render(result)
     expect(
       screen.getByText('extracted.manageSource.crawlHistorySection.noCrawlsYet_12d0f59a'),
-    ).toBeDefined()
+    ).toBeInTheDocument()
     expect(mockGetServerRssFeedCrawls).not.toHaveBeenCalled()
   })
 

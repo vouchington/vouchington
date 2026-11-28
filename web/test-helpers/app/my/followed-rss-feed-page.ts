@@ -31,7 +31,7 @@ export function registerFollowedRssFeedPageTests(options: {
   it('renders the page heading when authenticated', async () => {
     requireCurrentUser.mockResolvedValue(baseUser)
     render(await loadPage())
-    expect(screen.getByTestId('bookmark-page-header')).toBeDefined()
+    expect(screen.getByTestId('bookmark-page-header')).toBeInTheDocument()
   })
 
   it('renders RssFeedListItem for each result when results are non-empty', async () => {

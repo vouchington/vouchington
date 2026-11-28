@@ -80,12 +80,12 @@ describe('ImportExportManager', () => {
 
   it('renders export and import cards', () => {
     render(<ImportExportManager feedType='article' />)
-    expect(screen.getByText('Export')).toBeDefined()
-    expect(screen.getByText('Import Sources')).toBeDefined()
-    expect(screen.getByRole('button', { name: /export opml/i })).toBeDefined()
-    expect(screen.getByRole('button', { name: /export csv/i })).toBeDefined()
-    expect(screen.getByRole('button', { name: /import urls/i })).toBeDefined()
-    expect(screen.getByRole('button', { name: /upload file/i })).toBeDefined()
+    expect(screen.getByText('Export')).toBeInTheDocument()
+    expect(screen.getByText('Import Sources')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /export opml/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /export csv/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /import urls/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /upload file/i })).toBeInTheDocument()
   })
 
   it('Export OPML button calls exportRssFeeds with format opml', async () => {
@@ -162,7 +162,7 @@ describe('ImportExportManager', () => {
     fireEvent.change(textarea, { target: { value: 'https://example.com/feed.xml' } })
     fireEvent.click(screen.getByRole('button', { name: /import urls/i }))
     await waitFor(() => {
-      expect(screen.getByText(/Processing|Done/)).toBeDefined()
+      expect(screen.getByText(/Processing|Done/)).toBeInTheDocument()
     })
   })
 

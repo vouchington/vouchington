@@ -58,7 +58,7 @@ describe('ContributeCtaAside', () => {
     mockGetCurrentUser.mockResolvedValue({ account_type: null, id: 'user-1', roles: [] })
     const result = await ContributeCtaAside()
     render(result as ReactElement)
-    expect(screen.getByRole('heading', { name: 'Share your experience' })).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Share your experience' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Write a review/ }).getAttribute('href')).toBe(
       '/reviews/create',
     )

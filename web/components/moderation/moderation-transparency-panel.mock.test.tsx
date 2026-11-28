@@ -20,11 +20,11 @@ describe('ModerationTransparencyPanel', () => {
   it('renders released aggregate rows from the paid transparency API shape', () => {
     renderPanel(makeTransparency())
 
-    expect(screen.getByRole('heading', { name: 'Moderation Transparency' })).toBeDefined()
-    expect(screen.getByText('Automated moderation')).toBeDefined()
-    expect(screen.getByText('Community AI')).toBeDefined()
-    expect(screen.getByText('25')).toBeDefined()
-    expect(screen.getByText('Jan 1, 2026')).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Moderation Transparency' })).toBeInTheDocument()
+    expect(screen.getByText('Automated moderation')).toBeInTheDocument()
+    expect(screen.getByText('Community AI')).toBeInTheDocument()
+    expect(screen.getByText('25')).toBeInTheDocument()
+    expect(screen.getByText('Jan 1, 2026')).toBeInTheDocument()
 
     const table = screen.getByRole('table', { name: 'Moderation Transparency' })
     expect(table.querySelector('caption')).toHaveTextContent('Moderation Transparency')
@@ -34,7 +34,7 @@ describe('ModerationTransparencyPanel', () => {
   it('renders a loading state before aggregate data is available', () => {
     renderPanel(undefined, true)
 
-    expect(screen.getByText('Loading moderation transparency…')).toBeDefined()
+    expect(screen.getByText('Loading moderation transparency…')).toBeInTheDocument()
     expect(screen.getByText('Loading moderation transparency…')).toHaveAttribute(
       'aria-busy',
       'true',
@@ -44,14 +44,14 @@ describe('ModerationTransparencyPanel', () => {
   it('formats bucket dates with the resolved UI locale', () => {
     renderPanel(makeTransparency(), false, 'en-GB')
 
-    expect(screen.getByText('1 Jan 2026')).toBeDefined()
+    expect(screen.getByText('1 Jan 2026')).toBeInTheDocument()
   })
 
   it('renders all-time buckets by locale-aware month and year with a period heading', () => {
     renderPanel({ ...makeTransparency(), range: 'all' }, false, 'en-GB')
 
-    expect(screen.getByText('Jan 2026')).toBeDefined()
-    expect(screen.getByRole('columnheader', { name: 'Period:' })).toBeDefined()
+    expect(screen.getByText('Jan 2026')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Period:' })).toBeInTheDocument()
   })
 
   it('loads and merges an older global all-time page until its cursor is exhausted', async () => {
@@ -74,7 +74,7 @@ describe('ModerationTransparencyPanel', () => {
       range: 'all',
       after: 'older',
     })
-    expect(await screen.findByText('30')).toBeDefined()
+    expect(await screen.findByText('30')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
   })
 
@@ -103,7 +103,7 @@ describe('ModerationTransparencyPanel', () => {
       await screen.findByRole('heading', {
         name: 'Moderation transparency is available with Plus or Pro.',
       }),
-    ).toBeDefined()
+    ).toBeInTheDocument()
     expect(screen.queryByText('25')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
   })
@@ -121,16 +121,16 @@ describe('ModerationTransparencyPanel', () => {
       ),
     })
 
-    expect(screen.getByText('OpenAI moderation')).toBeDefined()
-    expect(screen.getByText('Agent moderation')).toBeDefined()
-    expect(screen.getByText('Post clearance rejection')).toBeDefined()
-    expect(screen.getByText('Spam detection')).toBeDefined()
+    expect(screen.getByText('OpenAI moderation')).toBeInTheDocument()
+    expect(screen.getByText('Agent moderation')).toBeInTheDocument()
+    expect(screen.getByText('Post clearance rejection')).toBeInTheDocument()
+    expect(screen.getByText('Spam detection')).toBeInTheDocument()
   })
 
   it('renders the privacy-suppressed empty state without rows', () => {
     renderPanel({ range: '30d', buckets: [] })
 
-    expect(screen.getByText('No aggregate data is available for this period.')).toBeDefined()
+    expect(screen.getByText('No aggregate data is available for this period.')).toBeInTheDocument()
     expect(screen.queryByRole('table')).toBeNull()
   })
 
@@ -141,13 +141,13 @@ describe('ModerationTransparencyPanel', () => {
       screen.getByRole('heading', {
         name: 'Moderation transparency is available with Plus or Pro.',
       }),
-    ).toBeDefined()
+    ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View plans' }).getAttribute('href')).toBe('/plans')
   })
 
   it('clears released rows when a downgrade or identity change removes access', () => {
     const view = renderPanel(makeTransparency())
-    expect(screen.getByText('25')).toBeDefined()
+    expect(screen.getByText('25')).toBeInTheDocument()
 
     view.rerender(
       <UiLocaleProvider uiLocale='en-US'>
@@ -160,7 +160,7 @@ describe('ModerationTransparencyPanel', () => {
       screen.getByRole('heading', {
         name: 'Moderation transparency is available with Plus or Pro.',
       }),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('uses a localized fallback for an unknown category and permits table overflow on narrow screens', () => {
@@ -176,7 +176,7 @@ describe('ModerationTransparencyPanel', () => {
       ],
     })
 
-    expect(screen.getByText('Other')).toBeDefined()
+    expect(screen.getByText('Other')).toBeInTheDocument()
     expect(screen.queryByText('Internal only category')).toBeNull()
     expect(screen.getByRole('table').parentElement).toHaveClass('overflow-x-auto')
     expect(screen.getByRole('table').parentElement).not.toHaveClass('overflow-hidden')
@@ -195,7 +195,7 @@ describe('ModerationTransparencyPanel', () => {
       ],
     })
 
-    expect(screen.getByText('Other')).toBeDefined()
+    expect(screen.getByText('Other')).toBeInTheDocument()
   })
 
   it('renders every current moderation action category with its localized label', () => {
@@ -223,7 +223,7 @@ describe('ModerationTransparencyPanel', () => {
       'Resolve appeal',
       'Dismiss appeal',
     ]) {
-      expect(screen.getByText(label)).toBeDefined()
+      expect(screen.getByText(label)).toBeInTheDocument()
     }
     expect(screen.queryByText('Other')).toBeNull()
   })

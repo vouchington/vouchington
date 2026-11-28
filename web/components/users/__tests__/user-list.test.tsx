@@ -17,7 +17,7 @@ describe('UserList', () => {
       />,
     )
 
-    expect(screen.getByText('Deleted user')).toBeDefined()
+    expect(screen.getByText('Deleted user')).toBeInTheDocument()
     expect(screen.queryByText('550e8400-e29b-41d4-a716-446655440000')).toBeNull()
     expect(screen.queryByText('@550e8400-e29b-41d4-a716-446655440000')).toBeNull()
   })
@@ -62,7 +62,7 @@ describe('UserList', () => {
         currentUserId='user-viewer'
       />,
     )
-    expect(screen.getByRole('button', { name: 'Mute' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Mute' })).toBeInTheDocument()
   })
 
   it("does not show mute button for the viewer's own row", async () => {

@@ -105,7 +105,7 @@ describe('BehaviorClient', () => {
         initialData={{}}
       />,
     )
-    expect(screen.getByText('Boom')).toBeDefined()
+    expect(screen.getByText('Boom')).toBeInTheDocument()
   })
 
   it('renders a not-found message when the topic is missing without an error', () => {
@@ -117,6 +117,6 @@ describe('BehaviorClient', () => {
         initialData={{}}
       />,
     )
-    expect(screen.getByText('Topic not found')).toBeDefined()
+    expect(screen.getByText('Topic not found')).toBeInTheDocument()
   })
 })

@@ -50,7 +50,7 @@ describe('CommunityListAutocomplete', () => {
     fireEvent.change(screen.getByPlaceholderText('Search sources...'), {
       target: { value: 'points' },
     })
-    await waitFor(() => expect(screen.getByText('The Points Guy')).toBeDefined(), {
+    await waitFor(() => expect(screen.getByText('The Points Guy')).toBeInTheDocument(), {
       timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
     })
     fireEvent.click(screen.getByText('The Points Guy'))
@@ -75,8 +75,11 @@ describe('CommunityListAutocomplete', () => {
       target: { value: 'credit' },
     })
 
-    await waitFor(() => expect(screen.getByText('Best credit card for travel')).toBeDefined(), {
-      timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
-    })
+    await waitFor(
+      () => expect(screen.getByText('Best credit card for travel')).toBeInTheDocument(),
+      {
+        timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
+      },
+    )
   })
 })

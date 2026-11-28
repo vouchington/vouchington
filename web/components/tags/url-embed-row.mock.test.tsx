@@ -33,8 +33,8 @@ describe('UrlEmbedRow', () => {
         latestCrawl={{ title: 'Great Tech Article', image_url: null }}
       />,
     )
-    expect(screen.getByText('Great Tech Article')).toBeDefined()
-    expect(screen.getByText('(techradar.com)')).toBeDefined()
+    expect(screen.getByText('Great Tech Article')).toBeInTheDocument()
+    expect(screen.getByText('(techradar.com)')).toBeInTheDocument()
   })
 
   it('renders thumbnail img when crawl has both title and image_url', () => {
@@ -92,7 +92,7 @@ describe('UrlEmbedRow', () => {
         latestCrawl={{ title: 'Title', image_url: null }}
       />,
     )
-    expect(screen.getByText('(example.com)')).toBeDefined()
+    expect(screen.getByText('(example.com)')).toBeInTheDocument()
   })
 
   it('fallback URL flex container has min-w-0 so truncate class can clip long paths', () => {

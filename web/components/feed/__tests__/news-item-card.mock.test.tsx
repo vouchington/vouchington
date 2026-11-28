@@ -159,7 +159,7 @@ describe('NewsItemCard', () => {
     render(<NewsItemCard item={itemWithCategory} />)
 
     // The text renders as a badge but not a link
-    expect(screen.getByText('Security')).toBeDefined()
+    expect(screen.getByText('Security')).toBeInTheDocument()
     const links = screen.queryAllByRole('link', { name: 'Security' })
     expect(links).toHaveLength(0)
   })
@@ -179,8 +179,8 @@ describe('NewsItemCard', () => {
     }
     render(<NewsItemCard item={itemWithCategories} />)
 
-    expect(screen.getByRole('link', { name: 'Tech' })).toBeDefined()
-    expect(screen.getByText('Open Source')).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Tech' })).toBeInTheDocument()
+    expect(screen.getByText('Open Source')).toBeInTheDocument()
     expect(screen.queryAllByRole('link', { name: 'Open Source' })).toHaveLength(0)
   })
 
@@ -237,7 +237,7 @@ describe('NewsItemCard', () => {
     render(<NewsItemCard item={itemWithCategory} />)
 
     // Category chip must still render
-    expect(screen.getByRole('link', { name: 'Security' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Security' })).toBeInTheDocument()
   })
 
   it('summary modal links contain only rss_item — no rss_item_nav', () => {

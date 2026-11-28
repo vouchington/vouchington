@@ -38,7 +38,7 @@ describe('PostListTopSection', () => {
         isAuthenticated={false}
       />,
     )
-    expect(screen.getByText(t(mockConfig.title))).toBeDefined()
+    expect(screen.getByText(t(mockConfig.title))).toBeInTheDocument()
   })
 
   it('renders the title for authenticated users', () => {
@@ -51,6 +51,6 @@ describe('PostListTopSection', () => {
         userRoles={[]}
       />,
     )
-    expect(screen.getByText(t(mockConfig.title))).toBeDefined()
+    expect(screen.getByText(t(mockConfig.title))).toBeInTheDocument()
   })
 })

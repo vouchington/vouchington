@@ -54,11 +54,11 @@ describe('NewsItemCard rendering', () => {
       'https://example.com/article1?utm_source=voucha.ai&utm_medium=referral',
     )
     expect(title.closest('a')?.getAttribute('target')).toBe('_blank')
-    expect(await screen.findByTestId('follower-share-actions')).toBeDefined()
+    expect(await screen.findByTestId('follower-share-actions')).toBeInTheDocument()
   })
   it('uses rss_feed.title (not topic.name) as source label', () => {
     render(<NewsItemCard item={mockItem} />)
-    expect(screen.getByText('Tech Weekly')).toBeDefined()
+    expect(screen.getByText('Tech Weekly')).toBeInTheDocument()
   })
   it('does not render a separate "Original" link', () => {
     render(<NewsItemCard item={mockItem} />)
@@ -90,7 +90,7 @@ describe('NewsItemCard rendering', () => {
         sharedByUser={{ account_type: null, id: 'user-1', username: 'sharer' }}
       />,
     )
-    expect(screen.getByText('Shared by')).toBeDefined()
+    expect(screen.getByText('Shared by')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '@sharer' })).toHaveAttribute('href', '/user/sharer')
   })
   it('falls back to Untitled when data.title is missing', () => {
@@ -99,7 +99,7 @@ describe('NewsItemCard rendering', () => {
       data: { ...mockItem.data, title: undefined },
     }
     render(<NewsItemCard item={item} />)
-    expect(screen.getByText('Untitled')).toBeDefined()
+    expect(screen.getByText('Untitled')).toBeInTheDocument()
   })
   it('strips HTML from excerpt', () => {
     const item: RssFeedItem = {
@@ -110,7 +110,7 @@ describe('NewsItemCard rendering', () => {
       },
     }
     render(<NewsItemCard item={item} />)
-    expect(screen.getByText('Bold text')).toBeDefined()
+    expect(screen.getByText('Bold text')).toBeInTheDocument()
     expect(screen.queryByText(/<p>/)).toBeNull()
   })
   it('renders categories as topic badges', () => {
@@ -132,8 +132,8 @@ describe('NewsItemCard rendering', () => {
       ],
     }
     render(<NewsItemCard item={item} />)
-    expect(screen.getByText('AI')).toBeDefined()
-    expect(screen.getByText('Machine Learning')).toBeDefined()
+    expect(screen.getByText('AI')).toBeInTheDocument()
+    expect(screen.getByText('Machine Learning')).toBeInTheDocument()
   })
   it('renders unmatched categories (null topic) as plain badges', () => {
     const item: RssFeedItem = {
@@ -149,8 +149,8 @@ describe('NewsItemCard rendering', () => {
       ],
     }
     render(<NewsItemCard item={item} />)
-    expect(screen.getByText('AI')).toBeDefined()
-    expect(screen.getByText('unmatched')).toBeDefined()
+    expect(screen.getByText('AI')).toBeInTheDocument()
+    expect(screen.getByText('unmatched')).toBeInTheDocument()
   })
   it('external-link icon is an inline child of the title link (not flex-positioned)', () => {
     const { container } = render(<NewsItemCard item={mockItem} />)

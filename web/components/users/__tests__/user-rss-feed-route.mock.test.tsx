@@ -57,7 +57,7 @@ describe('UserViewedRssFeedRoute', () => {
     mockGetUserRssFeedsCollection.mockResolvedValue(emptyFeedsData)
     const result = await UserViewedRssFeedRoute({ idOrUsername: 'alice' })
     render(result as React.ReactElement)
-    expect(screen.getByTestId('empty-state')).toBeDefined()
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument()
     expect(screen.queryByTestId('rss-feed-list-item')).toBeNull()
   })
 

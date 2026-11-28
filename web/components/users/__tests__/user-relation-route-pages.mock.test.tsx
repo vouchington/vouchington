@@ -95,7 +95,7 @@ describe('UserRssFeedRelationRoute', () => {
     })
 
     render(result as React.ReactElement)
-    expect(screen.getByTestId('empty-state')).toBeDefined()
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument()
     expect(screen.queryByTestId('rss-feed-list-item')).toBeNull()
   })
 

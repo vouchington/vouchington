@@ -70,12 +70,12 @@ describe('ValkeyConfirmDialog', () => {
       />,
     )
 
-    expect(screen.getByText('Rebuild embedding?')).toBeDefined()
+    expect(screen.getByText('Rebuild embedding?')).toBeInTheDocument()
     expect(
       screen.getByText(
         'This will enqueue a job to rebuild the embedding bloom filter. Existing filter data will be replaced.',
       ),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('shows clear title and description for a clear action', () => {
@@ -87,12 +87,12 @@ describe('ValkeyConfirmDialog', () => {
       />,
     )
 
-    expect(screen.getByText('Clear posts cache?')).toBeDefined()
+    expect(screen.getByText('Clear posts cache?')).toBeInTheDocument()
     expect(
       screen.getByText(
         'This will delete all cached entries for the posts group. They will be repopulated on next access.',
       ),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('shows flush title and description for a flush action', () => {
@@ -104,10 +104,10 @@ describe('ValkeyConfirmDialog', () => {
       />,
     )
 
-    expect(screen.getByText('Flush blooms?')).toBeDefined()
+    expect(screen.getByText('Flush blooms?')).toBeInTheDocument()
     expect(
       screen.getByText('Clears all bloom filter keys. Filters will need to be rebuilt.'),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('shows clear-all title and description for a clearAll action', () => {
@@ -119,12 +119,12 @@ describe('ValkeyConfirmDialog', () => {
       />,
     )
 
-    expect(screen.getByText('Clear all caches?')).toBeDefined()
+    expect(screen.getByText('Clear all caches?')).toBeInTheDocument()
     expect(
       screen.getByText(
         'This will delete all cached entities across all cache groups. They will be repopulated on next access.',
       ),
-    ).toBeDefined()
+    ).toBeInTheDocument()
   })
 
   it('clicking confirm calls confirmAction', () => {

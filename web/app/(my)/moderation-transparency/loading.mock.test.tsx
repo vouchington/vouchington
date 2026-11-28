@@ -34,7 +34,7 @@ describe('ModerationTransparencyLoading', () => {
     const { container } = render(await Loading())
 
     expect(container.firstElementChild).toHaveClass('space-y-6')
-    expect(screen.getByTestId('settings-page-header')).toBeDefined()
+    expect(screen.getByTestId('settings-page-header')).toBeInTheDocument()
     expect(rangeFilterMock).toHaveBeenCalledWith(
       expect.objectContaining({
         basePath: '/moderation-transparency',

@@ -158,7 +158,7 @@ describe('CommunitiesPage', () => {
     const ui = await CommunitiesPage({ searchParams: Promise.resolve({}) })
     render(ui)
     expect(screen.queryByRole('link', { name: 'Create Community' })).toBeNull()
-    expect(screen.getByRole('heading', { name: 'Communities', level: 1 })).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Communities', level: 1 })).toBeInTheDocument()
   })
 
   it('renders Create Community link for authenticated users', async () => {
@@ -190,7 +190,7 @@ describe('CommunitiesPage', () => {
     )
     const ui = await CommunitiesPage({ searchParams: Promise.resolve({ q: '#unknown-slug' }) })
     render(ui)
-    expect(screen.getByText('Topic not found: #unknown-slug')).toBeDefined()
+    expect(screen.getByText('Topic not found: #unknown-slug')).toBeInTheDocument()
     expect(screen.queryByTestId('community-list')).toBeNull()
   })
 
@@ -202,7 +202,7 @@ describe('CommunitiesPage', () => {
       searchParams: Promise.resolve({ q: '#a #b #c #d #e #f #g #h #i #j #k' }),
     })
     render(ui)
-    expect(screen.getByText('Too many hashtag topic identifiers (max 10)')).toBeDefined()
+    expect(screen.getByText('Too many hashtag topic identifiers (max 10)')).toBeInTheDocument()
     expect(screen.queryByTestId('community-list')).toBeNull()
   })
 

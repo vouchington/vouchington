@@ -247,7 +247,7 @@ describe('TopicRouteLayout breadcrumbs and SetNavIntent', () => {
         children: <div />,
       })
       render(jsx)
-      expect(screen.getByText(label)).toBeDefined()
+      expect(screen.getByText(label)).toBeInTheDocument()
       expect(screen.getByTestId('set-nav-intent').getAttribute('data-intent')).toBe(intent)
     },
   )
@@ -259,7 +259,7 @@ describe('TopicRouteLayout breadcrumbs and SetNavIntent', () => {
       children: <div />,
     })
     render(jsx)
-    expect(screen.getByText('News Sources')).toBeDefined()
+    expect(screen.getByText('News Sources')).toBeInTheDocument()
     expect(screen.getByTestId('set-nav-intent').getAttribute('data-intent')).toBe('news')
   })
   it('passes the topic detected language to the description aside', async () => {
@@ -294,7 +294,7 @@ describe('TopicRouteLayout breadcrumbs and SetNavIntent', () => {
     mockGetRssFeeds.mockResolvedValue(emptyRssFeeds as Awaited<ReturnType<typeof getRssFeeds>>)
     const jsx = await TopicRouteLayout({ id: 'level1techs', topicType: 'topic', children: <div /> })
     render(jsx)
-    expect(screen.getByText('Topics')).toBeDefined()
+    expect(screen.getByText('Topics')).toBeInTheDocument()
     expect(screen.queryByTestId('set-nav-intent')).toBeNull()
   })
 })

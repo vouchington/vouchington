@@ -175,12 +175,12 @@ describe('PaginatedUserPostRelationList', () => {
       await receiveInfiniteScrollProps.mock.calls.at(-1)![0].onLoadMore()
     })
 
-    expect(screen.getByText('post-1')).toBeDefined()
+    expect(screen.getByText('post-1')).toBeInTheDocument()
     await act(async () => {
       screen.getByRole('button', { name: 'Retry' }).click()
     })
 
-    expect(await screen.findByText('post-2')).toBeDefined()
+    expect(await screen.findByText('post-2')).toBeInTheDocument()
     expect(getPaginatedPage).toHaveBeenNthCalledWith(1, '/api/v1/users/alice/posts/saved', {
       after: 'cursor-1',
     })
@@ -215,7 +215,7 @@ describe('PaginatedUserPostRelationList', () => {
     await act(async () => {
       await firstRequest
     })
-    expect(await screen.findByText('post-2')).toBeDefined()
+    expect(await screen.findByText('post-2')).toBeInTheDocument()
   })
 
   it('delegates one continuation control and its pending state to InfiniteScroll', async () => {
@@ -249,7 +249,7 @@ describe('PaginatedUserPostRelationList', () => {
     expect(screen.getAllByRole('button')).toHaveLength(1)
 
     nextPage.resolve(makePage(['post-2']))
-    expect(await screen.findByText('post-2')).toBeDefined()
+    expect(await screen.findByText('post-2')).toBeInTheDocument()
   })
 
   it.each(['saved', 'hidden', 'following', 'subscribed'])(
@@ -266,7 +266,7 @@ describe('PaginatedUserPostRelationList', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Remove post-target' }))
 
       expect(screen.queryByText('post-target')).toBeNull()
-      expect(screen.getByText('post-sibling')).toBeDefined()
+      expect(screen.getByText('post-sibling')).toBeInTheDocument()
     },
   )
 
@@ -289,12 +289,12 @@ describe('PaginatedUserPostRelationList', () => {
       await inFlight
     })
     expect(screen.queryByText('post-target')).toBeNull()
-    expect(screen.getByText('post-sibling')).toBeDefined()
+    expect(screen.getByText('post-sibling')).toBeInTheDocument()
 
     rerender(relationList(firstPage, savedEndpoint))
     expect(screen.queryByText('post-target')).toBeNull()
 
     rerender(relationList(makePage(['post-target']), '/api/v1/users/alice/posts/hidden'))
-    expect(screen.getByText('post-target')).toBeDefined()
+    expect(screen.getByText('post-target')).toBeInTheDocument()
   })
 })

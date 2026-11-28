@@ -19,8 +19,8 @@ describe('AnalyticsItemClicksTable', () => {
       />,
     )
 
-    expect(screen.getByText('My Portfolio')).toBeDefined()
-    expect(screen.getByText('7')).toBeDefined()
+    expect(screen.getByText('My Portfolio')).toBeInTheDocument()
+    expect(screen.getByText('7')).toBeInTheDocument()
   })
 
   it('renders review labels as authored content with their language metadata', () => {
@@ -100,6 +100,6 @@ describe('AnalyticsItemClicksTable', () => {
       />,
     )
 
-    expect(screen.getByText('empty-review')).toBeDefined()
+    expect(screen.getByText('empty-review')).toBeInTheDocument()
   })
 })

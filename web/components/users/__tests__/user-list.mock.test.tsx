@@ -94,6 +94,6 @@ describe('UserList — management list', () => {
     // The non-searchMode item element must not appear
     expect(document.querySelector('[data-pw="user-list-item"]')).toBeNull()
     // The user's username handle should appear
-    expect(screen.getByText('@alice')).toBeDefined()
+    expect(screen.getByText('@alice')).toBeInTheDocument()
   })
 })

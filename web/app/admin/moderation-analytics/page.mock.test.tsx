@@ -53,8 +53,8 @@ describe('AdminModerationAnalyticsPage', () => {
 
     expect(requireAdminMock).toHaveBeenCalled()
     expect(getAdminModerationAnalyticsMock).toHaveBeenCalledWith({ range: '7d' })
-    expect(screen.getByTestId('breadcrumbs')).toBeDefined()
-    expect(screen.getByTestId('dashboard')).toBeDefined()
+    expect(screen.getByTestId('breadcrumbs')).toBeInTheDocument()
+    expect(screen.getByTestId('dashboard')).toBeInTheDocument()
     expect(dashboardMock).toHaveBeenCalledWith(
       expect.objectContaining({
         basePath: '/admin/moderation-analytics',

@@ -76,7 +76,7 @@ describe('InfiniteScroll consecutive empty pages', () => {
     await walkEmptyPages(view, 2, MAX_CONSECUTIVE_EMPTY_PAGES - 2)
 
     await arriveAndIntersect(view, MAX_CONSECUTIVE_EMPTY_PAGES, 1)
-    expect(screen.getByText('Row')).toBeDefined()
+    expect(screen.getByText('Row')).toBeInTheDocument()
     expect(onLoadMore).toHaveBeenCalledTimes(MAX_CONSECUTIVE_EMPTY_PAGES)
 
     const next = MAX_CONSECUTIVE_EMPTY_PAGES + 1

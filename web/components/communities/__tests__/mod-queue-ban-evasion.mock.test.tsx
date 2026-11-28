@@ -80,7 +80,7 @@ describe('ModQueueBanEvasionActions', () => {
     const { getByRole, queryByRole } = renderRedactedActions()
 
     expect(queryByRole('button', { name: /confirm ban/i })).toBeNull()
-    expect(getByRole('button', { name: /dismiss flag/i })).toBeTruthy()
+    expect(getByRole('button', { name: /dismiss flag/i })).toBeInTheDocument()
   })
 
   it('shows confirm when score evidence exists without a source user', () => {
@@ -94,7 +94,7 @@ describe('ModQueueBanEvasionActions', () => {
       />,
     )
 
-    expect(getByRole('button', { name: /confirm ban/i })).toBeTruthy()
+    expect(getByRole('button', { name: /confirm ban/i })).toBeInTheDocument()
   })
 
   it('calls onError when confirmCommunityBanEvasion fails', async () => {

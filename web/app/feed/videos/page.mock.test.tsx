@@ -23,7 +23,7 @@ describe('FeedVideosPage', () => {
 
     render(ui)
 
-    expect(screen.getByText('feed videos page')).toBeDefined()
+    expect(screen.getByText('feed videos page')).toBeInTheDocument()
     expect(mockFeedNewsListPage.mock.calls[0]![0]).toEqual(
       expect.objectContaining({
         config: feedRouteConfigData['videos'],

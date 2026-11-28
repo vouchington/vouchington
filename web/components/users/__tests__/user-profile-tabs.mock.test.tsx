@@ -44,12 +44,12 @@ describe('UserProfileTabs', () => {
 
     render(<UserProfileTabs usernameOrId='tests' />)
 
-    expect(screen.getByRole('menuitem', { name: 'About' })).toBeDefined()
-    expect(screen.getByText('Posts')).toBeDefined()
-    expect(screen.getByText('Topics')).toBeDefined()
-    expect(screen.getByText('Friends')).toBeDefined()
-    expect(screen.getByText('Sources')).toBeDefined()
-    expect(screen.getByText('Communities')).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'About' })).toBeInTheDocument()
+    expect(screen.getByText('Posts')).toBeInTheDocument()
+    expect(screen.getByText('Topics')).toBeInTheDocument()
+    expect(screen.getByText('Friends')).toBeInTheDocument()
+    expect(screen.getByText('Sources')).toBeInTheDocument()
+    expect(screen.getByText('Communities')).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Referral links' }).getAttribute('href')).toBe(
       '/user/tests/referral-links',
     )

@@ -68,7 +68,7 @@ describe('TopicRecommendationsTable', () => {
     renderTable()
     const slugBtn = screen.getByRole('button', { name: 'proposed-topic' })
     fireEvent.click(slugBtn)
-    expect(screen.getByText('Recommendation rationale')).toBeDefined()
+    expect(screen.getByText('Recommendation rationale')).toBeInTheDocument()
   })
 
   it('opens dialog via date button', () => {
@@ -78,7 +78,7 @@ describe('TopicRecommendationsTable', () => {
       name: 'Jan 1, 2024',
     })
     fireEvent.click(dateBtn)
-    expect(screen.getByText('Recommendation rationale')).toBeDefined()
+    expect(screen.getByText('Recommendation rationale')).toBeInTheDocument()
   })
 
   it('shows Unknown when post has no submitter username', () => {
@@ -92,6 +92,6 @@ describe('TopicRecommendationsTable', () => {
       },
     }
     renderTable({ tableData: noSubmitterData })
-    expect(screen.getByText('Unknown')).toBeDefined()
+    expect(screen.getByText('Unknown')).toBeInTheDocument()
   })
 })

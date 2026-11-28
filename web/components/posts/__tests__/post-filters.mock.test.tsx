@@ -55,32 +55,32 @@ describe('PostFilters', () => {
 
   it('renders search input', () => {
     renderWithProviders(<PostFilters />)
-    expect(screen.getByPlaceholderText('Search by text or #topic')).toBeDefined()
+    expect(screen.getByPlaceholderText('Search by text or #topic')).toBeInTheDocument()
   })
 
   it('renders sort dropdown without relevance when no search', () => {
     renderWithProviders(<PostFilters />)
     const sortSelect = screen.getByLabelText('Sort list') as HTMLSelectElement
     expect(sortSelect).toBeDefined()
-    expect(screen.getByRole('option', { name: 'Hot' })).toBeDefined()
-    expect(screen.getByRole('option', { name: 'New' })).toBeDefined()
+    expect(screen.getByRole('option', { name: 'Hot' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'New' })).toBeInTheDocument()
     expect(screen.queryByRole('option', { name: 'Relevance' })).toBeNull()
   })
 
   it('renders relevance sort option when search query is active', () => {
     mockNav.setSearchParams('q=test+query')
     renderWithProviders(<PostFilters />)
-    expect(screen.getByRole('option', { name: 'Hot' })).toBeDefined()
-    expect(screen.getByRole('option', { name: 'New' })).toBeDefined()
-    expect(screen.getByRole('option', { name: 'Relevance' })).toBeDefined()
+    expect(screen.getByRole('option', { name: 'Hot' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'New' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Relevance' })).toBeInTheDocument()
   })
 
   it('can disable relevance sort for feed-backed lists', () => {
     mockNav.setSearchParams('q=test+query')
     renderWithProviders(<PostFilters enableRelevanceSort={false} />)
 
-    expect(screen.getByRole('option', { name: 'Hot' })).toBeDefined()
-    expect(screen.getByRole('option', { name: 'New' })).toBeDefined()
+    expect(screen.getByRole('option', { name: 'Hot' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'New' })).toBeInTheDocument()
     expect(screen.queryByRole('option', { name: 'Relevance' })).toBeNull()
   })
 

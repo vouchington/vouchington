@@ -106,7 +106,7 @@ describe('UrlAdminAside', () => {
       rssFeedId: null,
     })
 
-    expect(screen.getByRole('button', { name: /trigger crawl/i })).toBeDefined()
+    expect(screen.getByRole('button', { name: /trigger crawl/i })).toBeInTheDocument()
   })
 
   it('omits trigger crawl button when canTriggerCrawl is false', async () => {

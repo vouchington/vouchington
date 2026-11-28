@@ -86,7 +86,7 @@ describe('PinCommunityPostMenuItem', () => {
 
   it('renders pin action when not pinned', () => {
     render(<PinCommunityPostMenuItem {...defaultProps} />)
-    expect(screen.getByTestId('pin-community-post-menu-item')).toBeDefined()
+    expect(screen.getByTestId('pin-community-post-menu-item')).toBeInTheDocument()
   })
 
   it('renders unpin action when pinned', () => {
@@ -96,7 +96,7 @@ describe('PinCommunityPostMenuItem', () => {
         isPinned
       />,
     )
-    expect(screen.getByTestId('unpin-community-post-menu-item')).toBeDefined()
+    expect(screen.getByTestId('unpin-community-post-menu-item')).toBeInTheDocument()
   })
 
   it('pins a post and calls router.refresh', async () => {

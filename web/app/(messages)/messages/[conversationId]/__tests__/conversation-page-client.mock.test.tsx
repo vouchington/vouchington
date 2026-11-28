@@ -48,7 +48,7 @@ describe('DirectMessagePageClient', () => {
         initialParticipantAddPolicy='owner_only'
       />,
     )
-    expect(screen.getByText('No messages yet. Send the first one!')).toBeDefined()
+    expect(screen.getByText('No messages yet. Send the first one!')).toBeInTheDocument()
     expect(container.querySelector('[data-pw="dm-thread-messages"]')).not.toBeNull()
   })
 
@@ -65,8 +65,8 @@ describe('DirectMessagePageClient', () => {
         initialParticipantAddPolicy='owner_only'
       />,
     )
-    expect(screen.getByText('Hello world')).toBeDefined()
-    expect(screen.getByText('You')).toBeDefined()
+    expect(screen.getByText('Hello world')).toBeInTheDocument()
+    expect(screen.getByText('You')).toBeInTheDocument()
   })
 
   it('renders compose input and send button', () => {

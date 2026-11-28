@@ -79,8 +79,8 @@ describe('PostCard', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Choose a vote' }))
-    expect(screen.getByRole('radio', { name: 'Vouch' })).toBeDefined()
-    expect(screen.getByRole('radio', { name: 'Disavow' })).toBeDefined()
+    expect(screen.getByRole('radio', { name: 'Vouch' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Disavow' })).toBeInTheDocument()
   })
 
   it('shows raw vote counts with the signed-out voting link', () => {
@@ -166,7 +166,7 @@ describe('PostCard', () => {
     it('card view: renders follower share actions for authenticated non-owner', () => {
       mockPostCardUser.current = { id: 'user-2' } as User
       render(<PostCard post={mockPost} />)
-      expect(screen.getByTestId('follower-share-actions')).toBeDefined()
+      expect(screen.getByTestId('follower-share-actions')).toBeInTheDocument()
     })
     it('compact view: title has no pr-14 even for authenticated non-owner', () => {
       mockPostCardUser.current = { id: 'user-2' } as User

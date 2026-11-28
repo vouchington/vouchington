@@ -42,7 +42,7 @@ describe('ContentContainer', () => {
 
   it('renders children', () => {
     const { getByText } = render(<ContentContainer>Hello world</ContentContainer>)
-    expect(getByText('Hello world')).toBeDefined()
+    expect(getByText('Hello world')).toBeInTheDocument()
   })
 
   it('has data-pw content-container', () => {

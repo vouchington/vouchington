@@ -77,8 +77,10 @@ describe('FeedNewsListPage', () => {
     expect(mockGetRssFeedItemsFeed).toHaveBeenCalledWith('follow_users', {
       searchParams: { limit: 25, media_type: 'article' },
     })
-    expect(screen.getByText(JSON.stringify({ limit: 25, media_type: 'article' }))).toBeDefined()
-    expect(screen.getByText('news filters')).toBeDefined()
+    expect(
+      screen.getByText(JSON.stringify({ limit: 25, media_type: 'article' })),
+    ).toBeInTheDocument()
+    expect(screen.getByText('news filters')).toBeInTheDocument()
   })
 
   it('does not pass community scope to source news', async () => {
@@ -92,7 +94,9 @@ describe('FeedNewsListPage', () => {
     expect(mockGetRssFeedItemsFeed).toHaveBeenCalledWith('follow_rss_feeds', {
       searchParams: { limit: 25, media_type: 'article' },
     })
-    expect(screen.getByText(JSON.stringify({ limit: 25, media_type: 'article' }))).toBeDefined()
+    expect(
+      screen.getByText(JSON.stringify({ limit: 25, media_type: 'article' })),
+    ).toBeInTheDocument()
   })
 
   it('passes search query to source news', async () => {

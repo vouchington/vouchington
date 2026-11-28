@@ -36,7 +36,7 @@ describe('FeedPageHeader', () => {
         activeFilterPath: '/feed/posts',
       }),
     )
-    expect(screen.getByText('My Posts Feed')).toBeDefined()
+    expect(screen.getByText('My Posts Feed')).toBeInTheDocument()
   })
 
   it('renders the feed title for news category', async () => {
@@ -46,7 +46,7 @@ describe('FeedPageHeader', () => {
         activeFilterPath: '/feed/news',
       }),
     )
-    expect(screen.getByText('My News Feed')).toBeDefined()
+    expect(screen.getByText('My News Feed')).toBeInTheDocument()
   })
 
   it('renders the feed title for videos category', async () => {
@@ -56,6 +56,6 @@ describe('FeedPageHeader', () => {
         activeFilterPath: '/feed/videos',
       }),
     )
-    expect(screen.getByText('My Video Feed')).toBeDefined()
+    expect(screen.getByText('My Video Feed')).toBeInTheDocument()
   })
 })

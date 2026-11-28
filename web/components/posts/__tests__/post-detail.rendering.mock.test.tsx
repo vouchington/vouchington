@@ -27,7 +27,9 @@ describe('PostDetail rendering', () => {
         html=''
       />,
     )
-    expect(screen.getByRole('heading', { level: 1, name: 'Untitled Discussion' })).toBeDefined()
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Untitled Discussion' }),
+    ).toBeInTheDocument()
     rerender(
       <PostDetail
         post={{
@@ -56,8 +58,8 @@ describe('PostDetail rendering', () => {
         html='<p>Body</p>'
       />,
     )
-    expect(screen.getByText('Posted by Anonymous')).toBeDefined()
-    expect(screen.getByText('Signed In')).toBeDefined()
+    expect(screen.getByText('Posted by Anonymous')).toBeInTheDocument()
+    expect(screen.getByText('Signed In')).toBeInTheDocument()
   })
   it('renders post type badge in badge strip below title', () => {
     render(

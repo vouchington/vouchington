@@ -132,7 +132,7 @@ describe('AppealForm', () => {
     renderForm()
     expect(document.querySelector('[data-pw="appeal-form"]')).not.toBeNull()
     expect(document.querySelector('[data-pw="appeal-submit-button"]')).not.toBeNull()
-    expect(screen.getByTestId('turnstile-field')).toBeDefined()
+    expect(screen.getByTestId('turnstile-field')).toBeInTheDocument()
   })
 
   it('submit button is enabled when turnstile token is present', () => {

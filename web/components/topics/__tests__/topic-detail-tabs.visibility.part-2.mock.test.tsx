@@ -30,7 +30,7 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
     )
 
     expect(screen.queryByRole('menuitem', { name: /Reviews/ })).toBeNull()
-    expect(screen.getByRole('menuitem', { name: 'Posts (2)' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Posts (2)' })).toBeInTheDocument()
   })
 
   it('shows Reviews tab without count when on /reviews and count is 0', () => {
@@ -45,7 +45,7 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Reviews' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Reviews' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Reviews (0)' })).toBeNull()
   })
 
@@ -76,7 +76,7 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Data Points' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Data Points' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Data Points (0)' })).toBeNull()
   })
 
@@ -107,7 +107,7 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Latest' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Latest' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Latest (0)' })).toBeNull()
   })
 
@@ -212,7 +212,7 @@ describe('TopicDetailTabs tab visibility by topic type and pathname', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'News' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'News' })).toBeInTheDocument()
   })
 
   it('returns null when all counts are 0 and user is not on any tab route', () => {

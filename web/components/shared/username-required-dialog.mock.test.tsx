@@ -66,8 +66,8 @@ describe('UsernameRequiredDialog', () => {
     renderDialog()
     expect(
       screen.getByRole('heading', { name: /create a username to continue posting/i }),
-    ).toBeDefined()
-    expect(screen.getByText(/a username is required to post/i)).toBeDefined()
+    ).toBeInTheDocument()
+    expect(screen.getByText(/a username is required to post/i)).toBeInTheDocument()
   })
 
   it('renders custom title, description, and submitLabel when provided', () => {
@@ -78,9 +78,9 @@ describe('UsernameRequiredDialog', () => {
     })
     expect(
       screen.getByRole('heading', { name: /create a username to create a community/i }),
-    ).toBeDefined()
-    expect(screen.getByText(/a username is required to create a community/i)).toBeDefined()
-    expect(screen.getByRole('button', { name: /create username & community/i })).toBeDefined()
+    ).toBeInTheDocument()
+    expect(screen.getByText(/a username is required to create a community/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /create username & community/i })).toBeInTheDocument()
   })
 
   it('does not render content when closed', () => {

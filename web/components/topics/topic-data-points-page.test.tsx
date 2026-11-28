@@ -53,7 +53,7 @@ describe('TopicDataPointsPage', () => {
     const ui = await TopicDataPointsPage({ id: 'topic-1', searchParams: { q: '#missing' } })
     render(ui)
 
-    expect(screen.getByText('Topic #missing was not found')).toBeDefined()
+    expect(screen.getByText('Topic #missing was not found')).toBeInTheDocument()
     expect(screen.queryByText(/"data_point_topic"/)).toBeNull()
   })
 })

@@ -14,20 +14,20 @@ describe('PlanFAQ', () => {
 
   it('renders the section heading', () => {
     render(<PlanFAQ t={t} />)
-    expect(screen.getByRole('heading', { name: 'Frequently Asked Questions' })).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'Frequently Asked Questions' })).toBeInTheDocument()
   })
 
   it('renders all FAQ questions', () => {
     render(<PlanFAQ t={t} />)
     for (const { question } of getPlanFaqItems(t)) {
-      expect(screen.getByText(question)).toBeDefined()
+      expect(screen.getByText(question)).toBeInTheDocument()
     }
   })
 
   it('renders all FAQ answers', () => {
     render(<PlanFAQ t={t} />)
     for (const { answer } of getPlanFaqItems(t)) {
-      expect(screen.getByText(answer)).toBeDefined()
+      expect(screen.getByText(answer)).toBeInTheDocument()
     }
   })
 

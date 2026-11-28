@@ -23,6 +23,6 @@ describe('PostForm archive controls', () => {
 
     fireEvent.click(screen.getByText('Advanced'))
 
-    expect(screen.getByRole('button', { name: 'Archive' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument()
   })
 })

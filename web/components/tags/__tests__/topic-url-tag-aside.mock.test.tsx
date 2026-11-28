@@ -101,7 +101,7 @@ describe('TopicUrlTagAside', () => {
 
     await renderAside()
 
-    expect(screen.getByText('Landing Page')).toBeDefined()
+    expect(screen.getByText('Landing Page')).toBeInTheDocument()
   })
 
   it('renders TagList with url objectType when relations exist', async () => {
@@ -129,7 +129,7 @@ describe('TopicUrlTagAside', () => {
 
     await renderAside({ isAuthenticated: true })
 
-    expect(screen.getByTestId('manage-tags-dialog')).toBeDefined()
+    expect(screen.getByTestId('manage-tags-dialog')).toBeInTheDocument()
     expect(mockManageTagsDialog.mock.lastCall?.[0]?.manageHref).toBe(
       '/source/test-topic/tags/landing_page',
     )
@@ -138,7 +138,7 @@ describe('TopicUrlTagAside', () => {
   it('renders empty state message when no relations and authenticated', async () => {
     await renderAside({ isAuthenticated: true })
 
-    expect(screen.getByText('No landing page set')).toBeDefined()
+    expect(screen.getByText('No landing page set')).toBeInTheDocument()
   })
 
   it('returns null when no relations and not authenticated', async () => {
@@ -181,7 +181,7 @@ describe('TopicUrlTagAside', () => {
       title: 'Terms of Service',
     })
 
-    expect(screen.getByText('Terms of Service')).toBeDefined()
+    expect(screen.getByText('Terms of Service')).toBeInTheDocument()
     expect(mockManageTagsDialog.mock.lastCall?.[0]?.manageHref).toBe(
       '/source/test-topic/tags/terms_of_service',
     )

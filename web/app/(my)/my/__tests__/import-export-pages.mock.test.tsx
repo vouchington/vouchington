@@ -43,7 +43,7 @@ describe('import-export pages', () => {
   describe('Channels import-export page', () => {
     it('renders with video feedType', async () => {
       render(await ChannelsPage())
-      expect(screen.getByTestId('import-export-manager')).toBeDefined()
+      expect(screen.getByTestId('import-export-manager')).toBeInTheDocument()
       expect(screen.getByTestId('import-export-manager').textContent).toBe('video')
     })
   })
@@ -51,7 +51,7 @@ describe('import-export pages', () => {
   describe('News Sources import-export page', () => {
     it('renders with article feedType', async () => {
       render(await NewsSourcesPage())
-      expect(screen.getByTestId('import-export-manager')).toBeDefined()
+      expect(screen.getByTestId('import-export-manager')).toBeInTheDocument()
       expect(screen.getByTestId('import-export-manager').textContent).toBe('article')
     })
   })
@@ -59,7 +59,7 @@ describe('import-export pages', () => {
   describe('Podcasts import-export page', () => {
     it('renders with podcast feedType', async () => {
       render(await PodcastsPage())
-      expect(screen.getByTestId('import-export-manager')).toBeDefined()
+      expect(screen.getByTestId('import-export-manager')).toBeInTheDocument()
       expect(screen.getByTestId('import-export-manager').textContent).toBe('podcast')
     })
   })
@@ -67,7 +67,7 @@ describe('import-export pages', () => {
   describe('Topics import-export page', () => {
     it('renders with topics feedType', async () => {
       render(await TopicsPage())
-      expect(screen.getByTestId('import-export-manager')).toBeDefined()
+      expect(screen.getByTestId('import-export-manager')).toBeInTheDocument()
       expect(screen.getByTestId('import-export-manager').textContent).toBe('topics')
     })
   })
@@ -75,7 +75,7 @@ describe('import-export pages', () => {
   describe('Sources import-export page', () => {
     it('renders with all feedType', async () => {
       render(await SourcesPage())
-      expect(screen.getByTestId('import-export-manager')).toBeDefined()
+      expect(screen.getByTestId('import-export-manager')).toBeInTheDocument()
       expect(screen.getByTestId('import-export-manager').textContent).toBe('all')
     })
   })

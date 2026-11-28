@@ -191,7 +191,7 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
 
     expect(screen.getByTestId('hide-menu-item').getAttribute('data-active')).toBe('true')
     expect(screen.getByTestId('save-menu-item').getAttribute('data-active')).toBe('true')
-    expect(screen.getByTestId('news-discuss-menu')).toBeDefined()
+    expect(screen.getByTestId('news-discuss-menu')).toBeInTheDocument()
 
     const desktopActions = container.querySelector(String.raw`.sm\:flex`)
     expect(desktopActions?.className).toContain('hidden')
@@ -232,6 +232,6 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
         communityDiscussionUrls={[{ id: 'url-1', url: 'https://example.com' }]}
       />,
     )
-    expect(screen.getByTestId('news-discuss-menu')).toBeDefined()
+    expect(screen.getByTestId('news-discuss-menu')).toBeInTheDocument()
   })
 })

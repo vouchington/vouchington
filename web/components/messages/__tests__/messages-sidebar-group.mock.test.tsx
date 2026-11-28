@@ -104,7 +104,7 @@ describe('MessagesSidebarGroup', () => {
   it('renders "All Messages" link when context is provided', async () => {
     const { getByText } = renderWithProvider()
     await waitFor(() => {
-      expect(getByText('All Messages')).toBeDefined()
+      expect(getByText('All Messages')).toBeInTheDocument()
     })
   })
 
@@ -132,7 +132,7 @@ describe('MessagesSidebarGroup', () => {
     })
 
     expect(mockGetMyMessages).toHaveBeenCalledTimes(2)
-    expect(getByText('Recovered chat')).toBeDefined()
+    expect(getByText('Recovered chat')).toBeInTheDocument()
   })
 
   it('loads more conversations when load-more button is clicked', async () => {
@@ -149,7 +149,7 @@ describe('MessagesSidebarGroup', () => {
 
     const { getByText } = renderWithProvider()
     await waitFor(() => {
-      expect(getByText('Load more')).toBeDefined()
+      expect(getByText('Load more')).toBeInTheDocument()
     })
 
     await act(async () => {
@@ -158,7 +158,7 @@ describe('MessagesSidebarGroup', () => {
     })
 
     await waitFor(() => {
-      expect(getByText('Second chat')).toBeDefined()
+      expect(getByText('Second chat')).toBeInTheDocument()
     })
     expect(mockGetMyMessages).toHaveBeenCalledTimes(2)
     expect(mockGetMyMessages).toHaveBeenLastCalledWith(cursor)
@@ -175,7 +175,7 @@ describe('MessagesSidebarGroup', () => {
 
     const { getByText } = renderWithProvider()
     await waitFor(() => {
-      expect(getByText('Load more')).toBeDefined()
+      expect(getByText('Load more')).toBeInTheDocument()
     })
 
     await act(async () => {
@@ -187,7 +187,7 @@ describe('MessagesSidebarGroup', () => {
       expect.any(Error),
       expect.objectContaining({ fallback: 'Failed to load more messages' }),
     )
-    expect(getByText('Retry')).toBeDefined()
+    expect(getByText('Retry')).toBeInTheDocument()
   })
 
   it('uses the same continuation action for automatic and manual loading', async () => {
@@ -229,12 +229,12 @@ describe('MessagesSidebarGroup', () => {
       triggerIntersection(true)
     })
     expect(mockGetMyMessages).toHaveBeenNthCalledWith(2, 'cursor-1')
-    expect(getByText('Second chat')).toBeDefined()
+    expect(getByText('Second chat')).toBeInTheDocument()
 
     await act(async () => {
       fireEvent.click(getByRole('button', { name: 'Load more' }))
     })
     expect(mockGetMyMessages).toHaveBeenNthCalledWith(3, 'cursor-2')
-    expect(getByText('Third chat')).toBeDefined()
+    expect(getByText('Third chat')).toBeInTheDocument()
   })
 })

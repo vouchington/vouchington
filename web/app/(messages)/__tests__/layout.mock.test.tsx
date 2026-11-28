@@ -42,7 +42,7 @@ describe('MessagesLayout', () => {
     mockGetCurrentUser.mockResolvedValueOnce({ id: 'user-1' })
     const result = await MessagesLayout({ children: <div>content</div> })
     render(result as React.ReactElement)
-    expect(screen.getByText('content')).toBeDefined()
+    expect(screen.getByText('content')).toBeInTheDocument()
   })
 
   it('redirects to /login when user is not logged in', async () => {

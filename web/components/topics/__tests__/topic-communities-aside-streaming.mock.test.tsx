@@ -104,7 +104,7 @@ describe('TopicCommunitiesAsideStreaming', () => {
       )
       await responsePromise
     })
-    expect(screen.getByTestId('topic-communities-aside-content')).toBeDefined()
+    expect(screen.getByTestId('topic-communities-aside-content')).toBeInTheDocument()
     expect(screen.getByTestId('topic-communities-aside-content').textContent).toBe('2')
   })
 })

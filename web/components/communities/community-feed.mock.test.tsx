@@ -150,7 +150,7 @@ describe('CommunityFeed', () => {
       />,
     )
 
-    expect(screen.getByText('Start Discussion')).toBeDefined()
+    expect(screen.getByText('Start Discussion')).toBeInTheDocument()
     expect(screen.queryByText('Write Review')).toBeNull()
     expect(screen.queryByText('Share Data Point')).toBeNull()
   })

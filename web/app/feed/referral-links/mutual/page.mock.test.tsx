@@ -23,7 +23,7 @@ describe('FeedReferralLinksMutualPage', () => {
 
     render(ui)
 
-    expect(screen.getByText('mutual referral links page')).toBeDefined()
+    expect(screen.getByText('mutual referral links page')).toBeInTheDocument()
     expect(mockFeedReferralLinksListPage.mock.calls[0]![0]).toEqual({
       config: feedRouteConfigData['referral-links/mutual'],
     })

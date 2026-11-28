@@ -114,7 +114,7 @@ describe('TopicRecommendationsTable — modal actions', () => {
     renderTable()
 
     fireEvent.click(screen.getByRole('button', { name: 'Proposed Topic' }))
-    expect(screen.getByRole('dialog')).toBeDefined()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(
       within(screen.getByRole('dialog')).getAllByText('Proposed Topic').length,
     ).toBeGreaterThan(0)

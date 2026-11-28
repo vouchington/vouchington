@@ -70,14 +70,14 @@ describe('InfiniteScroll empty state', () => {
   it('shows the empty state when there is no next page', () => {
     const { container } = renderList({ itemCount: 0, hasNextPage: false, endCursor: null })
 
-    expect(screen.getByText('Nothing here')).toBeDefined()
+    expect(screen.getByText('Nothing here')).toBeInTheDocument()
     expect(container.querySelector('[data-pw="infinite-scroll-sentinel"]')).toBeNull()
   })
 
   it('shows the empty state when a next page has no cursor to request it with', () => {
     renderList({ itemCount: 0, hasNextPage: true, endCursor: null })
 
-    expect(screen.getByText('Nothing here')).toBeDefined()
+    expect(screen.getByText('Nothing here')).toBeInTheDocument()
   })
 
   it('preserves list controls when it has no rows or replacement empty state', () => {
@@ -106,7 +106,7 @@ describe('InfiniteScroll empty state', () => {
 
     act(() => intersect())
 
-    expect(screen.getByText('Row')).toBeDefined()
+    expect(screen.getByText('Row')).toBeInTheDocument()
     expect(screen.queryByText('Nothing here')).toBeNull()
     expect(onLoadMore).not.toHaveBeenCalled()
     expect(container.querySelector('[data-pw="infinite-scroll-sentinel"]')).not.toBeNull()

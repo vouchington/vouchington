@@ -31,10 +31,10 @@ describe('TopicDetailTabs counts and viewer_count display', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Posts (10)' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Reviews (3)' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Data Points (2)' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'News (4)' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Posts (10)' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Reviews (3)' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Data Points (2)' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'News (4)' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: /Latest/ })).toBeNull()
   })
 
@@ -60,10 +60,10 @@ describe('TopicDetailTabs counts and viewer_count display', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Posts (6+)' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Reviews (0+)' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'Data Points (1)' })).toBeDefined()
-    expect(screen.getByRole('menuitem', { name: 'News (2)' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Posts (6+)' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Reviews (0+)' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Data Points (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'News (2)' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'News (2+)' })).toBeNull()
   })
 
@@ -78,7 +78,7 @@ describe('TopicDetailTabs counts and viewer_count display', () => {
       />,
     )
 
-    expect(screen.getByRole('menuitem', { name: 'Latest (12)' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'Latest (12)' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: /News/ })).toBeNull()
   })
 
@@ -94,7 +94,7 @@ describe('TopicDetailTabs counts and viewer_count display', () => {
     )
 
     expect(screen.queryByRole('menuitem', { name: /Latest/ })).toBeNull()
-    expect(screen.getByRole('menuitem', { name: 'News (5)' })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: 'News (5)' })).toBeInTheDocument()
   })
 
   it('renders items in priority order: Posts, Reviews, Data Points, Referral Links, Latest, News', () => {

@@ -59,6 +59,6 @@ describe('PaginatedUserRssFeedItemList', () => {
         media_type: 'audio',
       })
     })
-    expect(await screen.findByText('item-2')).toBeDefined()
+    expect(await screen.findByText('item-2')).toBeInTheDocument()
   })
 })

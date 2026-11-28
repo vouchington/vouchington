@@ -191,7 +191,7 @@ describe('post factory functions', () => {
     it('renders PostDetail when post exists and type matches', async () => {
       const result = await ReviewDetailPage({ params: Promise.resolve({ id: 'post-1' }) })
       render(result)
-      expect(screen.getByTestId('post-detail')).toBeDefined()
+      expect(screen.getByTestId('post-detail')).toBeInTheDocument()
       expect(screen.getByTestId('post-detail-tabs')).toHaveTextContent('1000')
     })
     it('calls notFound when post is not found', async () => {

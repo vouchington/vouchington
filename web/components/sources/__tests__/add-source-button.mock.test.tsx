@@ -34,19 +34,19 @@ describe('AddSourceButton', () => {
   it('renders Add News Source button for news kind', () => {
     mockUseAuth.mockReturnValue({ currentUser: baseUser })
     render(<AddSourceButton kind='news' />)
-    expect(screen.getByRole('button', { name: 'Add News Source' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Add News Source' })).toBeInTheDocument()
   })
 
   it('renders Add Podcast button for podcast kind', () => {
     mockUseAuth.mockReturnValue({ currentUser: baseUser })
     render(<AddSourceButton kind='podcast' />)
-    expect(screen.getByRole('button', { name: 'Add Podcast' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Add Podcast' })).toBeInTheDocument()
   })
 
   it('renders Add Channel button for video kind', () => {
     mockUseAuth.mockReturnValue({ currentUser: baseUser })
     render(<AddSourceButton kind='video' />)
-    expect(screen.getByRole('button', { name: 'Add Channel' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Add Channel' })).toBeInTheDocument()
   })
 
   it('opens dialog on button click', () => {
@@ -54,14 +54,14 @@ describe('AddSourceButton', () => {
     render(<AddSourceButton kind='podcast' />)
     expect(screen.queryByText('Add a podcast')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Add Podcast' }))
-    expect(screen.getByText('Add a podcast')).toBeDefined()
+    expect(screen.getByText('Add a podcast')).toBeInTheDocument()
   })
 
   it('renders dialog title for news kind', () => {
     mockUseAuth.mockReturnValue({ currentUser: baseUser })
     render(<AddSourceButton kind='news' />)
     fireEvent.click(screen.getByRole('button', { name: 'Add News Source' }))
-    expect(screen.getByText('Add a news source')).toBeDefined()
+    expect(screen.getByText('Add a news source')).toBeInTheDocument()
   })
 
   it('closes dialog when form calls onSuccess', () => {
@@ -76,7 +76,7 @@ describe('AddSourceButton', () => {
     ))
     render(<AddSourceButton kind='podcast' />)
     fireEvent.click(screen.getByRole('button', { name: 'Add Podcast' }))
-    expect(screen.getByText('Add a podcast')).toBeDefined()
+    expect(screen.getByText('Add a podcast')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'mock-success' }))
     expect(screen.queryByText('Add a podcast')).toBeNull()
   })

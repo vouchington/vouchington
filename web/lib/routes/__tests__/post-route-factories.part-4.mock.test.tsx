@@ -137,7 +137,7 @@ describe('createCommentPermalinkPage', () => {
       params: Promise.resolve({ id: 'post-1', commentId: 'c-1' }),
     })
     render(result)
-    expect(screen.getByTestId('comment-permalink')).toBeDefined()
+    expect(screen.getByTestId('comment-permalink')).toBeInTheDocument()
   })
 
   it('passes the target comment content language to createPageMetadata', async () => {

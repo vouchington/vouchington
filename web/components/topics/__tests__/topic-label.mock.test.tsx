@@ -76,12 +76,12 @@ describe('TopicLabel', () => {
 
   it('renders topic name as default child', () => {
     const { getByText } = render(<TopicLabel topic={baseTopic} />)
-    expect(getByText('Foo Topic')).toBeTruthy()
+    expect(getByText('Foo Topic')).toBeInTheDocument()
   })
 
   it('renders custom children', () => {
     const { getByText } = render(<TopicLabel topic={baseTopic}>Custom Label</TopicLabel>)
-    expect(getByText('Custom Label')).toBeTruthy()
+    expect(getByText('Custom Label')).toBeInTheDocument()
   })
 
   it('uses id when slug is null', () => {

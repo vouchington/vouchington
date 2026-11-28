@@ -7,22 +7,22 @@ describe('ContentRemovedNotice', () => {
   it('renders the moderation removal heading', () => {
     const { container } = render(<ContentRemovedNotice />)
     expect(container.querySelector('[data-pw="content-removed-notice"]')).not.toBeNull()
-    expect(screen.getByText('This content was removed by a moderator.')).toBeDefined()
+    expect(screen.getByText('This content was removed by a moderator.')).toBeInTheDocument()
   })
 
   it('renders the fallback reason message', () => {
     render(<ContentRemovedNotice />)
-    expect(screen.getByText('No additional reason was provided.')).toBeDefined()
+    expect(screen.getByText('No additional reason was provided.')).toBeInTheDocument()
   })
 
   it('renders the fallback reason when reason is null', () => {
     render(<ContentRemovedNotice reason={null} />)
-    expect(screen.getByText('No additional reason was provided.')).toBeDefined()
+    expect(screen.getByText('No additional reason was provided.')).toBeInTheDocument()
   })
 
   it('renders the provided reason instead of the fallback', () => {
     render(<ContentRemovedNotice reason='This post violates our community guidelines.' />)
-    expect(screen.getByText('This post violates our community guidelines.')).toBeDefined()
+    expect(screen.getByText('This post violates our community guidelines.')).toBeInTheDocument()
     expect(screen.queryByText('No additional reason was provided.')).toBeNull()
   })
 

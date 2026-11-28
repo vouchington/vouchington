@@ -88,8 +88,8 @@ describe('UserFollowingRssFeedsRoute', () => {
       searchParams: Promise.resolve({}),
     })
     render(result)
-    expect(screen.getByTestId('empty-state')).toBeDefined()
-    expect(screen.getByText('No followed sources')).toBeDefined()
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument()
+    expect(screen.getByText('No followed sources')).toBeInTheDocument()
   })
 
   it('renders RssFeedListItem for each result when results are non-empty', async () => {

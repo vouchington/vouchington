@@ -48,14 +48,14 @@ describe('MessagesPage', () => {
     })
     const jsx = await MessagesPage()
     render(jsx)
-    expect(screen.getByText('inbox')).toBeDefined()
+    expect(screen.getByText('inbox')).toBeInTheDocument()
   })
 
   it('renders MessagesInboxClient even when API fails', async () => {
     mockGetMyMessages.mockRejectedValueOnce(new Error('network error'))
     const jsx = await MessagesPage()
     render(jsx)
-    expect(screen.getByText('inbox')).toBeDefined()
+    expect(screen.getByText('inbox')).toBeInTheDocument()
   })
 
   it('renders the Messages heading', async () => {
@@ -65,6 +65,6 @@ describe('MessagesPage', () => {
     })
     const jsx = await MessagesPage()
     render(jsx)
-    expect(screen.getByText('Messages')).toBeDefined()
+    expect(screen.getByText('Messages')).toBeInTheDocument()
   })
 })

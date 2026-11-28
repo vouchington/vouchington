@@ -39,13 +39,13 @@ describe('CreditCardFields', () => {
         onUpdate={noop}
       />,
     )
-    expect(screen.getByText('Card *')).toBeDefined()
-    expect(screen.getByText('Result *')).toBeDefined()
-    expect(screen.getByText('I had an existing relationship with the issuer')).toBeDefined()
-    expect(screen.getByText('Approved Credit Limit (optional)')).toBeDefined()
-    expect(screen.getByText('This was a business card application')).toBeDefined()
-    expect(screen.getByText('Application Method (optional)')).toBeDefined()
-    expect(screen.getByText('Application Date (optional)')).toBeDefined()
+    expect(screen.getByText('Card *')).toBeInTheDocument()
+    expect(screen.getByText('Result *')).toBeInTheDocument()
+    expect(screen.getByText('I had an existing relationship with the issuer')).toBeInTheDocument()
+    expect(screen.getByText('Approved Credit Limit (optional)')).toBeInTheDocument()
+    expect(screen.getByText('This was a business card application')).toBeInTheDocument()
+    expect(screen.getByText('Application Method (optional)')).toBeInTheDocument()
+    expect(screen.getByText('Application Date (optional)')).toBeInTheDocument()
   })
 
   it('does NOT render profile-specific fields: Credit Score Range, Stated Income, Hard Inquiries, Cards Opened, Total Credit Limit, Years of Credit History', () => {

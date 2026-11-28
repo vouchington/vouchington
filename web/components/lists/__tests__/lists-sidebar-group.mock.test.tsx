@@ -97,8 +97,8 @@ describe('ListsSidebarGroup', () => {
     )
     renderGroup()
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /tech articles/i })).toBeDefined()
-      expect(screen.getByRole('link', { name: /weekend reads/i })).toBeDefined()
+      expect(screen.getByRole('link', { name: /tech articles/i })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /weekend reads/i })).toBeInTheDocument()
     })
   })
 
@@ -110,7 +110,7 @@ describe('ListsSidebarGroup', () => {
     window.dispatchEvent(new CustomEvent('lists:created', { detail: newList }))
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /newly created list/i })).toBeDefined()
+      expect(screen.getByRole('link', { name: /newly created list/i })).toBeInTheDocument()
     })
   })
 
@@ -131,8 +131,8 @@ describe('ListsSidebarGroup', () => {
     resolveSearch(makeSearchResponse([existingList]))
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /newly created list/i })).toBeDefined()
-      expect(screen.getByRole('link', { name: /existing list/i })).toBeDefined()
+      expect(screen.getByRole('link', { name: /newly created list/i })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /existing list/i })).toBeInTheDocument()
     })
   })
 })

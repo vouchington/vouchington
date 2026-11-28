@@ -120,7 +120,7 @@ describe('RssFeedActionSlot', () => {
       />,
     )
 
-    expect(screen.getByTestId('relation-management-action')).toBeDefined()
+    expect(screen.getByTestId('relation-management-action')).toBeInTheDocument()
     expect(screen.queryByTestId('follow-button')).toBeNull()
   })
 })

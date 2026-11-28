@@ -48,8 +48,8 @@ describe('UserHostnameRelationList', () => {
         emptyDescription='Nothing to show.'
       />,
     )
-    expect(screen.getByTestId('empty-state')).toBeDefined()
-    expect(screen.getByText('No hostnames')).toBeDefined()
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument()
+    expect(screen.getByText('No hostnames')).toBeInTheDocument()
   })
 
   it('renders a HostnameListItem for each hostname', () => {
@@ -64,8 +64,8 @@ describe('UserHostnameRelationList', () => {
         emptyDescription='Nothing to show.'
       />,
     )
-    expect(screen.getByTestId('hostname-list-item-alpha.com')).toBeDefined()
-    expect(screen.getByTestId('hostname-list-item-beta.com')).toBeDefined()
+    expect(screen.getByTestId('hostname-list-item-alpha.com')).toBeInTheDocument()
+    expect(screen.getByTestId('hostname-list-item-beta.com')).toBeInTheDocument()
     expect(screen.queryByTestId('empty-state')).toBeNull()
   })
 })

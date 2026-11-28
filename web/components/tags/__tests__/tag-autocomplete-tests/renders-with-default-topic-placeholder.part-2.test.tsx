@@ -59,9 +59,12 @@ describe('TagAutocomplete', () => {
       target: { value: 'credit' },
     })
 
-    await waitFor(() => expect(screen.getByText('Best credit card for travel')).toBeDefined(), {
-      timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
-    })
+    await waitFor(
+      () => expect(screen.getByText('Best credit card for travel')).toBeInTheDocument(),
+      {
+        timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
+      },
+    )
   })
 
   it('excludes already-selected ids from topic results', async () => {
@@ -103,7 +106,7 @@ describe('TagAutocomplete', () => {
       target: { value: 'card' },
     })
 
-    await waitFor(() => expect(screen.getByText('Amex Platinum')).toBeDefined(), {
+    await waitFor(() => expect(screen.getByText('Amex Platinum')).toBeInTheDocument(), {
       timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
     })
     expect(screen.queryByText('Chase Sapphire Reserve')).toBeNull()

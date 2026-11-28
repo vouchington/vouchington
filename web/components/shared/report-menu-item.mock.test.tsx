@@ -89,7 +89,7 @@ describe('ReportMenuItem', () => {
         entityId='post-1'
       />,
     )
-    expect(screen.getByRole('menuitem', { name: /report/i })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: /report/i })).toBeInTheDocument()
   })
 
   it('renders with flag icon', () => {
@@ -99,7 +99,7 @@ describe('ReportMenuItem', () => {
         entityId='post-1'
       />,
     )
-    expect(screen.getByTestId('flag-icon')).toBeDefined()
+    expect(screen.getByTestId('flag-icon')).toBeInTheDocument()
   })
 
   it('clicking the menu item opens the dialog (sets open state)', () => {
@@ -111,7 +111,7 @@ describe('ReportMenuItem', () => {
     )
     const item = screen.getByRole('menuitem')
     fireEvent.click(item)
-    expect(screen.getByTestId('report-dialog')).toBeDefined()
+    expect(screen.getByTestId('report-dialog')).toBeInTheDocument()
   })
 
   it('updates when a same-tab report event is dispatched', async () => {
@@ -127,7 +127,7 @@ describe('ReportMenuItem', () => {
         new CustomEvent('voucha:report-submitted', { detail: { key: 'report:post:post-1' } }),
       )
     })
-    expect(screen.getByRole('menuitem', { name: /reported/i })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: /reported/i })).toBeInTheDocument()
   })
 
   it('shows "Reported" label when sessionStorage flag is set', () => {
@@ -138,7 +138,7 @@ describe('ReportMenuItem', () => {
         entityId='post-1'
       />,
     )
-    expect(screen.getByRole('menuitem', { name: /reported/i })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: /reported/i })).toBeInTheDocument()
   })
 })
 
@@ -155,8 +155,8 @@ describe('ReportMenuKebab', () => {
         entityId='post-1'
       />,
     )
-    expect(screen.getByRole('button', { name: /report actions/i })).toBeDefined()
-    expect(screen.getByTestId('more-horizontal-icon')).toBeDefined()
+    expect(screen.getByRole('button', { name: /report actions/i })).toBeInTheDocument()
+    expect(screen.getByTestId('more-horizontal-icon')).toBeInTheDocument()
   })
 
   it('renders a Report menu item inside', () => {
@@ -166,7 +166,7 @@ describe('ReportMenuKebab', () => {
         entityId='comment-1'
       />,
     )
-    expect(screen.getByRole('menuitem', { name: /report/i })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: /report/i })).toBeInTheDocument()
   })
 })
 

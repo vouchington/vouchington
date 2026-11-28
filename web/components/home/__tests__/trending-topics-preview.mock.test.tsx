@@ -33,7 +33,7 @@ describe('TrendingTopicsPreview', () => {
   it('renders an empty state link when no topics are trending', () => {
     render(<TrendingTopicsPreview data={null} />)
 
-    expect(screen.getByText('No trending topics yet.')).toBeDefined()
+    expect(screen.getByText('No trending topics yet.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Browse all topics' }).getAttribute('href')).toBe(
       '/topics',
     )
@@ -56,8 +56,8 @@ describe('TrendingTopicsPreview', () => {
 
     const topicLink = screen.getByRole('link', { name: /Acme Rewards/i })
     expect(topicLink.className).toContain('hover:shadow-md')
-    expect(screen.getByText('4.5')).toBeDefined()
-    expect(screen.getByText('1.3K')).toBeDefined()
-    expect(screen.getByText('Card')).toBeDefined()
+    expect(screen.getByText('4.5')).toBeInTheDocument()
+    expect(screen.getByText('1.3K')).toBeInTheDocument()
+    expect(screen.getByText('Card')).toBeInTheDocument()
   })
 })

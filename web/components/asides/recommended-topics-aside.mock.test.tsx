@@ -77,8 +77,8 @@ describe('RecommendedTopicsAside', () => {
     mockGetRecommendedTopics.mockResolvedValue(mockData)
     const result = await RecommendedTopicsAside()
     render(result as ReactElement)
-    expect(screen.getByTestId('recommended-topics-aside-content')).toBeDefined()
-    expect(screen.getByText('Visa Platinum')).toBeDefined()
+    expect(screen.getByTestId('recommended-topics-aside-content')).toBeInTheDocument()
+    expect(screen.getByText('Visa Platinum')).toBeInTheDocument()
   })
 
   it('excludes blocked topics server-side and shows eligible ones', async () => {
@@ -104,7 +104,7 @@ describe('RecommendedTopicsAside', () => {
     const result = await RecommendedTopicsAside()
     render(result as ReactElement)
     expect(screen.queryByText('Blocked Topic')).toBeNull()
-    expect(screen.getByText('Chase Sapphire')).toBeDefined()
+    expect(screen.getByText('Chase Sapphire')).toBeInTheDocument()
   })
 
   it('excludes followed and dismissed topics server-side', async () => {
@@ -136,7 +136,7 @@ describe('RecommendedTopicsAside', () => {
     render(result as ReactElement)
     expect(screen.queryByText('Already Followed')).toBeNull()
     expect(screen.queryByText('Already Dismissed')).toBeNull()
-    expect(screen.getByText('Actionable Topic')).toBeDefined()
+    expect(screen.getByText('Actionable Topic')).toBeInTheDocument()
   })
 
   it('renders nothing when topics record has no matching entries', async () => {

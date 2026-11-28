@@ -96,7 +96,7 @@ describe('MemberModmailThreadPage', () => {
       params: Promise.resolve({ communitySlug: 'test-community', threadId: 't1' }),
     })
     render(jsx)
-    expect(screen.getByText('client')).toBeDefined()
+    expect(screen.getByText('client')).toBeInTheDocument()
   })
 
   it('calls notFound when user is not logged in', async () => {

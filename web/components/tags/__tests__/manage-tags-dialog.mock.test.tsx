@@ -161,7 +161,7 @@ describe('ManageTagsDialog', () => {
 
     fireEvent.click(screen.getByRole('menuitem'))
 
-    await waitFor(() => expect(screen.getByTestId('dialog')).toBeDefined())
+    await waitFor(() => expect(screen.getByTestId('dialog')).toBeInTheDocument())
     expect(screen.getByText('Category')).toHaveClass('sr-only')
     expect(mockFetchEntityRelations).toHaveBeenCalledWith(
       'rss_feed_item',
@@ -170,7 +170,7 @@ describe('ManageTagsDialog', () => {
       'topic',
       { sort: 'best' },
     )
-    expect(screen.getByTestId('manage-tags-content')).toBeDefined()
+    expect(screen.getByTestId('manage-tags-content')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Manage all tags' })).toBeNull()
   })
 
@@ -194,7 +194,9 @@ describe('ManageTagsDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Manage' }))
 
-    await waitFor(() => expect(screen.getByRole('link', { name: 'Manage all tags' })).toBeDefined())
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'Manage all tags' })).toBeInTheDocument(),
+    )
     expect(screen.getByText('Publisher Type')).toHaveClass('sr-only')
     expect(screen.getByRole('link', { name: 'Manage all tags' }).getAttribute('href')).toBe(
       '/source/test-topic/tags/publisher_type',
@@ -232,7 +234,7 @@ describe('ManageTagsDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Manage' }))
 
-    await waitFor(() => expect(screen.getByTestId('dialog')).toBeDefined())
+    await waitFor(() => expect(screen.getByTestId('dialog')).toBeInTheDocument())
     expect(screen.getByText('Choose the most accurate categories.')).not.toHaveClass('sr-only')
   })
 
@@ -255,7 +257,7 @@ describe('ManageTagsDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Manage' }))
 
-    await waitFor(() => expect(screen.getByTestId('dialog')).toBeDefined())
+    await waitFor(() => expect(screen.getByTestId('dialog')).toBeInTheDocument())
     expect(screen.getByText('Category')).toHaveClass('sr-only')
   })
 })

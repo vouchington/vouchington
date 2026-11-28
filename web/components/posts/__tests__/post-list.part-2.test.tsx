@@ -28,7 +28,7 @@ describe('PostList', () => {
     renderWithListStyle(<PostList data={dataWithHiddenPost} />)
 
     expect(screen.queryByText('First Post')).toBeNull()
-    expect(screen.getByText('Second Post')).toBeDefined()
+    expect(screen.getByText('Second Post')).toBeInTheDocument()
   })
 
   it('keeps a comment the viewer hid, since hide only collapses it in its thread', () => {
@@ -44,7 +44,7 @@ describe('PostList', () => {
 
     renderWithListStyle(<PostList data={dataWithHiddenComment} />)
 
-    expect(screen.getByText('First Post')).toBeDefined()
+    expect(screen.getByText('First Post')).toBeInTheDocument()
     expect(screen.queryByText('Second Post')).toBeNull()
   })
 
@@ -56,7 +56,7 @@ describe('PostList', () => {
     })
 
     expect(screen.queryByText('First Post')).toBeNull()
-    expect(screen.getByText('Second Post')).toBeDefined()
+    expect(screen.getByText('Second Post')).toBeInTheDocument()
   })
 
   it('accumulates posts from the next page when loadMore is triggered', async () => {
@@ -72,7 +72,7 @@ describe('PostList', () => {
       />,
     )
 
-    expect(screen.getByText('First Post')).toBeDefined()
+    expect(screen.getByText('First Post')).toBeInTheDocument()
     expect(screen.queryByText('Second Post')).toBeNull()
 
     const loadMore = mockReceiveLoadMore.mock.calls.at(-1)![0] as () => Promise<void>
@@ -80,7 +80,7 @@ describe('PostList', () => {
       await loadMore()
     })
 
-    expect(screen.getByText('First Post')).toBeDefined()
-    expect(screen.getByText('Second Post')).toBeDefined()
+    expect(screen.getByText('First Post')).toBeInTheDocument()
+    expect(screen.getByText('Second Post')).toBeInTheDocument()
   })
 })

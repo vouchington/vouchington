@@ -23,7 +23,7 @@ describe('NewsItemClusterList', () => {
       page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
     }
     renderClusterList(data)
-    expect(screen.getByText('No news found')).toBeDefined()
+    expect(screen.getByText('No news found')).toBeInTheDocument()
   })
 
   it('keeps the modal mounted when results are empty', () => {
@@ -35,7 +35,7 @@ describe('NewsItemClusterList', () => {
     }
     renderClusterList(data, { nav: true })
 
-    expect(screen.getByText('No news found')).toBeDefined()
+    expect(screen.getByText('No news found')).toBeInTheDocument()
     expect(screen.getByTestId('nav-ids')).toHaveTextContent('')
   })
 
@@ -53,8 +53,8 @@ describe('NewsItemClusterList', () => {
       page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
     }
     renderClusterList(data)
-    expect(screen.getByText('Article One')).toBeDefined()
-    expect(screen.getByText('Article Two')).toBeDefined()
+    expect(screen.getByText('Article One')).toBeInTheDocument()
+    expect(screen.getByText('Article Two')).toBeInTheDocument()
   })
 
   it('clusters items by story_id - member items hidden until expanded', () => {
@@ -88,9 +88,9 @@ describe('NewsItemClusterList', () => {
     }
     renderClusterList(data)
 
-    expect(screen.getByText('Primary Article')).toBeDefined()
-    expect(screen.getByText('Standalone Article')).toBeDefined()
+    expect(screen.getByText('Primary Article')).toBeInTheDocument()
+    expect(screen.getByText('Standalone Article')).toBeInTheDocument()
     expect(screen.getByText('Related Article')).not.toBeVisible()
-    expect(screen.getByRole('button', { name: /1 related article$/i })).toBeDefined()
+    expect(screen.getByRole('button', { name: /1 related article$/i })).toBeInTheDocument()
   })
 })

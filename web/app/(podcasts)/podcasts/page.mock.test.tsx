@@ -29,7 +29,7 @@ describe('PodcastsPage', () => {
   it('renders the page header', async () => {
     const ui = await PodcastsPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('Podcasts')).toBeDefined()
+    expect(screen.getByText('Podcasts')).toBeInTheDocument()
   })
 
   it('calls getRssFeeds with feed_type=podcast', async () => {
@@ -50,7 +50,7 @@ describe('PodcastsPage', () => {
   it('shows an empty state when no podcasts found', async () => {
     const ui = await PodcastsPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('No podcasts found')).toBeDefined()
+    expect(screen.getByText('No podcasts found')).toBeInTheDocument()
   })
 
   it('passes q search param to getRssFeeds', async () => {
@@ -66,7 +66,7 @@ describe('PodcastsPage', () => {
     mockGetListSearchErrorMessage.mockReturnValue('Invalid search parameters')
     const ui = await PodcastsPage({ searchParams: Promise.resolve({}) })
     render(ui)
-    expect(screen.getByText('Invalid search parameters')).toBeDefined()
+    expect(screen.getByText('Invalid search parameters')).toBeInTheDocument()
   })
 
   it('renders RssFeedListItem for each result when results are non-empty', async () => {

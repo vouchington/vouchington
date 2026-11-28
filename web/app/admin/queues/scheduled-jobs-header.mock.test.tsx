@@ -51,7 +51,7 @@ describe('ScheduledJobsHeader', () => {
       'text-muted-foreground',
     )
     expect(heading.parentElement?.parentElement).toHaveClass('flex-col', 'gap-3', 'sm:flex-row')
-    expect(screen.getByText('Open GlideMQ Dashboard')).toBeDefined()
+    expect(screen.getByText('Open GlideMQ Dashboard')).toBeInTheDocument()
   })
 
   it('renders the refresh button in loading state', () => {
@@ -61,6 +61,6 @@ describe('ScheduledJobsHeader', () => {
         onRefresh={vi.fn<() => void>()}
       />,
     )
-    expect(screen.getByText('Refreshing...')).toBeDefined()
+    expect(screen.getByText('Refreshing...')).toBeInTheDocument()
   })
 })

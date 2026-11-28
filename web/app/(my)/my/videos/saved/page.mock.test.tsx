@@ -46,6 +46,6 @@ describe('MyVideosSavedPage', () => {
   it('renders the page heading when authenticated', async () => {
     mockRequireCurrentUser.mockResolvedValue(baseUser)
     render(await MyVideosSavedPage({ searchParams: Promise.resolve({}) }))
-    expect(screen.getByTestId('bookmark-page-header')).toBeDefined()
+    expect(screen.getByTestId('bookmark-page-header')).toBeInTheDocument()
   })
 })

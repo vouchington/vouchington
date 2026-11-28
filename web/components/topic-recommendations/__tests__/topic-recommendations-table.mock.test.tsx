@@ -57,10 +57,10 @@ describe('TopicRecommendationsTable', () => {
   it('renders recommendation rows and opens details dialog by clicking title', () => {
     const { container } = renderTable()
 
-    expect(screen.getByText('Proposed Topic')).toBeDefined()
+    expect(screen.getByText('Proposed Topic')).toBeInTheDocument()
     expect(container.querySelector('[data-pw="topic-recommendations-table"]')).not.toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Proposed Topic' }))
-    expect(screen.getByText('Recommendation rationale')).toBeDefined()
+    expect(screen.getByText('Recommendation rationale')).toBeInTheDocument()
   })
 
   it('rejects a recommendation without its canonical post slug', () => {

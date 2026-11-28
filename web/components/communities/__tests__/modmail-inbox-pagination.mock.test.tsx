@@ -162,7 +162,7 @@ describe('ModmailInbox pagination', () => {
     )
     pending.resolve(makePage([makeThread('stale')], false, null))
 
-    await waitFor(() => expect(screen.getByText('User: user-fresh')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('User: user-fresh')).toBeInTheDocument())
     expect(screen.queryByText('User: user-stale')).toBeNull()
   })
 
@@ -180,11 +180,11 @@ describe('ModmailInbox pagination', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
     const retry = await screen.findByRole('button', { name: 'Retry' })
-    expect(screen.getByText('User: user-one')).toBeDefined()
+    expect(screen.getByText('User: user-one')).toBeInTheDocument()
     expect(mockOnError).toHaveBeenCalledWith(error, expect.any(Object))
 
     fireEvent.click(retry)
-    await waitFor(() => expect(screen.getByText('User: user-two')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('User: user-two')).toBeInTheDocument())
     expect(mockGetModmailInboxClient).toHaveBeenCalledTimes(2)
   })
 
@@ -199,7 +199,7 @@ describe('ModmailInbox pagination', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
 
-    await waitFor(() => expect(screen.getByText('User: user-one')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('User: user-one')).toBeInTheDocument())
     expect(mockGetModmailInboxClient).toHaveBeenCalledWith('community-one')
   })
 })

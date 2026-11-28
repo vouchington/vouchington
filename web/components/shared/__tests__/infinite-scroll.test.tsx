@@ -21,7 +21,7 @@ describe('InfiniteScroll', () => {
         <div>content</div>
       </InfiniteScroll>,
     )
-    expect(getByText('content')).toBeDefined()
+    expect(getByText('content')).toBeInTheDocument()
   })
 
   it('does not observe when hasNextPage is false', () => {

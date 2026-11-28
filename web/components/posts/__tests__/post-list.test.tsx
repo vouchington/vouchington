@@ -16,8 +16,8 @@ describe('PostList', () => {
 
   it('renders all posts in results', () => {
     renderWithListStyle(<PostList data={postListMockData} />)
-    expect(screen.getByText('First Post')).toBeDefined()
-    expect(screen.getByText('Second Post')).toBeDefined()
+    expect(screen.getByText('First Post')).toBeInTheDocument()
+    expect(screen.getByText('Second Post')).toBeInTheDocument()
   })
 
   it('renders empty state when no results', () => {
@@ -28,7 +28,7 @@ describe('PostList', () => {
     }
 
     renderWithListStyle(<PostList data={emptyData} />)
-    expect(screen.getByText('No posts found')).toBeDefined()
+    expect(screen.getByText('No posts found')).toBeInTheDocument()
   })
 
   it('handles missing posts gracefully', () => {
@@ -41,7 +41,7 @@ describe('PostList', () => {
     }
 
     renderWithListStyle(<PostList data={dataWithMissingPost} />)
-    expect(screen.getByText('First Post')).toBeDefined()
+    expect(screen.getByText('First Post')).toBeInTheDocument()
     expect(screen.queryByText('Missing Post')).toBeNull()
   })
 
@@ -61,6 +61,6 @@ describe('PostList', () => {
     }
 
     renderWithListStyle(<PostList data={sharedFeedData} />)
-    expect(screen.getByText('Second Post')).toBeDefined()
+    expect(screen.getByText('Second Post')).toBeInTheDocument()
   })
 })

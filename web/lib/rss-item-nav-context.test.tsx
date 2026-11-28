@@ -80,6 +80,6 @@ describe('RssItemNavContext', () => {
   it('returns null context when no provider is present', () => {
     render(<NavConsumer currentId='id-a' />)
 
-    expect(screen.getByTestId('no-context')).toBeDefined()
+    expect(screen.getByTestId('no-context')).toBeInTheDocument()
   })
 })

@@ -36,7 +36,7 @@ describe('NewsCommunityDiscussionDialog', () => {
       />,
     )
 
-    expect(screen.getByText('Discuss in Rewards')).toBeDefined()
+    expect(screen.getByText('Discuss in Rewards')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Posting...' })).toBeDisabled()
   })
 
@@ -57,7 +57,7 @@ describe('NewsCommunityDiscussionDialog', () => {
       />,
     )
 
-    expect(screen.getByText('No available communities found.')).toBeDefined()
+    expect(screen.getByText('No available communities found.')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Start discussion' }))
     expect(onSubmit).not.toHaveBeenCalled()
   })
