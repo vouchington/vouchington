@@ -26,7 +26,8 @@ ignores:
   # Directly tests beginBoundedTransaction and registerPostCommitAction against ./setup.mts (no SQL).
   - 'backend/data-stores/psql/post-commit-actions.test.mts'
   # Shrinking allowlist of SQL-running psql schema tests — this list may only shrink.
-  # Capped at 23 entries by static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts.
+  # Total ignores capped at 31 (2 helper globs + 6 self-tests + 23 schema tests) by
+  # static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts.
   # Tracked for migration into backend/test-helpers in https://github.com/vouchington/vouchington/issues/6740.
   - 'backend/data-stores/psql/__tests__/index.extension-table-schema.generated.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-classifiers.test.mts'
@@ -275,6 +276,9 @@ examples:
     isValid: true
     file: 'backend/services/auth/auth.test.mts'
   - code: "await query('/* note */ cache-key-not-sql')"
+    isValid: true
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "expect(sql).toContain('SELECT id FROM users')"
     isValid: true
     file: 'backend/services/auth/auth.test.mts'
   - code: "await findFirstGeneratedDdlViolation('CREATE TABLE vote_edges (id UUID);')"

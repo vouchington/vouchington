@@ -82,18 +82,18 @@ describe('ast-grep rule examples', () => {
 describe('no-sql-in-backend-tests shrinking ignores list', () => {
   const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)))
   const rulePath = join(repoRoot, 'ast-grep-rules', 'no-sql-in-backend-tests.yml')
-  const MAX_SCHEMA_TEST_IGNORES = 23
+  // 2 helper globs + 6 package self-tests + 23 SQL-running psql schema tests.
+  const MAX_TOTAL_IGNORES = 31
 
-  it('caps the psql schema test ignores list at 23 and rejects duplicates or stale paths', () => {
+  it('caps total ignores at 31 and rejects duplicates or stale file paths', () => {
     const parsed = parse(readFileSync(rulePath, 'utf8')) as { ignores?: string[] }
     const ignores = parsed.ignores ?? []
-    const schemaIgnores = ignores.filter(entry =>
-      entry.startsWith('backend/data-stores/psql/__tests__/'),
-    )
 
-    expect(schemaIgnores.length).toBeLessThanOrEqual(MAX_SCHEMA_TEST_IGNORES)
-    expect(new Set(schemaIgnores).size).toBe(schemaIgnores.length)
-    const missing = schemaIgnores.filter(relativePath => !existsSync(join(repoRoot, relativePath)))
+    expect(ignores.length).toBeLessThanOrEqual(MAX_TOTAL_IGNORES)
+    expect(new Set(ignores).size).toBe(ignores.length)
+    const missing = ignores
+      .filter(entry => !entry.includes('*'))
+      .filter(relativePath => !existsSync(join(repoRoot, relativePath)))
     expect(missing).toEqual([])
   })
 })
