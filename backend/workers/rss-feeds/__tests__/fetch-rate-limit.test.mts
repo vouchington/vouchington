@@ -64,7 +64,7 @@ async function createOwnedFeed(prefix: string) {
 }
 
 describe('RSS fetch worker rate-limit and final-attempt outcomes', () => {
-  it('ends a 429 job without retries, sets rate_limited_until, and skips the hostname in dispatch until expiry', async () => {
+  it('ends a 429 job without retries, sets rate_limit_ends_at, and skips the hostname in dispatch until expiry', async () => {
     const { id, hostname, hostnameId } = await createOwnedFeed('rate-limit-429')
     mockHostDns(hostname)
     const agent = new MockAgent()
@@ -105,7 +105,7 @@ describe('RSS fetch worker rate-limit and final-attempt outcomes', () => {
     expect((await getRssFeedsToFetch({ cursor })).feeds).toEqual([])
 
     // A second job while the Valkey lock is active also ends cleanly without hitting the network
-    // and refreshes rate_limited_until without stamping the feed.
+    // and refreshes rate_limit_ends_at without stamping the feed.
     await setTestHostnameRateLimitedUntil(hostnameId, null)
     await expect(
       withMockAgentDefaultFetchForTest(agent, async () => fetchHandler.handle(fakeJob)),

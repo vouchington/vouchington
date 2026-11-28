@@ -12,6 +12,7 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'podcast_shows',
   'rss_category_identities',
   'rss_feeds',
+  'rss_feed_fetch_states',
   'topics',
   'url_hostnames',
   'urls',

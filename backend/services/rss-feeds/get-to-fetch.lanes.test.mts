@@ -151,7 +151,7 @@ describe('RSS dispatcher healthy and failing lanes', () => {
     }
   })
 
-  it('skips rate-limited hostnames in healthy and failing lanes until rate_limited_until passes', async () => {
+  it('skips rate-limited hostnames in healthy and failing lanes until rate_limit_ends_at passes', async () => {
     const [healthyId, failingId] = await makeOwnedFeedChain(2)
     const dueTime = new Date(AS_OF.getTime() - 2 * TIER_FIVE_SLA_MS)
     await Promise.all([

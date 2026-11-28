@@ -13,8 +13,8 @@ export async function recordHostnameRateLimitUntil(
   await write(
     `/* recordHostnameRateLimitUntil */
     UPDATE url_hostnames
-    SET rate_limited_until = GREATEST(
-      COALESCE(rate_limited_until, '-infinity'::timestamptz),
+    SET rate_limit_ends_at = GREATEST(
+      COALESCE(rate_limit_ends_at, '-infinity'::timestamptz),
       CURRENT_TIMESTAMP + ($2::bigint * INTERVAL '1 millisecond')
     )
     WHERE id = $1`,

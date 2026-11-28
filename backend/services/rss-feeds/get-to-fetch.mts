@@ -80,8 +80,8 @@ async function getRssFeedsTiered(
         OR fetch_state.last_fetch_failed_at < fetch_state.last_fetch_succeeded_at)
       AND (url_hostnames.network_backoff_ends_at IS NULL
         OR url_hostnames.network_backoff_ends_at <= CURRENT_TIMESTAMP)
-      AND (url_hostnames.rate_limited_until IS NULL
-        OR url_hostnames.rate_limited_until <= CURRENT_TIMESTAMP)`
+      AND (url_hostnames.rate_limit_ends_at IS NULL
+        OR url_hostnames.rate_limit_ends_at <= CURRENT_TIMESTAMP)`
 
   const rawSource = `SELECT rss_feed_id AS id FROM mv_rss_feed_crawl_tiers
        WHERE crawl_tier = $8::int AND rss_feed_id > $7::uuid

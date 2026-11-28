@@ -5,7 +5,7 @@ import { upsertUrlHostnames } from './upsert.mts'
 import { recordHostnameRateLimitUntil } from './rate-limit.mts'
 
 describe('recordHostnameRateLimitUntil', () => {
-  it('writes rate_limited_until and never shortens a longer window', async () => {
+  it('writes rate_limit_ends_at and never shortens a longer window', async () => {
     const hostname = `rate-limit-until-${randomUUID()}.example.com`
     const hostnameId = (await upsertUrlHostnames(null, [hostname])).get(hostname)!
 

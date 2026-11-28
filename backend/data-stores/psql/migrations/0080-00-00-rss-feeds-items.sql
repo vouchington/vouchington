@@ -184,7 +184,7 @@ INCLUDE (last_fetch_succeeded_at)
 WHERE last_fetch_failed_at IS NOT NULL
   AND (last_fetch_succeeded_at IS NULL OR last_fetch_failed_at >= last_fetch_succeeded_at);
 
-CREATE OR REPLACE FUNCTION fn_sync_rss_feed_fetch_state()
+CREATE OR REPLACE FUNCTION fn_project_rss_feed_fetch_state()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.is_enabled = TRUE AND NEW.deleted_at IS NULL THEN
@@ -198,10 +198,10 @@ BEGIN
   RETURN NULL;
 END;
 $$;
-COMMENT ON FUNCTION fn_sync_rss_feed_fetch_state() IS 'Keeps rss_feed_fetch_states row presence synchronized with live enabled RSS feeds; disabling or soft-deleting removes the row and re-enabling starts with NULL timestamps.';
-CREATE TRIGGER trigger_sync_rss_feed_fetch_state
+COMMENT ON FUNCTION fn_project_rss_feed_fetch_state() IS 'Keeps rss_feed_fetch_states row presence synchronized with live enabled RSS feeds; disabling or soft-deleting removes the row and re-enabling starts with NULL timestamps.';
+CREATE TRIGGER trigger_project_rss_feed_fetch_state
 AFTER INSERT OR UPDATE OF is_enabled, deleted_at ON rss_feeds
-FOR EACH ROW EXECUTE FUNCTION fn_sync_rss_feed_fetch_state();
+FOR EACH ROW EXECUTE FUNCTION fn_project_rss_feed_fetch_state();
 
 -- The feed projection on urls is updated for direct feed writes as well as
 -- enablement changes projected from rss_feed_setting_changes.

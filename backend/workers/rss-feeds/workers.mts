@@ -60,7 +60,7 @@ export const rssFeedsHandlers = [
     const rssFeedId = job.data?.rssFeedId
     if (!rssFeedId) throw new Error('RSS feed job .rssFeedId is required')
     const ttl = job.data?.ttl
-    const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1)
+    const isFinalAttempt = (job.attemptsMade ?? 0) + 1 >= (job.opts?.attempts ?? 1)
     return processFetchRssFeed(rssFeedId, typeof ttl === 'number' ? ttl : undefined, {
       isFinalAttempt,
     })

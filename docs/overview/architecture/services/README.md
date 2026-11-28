@@ -80,7 +80,7 @@ and re-enabling starts with NULL timestamps), so fetch timestamp writes leave `r
 unless `etag`, `last_modified_at`, or metadata actually change. Success and failure timestamps are
 separate so failures cannot make a URL or RSS feed appear fresh, while failing rows retry on a
 bounded interval instead of starving healthy work. Both crawlers share one fetch-outcome classifier
-and `url_hostnames.rate_limited_until` so rate-limited hostnames skip dispatch without burning job
+and `url_hostnames.rate_limit_ends_at` so rate-limited hostnames skip dispatch without burning job
 retries. For URL crawls, both timestamps settle atomically with the crawl write; selection reads the
 writer so replica lag cannot immediately select the same attempt. Browser crawls reserve their
 attempt before fetching, including direct automation jobs.

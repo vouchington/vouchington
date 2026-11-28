@@ -86,9 +86,9 @@ describe('fetch.dns-failure', () => {
     const { feedId, hostname, hostnameId } = await makeFeed('disable')
     mockCrawlerRss.mockRejectedValue(makeDnsError(hostname))
 
-    await expect(fetchRssFeedForTest(feedId)).rejects.toBeInstanceOf(CrawlerNetworkError)
-    await expect(fetchRssFeedForTest(feedId)).rejects.toBeInstanceOf(CrawlerNetworkError)
-    await expect(fetchRssFeedForTest(feedId)).rejects.toBeInstanceOf(CrawlerNetworkError)
+    await expect(fetchRssFeedForTest(feedId, 0)).rejects.toBeInstanceOf(CrawlerNetworkError)
+    await expect(fetchRssFeedForTest(feedId, 0)).rejects.toBeInstanceOf(CrawlerNetworkError)
+    await expect(fetchRssFeedForTest(feedId, 0)).rejects.toBeInstanceOf(CrawlerNetworkError)
 
     const dnsStats = await getTestHostnameDnsStats(hostnameId)
     expect(dnsStats!.consecutive_dns_failures).toBe(3)
@@ -100,9 +100,9 @@ describe('fetch.dns-failure', () => {
     const { feedId, hostname, hostnameId } = await makeFeed('tls-altname')
     mockCrawlerRss.mockRejectedValue(makeTlsHostnameError(hostname))
 
-    await expect(fetchRssFeedForTest(feedId)).rejects.toBeInstanceOf(CrawlerNetworkError)
-    await expect(fetchRssFeedForTest(feedId)).rejects.toBeInstanceOf(CrawlerNetworkError)
-    await expect(fetchRssFeedForTest(feedId)).rejects.toBeInstanceOf(CrawlerNetworkError)
+    await expect(fetchRssFeedForTest(feedId, 0)).rejects.toBeInstanceOf(CrawlerNetworkError)
+    await expect(fetchRssFeedForTest(feedId, 0)).rejects.toBeInstanceOf(CrawlerNetworkError)
+    await expect(fetchRssFeedForTest(feedId, 0)).rejects.toBeInstanceOf(CrawlerNetworkError)
 
     const dnsStats = await getTestHostnameDnsStats(hostnameId)
     expect(dnsStats!.consecutive_dns_failures).toBe(3)

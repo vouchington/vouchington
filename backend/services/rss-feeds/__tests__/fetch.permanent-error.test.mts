@@ -67,7 +67,7 @@ describe('fetch.permanent-error', () => {
     return feed!.rss_feed_url.hostname.id as string
   }
 
-  it('fetchRssFeed ends cleanly and records rate_limited_until when the hostname has an active domain rate-limit lock', async () => {
+  it('fetchRssFeed ends cleanly and records rate_limit_ends_at when the hostname has an active domain rate-limit lock', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const feed = await createEnabledFeed(random)
     const hostnameId = await getFeedHostnameId(feed.id)

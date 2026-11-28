@@ -45,14 +45,14 @@ export async function expireTestHostnameNetworkBackoff(hostnameId: string): Prom
 
 export async function getTestHostnameRateLimitedUntil(hostnameId: string): Promise<Date | null> {
   const { rows } = await write<{
-    rate_limited_until: Date | null
+    rate_limit_ends_at: Date | null
   }>(sql`/* getTestHostnameRateLimitedUntil */
-    SELECT rate_limited_until
+    SELECT rate_limit_ends_at
     FROM url_hostnames
     WHERE id = ${hostnameId}
     LIMIT 1
   `)
-  return rows[0]?.rate_limited_until ?? null
+  return rows[0]?.rate_limit_ends_at ?? null
 }
 
 export async function setTestHostnameRateLimitedUntil(
@@ -61,7 +61,7 @@ export async function setTestHostnameRateLimitedUntil(
 ): Promise<void> {
   await write(sql`/* setTestHostnameRateLimitedUntil */
     UPDATE url_hostnames
-    SET rate_limited_until = ${rateLimitedUntil}
+    SET rate_limit_ends_at = ${rateLimitedUntil}
     WHERE id = ${hostnameId}
   `)
 }

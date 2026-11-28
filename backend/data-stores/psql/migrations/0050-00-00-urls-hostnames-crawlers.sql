@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   CHECK (network_backoff_step >= 0),
   network_backoff_ends_at TIMESTAMPTZ,
   network_backoff_probe_claimed_at TIMESTAMPTZ,
-  rate_limited_until TIMESTAMPTZ,
+  rate_limit_ends_at TIMESTAMPTZ,
 
   topic_id UUID,  -- FK to topics added in 0060
 
@@ -287,7 +287,7 @@ COMMENT ON COLUMN url_hostnames.consecutive_network_failures IS 'Consecutive non
 COMMENT ON COLUMN url_hostnames.network_backoff_step IS 'Current network backoff step; 0 when closed. Each failed probe raises it (capped), doubling the backoff duration. Resets to 0 when the hostname answers.';
 COMMENT ON COLUMN url_hostnames.network_backoff_ends_at IS 'Crawls and feed fetches of this hostname are skipped until this time. After it passes with network_backoff_step > 0, one probe is claimed. NULL when closed.';
 COMMENT ON COLUMN url_hostnames.network_backoff_probe_claimed_at IS 'When the in-flight probe was claimed after the backoff expired. A failure while set reopens the backoff at the next step; NULL when no probe is in flight.';
-COMMENT ON COLUMN url_hostnames.rate_limited_until IS 'Crawls and feed fetches of this hostname are skipped in dispatch until this time after a 429 or Valkey rate-limit lock. NULL when not rate-limited.';
+COMMENT ON COLUMN url_hostnames.rate_limit_ends_at IS 'Crawls and feed fetches of this hostname are skipped in dispatch until this time after a 429 or Valkey rate-limit lock. NULL when not rate-limited.';
 COMMENT ON COLUMN url_hostnames.should_skip_web_risk IS 'Whether Google Web Risk checks are skipped for this hostname and subdomains.';
 COMMENT ON COLUMN url_hostnames.should_ignore_robots_txt IS 'Whether robots.txt allow/disallow rules are ignored for RSS feed fetches on this hostname. NULL = inherit from global DynamicConfig. TRUE = always ignore. FALSE = always enforce.';
 COMMENT ON COLUMN url_hostnames.unreliable_status_codes IS 'RSS feed fetch HTTP status codes that should retry instead of soft-deleting feeds for this hostname. NULL = no hostname override. Example: ARRAY[404] for unreliable YouTube feeds.';

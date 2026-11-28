@@ -84,8 +84,8 @@ export async function getRssFeedsFailing(
       WHERE rss_feeds.id = raw_page.raw_id
         AND (url_hostnames.network_backoff_ends_at IS NULL
           OR url_hostnames.network_backoff_ends_at <= CURRENT_TIMESTAMP)
-        AND (url_hostnames.rate_limited_until IS NULL
-          OR url_hostnames.rate_limited_until <= CURRENT_TIMESTAMP)
+        AND (url_hostnames.rate_limit_ends_at IS NULL
+          OR url_hostnames.rate_limit_ends_at <= CURRENT_TIMESTAMP)
       LIMIT 1
     ) ranked ON TRUE
     ORDER BY raw_page.sort_last_fetch_failed_at ASC, raw_page.raw_id ASC`

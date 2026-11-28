@@ -120,8 +120,8 @@ export async function getRssFeedsTier5(
       WHERE rss_feeds.id = raw_page.raw_id
         AND (url_hostnames.network_backoff_ends_at IS NULL
           OR url_hostnames.network_backoff_ends_at <= CURRENT_TIMESTAMP)
-        AND (url_hostnames.rate_limited_until IS NULL
-          OR url_hostnames.rate_limited_until <= CURRENT_TIMESTAMP)
+        AND (url_hostnames.rate_limit_ends_at IS NULL
+          OR url_hostnames.rate_limit_ends_at <= CURRENT_TIMESTAMP)
         AND COALESCE(t.crawl_tier, 5) = 5
       LIMIT 1
     ) ranked ON TRUE
