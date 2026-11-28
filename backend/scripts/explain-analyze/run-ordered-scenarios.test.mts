@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ORDINARY_EXPLAIN_SHARDS } from './explain-shards.mts'
@@ -17,7 +17,15 @@ const DOMAIN_FILE_PREFIX = 'run-ordered-scenarios-'
 const DOMAIN_FILE_SUFFIX = '.mts'
 
 describe('domain shard layout', () => {
-  it('assigns every domain to exactly one ordinary shard', () => {
+  it('maps every domain file on disk to EXPLAIN_DOMAINS and assigns every domain to exactly one shard', () => {
+    const domainFiles = readdirSync(EXPLAIN_DIR)
+      .filter(file => file.startsWith(DOMAIN_FILE_PREFIX) && file.endsWith(DOMAIN_FILE_SUFFIX))
+      .map(file => file.slice(DOMAIN_FILE_PREFIX.length, -DOMAIN_FILE_SUFFIX.length))
+      .toSorted()
+    expect(domainFiles).toEqual(
+      [...EXPLAIN_DOMAIN_NAMES.filter(name => name !== 'capacity-audit')].toSorted(),
+    )
+
     for (const shard of ORDINARY_EXPLAIN_SHARDS)
       expect(ORDINARY_SHARD_DOMAINS[shard].length).toBeGreaterThan(0)
 
@@ -55,8 +63,8 @@ describe('domain shard layout', () => {
   })
 
   it('forbids domain files from importing other domain files', () => {
-    const domainFiles = EXPLAIN_DOMAIN_NAMES.filter(name => name !== 'capacity-audit').map(
-      name => `${DOMAIN_FILE_PREFIX}${name}${DOMAIN_FILE_SUFFIX}`,
+    const domainFiles = readdirSync(EXPLAIN_DIR).filter(
+      file => file.startsWith(DOMAIN_FILE_PREFIX) && file.endsWith(DOMAIN_FILE_SUFFIX),
     )
     const violations = domainFiles.filter(file =>
       /from ['"]\.\/run-ordered-scenarios-/.test(readFileSync(join(EXPLAIN_DIR, file), 'utf8')),
