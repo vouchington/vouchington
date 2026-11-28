@@ -45,7 +45,7 @@ describe('DataRequestSection', () => {
     await screen.findByRole('button', { name: 'Request Data Export' })
     screen.getByRole('button', { name: 'Request Data Export' }).click()
 
-    expect(await screen.findByText('Export queue is paused')).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Export queue is paused')
   })
 
   it('uses a neutral server snapshot before transitioning from valid to expired', async () => {
