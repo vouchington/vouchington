@@ -21,19 +21,38 @@ const REFRESHABLE_MATERIALIZED_VIEWS = new Set([
   'mv_revenue_changes',
 ])
 
-/** Wait on the shared refresh key, then refresh one allowlisted view. */
-export async function refreshMaterializedViewForTest(viewName: string): Promise<void> {
-  const quotedView = quoteAllowedView(viewName)
+/** Wait on the shared refresh key, run `fn` while holding it, then release it. */
+export async function withMaterializedViewRefreshLockHeldForTest<Result>(
+  fn: (client: PoolClient) => Promise<Result>,
+): Promise<Result> {
   const client = await writePool.connect()
   let locked = false
-  let refreshError: Error | undefined
+  let actionError: Error | undefined
   let unlockError: Error | undefined
+  let result: Result | undefined
   try {
     await client.query(
       '/* refreshMaterializedViewForTest.lock */ SELECT pg_advisory_lock(hashtext($1))',
       [REFRESH_ADVISORY_LOCK_NAME],
     )
     locked = true
+    result = await fn(client)
+  } catch (err) {
+    actionError = toError(err)
+  } finally {
+    if (locked) unlockError = await unlock(client)
+    if (unlockError) client.release(unlockError)
+    else client.release()
+  }
+  if (actionError) throw actionError
+  if (unlockError) throw unlockError
+  return result as Result
+}
+
+/** Wait on the shared refresh key, then refresh one allowlisted view. */
+export async function refreshMaterializedViewForTest(viewName: string): Promise<void> {
+  const quotedView = quoteAllowedView(viewName)
+  await withMaterializedViewRefreshLockHeldForTest(async client => {
     if (viewName === 'mv_rss_feed_crawl_tiers') {
       await withTransactionOptions({ client }, tx => refreshRssFeedCrawlTiersInTransaction(tx))
     } else {
@@ -41,15 +60,7 @@ export async function refreshMaterializedViewForTest(viewName: string): Promise<
         `/* refreshMaterializedViewForTest.refresh */ REFRESH MATERIALIZED VIEW CONCURRENTLY ${quotedView}`,
       )
     }
-  } catch (err) {
-    refreshError = toError(err)
-  } finally {
-    if (locked) unlockError = await unlock(client)
-    if (unlockError) client.release(unlockError)
-    else client.release()
-  }
-  if (refreshError) throw refreshError
-  if (unlockError) throw unlockError
+  })
 }
 
 function quoteAllowedView(viewName: string): string {

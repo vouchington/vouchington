@@ -9,7 +9,10 @@ import {
   getRssFeedCrawlTierAssignments,
   getRssFeedFetchStateCrawlTier,
 } from '../../../test-helpers/data-stores/psql/rss-feed-crawl-tiers.mts'
-import { refreshMaterializedViewForTest } from '../../../test-helpers/refresh-materialized-view-for-test.mts'
+import {
+  refreshMaterializedViewForTest,
+  withMaterializedViewRefreshLockHeldForTest,
+} from '../../../test-helpers/refresh-materialized-view-for-test.mts'
 import { refreshMaterializedView } from './refresh-materialized-view.mts'
 import {
   CRAWL_TIERS_VIEW_CREATE_MARKER,
@@ -20,6 +23,14 @@ import {
 describe('refreshMaterializedView', () => {
   it('rejects a view outside the app allowlist', async () => {
     await expect(refreshMaterializedView('pg_class')).rejects.toThrow(/pg_class/)
+  })
+
+  it('rejects mv_rss_feed_crawl_tiers refresh when another refresh holds the advisory lock', async () => {
+    await withMaterializedViewRefreshLockHeldForTest(async () => {
+      await expect(refreshMaterializedView('mv_rss_feed_crawl_tiers')).rejects.toThrow(
+        /Materialized view refresh contention; retryable/,
+      )
+    })
   })
 
   // no-mistakes-timeout-reason: refreshes mv_rss_feed_crawl_tiers twice with a rollback failure injection between refreshes

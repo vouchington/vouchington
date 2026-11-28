@@ -26,7 +26,7 @@ import {
 } from './migration-runner/sync-rss-feed-fetch-state-tiers.mts'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { verifyLiveSchemaMatchesSnapshot } from './schema-snapshot/verify-live-schema.mts'
-import { beginTransaction, psql, withTransactionOptions, write } from './setup.mts'
+import { psql, withTransactionOptions, write } from './setup.mts'
 import type { PoolClient } from './types.mts'
 
 const __dirname = import.meta.dirname
@@ -61,12 +61,7 @@ export async function runViews(options: RunViewsOptions = {}) {
   const logger = options.logger ?? console
   const withTransaction =
     folder === defaultFolder && !options.writer
-      ? createCrawlTiersSyncTransactionRunner(async handler => {
-          await using tx = await beginTransaction()
-          const result = await handler(tx)
-          await tx.commit()
-          return result
-        })
+      ? createCrawlTiersSyncTransactionRunner(handler => withTransactionOptions({}, handler))
       : options.withTransaction
   await runPlatformViews({ ...options, folder, writer, logger, withTransaction })
   if (folder === defaultFolder && options.writer) {
