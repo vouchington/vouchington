@@ -2,7 +2,8 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import type { Job } from 'glide-mq'
 import { vi, type MockInstance } from 'vitest'
 import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
-import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
+import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB as owned } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
+import { promoteDelayedJobs } from './queue-jobs.mts'
 
 export async function withOwnedVouchStats<Result>(targetId: string, action: () => Promise<Result>) {
   const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
@@ -22,7 +23,7 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
   let sdkFailed = false
   let deadline: AbortSignal | undefined
   const owns = (job: Job | undefined) =>
-    job?.name === VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name &&
+    job?.name === owned.name &&
     job.data.orderingKey === 'user_vouch' &&
     job.data.electionId === targetId
   const terminal = (job: Job | undefined, failed: boolean, reason?: unknown) => {
@@ -152,6 +153,8 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
         failures.push(err)
       }
     }
+    const data = { electionId: targetId, orderingKey: 'user_vouch' } // skip the 6s debounce
+    if (ownedJobs.size) await promoteDelayedJobs(queue, { name: owned.name, data })
     deadline = AbortSignal.timeout(25_000)
     const observed = await Promise.allSettled(
       [...ownedJobs.values()].map(async job => {
