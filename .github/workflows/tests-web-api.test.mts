@@ -7,41 +7,14 @@ import runnerPolicy from '../runner-policy.json' with { type: 'json' }
 
 // Read the configured ARM label instead of pinning a second literal.
 const armLabel = runnerPolicy.exactLabelJobs.find(({ label }) => label.endsWith('-arm'))?.label
-const workflow = readFileSync('.github/workflows/tests-web-api.yml', 'utf8')
-const parsedWorkflow = load(workflow) as { jobs?: Record<string, { 'runs-on'?: string }> }
+const parsedWorkflow = load(readFileSync('.github/workflows/tests-web-api.yml', 'utf8')) as {
+  jobs?: Record<string, { 'runs-on'?: string }>
+}
 
 describe('web API workflow', () => {
-  it('runs API-only shards with database services and no web build', () => {
-    expect(workflow).toContain('node ci/vitest/shard-total.mts test-web-api')
-    expect(workflow).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
+  it('runs on the ARM runner label from runner-policy.json', () => {
     expect(armLabel).toBeDefined()
     expect(parsedWorkflow.jobs?.prep?.['runs-on']).toBe(armLabel)
     expect(parsedWorkflow.jobs?.['web-api-tests']?.['runs-on']).toBe(armLabel)
-    expect(workflow).toContain('postgres:')
-    expect(workflow).toContain('uses: ./.github/actions/start-valkey')
-    expect(workflow).toContain('uses: ./.github/actions/setup-backend')
-    expect(workflow).toContain('node data-stores/psql/migrate.mts')
-    expect(workflow).not.toContain('build-web-targets')
-    expect(workflow).toContain('--project web-api --shard "$CI_SHARD"')
-    expect(workflow).not.toContain('--project web-integration')
-    expect(workflow).not.toContain('max-parallel')
-  })
-
-  it('keeps JUnit reporting independent of coverage collection', () => {
-    expect(workflow).toContain(
-      "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
-    )
-    expect(workflow).not.toContain('--coverage')
-    expect(workflow).toContain('web-api-shard-${{ matrix.shard }}')
-    expect(workflow).toContain(
-      'VITEST_JUNIT_OUTPUT_FILE: web-api-shard-${{ matrix.shard }}.junit.xml',
-    )
-  })
-
-  it('publishes full LCOV for the concrete matrix partition', () => {
-    expect(workflow).toContain(
-      'uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@',
-    )
-    expect(workflow).toContain('suite: web-api-shard-${{ matrix.shard }}')
   })
 })

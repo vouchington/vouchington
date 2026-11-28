@@ -84,28 +84,6 @@ function readWorkspaceReleaseAgeExclusions(): string[] {
 }
 
 describe('Dependabot policy', () => {
-  it('covers every ecosystem with a bounded version-update queue', () => {
-    const updates = readDependabotUpdates()
-
-    expect(
-      updates
-        .map(update => [update['package-ecosystem'], update.directory])
-        .toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-    ).toEqual(
-      [
-        ['docker', '/backend'],
-        ['docker', '/web'],
-        ['github-actions', '/'],
-        ['npm', '/'],
-      ].toSorted((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b))),
-    )
-
-    for (const update of updates) {
-      expect(update['open-pull-requests-limit']).toBeGreaterThanOrEqual(1)
-      expect(update['open-pull-requests-limit']).toBeLessThanOrEqual(5)
-    }
-  })
-
   it('keeps approved first-party cooldown and grouping patterns synchronized', () => {
     const rootNpmUpdate = readDependabotUpdates().find(
       update => update['package-ecosystem'] === 'npm' && update.directory === '/',

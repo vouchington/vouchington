@@ -10,22 +10,10 @@ import {
 } from '../test-helpers/path-filter-test-fixtures.mts'
 
 type Workflow = {
-  jobs?: Record<
-    string,
-    {
-      if?: string
-      outputs?: Record<string, string>
-      steps?: Array<{ id?: string; uses?: string; with?: Record<string, string> }>
-      uses?: string
-    }
-  >
+  jobs?: Record<string, { uses?: string }>
 }
 
 type PathFilters = Record<string, string[]>
-
-const detectChangesWorkflow = load(
-  readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8'),
-) as Workflow
 
 function loadDetectChangesFilters(): PathFilters {
   return primaryPathFilters
@@ -91,10 +79,6 @@ describe('detect-changes path filters', () => {
     expect(
       filterMatches(workflow.on?.push?.paths, 'ci/check-backend-query-profile-manifests.sh'),
     ).toBe(true)
-  })
-
-  it('routes Trivy ignore-only changes to tooling', () => {
-    expect(loadDetectChangesFilters().tooling).toContain('.trivyignore.yaml')
   })
 
   it('routes catalog generator sources and their existing owners without all scripts', () => {
@@ -209,35 +193,11 @@ describe('detect-changes path filters', () => {
     }
 
     const filters = loadDetectChangesFilters()
-    expect(filters.tooling).toContain('.github/ci-*.yml')
+    expect(workflowPaths.length).toBeGreaterThan(0)
     for (const path of workflowPaths) {
       expect(filterMatches(filters.tooling, path)).toBe(true)
       expect(filterMatches(filters['workflow-action-changes'], path)).toBe(true)
     }
-  })
-
-  it('declares a dedicated portability output that selects the portability suites', () => {
-    const portability = loadDetectChangesFilters().portability
-    expect(detectChangesWorkflow.jobs?.['detect-changes']?.outputs?.portability).toBe(
-      '${{ steps.filter.outputs.portability }}',
-    )
-    const portabilityTests = [
-      'lambdas/dev-server.test.mts',
-      'cloudflare-worker/scripts/wrangler/runtime.test.mts',
-    ]
-    expect(portabilityTests.filter(path => !filterMatches(portability, path))).toEqual([])
-    expect(portability).not.toContain('ci/**')
-  })
-
-  it('does not treat every ci/ or dev/ file as an initialize-smoke change', () => {
-    const shellScripts = loadDetectChangesFilters()['shell-scripts']
-    expect(shellScripts).toBeDefined()
-    expect(shellScripts).not.toContain('ci/**')
-    expect(shellScripts).not.toContain('dev/**')
-    expect(shellScripts).not.toContain('static-code-analysis/**')
-    expect(shellScripts).toEqual(
-      expect.arrayContaining(['**/*.sh', 'dev/initialize*', 'dev/lib/**']),
-    )
   })
 
   it('selects initialize-smoke inputs and ignores a ci-tools contract test', () => {

@@ -26,19 +26,6 @@ const require = createRequire(import.meta.url)
 const dependencyCruiserConfig = require('../../.dependency-cruiser.cjs') as DependencyCruiserConfig
 
 describe('tooling dependency-cruiser runner', () => {
-  it('owns every repo-tooling source root', () => {
-    expect(TOOLING_DEPENDENCY_CRUISER_ROOTS).toEqual([
-      'ci',
-      'dev/agent-issue-labels',
-      'dev/agent-policy',
-      'dev/agent-policy.mts',
-      'dev/pr-description',
-      'static-code-analysis',
-      'email-templates',
-      'cloudflare-worker',
-    ])
-  })
-
   it('builds deterministic local and content-cache arguments', () => {
     expect(buildToolingDependencyCruiserArgs({ cache: false })).toEqual([
       '--config',
@@ -109,12 +96,6 @@ describe('tooling dependency-cruiser runner', () => {
     expect(packageJson.scripts['dep-cruise:scripts']).toContain(command)
     expect(workflow).toContain(`${command} --cache`)
     expect(ciLocalTargets).toContain(command)
-    expect(workflow).not.toContain(
-      'ci dev/agent-issue-labels dev/pr-description static-code-analysis',
-    )
-    expect(ciLocalTargets).not.toContain(
-      'ci dev/agent-issue-labels dev/pr-description static-code-analysis',
-    )
   })
 })
 

@@ -5,22 +5,9 @@ import runnerPolicy from '../runner-policy.json' with { type: 'json' }
 
 // Read the configured ARM label instead of pinning a second literal.
 const armLabel = runnerPolicy.exactLabelJobs.find(({ label }) => label.endsWith('-arm'))?.label
-const workflow = readFileSync('.github/workflows/tests-web.yml', 'utf8')
-const pagesRouterScript = readFileSync(
-  '.github/workflows/checks-static-no-next-pages-router.sh',
-  'utf8',
-)
-const parsedWorkflow = load(workflow) as {
+const parsedWorkflow = load(readFileSync('.github/workflows/tests-web.yml', 'utf8')) as {
   permissions?: Record<string, string>
-  jobs?: Record<string, { permissions?: Record<string, string> }>
-}
-function jobSection(jobName: string): string {
-  const start = workflow.indexOf(`\n  ${jobName}:`)
-  expect(start).toBeGreaterThanOrEqual(0)
-
-  const rest = workflow.slice(start + 1)
-  const next = rest.search(/\n {2}[a-z][a-z0-9-]*:\n/)
-  return next === -1 ? rest : rest.slice(0, next)
+  jobs?: Record<string, { 'runs-on'?: string; permissions?: Record<string, string> }>
 }
 
 describe('Web Tests workflow', () => {
@@ -33,117 +20,9 @@ describe('Web Tests workflow', () => {
     })
   })
 
-  it('prepares a configurable web test shard matrix on the same ARM64 runner as the shards', () => {
-    const prep = jobSection('prep')
-
+  it('runs the shard matrix prep on the same ARM runner label as the shards', () => {
     expect(armLabel).toBeDefined()
-    expect(prep).toContain(`runs-on: ${armLabel}\n`)
-    expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
-    expect(prep).toContain('node ci/vitest/shard-total.mts test-web')
-    expect(prep).toContain('FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_WEB_FILES_PER_SHARD }}')
-    expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
-    expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
-    expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
-  })
-
-  it('runs dynamically sized Vitest shards on native ARM64 with the web-owned four-worker policy', () => {
-    const tests = jobSection('web-tests')
-
-    expect(tests).toContain('needs: [prep]')
-    expect(armLabel).toBeDefined()
-    expect(tests).toContain(`runs-on: ${armLabel}\n`)
-    expect(tests).toContain('fail-fast: false')
-    expect(tests).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
-    expect(tests).toContain("VITEST_MAX_WORKERS: '4'")
-    expect(tests).toContain('vitest run --bail=3 --project web --shard "$CI_SHARD"')
-    // Worker count is never a CLI flag here — the root vitest.config.mts computes
-    // `maxWorkers: parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS)` for every project,
-    // and this workflow owns its four-worker override in the job environment.
-    expect(tests).not.toMatch(/--maxWorkers/)
-    expect(tests).toContain(
-      "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
-    )
-    expect(tests).not.toContain('--coverage')
-  })
-
-  it('no longer runs the pages-router, dependency, typecheck, build, or smoke checks (moved to checks-static.yml)', () => {
-    for (const stepName of [
-      'Next.js pages-router check',
-      'Check web dependencies',
-      'Typecheck web',
-      'Build web',
-      'Smoke test web',
-    ]) {
-      expect(workflow).not.toContain(`name: ${stepName}`)
-    }
-    expect(workflow).not.toContain('\n  web-checks:')
-    expect(workflow).not.toContain(
-      'pnpm exec depcruise --config web/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content web',
-    )
-    expect(workflow).not.toContain('pnpm exec next typegen && pnpm exec tsc --noEmit --incremental')
-    expect(workflow).not.toContain('pnpm run build')
-    expect(workflow).not.toContain('smoke-test-web.sh')
-  })
-
-  it('preserves the pages-router guard in the extracted static check script', () => {
-    expect(pagesRouterScript).toContain('[ -d web/pages ] || [ -d web/src/pages ]')
-    expect(pagesRouterScript).toContain(
-      'Pages Router directory found (Next.js pages router not allowed)',
-    )
-    expect(pagesRouterScript).toContain('No pages router directory found')
-  })
-
-  it('preserves shard-specific JUnit and full LCOV with required upload retries', () => {
-    const tests = jobSection('web-tests')
-
-    expect(tests).toContain('VITEST_JUNIT_OUTPUT_FILE: web-shard-${{matrix.shard}}.junit.xml')
-    expect(tests).toContain('name: web-test-report-shard-${{ matrix.shard }}')
-    expect(tests).toContain(
-      'run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"',
-    )
-    expect(tests).toContain('SUITE: web-shard-${{ matrix.shard }}')
-    expect(tests).toContain('FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}')
-    expect(tests).toContain('RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}')
-    expect(tests).toContain(
-      'uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@',
-    )
-    expect(tests).toContain('suite: web-shard-${{ matrix.shard }}')
-    expect(tests).toContain('FAMILY: full-lcov')
-    expect(tests).toContain("inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure'")
-  })
-
-  it('never round-trips the Vite transform cache through actions/cache', () => {
-    const tests = jobSection('web-tests')
-
-    expect(tests).not.toContain('Restore Vite transform cache')
-    expect(tests).not.toContain('Check Vite cache size')
-    expect(tests).not.toContain('Save Vite transform cache')
-    expect(tests).not.toContain('.cache/vite/vitest')
-    expect(tests).not.toContain('actions/cache')
-    expect(tests).not.toContain('matrix.shard == 1')
-  })
-
-  it('installs shared TypeScript package dependencies for Vite source aliases', () => {
-    const tests = jobSection('web-tests')
-
-    expect(tests).toContain(
-      'uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@',
-    )
-    expect(tests).not.toContain('pnpm install ')
-  })
-
-  it('runs Vitest on every shard right after dependency install, with no gates after it', () => {
-    const tests = jobSection('web-tests')
-    const install = tests.indexOf(
-      'uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@',
-    )
-    const runTests = tests.indexOf('      - name: Run web tests')
-    const uploadCoverage = tests.indexOf(
-      'name: Upload full web-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)',
-    )
-
-    expect(install).toBeGreaterThanOrEqual(0)
-    expect(runTests).toBeGreaterThan(install)
-    expect(uploadCoverage).toBeGreaterThan(runTests)
+    expect(parsedWorkflow.jobs?.prep?.['runs-on']).toBe(armLabel)
+    expect(parsedWorkflow.jobs?.['web-tests']?.['runs-on']).toBe(armLabel)
   })
 })

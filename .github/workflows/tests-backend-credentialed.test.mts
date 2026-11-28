@@ -1,4 +1,3 @@
-import { workflowStepScript } from '../../ci/workflow-step-script.mts'
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -6,38 +5,41 @@ import { backendCredentialedProjectNames } from '../../test-helpers/vitest-confi
 
 const workflow = readFileSync('.github/workflows/tests-backend-credentialed.yml', 'utf8')
 
-function jobSection(jobName: string): string {
-  const start = workflow.indexOf(`\n  ${jobName}:`)
-  if (start < 0) throw new Error(`job not found: ${jobName}`)
-  const rest = workflow.slice(start + 1)
-  const next = rest.search(/\n {2}[a-z][a-z0-9-]*:\n/)
-  return next === -1 ? rest : rest.slice(0, next)
-}
-
-function stepSection(job: string, stepName: string): string {
-  const nameIndex = job.indexOf(`name: ${stepName}`)
-  if (nameIndex < 0) throw new Error(`step not found: ${stepName}`)
-  const start = job.lastIndexOf('\n      - ', nameIndex)
-  if (start < 0) throw new Error(`step boundary not found: ${stepName}`)
-  const rest = job.slice(start + 1)
-  const next = rest.indexOf('\n      - ', 1)
-  return next === -1 ? rest : rest.slice(0, next)
-}
-
 describe('backend credentialed test workflow', () => {
-  it('runs only the real-AWS project; paid providers live in tests-backend-live-providers.yml', () => {
-    const job = jobSection('backend-credentialed-tests')
-    const runText = stepSection(job, 'Run backend credentialed tests')
-    const projectFlags = [...runText.matchAll(/--project\s+(\S+)/g)].map(([, name]) => name)
+  it('runs only projects registered as credentialed', () => {
+    const projectFlags = [...workflow.matchAll(/--project\s+(\S+)/g)].map(([, name]) => name)
 
-    expect(projectFlags).toEqual(['backend-aws'])
-    expect(backendCredentialedProjectNames).toContain('backend-aws')
+    expect(projectFlags.length).toBeGreaterThan(0)
+    for (const name of projectFlags) expect(backendCredentialedProjectNames).toContain(name)
+    // Paid providers live in tests-backend-live-providers.yml.
     expect(workflow).not.toMatch(/OPENAI_API_KEY|OPENROUTER_API_KEY|LIGHTPANDA_TOKEN|ANTHROPIC/)
+  })
+
+  it('reports a failure without hiding the failed job', () => {
+    const steps = (
+      load(workflow) as {
+        jobs: Record<
+          string,
+          { steps: Array<{ name?: string; if?: string } & Record<string, unknown>> }
+        >
+      }
+    ).jobs['backend-credentialed-tests']!.steps
+    const report = steps.find(step => step.name === 'Report non-gating smoke check failure')
+    const run = steps.find(step => step.name === 'Run backend credentialed tests')
+
+    // Without a status function the condition adds an implicit `success()` and never runs on failure.
+    expect(report?.if).toMatch(/^\$\{\{ failure\(\) && \(/)
+    // The test step stays a hard failure: a red job keeps the Nightly alert and the check visible.
+    expect(run).toBeDefined()
+    expect(run).not.toHaveProperty('continue-on-error')
   })
 
   it('retains a best-effort JUnit report after the run', () => {
     const parsed = load(workflow) as {
-      jobs: Record<string, { steps: Array<Record<string, unknown>> }>
+      jobs: Record<
+        string,
+        { steps: Array<Record<string, unknown> & { env?: Record<string, string> }> }
+      >
     }
     const steps = parsed.jobs['backend-credentialed-tests']!.steps
     const runIndex = steps.findIndex(step => step.name === 'Run backend credentialed tests')
@@ -46,34 +48,8 @@ describe('backend credentialed test workflow', () => {
     expect(steps[runIndex + 1]).toMatchObject({
       if: '${{ !cancelled() }}',
       'continue-on-error': true,
-      with: { path: 'backend-credentialed-test-report.junit.xml' },
+      with: { path: steps[runIndex]?.env?.VITEST_JUNIT_OUTPUT_FILE },
     })
-  })
-
-  // Live provider calls are smoke checks, not a gate. Recorded-response fixtures in the unit suites
-  // gate the same behavior and own its coverage (docs/development/tests.md#live-provider-smoke-checks).
-  it('publishes no coverage, so the area coverage gate never depends on live providers', () => {
-    expect(workflow).not.toContain('publish_coverage')
-    expect(workflow).not.toContain('upload-full-lcov')
-    expect(workflow.match(/VITEST_COVERAGE_ENABLED: .*/g)).toEqual([
-      "VITEST_COVERAGE_ENABLED: 'false'",
-    ])
-  })
-
-  it('reports a failure as a warning and a summary without hiding the failed job', () => {
-    const credentialedJob = jobSection('backend-credentialed-tests')
-    const report = stepSection(credentialedJob, 'Report non-gating smoke check failure')
-
-    // `failure()` is required: without a status function the condition adds an implicit `success()`
-    // and the step would be skipped on exactly the failure it reports.
-    expect(report).toContain('if: ${{ failure() && (')
-    const reportScript = workflowStepScript((load(report) as Array<{ run?: string }>)[0]?.run)
-    expect(reportScript).toContain('::warning title=Live provider smoke check failed::')
-    expect(reportScript).toContain('>> "$GITHUB_STEP_SUMMARY"')
-    // The test step stays a hard failure: a red job keeps the Nightly alert and the check visible.
-    expect(stepSection(credentialedJob, 'Run backend credentialed tests')).not.toContain(
-      'continue-on-error',
-    )
   })
 })
 

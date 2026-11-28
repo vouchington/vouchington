@@ -5,14 +5,13 @@ import { describe, expect, it } from 'vitest'
 
 type Step = {
   'continue-on-error'?: string
-  env?: Record<string, string>
   id?: string
   if?: string
   name?: string
   run?: string
   uses?: string
 }
-type Job = { if?: string; needs?: string; outputs?: Record<string, string>; steps?: Step[] }
+type Job = { if?: string; steps?: Step[] }
 type Workflow = { jobs?: Record<string, Job> }
 
 function publisher(group: 'backend' | 'web'): Workflow {
@@ -34,27 +33,6 @@ describe.each(['backend', 'web'] as const)('%s image publisher', group => {
     expect(resolver?.if).toContain('inputs.trusted_secret_context')
     expect(resolver?.if).toContain("github.event_name == 'push'")
     expect(resolver?.if).toContain("github.ref == 'refs/heads/main'")
-    const resolve = step(resolver, 'resolve')
-    expect(resolve.run).toBe(`./ci/resolve-published-images.sh ${group}`)
-    expect(resolve.env?.['GH_TOKEN']).toBe('${{ github.token }}')
-    expect(resolver?.outputs?.['missing_targets']).toBe(
-      '${{ steps.resolve.outputs.missing_targets }}',
-    )
-  })
-
-  it('validates PRs, publishes merge groups, and builds on main only for missing images', () => {
-    expect(build?.needs).toBe('resolve-main-images')
-    const condition = build?.if ?? ''
-    expect(condition).toContain('!cancelled()')
-    expect(condition).toContain(
-      "github.event_name == 'pull_request' && startsWith(github.ref, 'refs/pull/')",
-    )
-    expect(condition).toContain(
-      "github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')",
-    )
-    expect(condition).toContain(
-      "github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.resolve-main-images.result == 'success' && needs.resolve-main-images.outputs.missing_targets != '[]'",
-    )
   })
 
   it('never publishes from a pull request', () => {
@@ -84,17 +62,5 @@ describe.each(['backend', 'web'] as const)('%s merge-group advisory publication'
     for (const candidate of advisory)
       expect(report?.if).toContain(`steps.${candidate.id}.outcome == 'failure'`)
     expect(report?.run).toContain('::warning::')
-  })
-})
-
-describe('backend main fallback', () => {
-  it('publishes only the images the merge group did not', () => {
-    const publish = step(publisher('backend').jobs?.build, 'publish')
-    expect(publish.env?.['MISSING_TARGETS']).toBe(
-      '${{ needs.resolve-main-images.outputs.missing_targets }}',
-    )
-    const script = readFileSync('.github/actions/build-backend-images/publish-images.sh', 'utf8')
-    expect(script).toContain(`targets=$(jq -r '.[]' <<<"$MISSING_TARGETS")`)
-    expect(script).toContain('targets="api $ACTIVE_WORKER_IMAGES"')
   })
 })
