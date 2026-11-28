@@ -89,7 +89,7 @@ echo "Starting disposable PostgreSQL for the schema reset and migrate entrypoint
 POSTGRES_PORT=$(python3 "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py" 1)
 docker run -d --name "$POSTGRES_CONTAINER" -p "127.0.0.1:$POSTGRES_PORT:5432" \
   -e POSTGRES_USER=postgres -e POSTGRES_DB=postgres -e POSTGRES_HOST_AUTH_METHOD=trust \
-  ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 >/dev/null
+  ghcr.io/vouchington/dependency-pgvector:pg18@sha256:38681dc6eaf55308e2a4c6de392d131652dcfac70e1263e35cd9b5ea3fe39782 >/dev/null
 for i in $(seq 1 60); do
   if docker exec "$POSTGRES_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
     break

@@ -10,7 +10,7 @@ docker run -d \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_INITDB_ARGS="-c max_connections=300 -c log_min_messages=log" \
   -p "127.0.0.1::5432" \
-  ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+  ghcr.io/vouchington/dependency-pgvector:pg18@sha256:38681dc6eaf55308e2a4c6de392d131652dcfac70e1263e35cd9b5ea3fe39782
 PGPORT=$(docker port "$pg_container" 5432 | cut -d: -f2)
 if [ -z "$PGPORT" ]; then echo "::error::Failed to retrieve Postgres host port from docker"; exit 1; fi
 export PGHOST=localhost

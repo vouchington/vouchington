@@ -2,6 +2,6 @@
 # Restores the prepared backend dump into the seed job's PostgreSQL service container.
 set -euo pipefail
 docker run --rm --network host -i \
-  ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
+  ghcr.io/vouchington/dependency-pgvector:pg18@sha256:38681dc6eaf55308e2a4c6de392d131652dcfac70e1263e35cd9b5ea3fe39782 \
   pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
   <"$RUNNER_TEMP/backend-postgres.dump"
