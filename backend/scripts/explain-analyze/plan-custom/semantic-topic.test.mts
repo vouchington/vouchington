@@ -12,7 +12,7 @@ function makeExplainResult(
     name: `buildTopicSearchQuery:cursor:${planCacheMode}`,
     scenario_id: scenarioId,
     plan_cache_mode: planCacheMode,
-    query_text: 'SELECT id FROM semantic_nearest',
+    query_text: 'semantic topic fixture',
     plan: {
       Plan: {
         'Node Type': 'Limit',
