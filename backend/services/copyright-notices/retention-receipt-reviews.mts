@@ -62,21 +62,27 @@ async function sweepReceiptReviewPage(
   const { rows } = await transaction<{
     retired: boolean
   }>(sql`/* retireCopyrightReceiptReviewPage */
-    WITH eligible AS MATERIALIZED (
-      SELECT receipt.id, fn_copyright_receipt_review_retirement_eligible(receipt.id) AS may_retire
-      FROM copyright_notice_email_intake_receipts receipt
-      WHERE receipt.id = ANY(${ids}::uuid[])
-    )
     UPDATE copyright_notice_email_intake_receipts receipt
-    SET review_decision = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.review_decision END,
-      reviewed_at = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.reviewed_at END,
-      reviewed_by_id = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.reviewed_by_id END,
-      review_rationale_ciphertext = CASE WHEN eligible.may_retire THEN NULL ELSE receipt.review_rationale_ciphertext END,
-      review_retirement_check_at = CASE WHEN eligible.may_retire THEN '-infinity'::timestamptz
-        ELSE CURRENT_TIMESTAMP + interval '1 day' END
-    FROM eligible WHERE receipt.id = eligible.id
-      AND receipt.id = ANY(${ids}::uuid[])
-    RETURNING eligible.may_retire AS retired`)
+    SET (
+      review_decision,
+      reviewed_at,
+      reviewed_by_id,
+      review_rationale_ciphertext,
+      review_retirement_check_at
+    ) = (
+      SELECT
+        CASE WHEN may_retire THEN NULL ELSE receipt.review_decision END,
+        CASE WHEN may_retire THEN NULL ELSE receipt.reviewed_at END,
+        CASE WHEN may_retire THEN NULL ELSE receipt.reviewed_by_id END,
+        CASE WHEN may_retire THEN NULL ELSE receipt.review_rationale_ciphertext END,
+        CASE WHEN may_retire THEN '-infinity'::timestamptz ELSE CURRENT_TIMESTAMP + interval '1 day' END
+      FROM fn_copyright_receipt_review_retirement_eligible(receipt.id) AS may_retire
+    )
+    WHERE receipt.id = ANY(${ids}::uuid[])
+      AND receipt.review_decision IS NOT NULL
+      AND receipt.review_retirement_check_at <= ${candidateBefore}
+      AND receipt.reviewed_at <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - make_interval(years => 6)) AT TIME ZONE 'UTC'
+    RETURNING receipt.review_decision IS NULL AS retired`)
   await transaction.commit()
   return { scanned: candidates.length, retired: rows.filter(row => row.retired).length }
 }
