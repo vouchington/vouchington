@@ -30,7 +30,6 @@ type AccountDataRequestJob = Extract<
 export async function processAccountDataRequestJob(job: AccountDataRequestJob): Promise<void> {
   const jobName: string = job.name
   if (job.name === ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name) {
-    if (!job.data.processingAttemptId) return
     const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1)
     await processExportRequest(
       job.data.requestId,

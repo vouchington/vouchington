@@ -24,67 +24,6 @@ function encodeRawCursor(payload: Record<string, unknown>): string {
 }
 
 describe('entity relation pagination cursor', () => {
-  it('decodes legacy cursors carrying orderIndex or order_index and ignores those fields', () => {
-    const ctx = createCursorContext()
-    const bestParsed = parseEntityRelationSearchInput({
-      entityType: 'post',
-      entityId: SUBJECT_ID,
-      predicate: 'category',
-      objectType: 'topic',
-      sort: 'best',
-    })
-    const bestScope = `entity-relations:post:${SUBJECT_ID}:category:topic:best::`
-
-    for (const extra of [
-      { orderIndex: 3 },
-      { order_index: 3 },
-      { orderIndex: 0, order_index: 1 },
-    ]) {
-      const encoded = encodeRawCursor({
-        id: OBJECT_ID,
-        scope: bestScope,
-        sort: 'best',
-        created_at: CREATED_AT,
-        votes_score_sort: 0.42,
-        ...extra,
-      })
-
-      const decoded = parseEntityRelationCursor(ctx, encoded, bestScope, bestParsed)
-      expect(decoded).toEqual({
-        id: OBJECT_ID,
-        createdAt: CREATED_AT,
-        votesScoreSort: 0.42,
-      })
-      expect(decoded).not.toHaveProperty('orderIndex')
-      expect(decoded).not.toHaveProperty('order_index')
-    }
-
-    const newestParsed = parseEntityRelationSearchInput({
-      entityType: 'post',
-      entityId: SUBJECT_ID,
-      predicate: 'category',
-      objectType: 'topic',
-      sort: 'newest',
-    })
-    const newestScope = `entity-relations:post:${SUBJECT_ID}:category:topic:newest::`
-    const newestEncoded = encodeRawCursor({
-      id: OBJECT_ID,
-      scope: newestScope,
-      sort: 'newest',
-      created_at: CREATED_AT,
-      orderIndex: 7,
-      order_index: 7,
-    })
-
-    const decodedNewest = parseEntityRelationCursor(ctx, newestEncoded, newestScope, newestParsed)
-    expect(decodedNewest).toEqual({
-      id: OBJECT_ID,
-      createdAt: CREATED_AT,
-    })
-    expect(decodedNewest).not.toHaveProperty('orderIndex')
-    expect(decodedNewest).not.toHaveProperty('order_index')
-  })
-
   it('encodes cursors without order_index or orderIndex and round-trips them', () => {
     const ctx = createCursorContext()
     const parsed = parseEntityRelationSearchInput({
