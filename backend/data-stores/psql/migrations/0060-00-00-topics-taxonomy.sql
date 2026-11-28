@@ -737,7 +737,7 @@ WHERE topic_id IS NOT NULL;
 -- prefix range, ordering, and keyset cursor for alias autocomplete in byte order
 -- (CHECK (alias = LOWER(alias)) keeps alias lowercase; topic_aliases_alias_key enforces uniqueness)
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__alias_c
-ON topic_aliases (alias COLLATE "C");
+ON topic_aliases (alias COLLATE "C") INCLUDE (topic_id);
 
 -- full text search for aliases
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__search_vector

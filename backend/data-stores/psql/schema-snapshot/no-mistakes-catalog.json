@@ -145592,7 +145592,7 @@
         "idx_topic_aliases__alias_c": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_aliases__alias_c ON public.topic_aliases USING btree (alias COLLATE \"C\")",
+          "definition": "CREATE INDEX idx_topic_aliases__alias_c ON public.topic_aliases USING btree (alias COLLATE \"C\") INCLUDE (topic_id)",
           "immediate": true,
           "keys": [
             {
