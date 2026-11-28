@@ -3,8 +3,9 @@ import type { TopicSearchOptions, TopicSearchResult } from './types.mts'
 import { buildTopicSearchQueryBody } from './query-builder.mts'
 import sql from 'sql-template-strings'
 import { detectTopicSort } from '@modules/search-utils'
-import { read } from '@data-stores/psql'
+import { read, readWithHnswSettings } from '@data-stores/psql'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
+import { SEMANTIC_TOPIC_SEARCH_SETTINGS } from './query-builder-semantic.mts'
 import { getTopicSearchState } from './query-builder-state.mts'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
@@ -47,10 +48,13 @@ export async function getTopicIds(options: TopicSearchOptions = {}): Promise<Top
       page_info: buildTopicSearchPageInfo(resultRows, page.hasNextPage, sort, {
         hasSemanticSearch: false,
         hasSemanticSignal: false,
+        hasSecondarySemanticSignal: false,
         hasSimilarPostSearch: false,
         hasSimilarRssFeedItemSearch: false,
         hasSimilarTopicSearch: false,
         hasTextSearch: false,
+        secondarySemanticCtes: [],
+        semanticAnchorCte: null,
         useSemanticRelevanceRanking: false,
       }),
     }
@@ -59,8 +63,8 @@ export async function getTopicIds(options: TopicSearchOptions = {}): Promise<Top
   // Fetch embedding BEFORE building state and decoding the cursor so that
   // getTopicSearchState sees the resolved embedding — the same input the
   // query builder uses when deciding whether to SELECT ranking_score.
-  let semanticSearchEmbedding: number[] | undefined
-  if (options.semantic_search_query?.trim()) {
+  let semanticSearchEmbedding = options.semanticSearchEmbedding
+  if (semanticSearchEmbedding === undefined && options.semantic_search_query?.trim()) {
     semanticSearchEmbedding = await getCachedSearchEmbedding(options.semantic_search_query.trim())
   }
 
@@ -86,12 +90,13 @@ export async function getTopicIds(options: TopicSearchOptions = {}): Promise<Top
   const query = sql`/* buildTopicSearchQuery */`
   query.append(body)
 
-  const { rows } = await read(query)
-  const typedRows = rows as TopicSearchRow[]
+  const { rows } = state.hasSemanticSignal
+    ? await readWithHnswSettings<TopicSearchRow>(query, SEMANTIC_TOPIC_SEARCH_SETTINGS)
+    : await read<TopicSearchRow>(query)
 
   // Detect if there's a next page
-  const hasNextPage = typedRows.length > limit
-  const resultRows = typedRows.slice(0, limit)
+  const hasNextPage = rows.length > limit
+  const resultRows = rows.slice(0, limit)
 
   // Map results WITHOUT cursor metadata
   const results: TopicSearchResult[] = resultRows.map(row => ({

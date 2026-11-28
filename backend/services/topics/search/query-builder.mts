@@ -4,6 +4,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildEmbeddingCtes } from '@modules/search-utils'
 import { appendTopicSearchOrderAndLimit } from './query-builder-order.mts'
 import { appendTopicSearchJoins, appendTopicSearchSelect } from './query-builder-select.mts'
+import { buildSemanticTopicNearestCte } from './query-builder-semantic.mts'
 import { getTopicSearchState } from './query-builder-state.mts'
 import { appendTopicSearchWhere, buildTopicSearchWhereClauses } from './query-builder-where.mts'
 
@@ -22,6 +23,9 @@ export function buildTopicSearchQueryBody(
     similar_topic_id: options.similar_topic_id,
     similar_rss_feed_item_id: options.similar_rss_feed_item_id,
   })
+  if (state.hasSemanticSignal) {
+    ctes.push(buildSemanticTopicNearestCte(options, state))
+  }
 
   const query = sql``
   if (ctes.length > 0) {

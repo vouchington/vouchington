@@ -73,6 +73,8 @@ export const backgroundWorkRegistryEntries7 = {
         'Alias post invalidation batch size for topics processing.',
       parent_merge_cycle_max_depth:
         'Maximum ancestry depth inspected before a topic merge fails closed.',
+      semantic_topic_candidate_limit:
+        'Maximum nearest-neighbour topic candidates inspected by semantic topic search.',
       viewer_count_input_cap:
         'Maximum aliases and relation rows inspected per topic viewer discussion count.',
     },
