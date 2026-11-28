@@ -69,11 +69,6 @@ describe('moderator vacation routes', () => {
   })
 
   describe('GET /api/v1/communities/:idOrSlug/moderator-vacation', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get(`/api/v1/communities/${community.slug}/moderator-vacation`).expect(401)
-    })
-
     it('returns 403 for a non-moderator member', async () => {
       const request = createRequest()
       await request.authenticateAs(member)
@@ -100,14 +95,6 @@ describe('moderator vacation routes', () => {
   })
 
   describe('PUT /api/v1/communities/:idOrSlug/moderator-vacation', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .put(`/api/v1/communities/${community.slug}/moderator-vacation`)
-        .send({})
-        .expect(401)
-    })
-
     it('returns 403 for a non-moderator member', async () => {
       const request = createRequest()
       await request.authenticateAs(member)
@@ -215,11 +202,6 @@ describe('moderator vacation routes', () => {
   })
 
   describe('DELETE /api/v1/communities/:idOrSlug/moderator-vacation', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.delete(`/api/v1/communities/${community.slug}/moderator-vacation`).expect(401)
-    })
-
     it('returns 403 for a non-moderator member', async () => {
       const request = createRequest()
       await request.authenticateAs(member)

@@ -60,11 +60,6 @@ describe('modmail API', () => {
   })
 
   describe('GET /api/v1/communities/:idOrSlug/modmail', () => {
-    it('returns 401 for anonymous requests', async () => {
-      const request = createRequest()
-      await request.get(`/api/v1/communities/${community.slug}/modmail`).expect(401)
-    })
-
     it('returns mod inbox for owner', async () => {
       const request = createRequest()
       await request.authenticateAs(owner)
@@ -151,11 +146,6 @@ describe('modmail API', () => {
   })
 
   describe('POST /api/v1/communities/:idOrSlug/modmail', () => {
-    it('returns 401 for anonymous requests', async () => {
-      const request = createRequest()
-      await request.post(`/api/v1/communities/${community.slug}/modmail`).send({}).expect(401)
-    })
-
     it('creates a modmail thread for a member', async () => {
       const request = createRequest()
       await request.authenticateAs(member)

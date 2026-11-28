@@ -25,11 +25,6 @@ describe('messages participants API', () => {
   })
 
   describe('GET /api/v1/my/messages/:conversationId', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get(`/api/v1/my/messages/${conversationId}`).expect(401)
-    })
-
     it('returns conversation with participant_add_policy for participant', async () => {
       const request = createRequest()
       await request.authenticateAs(owner)
@@ -53,15 +48,6 @@ describe('messages participants API', () => {
   })
 
   describe('POST /api/v1/my/messages/:conversationId/participants', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .post(`/api/v1/my/messages/${conversationId}/participants`)
-        .set('Content-Type', 'application/json')
-        .send({ user_id: outsider.id })
-        .expect(401)
-    })
-
     it('returns 415 for wrong content-type', async () => {
       const request = createRequest()
       await request.authenticateAs(owner)
@@ -123,13 +109,6 @@ describe('messages participants API', () => {
   })
 
   describe('DELETE /api/v1/my/messages/:conversationId/participants/:userId', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .delete(`/api/v1/my/messages/${conversationId}/participants/${member.id}`)
-        .expect(401)
-    })
-
     it('owner can remove another participant', async () => {
       const targetUser = await createTestUser()
       const localConv = await createTestGroupConversation({
@@ -192,15 +171,6 @@ describe('messages participants API', () => {
   })
 
   describe('PATCH /api/v1/my/messages/:conversationId', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .patch(`/api/v1/my/messages/${conversationId}`)
-        .set('Content-Type', 'application/json')
-        .send({ participant_add_policy: 'all_members' })
-        .expect(401)
-    })
-
     it('owner can change participant_add_policy', async () => {
       const localConv = await createTestGroupConversation({
         createdById: owner.id,

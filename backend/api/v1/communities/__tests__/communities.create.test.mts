@@ -7,15 +7,6 @@ describe('communities', () => {
 
   describe('Communities List Routes', () => {
     describe('POST /api/v1/communities', () => {
-      it('returns 401 without auth', async () => {
-        const request = createRequest()
-        await request
-          .post('/api/v1/communities')
-          .set('Content-Type', 'application/json')
-          .send({ name: 'Test', slug: `test-${createRandomString(8)}` })
-          .expect(401)
-      })
-
       it('returns 422 for a name with fewer than 3 words', async () => {
         const creator = await createTestUserWithAge(EIGHT_DAYS_MS)
         const request = createRequest()

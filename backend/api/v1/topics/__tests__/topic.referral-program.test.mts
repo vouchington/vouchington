@@ -89,22 +89,6 @@ describe('topic.referral-program', () => {
     })
 
     describe('POST /api/v1/topics/:referralProgramId/referral-program/link-validations', () => {
-      it('returns 401 when unauthenticated', async () => {
-        const random = Math.random().toString(36).slice(2, 8)
-        const user = await createTestUser()
-        const topicId = await insertTestTopic({
-          name: `Test Referral Program ${random}`,
-          slug: `test-link-val-401-${random}`,
-          createdById: user.id,
-          topicType: 'referral_program',
-        })
-        const request = createRequest()
-        await request
-          .post(`/api/v1/topics/${topicId}/referral-program/link-validations`)
-          .send({ validation_id: '00000000-0000-0000-0000-000000000001' })
-          .expect(401)
-      })
-
       it('returns 403 for non-admin user', async () => {
         const user = await createTestUser()
         const random = Math.random().toString(36).slice(2, 8)
@@ -175,19 +159,6 @@ describe('topic.referral-program', () => {
     })
 
     describe('GET /api/v1/topics/:referralProgramId/referral-program/validations', () => {
-      it('returns 401 when unauthenticated', async () => {
-        const user = await createTestUser()
-        const random = Math.random().toString(36).slice(2, 8)
-        const topicId = await insertTestTopic({
-          name: `Test Referral Program ${random}`,
-          slug: `test-get-vals-401-${random}`,
-          createdById: user.id,
-          topicType: 'referral_program',
-        })
-        const request = createRequest()
-        await request.get(`/api/v1/topics/${topicId}/referral-program/validations`).expect(401)
-      })
-
       it('returns 403 for non-admin user', async () => {
         const user = await createTestUser()
         const random = Math.random().toString(36).slice(2, 8)

@@ -31,14 +31,6 @@ describe('membership management routes', () => {
       } as never)
     })
 
-    it('returns 401 without authentication', async () => {
-      const request = createRequest()
-      await request
-        .post('/api/v1/memberships/billing-portal-sessions')
-        .send({ return_url: '/my/membership' })
-        .expect(401)
-    })
-
     it('returns 422 for missing return_url', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)

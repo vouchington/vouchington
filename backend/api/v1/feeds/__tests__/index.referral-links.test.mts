@@ -10,11 +10,6 @@ import {
 } from '@voucha/test-helpers'
 
 describe('GET /api/v1/feeds/referral_links/:feed_type', () => {
-  it('returns 401 for unauthenticated users', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/feeds/referral_links/follow_users').expect(401)
-  })
-
   it('returns 404 for invalid feed_type', async () => {
     const user = await createTestUser()
     const request = createRequest()

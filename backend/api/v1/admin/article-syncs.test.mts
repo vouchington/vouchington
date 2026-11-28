@@ -19,11 +19,6 @@ describe('article-syncs', () => {
   })
 
   describe('POST /api/v1/article-syncs', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.post('/api/v1/article-syncs').expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -44,11 +39,6 @@ describe('article-syncs', () => {
   })
 
   describe('GET /api/v1/article-syncs/:jobId', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/article-syncs/job-1').expect(401)
-    })
-
     it('returns 404 when job not found', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)

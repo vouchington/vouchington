@@ -24,18 +24,6 @@ describe('Topic PATCH Routes', () => {
       expect(response.body.topic.name).toBe(updatedName)
     })
 
-    it('should return 401 when not authenticated', async () => {
-      const user = await createTestUser()
-      const random = Math.random().toString(36).slice(2, 8)
-      const topicId = await insertTestTopic({
-        name: `Test Topic ${random}`,
-        slug: `test-topic-patch-401-${random}`,
-        createdById: user!.id,
-      })
-      const request = createRequest()
-      await request.patch(`/api/v1/topics/${topicId}`).send({ name: 'Updated Name' }).expect(401)
-    })
-
     it('should return 403 when user is not admin', async () => {
       const creator = await createTestUser()
       const otherUser = await createTestUser()

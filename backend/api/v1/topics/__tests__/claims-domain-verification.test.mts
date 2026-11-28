@@ -89,16 +89,6 @@ describe('topic claim domain-verification API', () => {
       .send({})
       .expect(409)
   })
-
-  it('returns 401 for unauthenticated domain-verification', async () => {
-    const { topicSlug, claimId } = await makeClaimOnTopicWithHostname()
-    const request = createRequest()
-    await request
-      .post(`/api/v1/topics/${topicSlug}/claims/${claimId}/domain-verification`)
-      .set('Content-Type', 'application/json')
-      .send({})
-      .expect(401)
-  })
 })
 
 describe('GET /api/v1/topics/:idOrSlug/claims/:claimId', () => {

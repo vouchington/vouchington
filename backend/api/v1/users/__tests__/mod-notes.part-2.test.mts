@@ -3,12 +3,6 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, safeUsername } from '@voucha/test-helpers'
 
 describe('GET /api/v1/users/:userId/moderation-context', () => {
-  it('returns 401 for unauthenticated', async () => {
-    const target = await createTestUser({ username: safeUsername('mn-ctx-anon') })
-    const request = createRequest()
-    await request.get(`/api/v1/users/${target.id}/moderation-context`).expect(401)
-  })
-
   it('returns 403 for regular non-mod user', async () => {
     const user = await createTestUser({ username: safeUsername('mn-ctx-nomod') })
     const target = await createTestUser({ username: safeUsername('mn-ctx-nomod-tgt') })

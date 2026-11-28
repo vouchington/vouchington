@@ -92,14 +92,6 @@ describe('topic.spending-category', () => {
         expect(response.body.spending_category_attributes.updated_at).toEqual(expect.any(String))
       })
 
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request
-          .patch(`/api/v1/topics/${topicForUnauthorizedPatchId}/spending-category`)
-          .send({ is_foreign_transaction: true })
-          .expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(user!)

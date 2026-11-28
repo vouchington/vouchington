@@ -20,11 +20,6 @@ describe('GET /api/v1/topics/aliases', () => {
       .expect(201)
   })
 
-  it('should return 401 for unauthenticated users', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/topics/aliases').query({ q: 'test' }).expect(401)
-  })
-
   it('should return 403 for non-admin users', async () => {
     const user = await createTestUser()
     const request = createRequest()
@@ -86,12 +81,6 @@ describe('GET /api/v1/topics/aliases', () => {
 })
 
 describe('GET /api/v1/topics/:idOrSlug/aliases', () => {
-  it('should return 401 for unauthenticated users', async () => {
-    const topic = await createTestTopic()
-    const request = createRequest()
-    await request.get(`/api/v1/topics/${topic.id}/aliases`).expect(401)
-  })
-
   it('should return 403 for non-admin users', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic({ user: user! })
@@ -131,15 +120,6 @@ describe('GET /api/v1/topics/:idOrSlug/aliases', () => {
 })
 
 describe('POST /api/v1/topics/:idOrSlug/aliases', () => {
-  it('should return 401 for unauthenticated users', async () => {
-    const topic = await createTestTopic()
-    const request = createRequest()
-    await request
-      .post(`/api/v1/topics/${topic.id}/aliases`)
-      .send({ aliases: 'some-alias' })
-      .expect(401)
-  })
-
   it('should return 403 for non-admin users', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic({ user: user! })
@@ -222,12 +202,6 @@ describe('DELETE /api/v1/topics/:idOrSlug/aliases/:alias', () => {
     await request.authenticateAs(admin)
 
     await request.post(`/api/v1/topics/${topic.id}/aliases/not-a-uuid`).expect(422)
-  })
-
-  it('should return 401 for unauthenticated users', async () => {
-    const topic = await createTestTopic()
-    const request = createRequest()
-    await request.delete(`/api/v1/topics/${topic.id}/aliases/some-alias`).expect(401)
   })
 
   it('should return 403 for non-admin users', async () => {

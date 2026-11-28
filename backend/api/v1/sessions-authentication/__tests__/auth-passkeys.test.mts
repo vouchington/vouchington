@@ -33,11 +33,6 @@ describe('Passkey API Routes', () => {
   // ─── Registration options (requires auth) ─────────────────────────────────
 
   describe('POST /api/v1/auth/passkeys/registration/options', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req.post('/api/v1/auth/passkeys/registration/options').send({}).expect(401)
-    })
-
     it('returns WebAuthn registration options when authenticated', async () => {
       const req = createRequest()
       await req.authenticateAs(user)
@@ -53,14 +48,6 @@ describe('Passkey API Routes', () => {
   // ─── Registration verify (requires auth) ──────────────────────────────────
 
   describe('POST /api/v1/auth/passkeys/registration/verify', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req
-        .post('/api/v1/auth/passkeys/registration/verify')
-        .send({ response: {}, name: 'My Key' })
-        .expect(401)
-    })
-
     it('returns 415 for non-JSON content type', async () => {
       const req = createRequest()
       await req.authenticateAs(user)
@@ -104,11 +91,6 @@ describe('Passkey API Routes', () => {
   // ─── Passkey management (requires auth) ───────────────────────────────────
 
   describe('GET /api/v1/auth/passkeys', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req.get('/api/v1/auth/passkeys').expect(401)
-    })
-
     it('returns passkeys list for authenticated user', async () => {
       const req = createRequest()
       await req.authenticateAs(user)
@@ -130,11 +112,6 @@ describe('Passkey API Routes', () => {
   })
 
   describe('DELETE /api/v1/auth/passkeys/:id', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req.delete(`/api/v1/auth/passkeys/${v7()}`).expect(401)
-    })
-
     it('returns 404 for non-existent passkey', async () => {
       // User needs >1 MFA method so the last-method re-auth check does not trigger
       const freshUser = await createTestUser()

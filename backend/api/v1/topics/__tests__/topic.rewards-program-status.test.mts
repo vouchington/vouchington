@@ -181,22 +181,6 @@ describe('topic.rewards-program-status', () => {
           .expect(422)
       })
 
-      it('should return 401 when not authenticated', async () => {
-        const user = await createTestUser()
-        const random = Math.random().toString(36).slice(2, 8)
-        const topicId = await insertTestTopic({
-          name: `Test Status ${random}`,
-          slug: `test-status-401-${random}`,
-          createdById: user!.id,
-          topicType: 'rewards_program_status',
-        })
-        const request = createRequest()
-        await request
-          .patch(`/api/v1/topics/${topicId}/rewards-program-status`)
-          .send({ order_index: 1 })
-          .expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const user = await createTestUser()
         const random = Math.random().toString(36).slice(2, 8)

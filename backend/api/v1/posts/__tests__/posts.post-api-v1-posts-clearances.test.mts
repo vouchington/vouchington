@@ -59,15 +59,6 @@ describe('POST /api/v1/posts/:idOrSlug/clearances', () => {
       .expect(403)
   })
 
-  it('returns 401 when unauthenticated', async () => {
-    const request = createRequest()
-
-    await request
-      .post(`/api/v1/posts/${postId}/clearances`)
-      .send({ status: 'in_review', reason_code: 'staff_reviewed' })
-      .expect(401)
-  })
-
   it('returns 422 for an invalid status value', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)

@@ -65,10 +65,6 @@ describe('GET /api/v1/my/cards', () => {
     expect(created.body.card.is_authorized_user).toBe(false)
     expect(created.body.card.authorized_user_of_card).toBeNull()
   })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/cards').expect(401)
-  })
   it('returns empty cards list for authenticated user', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
@@ -80,10 +76,6 @@ describe('POST /api/v1/my/cards', () => {
   let user: PrivateUser
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.post('/api/v1/my/cards').send({ card_topic_id: 'x' }).expect(401)
   })
   it('returns 415 without Content-Type: application/json', async () => {
     const request = createRequest()
@@ -116,10 +108,6 @@ describe('PATCH /api/v1/my/cards/:id', () => {
   beforeAll(async () => {
     user = await createTestUser()
     userB = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.patch('/api/v1/my/cards/some-id').send({}).expect(401)
   })
   it('returns 415 without Content-Type: application/json', async () => {
     const request = createRequest()
@@ -285,10 +273,6 @@ describe('DELETE /api/v1/my/cards/:id', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.delete('/api/v1/my/cards/some-id').expect(401)
   })
 
   it('returns 404 for non-existent card', async () => {

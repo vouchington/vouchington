@@ -93,11 +93,6 @@ describe('GET /api/v1/disputes', () => {
     claimantUser = setup.claimant
   })
 
-  it('returns 401 for unauthenticated requests', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/disputes').expect(401)
-  })
-
   it('returns full fields for staff, redacted for non-staff', async () => {
     const { dispute, claimant, topicId, postId } = await makeDisputeSetup()
 

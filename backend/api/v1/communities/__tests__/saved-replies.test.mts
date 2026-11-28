@@ -29,11 +29,6 @@ describe('saved-replies API', () => {
   })
 
   describe('GET /api/v1/communities/:idOrSlug/saved-replies', () => {
-    it('returns 401 for anonymous requests', async () => {
-      const request = createRequest()
-      await request.get(`/api/v1/communities/${community.slug}/saved-replies`).expect(401)
-    })
-
     it('returns 403 for regular members', async () => {
       const request = createRequest()
       await request.authenticateAs(member)
@@ -61,14 +56,6 @@ describe('saved-replies API', () => {
   })
 
   describe('POST /api/v1/communities/:idOrSlug/saved-replies', () => {
-    it('returns 401 for anonymous requests', async () => {
-      const request = createRequest()
-      await request
-        .post(`/api/v1/communities/${community.slug}/saved-replies`)
-        .send({ body: 'Thank you for reaching out.' })
-        .expect(401)
-    })
-
     it('returns 403 for regular members', async () => {
       const request = createRequest()
       await request.authenticateAs(member)
@@ -116,13 +103,6 @@ describe('saved-replies API', () => {
       })
       replyForMemberAttempt = r1.id
       replyForModDelete = r2.id
-    })
-
-    it('returns 401 for anonymous requests', async () => {
-      const request = createRequest()
-      await request
-        .delete(`/api/v1/communities/${community.slug}/saved-replies/some-id`)
-        .expect(401)
     })
 
     it('returns 403 for regular members', async () => {

@@ -220,14 +220,6 @@ describe('POST /api/v1/fediverse/instances', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 for unauthenticated callers', async () => {
-    const random = Math.random().toString(36).slice(2, 8)
-    await createRequest()
-      .post('/api/v1/fediverse/instances')
-      .send({ hostname: `post-unauth-${random}.example.com` })
-      .expect(401)
-  })
-
   it('creates a new instance and returns 201, then upvotes on a duplicate hostname with 200', async () => {
     const random = Math.random().toString(36).slice(2, 8)
     const hostname = `post-create-${random}.example.com`

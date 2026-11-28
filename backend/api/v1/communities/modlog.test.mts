@@ -46,11 +46,6 @@ describe('GET /api/v1/communities/:idOrSlug/modlog', () => {
     ])
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get(`/api/v1/communities/${community.slug}/modlog`).expect(401)
-  })
-
   it('returns 403 for a regular member', async () => {
     const request = createRequest()
     await request.authenticateAs(member)

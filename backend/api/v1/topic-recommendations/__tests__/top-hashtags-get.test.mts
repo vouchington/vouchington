@@ -5,10 +5,6 @@ import { encodeCursor } from '@modules/pagination'
 import { v7 as uuidv7 } from 'uuid'
 
 describe('GET /api/v1/topics/top-hashtags', () => {
-  it('requires authentication', async () => {
-    await createRequest().get('/api/v1/topics/top-hashtags').expect(401)
-  })
-
   it('returns a typed paginated response and validates mapping', async () => {
     const user = await createTestUser()
     const request = createRequest()

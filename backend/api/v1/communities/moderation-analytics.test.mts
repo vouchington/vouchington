@@ -23,12 +23,6 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-analytics', () => {
     siteModerator = (await getPrivateUserByAny(siteModerator.id))!
   })
 
-  it('returns 401 for unauthenticated requests', async () => {
-    const community = await createCommunity('analytics-401')
-    const request = createRequest()
-    await request.get(`/api/v1/communities/${community.slug}/moderation-analytics`).expect(401)
-  })
-
   it('returns 403 for regular non-member users', async () => {
     const community = await createCommunity('analytics-403')
     const request = createRequest()

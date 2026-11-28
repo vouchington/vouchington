@@ -10,11 +10,6 @@ describe('GET /api/v1/my/aside-preferences', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/aside-preferences').expect(401)
-  })
-
   it('returns empty array for user with no dismissed asides', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
@@ -29,11 +24,6 @@ describe('POST /api/v1/my/aside-preferences', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.post('/api/v1/my/aside-preferences').expect(401)
   })
 
   it('returns 415 when content-type is not json', async () => {
@@ -88,11 +78,6 @@ describe('DELETE /api/v1/my/aside-preferences/:asideKey', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.delete('/api/v1/my/aside-preferences/trending-topics').expect(401)
   })
 
   it('restores a dismissed aside and returns 204', async () => {

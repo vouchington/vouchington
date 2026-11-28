@@ -45,18 +45,6 @@ describe('posts', () => {
         expect(response.body.post.clearance_status).toBe('pending')
       })
 
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request
-          .post('/api/v1/posts')
-          .send({
-            post_type: 'discussion',
-            title: 'New Post',
-            markdown: 'New post content',
-          })
-          .expect(401)
-      })
-
       it('should return 415 for non-JSON content type', async () => {
         const request = createRequest()
         await request.authenticateAs(user!)

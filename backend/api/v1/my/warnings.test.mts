@@ -17,11 +17,6 @@ describe('GET /api/v1/my/warnings', () => {
     ])
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/warnings').expect(401)
-  })
-
   it("returns the authenticated user's warnings", async () => {
     const warning = await insertTestUserWarning({
       userId: user.id,

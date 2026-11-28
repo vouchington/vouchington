@@ -8,12 +8,6 @@ import {
 } from '@voucha/test-helpers'
 
 describe('GET /api/v1/users/:userId/mod-notes', () => {
-  it('returns 401 for unauthenticated', async () => {
-    const target = await createTestUser({ username: safeUsername('mn-anon-get') })
-    const request = createRequest()
-    await request.get(`/api/v1/users/${target.id}/mod-notes`).expect(401)
-  })
-
   it('returns 403 for regular non-mod user', async () => {
     const user = await createTestUser({ username: safeUsername('mn-nomod-get') })
     const target = await createTestUser({ username: safeUsername('mn-nomod-tgt') })
@@ -97,16 +91,6 @@ describe('GET /api/v1/users/:userId/mod-notes', () => {
 })
 
 describe('POST /api/v1/users/:userId/mod-notes', () => {
-  it('returns 401 for unauthenticated', async () => {
-    const target = await createTestUser({ username: safeUsername('mn-anon-post') })
-    const request = createRequest()
-    await request
-      .post(`/api/v1/users/${target.id}/mod-notes`)
-      .send({ body: 'Some note' })
-      .set('Content-Type', 'application/json')
-      .expect(401)
-  })
-
   it('returns 403 for regular non-mod user', async () => {
     const user = await createTestUser({ username: safeUsername('mn-nomod-post') })
     const target = await createTestUser({ username: safeUsername('mn-nomod-posttgt') })

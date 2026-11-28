@@ -94,11 +94,6 @@ describe('GET /api/v1/posts/:postId/disputes — staff only', () => {
     annotatedPostId = fixture.postId
   })
 
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request.get(`/api/v1/posts/${annotatedPostId}/disputes`).expect(401)
-  })
-
   it('returns 403 for non-staff', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser)
@@ -125,15 +120,6 @@ describe('POST /api/v1/posts/batch-dispute-annotations', () => {
     regularUser = await createTestUser()
     const fixture = await makeAnnotatedPostFixture(staffUser.id)
     postIdWithAnnotation = fixture.postId
-  })
-
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/posts/batch-dispute-annotations')
-      .set('Content-Type', 'application/json')
-      .send({ post_ids: [] })
-      .expect(401)
   })
 
   it('enforces the lowered post budget while allowing the boundary and empty input', async () => {

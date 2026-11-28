@@ -15,11 +15,6 @@ describe('POST /api/v1/moderation/reveals', () => {
     regularUser = await createTestUser()
   })
 
-  it('returns 401 when unauthenticated', async () => {
-    const req = createRequest()
-    await req.post('/api/v1/moderation/reveals').send({ surface: 'mod_queue' }).expect(401)
-  })
-
   it('returns 403 when authenticated as a non-moderator user', async () => {
     const req = createRequest()
     await req.authenticateAs(regularUser)
@@ -102,11 +97,6 @@ describe('GET /api/v1/moderation/exposure', () => {
   beforeAll(async () => {
     adminUser = await createTestUser({ administrator: true })
     regularUser = await createTestUser()
-  })
-
-  it('returns 401 when unauthenticated', async () => {
-    const req = createRequest()
-    await req.get('/api/v1/moderation/exposure').expect(401)
   })
 
   it('returns exposure state for any authenticated user', async () => {

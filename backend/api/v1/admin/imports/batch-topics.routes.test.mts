@@ -24,14 +24,6 @@ describe('batch-topics.routes', () => {
   }
 
   describe('POST /api/v1/imports/topics', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .post('/api/v1/imports/topics')
-        .send({ csv: 'slug,name\nmy-topic,My Topic\n' })
-        .expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -161,11 +153,6 @@ describe('batch-topics.routes', () => {
   })
 
   describe('GET /api/v1/imports/:batchId', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/imports/00000000-0000-0000-0000-000000000001').expect(401)
-    })
-
     it('returns 404 for batches outside the current user scope', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)

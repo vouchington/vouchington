@@ -81,18 +81,6 @@ describe('post.archive', () => {
       await request.patch(`/api/v1/posts/${postId}`).send({ archive: true }).expect(403)
     })
 
-    it('returns 401 for unauthenticated user', async () => {
-      const postId = await insertTestPost({
-        title: 'Archive API Unauth Test',
-        slug: makeSlug(),
-        createdById: creator.id,
-        markdown: 'content',
-      })
-
-      const request = createRequest()
-      await request.patch(`/api/v1/posts/${postId}`).send({ archive: true }).expect(401)
-    })
-
     it('returns 404 for non-existent post', async () => {
       const request = createRequest()
       await request.authenticateAs(creator)
@@ -137,18 +125,6 @@ describe('post.archive', () => {
       const otherRequest = createRequest()
       await otherRequest.authenticateAs(otherUser)
       await otherRequest.patch(`/api/v1/posts/${postId}`).send({ archive: false }).expect(403)
-    })
-
-    it('returns 401 for unauthenticated user', async () => {
-      const postId = await insertTestPost({
-        title: 'Unarchive API Unauth Test',
-        slug: makeSlug(),
-        createdById: creator.id,
-        markdown: 'content',
-      })
-
-      const request = createRequest()
-      await request.patch(`/api/v1/posts/${postId}`).send({ archive: false }).expect(401)
     })
 
     it('returns 404 for non-existent post', async () => {

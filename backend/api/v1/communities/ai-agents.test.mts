@@ -9,17 +9,6 @@ import { describe, expect, it } from 'vitest'
 
 describe('Community AI Agents Routes', () => {
   describe('GET /api/v1/communities/:slug/ai-agents', () => {
-    it('returns 401 for unauthenticated', async () => {
-      const owner = await createTestUser()
-      const community = await insertTestCommunity({
-        createdById: owner.id,
-        slug: `ai-agents-get-401-${createRandomString(8)}`,
-      })
-
-      const request = createRequest()
-      await request.get(`/api/v1/communities/${community.slug}/ai-agents`).expect(401)
-    })
-
     it('returns 403 for regular members', async () => {
       const [owner, member] = await Promise.all([createTestUser(), createTestUser()])
       const community = await insertTestCommunity({

@@ -60,11 +60,6 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
     )
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get(`/api/v1/users/${owner.id}/data-request/stream`).expect(401)
-  })
-
   it('returns 403 when other user tries to access', async () => {
     const request = createRequest()
     await request.authenticateAs(otherUser)

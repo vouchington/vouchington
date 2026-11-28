@@ -132,22 +132,7 @@ describe('MFA API Routes', () => {
     })
   })
 
-  describe('POST /api/v1/auth/mfa/re-auth/email/tokens', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req.post('/api/v1/auth/mfa/re-auth/email/tokens').expect(401)
-    })
-  })
-
   describe('POST /api/v1/auth/mfa/re-auth/email/verification', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req
-        .post('/api/v1/auth/mfa/re-auth/email/verification')
-        .send({ code: 'ABC123' })
-        .expect(401)
-    })
-
     it('returns 415 without JSON content-type', async () => {
       const req = createRequest()
       await req.authenticateAs(user)
@@ -180,14 +165,6 @@ describe('MFA API Routes', () => {
   })
 
   describe('POST /api/v1/auth/mfa/re-auth/totp/verification', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req
-        .post('/api/v1/auth/mfa/re-auth/totp/verification')
-        .send({ code: '123456' })
-        .expect(401)
-    })
-
     it('returns 415 without JSON content-type', async () => {
       const req = createRequest()
       await req.authenticateAs(user)

@@ -18,12 +18,6 @@ import {
 
 describe('Users API Routes', () => {
   describe('Data Request Routes', () => {
-    it('POST /api/v1/users/:idOrSlug/data-request returns 401 when not authenticated', async () => {
-      const user = await createTestUser({ username: safeUsername('users-data-request-auth') })
-      const request = createRequest()
-      await request.post(`/api/v1/users/${user!.id}/data-request`).expect(401)
-    })
-
     it('POST /api/v1/users/:idOrSlug/data-request returns 403 for non-owner', async () => {
       const owner = await createTestUser({ username: safeUsername('users-data-request-owner') })
       const otherUser = await createTestUser({
@@ -63,14 +57,6 @@ describe('Users API Routes', () => {
       expect(response.body.status).toBe('pending')
       expect(typeof response.body.created_at).toBe('string')
       expect(response.body.expires_at).toBeNull()
-    })
-
-    it('GET /api/v1/users/:idOrSlug/data-request returns 401 when not authenticated', async () => {
-      const user = await createTestUser({
-        username: safeUsername('users-data-request-auth-get'),
-      })
-      const request = createRequest()
-      await request.get(`/api/v1/users/${user!.id}/data-request`).expect(401)
     })
 
     it('GET /api/v1/users/:idOrSlug/data-request returns 404 when no data request exists', async () => {

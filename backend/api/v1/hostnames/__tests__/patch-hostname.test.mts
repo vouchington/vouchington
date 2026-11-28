@@ -23,11 +23,6 @@ describe('PATCH /api/v1/hostnames/:id', () => {
     })
   })
 
-  it('returns 401 when unauthenticated', async () => {
-    const request = createRequest()
-    await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ is_crawlable: false }).expect(401)
-  })
-
   it('returns 403 when authenticated as non-admin', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser!)

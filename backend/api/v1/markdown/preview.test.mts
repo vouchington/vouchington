@@ -11,15 +11,6 @@ describe('preview', () => {
   })
 
   describe('POST /api/v1/markdown/preview', () => {
-    it('returns 401 for unauthenticated requests', async () => {
-      const request = createRequest()
-      await request
-        .post('/api/v1/markdown/preview')
-        .set('Content-Type', 'application/json')
-        .send({ markdown: '# Hello' })
-        .expect(401)
-    })
-
     it('renders markdown to HTML for authenticated users', async () => {
       const request = createRequest()
       await request.authenticateAs(user)

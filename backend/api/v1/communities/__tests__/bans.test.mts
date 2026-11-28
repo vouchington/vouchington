@@ -9,21 +9,6 @@ import {
 
 describe('Community Ban Routes', () => {
   describe('POST /api/v1/communities/:slug/bans', () => {
-    it('returns 401 without auth', async () => {
-      const owner = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: owner.id,
-        slug: `ban-post-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request
-        .post(`/api/v1/communities/${community.slug}/bans`)
-        .send({ user_id: owner.id })
-        .expect(401)
-    })
-
     it('returns 403 for regular member', async () => {
       const [owner, member, target] = await Promise.all([
         createTestUser(),

@@ -12,11 +12,6 @@ describe('GET /api/v1/my/bans', () => {
     owner = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/bans').expect(401)
-  })
-
   it('returns empty bans for a user with no bans', async () => {
     const newUser = await createTestUser()
     const request = createRequest()

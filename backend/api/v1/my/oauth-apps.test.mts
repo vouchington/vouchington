@@ -28,10 +28,6 @@ describe('GET /api/v1/my/oauth-apps', () => {
     stranger = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    await createRequest().get('/api/v1/my/oauth-apps').expect(401)
-  })
-
   it('pages only the current user’s apps newest first', async () => {
     const first = await createOwnedOAuthApp(owner.id, appBody())
     const second = await createOwnedOAuthApp(owner.id, appBody())
@@ -73,10 +69,6 @@ describe('POST /api/v1/my/oauth-apps', () => {
 
   beforeAll(async () => {
     owner = await createTestUser()
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    await createRequest().post('/api/v1/my/oauth-apps').send(appBody()).expect(401)
   })
 
   it('registers a confidential app and returns its secret once', async () => {

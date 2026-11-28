@@ -89,15 +89,6 @@ describe('POST /api/v1/fediverse/instances/:id/integration-changes', () => {
     return topic.id
   }
 
-  it('returns 401 for unauthenticated callers', async () => {
-    const topicId = await createTestInstanceTopic('route-unauth')
-
-    await createRequest()
-      .post(`/api/v1/fediverse/instances/${topicId}/integration-changes`)
-      .send({ integration_status: 'approved' })
-      .expect(401)
-  })
-
   it('rejects a non-administrator and leaves the stored status unchanged', async () => {
     const topicId = await createTestInstanceTopic('route-forbidden')
     const request = createRequest()

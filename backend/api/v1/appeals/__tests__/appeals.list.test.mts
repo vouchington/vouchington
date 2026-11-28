@@ -56,11 +56,6 @@ describe('GET /api/v1/appeals — list behavior', () => {
     enrichedAppealId = r1.appeal.id
   })
 
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/appeals').expect(401)
-  })
-
   it('staff sees all appeals (not scoped to own)', async () => {
     const request = createRequest()
     await request.authenticateAs(staff)

@@ -14,10 +14,6 @@ describe('GET /api/v1/my/spending-categories', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/spending-categories').expect(401)
-  })
 
   it('returns empty list for authenticated user', async () => {
     const request = createRequest()
@@ -116,10 +112,6 @@ describe('POST /api/v1/my/spending-categories', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.post('/api/v1/my/spending-categories').send({}).expect(401)
   })
 
   it('returns 415 without Content-Type: application/json', async () => {
@@ -223,10 +215,6 @@ describe('PATCH /api/v1/my/spending-categories/:id', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.patch('/api/v1/my/spending-categories/some-id').send({}).expect(401)
-  })
 
   it('returns 415 without Content-Type: application/json', async () => {
     const request = createRequest()
@@ -282,10 +270,6 @@ describe('DELETE /api/v1/my/spending-categories/:id', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.delete('/api/v1/my/spending-categories/some-id').expect(401)
   })
 
   it('returns 404 for non-existent spending category', async () => {

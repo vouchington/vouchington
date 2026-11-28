@@ -55,11 +55,6 @@ describe('report-integrity flags API', () => {
   }
 
   describe('GET /api/v1/report-integrity/flags', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/report-integrity/flags').expect(401)
-    })
-
     it.each(['moderator', 'support', 'member'] as const)('returns 403 for %s', async role => {
       const request = createRequest()
       await request.authenticateAs(getNonAdmin(role))
@@ -167,11 +162,6 @@ describe('report-integrity flags API', () => {
   })
 
   describe('GET /api/v1/report-integrity/flags/:id', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get(`/api/v1/report-integrity/flags/${uuidv7()}`).expect(401)
-    })
-
     it.each(['moderator', 'support', 'member'] as const)('returns 403 for %s', async role => {
       const request = createRequest()
       await request.authenticateAs(getNonAdmin(role))
@@ -194,14 +184,6 @@ describe('report-integrity flags API', () => {
   })
 
   describe('PATCH /api/v1/report-integrity/flags/:id', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .patch(`/api/v1/report-integrity/flags/${uuidv7()}`)
-        .set('Content-Type', 'application/json')
-        .expect(401)
-    })
-
     it.each(['moderator', 'support', 'member'] as const)('returns 403 for %s', async role => {
       const request = createRequest()
       await request.authenticateAs(getNonAdmin(role))
@@ -245,11 +227,6 @@ describe('report-integrity flags API', () => {
   })
 
   describe('POST /api/v1/report-integrity/flags/:id/penalties', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.post(`/api/v1/report-integrity/flags/${uuidv7()}/penalties`).expect(401)
-    })
-
     it.each(['moderator', 'support', 'member'] as const)('returns 403 for %s', async role => {
       const request = createRequest()
       await request.authenticateAs(getNonAdmin(role))

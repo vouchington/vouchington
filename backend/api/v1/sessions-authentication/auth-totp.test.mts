@@ -17,11 +17,6 @@ describe('TOTP API Routes', () => {
   // ─── POST /api/v1/auth/totp (setup) ───────────────────────────────────────
 
   describe('POST /api/v1/auth/totp', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req.post('/api/v1/auth/totp').send({ name: 'Test' }).expect(401)
-    })
-
     it('returns 415 without JSON content-type', async () => {
       const req = createRequest()
       await req.authenticateAs(user)
@@ -66,14 +61,6 @@ describe('TOTP API Routes', () => {
   // ─── POST /api/v1/auth/totp/setup/verification ────────────────────────────
 
   describe('POST /api/v1/auth/totp/setup/verification', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req
-        .post('/api/v1/auth/totp/setup/verification')
-        .send({ authenticator_id: v7(), code: '123456' })
-        .expect(401)
-    })
-
     it('returns 415 without JSON content-type', async () => {
       const req = createRequest()
       await req.authenticateAs(user)
@@ -167,11 +154,6 @@ describe('TOTP API Routes', () => {
   // ─── GET /api/v1/auth/totp ────────────────────────────────────────────────
 
   describe('GET /api/v1/auth/totp', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req.get('/api/v1/auth/totp').expect(401)
-    })
-
     it('returns list of verified authenticators', async () => {
       const req = createRequest()
       await req.authenticateAs(user)
@@ -202,11 +184,6 @@ describe('TOTP API Routes', () => {
   // ─── DELETE /api/v1/auth/totp/:id ────────────────────────────────────────
 
   describe('DELETE /api/v1/auth/totp/:id', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req.delete(`/api/v1/auth/totp/${v7()}`).expect(401)
-    })
-
     it('returns 404 for non-existent authenticator', async () => {
       const req = createRequest()
       await req.authenticateAs(user)

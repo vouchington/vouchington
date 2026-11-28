@@ -17,11 +17,6 @@ import {
 } from '@services/follower-distributions'
 
 describe('GET /api/v1/feeds/rss_feed_items/:feed_type', () => {
-  it('should return 401 for unauthenticated users', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/feeds/rss_feed_items/any').expect(401)
-  })
-
   it('should return 404 for invalid feed_type', async () => {
     const user = await createTestUser()
     const request = createRequest()

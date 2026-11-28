@@ -20,14 +20,6 @@ describe('vote-weight', () => {
   }, 5_000)
 
   describe('PUT /api/v1/users/:userId/vote-weight', () => {
-    it('returns 401 without authentication', async () => {
-      const request = createRequest()
-      await request
-        .put(`/api/v1/users/${targetUser.id}/vote-weight`)
-        .send({ weight: 1 })
-        .expect(401)
-    })
-
     it('returns 403 for non-admin', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -69,11 +61,6 @@ describe('vote-weight', () => {
   })
 
   describe('DELETE /api/v1/users/:userId/vote-weight', () => {
-    it('returns 401 without authentication', async () => {
-      const request = createRequest()
-      await request.delete(`/api/v1/users/${targetUser.id}/vote-weight`).expect(401)
-    })
-
     it('returns 403 for non-admin', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)

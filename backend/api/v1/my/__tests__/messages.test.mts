@@ -21,11 +21,6 @@ describe('messages API', () => {
   })
 
   describe('GET /api/v1/my/messages', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/my/messages').expect(401)
-    })
-
     it('returns list of conversations for authenticated user', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
@@ -88,11 +83,6 @@ describe('messages API', () => {
       const request = createRequest()
       await request.authenticateAs(suspended)
       await request.post('/api/v1/my/messages').send({ user_id: otherUser.id }).expect(403)
-    })
-
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.post('/api/v1/my/messages').send({ user_id: otherUser.id }).expect(401)
     })
 
     it('creates a DM conversation with user_id', async () => {

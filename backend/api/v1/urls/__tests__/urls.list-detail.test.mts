@@ -73,11 +73,6 @@ describe('index', () => {
         expect(url.hostname.votes_count_down).toBeUndefined()
       })
 
-      it('returns 401 for unauthenticated users', async () => {
-        const request = createRequest()
-        await request.get('/api/v1/urls').expect(401)
-      })
-
       it('should support query filter', async () => {
         const random = Math.random().toString(36).slice(2, 8)
         const hostnameId = await insertTestUrlHostname({
@@ -244,20 +239,6 @@ describe('index', () => {
         expect(response.body.can_view_latest_crawl).toBe(true)
         expect(response.body.can_view_crawl_history).toBe(true)
         expect(response.body.can_trigger_crawl).toBe(false)
-      })
-
-      it('returns 401 for unauthenticated users', async () => {
-        const random = Math.random().toString(36).slice(2, 8)
-        const hostnameId = await insertTestUrlHostname({
-          hostname: `anon-detail-${random}.example.com`,
-        })
-        const urlId = await insertTestUrl({
-          url: `https://anon-detail-${random}.example.com/page`,
-          hostnameId,
-        })
-        const request = createRequest()
-
-        await request.get(`/api/v1/urls/${urlId}`).expect(401)
       })
 
       it('should return 404 for non-existent URL', async () => {

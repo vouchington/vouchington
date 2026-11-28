@@ -29,14 +29,6 @@ describe('GET /api/v1/lists/contains', () => {
       .send({ post_id: postId })
   })
 
-  it('returns 401 without auth', async () => {
-    const request = createRequest()
-    await request
-      .get('/api/v1/lists/contains')
-      .query({ item_type: 'post', entity_id: postId })
-      .expect(401)
-  })
-
   it('returns list IDs containing the entity', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

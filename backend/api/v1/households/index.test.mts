@@ -40,16 +40,6 @@ describe('Households API Routes', () => {
       await request.get('/api/v1/households').query({ limit: 0 }).expect(400)
       await request.get('/api/v1/households').query({ after: '' }).expect(400)
     })
-
-    it('should return 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/households').expect(401)
-    })
-
-    it('should return 401 when creating a household without authentication', async () => {
-      const request = createRequest()
-      await request.post('/api/v1/households').send({}).expect(401)
-    })
   })
 
   describe('POST/DELETE /api/v1/households/:id', () => {

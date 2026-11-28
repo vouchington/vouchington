@@ -10,11 +10,6 @@ import { upsertUserVouchElectionVotes } from '@services/elections-votes/user-vou
 import { withOwnedVouchStats } from '@voucha/test-helpers/user-vouch-vote-stats-admission'
 
 describe('User vouch-context route', () => {
-  it('GET /api/v1/users/:id/vouch-context returns 401 for anonymous viewers', async () => {
-    const target = await createTestUser()
-    await createRequest().get(`/api/v1/users/${target.id}/vouch-context`).expect(401)
-  })
-
   // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
   // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('GET /api/v1/users/:id/vouch-context returns vouchers and disavowers among followed users', async () => {

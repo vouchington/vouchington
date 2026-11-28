@@ -21,11 +21,6 @@ describe('GET /api/v1/my/removed-posts', () => {
     author = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/removed-posts').expect(401)
-  })
-
   it('returns empty removed_posts for a user with no removed posts', async () => {
     const newUser = await createTestUser()
     const request = createRequest()

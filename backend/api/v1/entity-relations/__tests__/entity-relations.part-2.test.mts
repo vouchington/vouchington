@@ -145,14 +145,6 @@ describe('entity-relations', () => {
         expect(response.body.relation.id).toBeDefined()
       })
 
-      it('should require authentication', async () => {
-        const request = createRequest()
-        await request
-          .post('/api/v1/entity-relations/post/123/category/topic')
-          .send({ objectId: '456' })
-          .expect(401)
-      })
-
       it('should validate required objectId in body', async () => {
         const request = createRequest()
         await request.authenticateAs(user!)

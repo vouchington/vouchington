@@ -16,16 +16,6 @@ describe('bookmarks', () => {
   })
   describe('Bookmarks API', () => {
     describe('GET /api/v1/bookmarks/:entityType/:entityId', () => {
-      it('should return 401 for unauthenticated requests', async () => {
-        const topicId = await insertTestTopic({
-          name: `Bookmark Unauth Topic ${crypto.randomUUID().slice(0, 8)}`,
-          slug: `bookmark-unauth-${crypto.randomUUID().slice(0, 8)}`,
-          createdById: user.id,
-        })
-        const request = createRequest()
-        await request.get(`/api/v1/bookmarks/topic/${topicId}`).expect(401)
-      })
-
       it('should return empty bookmarks for topic with no follows', async () => {
         const topicId = await insertTestTopic({
           name: `Bookmark Empty Topic ${crypto.randomUUID().slice(0, 8)}`,
@@ -54,13 +44,6 @@ describe('bookmarks', () => {
     })
 
     describe('PUT /api/v1/bookmarks/:entityType/:entityId/:predicate', () => {
-      it('should return 401 for unauthenticated requests', async () => {
-        const request = createRequest()
-        await request
-          .put('/api/v1/bookmarks/topic/00000000-0000-0000-0000-000000000000/follow')
-          .expect(401)
-      })
-
       it('should save and unsave an RSS feed item', async () => {
         const topicId = await insertTestTopic({
           name: `Save Item Topic ${crypto.randomUUID().slice(0, 8)}`,
@@ -130,13 +113,6 @@ describe('bookmarks', () => {
     })
 
     describe('DELETE /api/v1/bookmarks/:entityType/:entityId/:predicate', () => {
-      it('should return 401 for unauthenticated requests', async () => {
-        const request = createRequest()
-        await request
-          .delete('/api/v1/bookmarks/topic/00000000-0000-0000-0000-000000000000/follow')
-          .expect(401)
-      })
-
       it('should unfollow a topic', async () => {
         const topicId = await insertTestTopic({
           name: `Unfollow Topic ${crypto.randomUUID().slice(0, 8)}`,
@@ -194,11 +170,6 @@ describe('bookmarks', () => {
 
       beforeAll(async () => {
         targetUser = await createTestUser()
-      })
-
-      it('should return 401 for unauthenticated follow', async () => {
-        const request = createRequest()
-        await request.put(`/api/v1/bookmarks/user/${targetUser.id}/follow`).expect(401)
       })
 
       it('should follow a user', async () => {

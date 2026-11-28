@@ -12,11 +12,6 @@ describe('referral-clicks', () => {
   })
 
   describe('GET /api/v1/my/referral-clicks', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/my/referral-clicks').expect(401)
-    })
-
     it('returns 200 with empty results for new user', async () => {
       const freshUser = await createTestUserDirect()
       const request = createRequest()

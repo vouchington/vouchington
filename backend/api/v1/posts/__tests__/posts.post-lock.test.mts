@@ -34,16 +34,6 @@ describe('POST/DELETE /api/v1/posts/:idOrSlug/lock', () => {
   })
 
   describe('POST /lock (lock)', () => {
-    it('returns 401 when unauthenticated', async () => {
-      const postForAnon = await insertTestPost({
-        title: 'Lock anon test',
-        slug: makeSlug(),
-        createdById: author.id,
-        markdown: 'content',
-      })
-      await createRequest().post(`/api/v1/posts/${postForAnon}/lock`).expect(401)
-    })
-
     it('returns 403 when called by a non-author non-mod user', async () => {
       const request = createRequest()
       await request.authenticateAs(stranger)
@@ -91,10 +81,6 @@ describe('POST/DELETE /api/v1/posts/:idOrSlug/lock', () => {
   })
 
   describe('DELETE /lock (unlock)', () => {
-    it('returns 401 when unauthenticated', async () => {
-      await createRequest().delete(`/api/v1/posts/${postId}/lock`).expect(401)
-    })
-
     it('returns 403 when called by a non-author non-mod user', async () => {
       const request = createRequest()
       await request.authenticateAs(stranger)

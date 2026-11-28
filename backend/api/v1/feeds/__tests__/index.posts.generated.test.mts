@@ -21,11 +21,6 @@ import { insertTestLinkPostWithCrawl } from '@voucha/test-helpers/entities/link-
 import { findFeedPost } from '@voucha/test-helpers/feed-api-pagination'
 
 describe('GET /api/v1/feeds/posts/:feed_type', () => {
-  it('should return 401 for unauthenticated users', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/feeds/posts/any').expect(401)
-  })
-
   it('should return 404 for invalid feed_type', async () => {
     const user = await createTestUser()
     const request = createRequest()

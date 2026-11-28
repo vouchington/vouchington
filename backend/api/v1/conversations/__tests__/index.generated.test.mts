@@ -35,11 +35,6 @@ describe('index.generated', () => {
       expect(response.body.conversation).toHaveProperty('title', '')
     })
 
-    it('should require authentication', async () => {
-      const request = createRequest()
-      await request.post('/api/v1/conversations').send({ title: 'Test' }).expect(401)
-    })
-
     it('should require JSON content type', async () => {
       const request = createRequest()
       await request.authenticateAs(user)

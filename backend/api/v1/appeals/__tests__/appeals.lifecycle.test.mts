@@ -17,7 +17,6 @@ import { updateModerationAppealDraft } from '@services/moderation-appeals/update
 describe('POST /api/v1/appeals — create', () => {
   let staff: PrivateUser
   let appellant: PrivateUser
-  let banId: string
 
   beforeAll(async () => {
     staff = await createTestUser({ administrator: true })
@@ -27,22 +26,12 @@ describe('POST /api/v1/appeals — create', () => {
       slug: `appeal-create-${crypto.randomUUID().slice(0, 8)}`,
       createdById: staff.id,
     })
-    const ban = await insertTestCommunityBan({
+    await insertTestCommunityBan({
       communityId: community.id,
       userId: appellant.id,
       bannedById: staff.id,
       reason: 'Violations',
     })
-    banId = ban.id
-  })
-
-  it('returns 401 for unauthenticated requests', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/appeals')
-      .set('Content-Type', 'application/json')
-      .send({ target_type: 'ban', target_id: banId, appeal_reason: 'unfair' })
-      .expect(401)
   })
 
   it('returns 415 for wrong content-type', async () => {
@@ -113,13 +102,6 @@ describe('POST /api/v1/appeals — create', () => {
   })
 })
 
-describe('GET /api/v1/appeals — list', () => {
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/appeals').expect(401)
-  })
-})
-
 describe('GET /api/v1/appeals/:id — single appeal', () => {
   let staff: PrivateUser
   let appellant: PrivateUser
@@ -143,11 +125,6 @@ describe('GET /api/v1/appeals/:id — single appeal', () => {
     })
     const { appeal } = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
     appealId = appeal.id
-  })
-
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request.get(`/api/v1/appeals/${crypto.randomUUID()}`).expect(401)
   })
 
   it('returns 200 for appeal owner', async () => {

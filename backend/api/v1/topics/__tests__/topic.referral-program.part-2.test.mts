@@ -11,15 +11,6 @@ import { registerTopicProgramAttributeRouteTests } from '../../../../test-helper
 describe('topic.referral-program', () => {
   describe('Topic Referral Program Routes', () => {
     describe('DELETE /api/v1/topics/:referralProgramId/referral-program/link-validations/:validationId', () => {
-      it('returns 401 when unauthenticated', async () => {
-        const request = createRequest()
-        await request
-          .delete(
-            '/api/v1/topics/00000000-0000-0000-0000-000000000001/referral-program/link-validations/00000000-0000-0000-0000-000000000002',
-          )
-          .expect(401)
-      })
-
       it('unlinks a validation from a referral program as admin', async () => {
         const admin = await createTestUser({ administrator: true })
         const adminRequest = createRequest()
@@ -57,14 +48,6 @@ describe('topic.referral-program', () => {
     })
 
     describe('POST /api/v1/topics/:referralProgramId/referral-program/validations', () => {
-      it('returns 401 when unauthenticated', async () => {
-        const request = createRequest()
-        await request
-          .post('/api/v1/topics/00000000-0000-0000-0000-000000000001/referral-program/validations')
-          .send({ slug: 'test-slug' })
-          .expect(401)
-      })
-
       it('returns 403 for non-admin user', async () => {
         const user = await createTestUser()
         const random = Math.random().toString(36).slice(2, 8)

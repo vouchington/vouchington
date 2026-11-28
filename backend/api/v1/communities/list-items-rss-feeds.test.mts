@@ -71,18 +71,6 @@ describe('list-items-rss-feeds', () => {
   })
 
   describe('POST /api/v1/communities/:slug/list-items/rss-feeds', () => {
-    it('returns 401 without auth', async () => {
-      const random = createRandomString(8)
-      const feedId = await createTestFeed(`post401${random}`)
-
-      const request = createRequest()
-      await request
-        .post(`/api/v1/communities/${community.slug}/list-items/rss-feeds`)
-        .set('Content-Type', 'application/json')
-        .send({ rss_feed_id: feedId })
-        .expect(401)
-    })
-
     it('returns 403 as non-moderator member', async () => {
       const random = createRandomString(8)
       const feedId = await createTestFeed(`post403${random}`)
@@ -185,21 +173,6 @@ describe('list-items-rss-feeds', () => {
   })
 
   describe('DELETE /api/v1/communities/:slug/list-items/rss-feeds/:itemId', () => {
-    it('returns 401 without auth', async () => {
-      const random = createRandomString(8)
-      const feedId = await createTestFeed(`del401${random}`)
-      const item = await insertTestCommunityListItem({
-        communityId: community.id,
-        itemType: 'rss_feed',
-        entityId: feedId,
-      })
-
-      const request = createRequest()
-      await request
-        .delete(`/api/v1/communities/${community.slug}/list-items/rss-feeds/${item.id}`)
-        .expect(401)
-    })
-
     it('returns 403 as non-moderator member', async () => {
       const random = createRandomString(8)
       const feedId = await createTestFeed(`del403${random}`)

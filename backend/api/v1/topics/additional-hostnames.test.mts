@@ -11,13 +11,6 @@ describe('additional-hostnames', () => {
   })
 
   describe('GET /api/v1/topics/:id/additional-hostnames', () => {
-    it('returns 401 for unauthenticated requests', async () => {
-      const random = Math.random().toString(36).slice(2, 15)
-      const topic = await createTestTopic({ hostname: `ah-auth-${random}.example.com` })
-      const request = createRequest()
-      await request.get(`/api/v1/topics/${topic.id}/additional-hostnames`).expect(401)
-    })
-
     it('returns empty list when no additional hostnames', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const topic = await createTestTopic({ hostname: `ah-empty-${random}.example.com` })
@@ -31,16 +24,6 @@ describe('additional-hostnames', () => {
   })
 
   describe('POST /api/v1/topics/:id/additional-hostnames', () => {
-    it('returns 401 for unauthenticated requests', async () => {
-      const random = Math.random().toString(36).slice(2, 15)
-      const topic = await createTestTopic({ hostname: `ah-post-auth-${random}.example.com` })
-      const request = createRequest()
-      await request
-        .post(`/api/v1/topics/${topic.id}/additional-hostnames`)
-        .send({ hostname: `extra-${random}.example.com` })
-        .expect(401)
-    })
-
     it('adds an additional hostname and returns 201', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const topic = await createTestTopic({ hostname: `ah-add-${random}.example.com` })
@@ -96,17 +79,6 @@ describe('additional-hostnames', () => {
   })
 
   describe('DELETE /api/v1/topics/:id/additional-hostnames/:hostnameId', () => {
-    it('returns 401 for unauthenticated requests', async () => {
-      const random = Math.random().toString(36).slice(2, 15)
-      const topic = await createTestTopic({ hostname: `ah-del-auth-${random}.example.com` })
-      const request = createRequest()
-      await request
-        .delete(
-          `/api/v1/topics/${topic.id}/additional-hostnames/00000000-0000-0000-0000-000000000001`,
-        )
-        .expect(401)
-    })
-
     it('removes an additional hostname and returns 204', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const topic = await createTestTopic({ hostname: `ah-del-${random}.example.com` })

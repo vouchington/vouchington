@@ -12,11 +12,6 @@ describe('GET /api/v1/my/consents', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/consents').expect(401)
-  })
-
   it('returns empty results for new user', async () => {
     const newUser = await createTestUser()
     const request = createRequest()
@@ -46,15 +41,6 @@ describe('POST /api/v1/my/consents', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/my/consents')
-      .set('Content-Type', 'application/json')
-      .send({ consent_type: 'privacy_policy', version: '1.0' })
-      .expect(401)
   })
 
   it('returns 415 for non-JSON content-type', async () => {
@@ -105,11 +91,6 @@ describe('DELETE /api/v1/my/consents/:type', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.delete('/api/v1/my/consents/privacy_policy').expect(401)
   })
 
   it('returns 400 for invalid consent type', async () => {

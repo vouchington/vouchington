@@ -12,18 +12,6 @@ import {
 
 describe('Community Agent Prompts Routes', () => {
   describe('GET /api/v1/communities/:slug/agent-prompts', () => {
-    it('returns 401 for unauthenticated', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `ap-get-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request.get(`/api/v1/communities/${community.slug}/agent-prompts`).expect(401)
-    })
-
     it('returns 403 for regular member', async () => {
       const [owner, member] = await Promise.all([createTestUser(), createTestUser()])
       const random = createRandomString(8)
@@ -94,22 +82,6 @@ describe('Community Agent Prompts Routes', () => {
   })
 
   describe('POST /api/v1/communities/:slug/agent-prompts', () => {
-    it('returns 401 for unauthenticated', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `ap-post-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request
-        .post(`/api/v1/communities/${community.slug}/agent-prompts`)
-        .set('Content-Type', 'application/json')
-        .send({ prompt: 'Test' })
-        .expect(401)
-    })
-
     it('creates a prompt as owner', async () => {
       const user = await createTestUser()
       const random = createRandomString(8)

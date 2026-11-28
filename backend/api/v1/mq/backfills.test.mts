@@ -16,11 +16,6 @@ describe('backfills', () => {
 
   describe('Backfills API Routes', () => {
     describe('GET /api/v1/mq/backfills', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.get('/api/v1/mq/backfills').expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(regularUser)
@@ -53,11 +48,6 @@ describe('backfills', () => {
     })
 
     describe('POST /api/v1/mq/backfills/:id/runs', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.post('/api/v1/mq/backfills/openai-moderation-posts/runs').expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(regularUser)

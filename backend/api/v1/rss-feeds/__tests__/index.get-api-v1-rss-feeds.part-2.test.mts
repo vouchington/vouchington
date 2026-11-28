@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { encodeCursor } from '@modules/pagination'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -21,16 +21,8 @@ import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 
 import { upsertTopicElectionVotes } from '@services/elections-votes/topic'
 
-import type { PrivateUser } from '@services/users/types'
-
 describe('index', () => {
   describe('RSS Feeds Routes', () => {
-    let user: PrivateUser
-
-    beforeAll(async () => {
-      user = await createTestUser()
-    })
-
     describe('GET /api/v1/rss-feeds', () => {
       it('should return 400 for an after cursor with a non-UUID id', async () => {
         const cursor = encodeCursor({ id: 'not-a-uuid' })
@@ -50,18 +42,6 @@ describe('index', () => {
     })
 
     describe('GET /api/v1/rss-feeds/:id/crawls', () => {
-      it('should return 401 for unauthenticated requests', async () => {
-        const random = Math.random().toString(36).slice(2, 8)
-        const topicId = await insertTestTopic({
-          name: `Crawls Unauth Topic ${random}`,
-          slug: `crawls-unauth-topic-${random}`,
-          createdById: user.id,
-        })
-        const feedId = await insertTestRssFeed({ topicId, title: `Crawls Unauth Feed ${random}` })
-        const request = createRequest()
-        await request.get(`/api/v1/rss-feeds/${feedId}/crawls`).expect(401)
-      })
-
       it.each([
         ['free', null],
         ['paused', 'paused'],

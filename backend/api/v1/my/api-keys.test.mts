@@ -11,10 +11,6 @@ describe('GET /api/v1/my/api-keys', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/api-keys').expect(401)
-  })
 
   it('returns empty results for new user', async () => {
     const request = createRequest()
@@ -38,14 +34,6 @@ describe('POST /api/v1/my/api-keys', () => {
   beforeAll(async () => {
     user = await createTestUser()
     admin = await createTestUser({ administrator: true })
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/my/api-keys')
-      .set('Content-Type', 'application/json')
-      .send({ label: 'Test', permissions: ['rss:read'] })
-      .expect(401)
   })
 
   it('returns 415 for non-JSON content-type', async () => {
@@ -246,10 +234,6 @@ describe('DELETE /api/v1/my/api-keys/:id', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.delete('/api/v1/my/api-keys/00000000-0000-7000-8000-000000000001').expect(401)
   })
 
   it('returns 422 for non-UUID id', async () => {

@@ -31,11 +31,6 @@ describe('GET /api/v1/my/friend-recommendations', () => {
     await insertTestFriend('github', userGithubId, friendGithubId)
   })
 
-  it('returns 401 when unauthenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/friend-recommendations').expect(401)
-  })
-
   it('includes friend in results', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

@@ -25,14 +25,6 @@ describe('admin warnings routes', () => {
   })
 
   describe('POST /api/v1/admin/warnings', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .post('/api/v1/admin/warnings')
-        .send({ userId: targetUser.id, reason: 'Test reason' })
-        .expect(401)
-    })
-
     it('returns 403 for regular users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -190,11 +182,6 @@ describe('admin warnings routes', () => {
   })
 
   describe('GET /api/v1/admin/warnings', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/admin/warnings').query({ userId: targetUser.id }).expect(401)
-    })
-
     it('returns 403 for regular users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)

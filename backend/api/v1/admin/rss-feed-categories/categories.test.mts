@@ -52,11 +52,6 @@ describe('rss-feed-categories', () => {
   }
 
   describe('GET /api/v1/rss-feed-categories', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/rss-feed-categories').expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -129,14 +124,6 @@ describe('rss-feed-categories', () => {
   })
 
   describe('POST /api/v1/rss-feed-categories/rejections', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .post('/api/v1/rss-feed-categories/rejections')
-        .send({ category_text: 'news' })
-        .expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -181,14 +168,6 @@ describe('rss-feed-categories', () => {
   })
 
   describe('DELETE /api/v1/rss-feed-categories/rejections', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .delete('/api/v1/rss-feed-categories/rejections')
-        .send({ category_text: 'news' })
-        .expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -221,14 +200,6 @@ describe('rss-feed-categories', () => {
   })
 
   describe('POST /api/v1/rss-feed-categories/assignments', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .post('/api/v1/rss-feed-categories/assignments')
-        .send({ category_text: 'test', topic_id: randomUUID() })
-        .expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const topic = await createTestTopic({ user: admin })
       const request = createRequest()

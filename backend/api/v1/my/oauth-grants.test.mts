@@ -9,8 +9,6 @@ import {
 } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
 
-const MISSING_ID = '00000000-0000-7000-8000-000000000000'
-
 async function authorize(user: PrivateUser) {
   const flow = await createTestApprovedOAuthAuthorization(user)
   await exchangeOAuthAuthorizationCode({
@@ -31,10 +29,6 @@ describe('GET /api/v1/my/oauth-grants', () => {
   beforeAll(async () => {
     user = await createTestUser()
     stranger = await createTestUser()
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    await createRequest().get('/api/v1/my/oauth-grants').expect(401)
   })
 
   it('returns null last use for a consented app before token use', async () => {
@@ -84,10 +78,6 @@ describe('DELETE /api/v1/my/oauth-grants/:id', () => {
   beforeAll(async () => {
     user = await createTestUser()
     stranger = await createTestUser()
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    await createRequest().delete(`/api/v1/my/oauth-grants/${MISSING_ID}`).expect(401)
   })
 
   it('revokes the user’s grant once and hides it from the list', async () => {

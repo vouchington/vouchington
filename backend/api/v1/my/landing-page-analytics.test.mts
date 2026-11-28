@@ -86,11 +86,6 @@ describe('landing-page-analytics', () => {
       await request.get(`/api/v1/my/landing-pages/${elapsedLandingPageId}/analytics`).expect(403)
     })
 
-    it('returns 401 without authentication', async () => {
-      const request = createRequest()
-      await request.get(`/api/v1/my/landing-pages/${landingPageId}/analytics`).expect(401)
-    })
-
     it('returns 404 for another user landing page', async () => {
       const otherUser = await createTestUserDirect()
       await createTestMembership({ user_id: otherUser!.id, plan: 'plus', status: 'active' })

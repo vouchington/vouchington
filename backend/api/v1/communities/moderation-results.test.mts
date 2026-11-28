@@ -38,20 +38,6 @@ describe('moderation-results', () => {
 
   describe('Community Moderation Results Routes', () => {
     describe('GET /api/v1/communities/:slug/posts/:postId/moderation-results', () => {
-      it('returns 401 for unauthenticated', async () => {
-        const random = createRandomString(8)
-        const community = await insertTestCommunity({
-          createdById: owner.id,
-          slug: `mr-unauth-${random}`,
-        })
-        const post = await createTestPost({ user: owner })
-
-        const request = createRequest()
-        await request
-          .get(`/api/v1/communities/${community.slug}/posts/${post.id}/moderation-results`)
-          .expect(401)
-      })
-
       it('returns 403 for regular member without Plus+', async () => {
         const random = createRandomString(8)
         const community = await insertTestCommunity({

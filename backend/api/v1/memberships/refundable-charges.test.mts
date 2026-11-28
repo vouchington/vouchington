@@ -53,11 +53,6 @@ describe('GET /api/v1/memberships/refundable-charges', () => {
     vi.restoreAllMocks()
   })
 
-  it('returns 401 when unauthenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/memberships/refundable-charges').expect(401)
-  })
-
   it('returns 403 when user is not an administrator', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser)

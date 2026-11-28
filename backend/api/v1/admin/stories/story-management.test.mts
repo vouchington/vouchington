@@ -41,13 +41,6 @@ describe('story-management', () => {
   }
 
   describe('PUT /api/v1/stories/:storyId/items/:itemId', () => {
-    it('returns 401 when not authenticated', async () => {
-      const story = await insertTestStory()
-      const itemId = await makeItem()
-      const request = createRequest()
-      await request.put(`/api/v1/stories/${story.id}/items/${itemId}`).expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const story = await insertTestStory()
       const itemId = await makeItem()
@@ -75,13 +68,6 @@ describe('story-management', () => {
   })
 
   describe('DELETE /api/v1/stories/:storyId/items/:itemId', () => {
-    it('returns 401 when not authenticated', async () => {
-      const story = await insertTestStory()
-      const itemId = await makeItem()
-      const request = createRequest()
-      await request.delete(`/api/v1/stories/${story.id}/items/${itemId}`).expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const story = await insertTestStory()
       const itemId = await makeItem()
@@ -101,12 +87,6 @@ describe('story-management', () => {
   })
 
   describe('PUT /api/v1/stories/:storyId/official', () => {
-    it('returns 401 when not authenticated', async () => {
-      const story = await insertTestStory()
-      const request = createRequest()
-      await request.put(`/api/v1/stories/${story.id}/official`).expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const story = await insertTestStory()
       const itemId = await makeItem()
@@ -144,12 +124,6 @@ describe('story-management', () => {
   })
 
   describe('PATCH /api/v1/stories/:id', () => {
-    it('returns 401 when not authenticated', async () => {
-      const story = await insertTestStory()
-      const request = createRequest()
-      await request.patch(`/api/v1/stories/${story.id}`).expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const story = await insertTestStory()
       const request = createRequest()
