@@ -43,11 +43,18 @@ test.describe('My Point Valuations', () => {
     await assertFirstManagerControlVisible(page, 'point-valuation-edit-button')
   })
 
-  test('edit form validates empty value per point', async ({ page }) => {
-    await clickFirstManagerControl(page, 'point-valuation-edit-button')
-    await clearManagerInputWithFill(page, 'point-valuation-edit-cpp-input')
-    await clickManagerControl(page, 'point-valuation-edit-save-button')
-    await assertManagerErrorToast(page, 'Please enter a valid value per point')
+  test.describe('Empty value per point validation', () => {
+    test.use({
+      allowErrorToasts:
+        'The test submits an empty value per point on purpose, which shows the "Please enter a valid value per point" validation toast',
+    })
+
+    test('edit form validates empty value per point', async ({ page }) => {
+      await clickFirstManagerControl(page, 'point-valuation-edit-button')
+      await clearManagerInputWithFill(page, 'point-valuation-edit-cpp-input')
+      await clickManagerControl(page, 'point-valuation-edit-save-button')
+      await assertManagerErrorToast(page, 'Please enter a valid value per point')
+    })
   })
 
   test('shows edit cancel, remove confirmation and add submit controls', async ({ page }) => {

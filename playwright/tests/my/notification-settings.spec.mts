@@ -3,6 +3,11 @@ import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('My Notification Settings', () => {
+  test.use({
+    expectedServerErrors: [
+      { pattern: /\/email-preferences/, reason: 'Mocked 500 asserts the retry state' },
+    ],
+  })
   test.use({ storageState: AUTH_STATE })
 
   test('shows email notification settings controls', async ({ page }) => {
@@ -24,17 +29,27 @@ test.describe('My Notification Settings', () => {
     await expect(page.getByTestId('moderation-email-day-7')).toHaveCount(0)
   })
 
-  test('offers a retry when the settings fail to load', async ({ page }) => {
-    await page.route('**/api/v1/my/email-preferences', route => {
-      if (route.request().method() !== 'GET') return route.continue()
-      return route.fulfill({
-        status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Injected failure' }),
-      })
+  test.describe('Failed notification settings load', () => {
+    test.use({
+      allowErrorToasts:
+        'The test injects a failing preferences load on purpose, which shows the "Injected failure" error toast',
     })
-    await navigateTo(page, '/my/notification-settings')
 
-    await expect(page.getByTestId('notification-settings-form-retry')).toBeVisible()
+    test('offers a retry when the settings fail to load', async ({ page }) => {
+      await page.route('**/api/v1/my/email-preferences', route => {
+        if (route.request().method() !== 'GET') return route.continue()
+        return route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Injected failure' }),
+        })
+      })
+      await navigateTo(page, '/my/notification-settings')
+      await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
+        'Injected failure',
+      )
+
+      await expect(page.getByTestId('notification-settings-form-retry')).toBeVisible()
+    })
   })
 })

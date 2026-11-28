@@ -163,6 +163,9 @@ test.describe('Referral Link Form Submission — create', () => {
 })
 
 test.describe('Referral Link Form Submission — validation error', () => {
+  test.use({
+    allowErrorToasts: 'Asserts the invalid-URL error toast',
+  })
   let referralProgram: Awaited<ReturnType<typeof insertTestReferralProgram>>
   let contributorId: string
 

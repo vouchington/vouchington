@@ -8,6 +8,9 @@ import { softDeleteTopic } from '../../../backend/test-helpers/entities/topics/d
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
 
 test.describe('Add Source modal', () => {
+  test.use({
+    allowErrorToasts: 'Failed-import tests assert the error toast',
+  })
   test.use({ storageState: AUTH_STATE })
 
   test('add-source-button is visible and opens modal on /podcasts', async ({ page }) => {

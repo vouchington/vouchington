@@ -114,52 +114,72 @@ test.describe('Discoverable passkey sign-in', () => {
     await expect(page).toHaveURL('/')
   })
 
-  test('stays on login page when passkey sign-in is cancelled', async ({ page }) => {
-    await stubWebAuthnCancelled(page)
+  test.describe('Cancelled passkey sign-in', () => {
+    test.use({
+      allowErrorToasts:
+        'The test cancels the WebAuthn prompt on purpose, which shows the "Passkey sign-in was cancelled" error toast',
+    })
 
-    await page.route('**/api/v1/auth/passkeys/authentication/options', route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ options: FAKE_OPTIONS }),
-      }),
-    )
+    test('stays on login page when passkey sign-in is cancelled', async ({ page }) => {
+      await stubWebAuthnCancelled(page)
 
-    await navigateTo(page, '/login')
-    await expect(page.getByTestId('login-passkey-button')).toBeVisible()
-    await page.getByTestId('login-passkey-button').click()
+      await page.route('**/api/v1/auth/passkeys/authentication/options', route =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ options: FAKE_OPTIONS }),
+        }),
+      )
 
-    // Should remain on /login after cancellation
-    await page.waitForURL('/login', { timeout: SHORT_WAIT_TIMEOUT_MS })
-    await expect(page.getByTestId('login-passkey-button')).toBeVisible()
+      await navigateTo(page, '/login')
+      await expect(page.getByTestId('login-passkey-button')).toBeVisible()
+      await page.getByTestId('login-passkey-button').click()
+      await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
+        'Passkey sign-in was cancelled',
+      )
+
+      // Should remain on /login after cancellation
+      await page.waitForURL('/login', { timeout: SHORT_WAIT_TIMEOUT_MS })
+      await expect(page.getByTestId('login-passkey-button')).toBeVisible()
+    })
   })
 
-  test('stays on login page when no account is registered for the passkey (401)', async ({
-    page,
-  }) => {
-    await stubWebAuthnSuccess(page)
+  test.describe('Passkey sign-in without an account', () => {
+    test.use({
+      allowErrorToasts:
+        'The test stubs a 401 from the passkey verify endpoint on purpose, which shows the "Passkey sign-in failed" error toast',
+    })
 
-    await page.route('**/api/v1/auth/passkeys/authentication/options', route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ options: FAKE_OPTIONS }),
-      }),
-    )
+    test('stays on login page when no account is registered for the passkey (401)', async ({
+      page,
+    }) => {
+      await stubWebAuthnSuccess(page)
 
-    await page.route('**/api/v1/auth/passkeys/authentication/verify', route =>
-      route.fulfill({
-        status: 401,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Passkey sign-in failed' }),
-      }),
-    )
+      await page.route('**/api/v1/auth/passkeys/authentication/options', route =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ options: FAKE_OPTIONS }),
+        }),
+      )
 
-    await navigateTo(page, '/login')
-    await page.getByTestId('login-passkey-button').click()
+      await page.route('**/api/v1/auth/passkeys/authentication/verify', route =>
+        route.fulfill({
+          status: 401,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Passkey sign-in failed' }),
+        }),
+      )
 
-    // Should remain on /login
-    await page.waitForURL('/login', { timeout: SHORT_WAIT_TIMEOUT_MS })
-    await expect(page.getByTestId('login-passkey-button')).toBeVisible()
+      await navigateTo(page, '/login')
+      await page.getByTestId('login-passkey-button').click()
+      await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
+        'Passkey sign-in failed',
+      )
+
+      // Should remain on /login
+      await page.waitForURL('/login', { timeout: SHORT_WAIT_TIMEOUT_MS })
+      await expect(page.getByTestId('login-passkey-button')).toBeVisible()
+    })
   })
 })

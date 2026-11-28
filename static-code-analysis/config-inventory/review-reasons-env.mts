@@ -20,6 +20,10 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
     'AWS SDK endpoint override; set only by the test harness to reach the local AWS Emulator.',
   ],
   [
+    'AWS_ENDPOINT_URL_BEDROCK_RUNTIME',
+    'AWS SDK Bedrock Runtime endpoint override; set only by the Playwright API launcher to reach its local Bedrock stand-in.',
+  ],
+  [
     'CLOUDFLARE_CF_FETCH_PATH',
     'Worker endpoint path; keep environment-scoped until route ownership changes.',
   ],

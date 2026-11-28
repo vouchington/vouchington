@@ -8,6 +8,9 @@ import { insertTestReferralProgram } from '../../helpers/insert-test-referral-pr
 const DISCUSSION_4_ID = '019c64e6-f720-7001-a001-000000000004'
 
 test.describe('Related Links (URL tags) — referral block', () => {
+  test.use({
+    allowErrorToasts: 'Asserts the referral-block error toast',
+  })
   test.use({ storageState: AUTH_STATE })
 
   let fixture: Awaited<ReturnType<typeof insertTestReferralProgram>>

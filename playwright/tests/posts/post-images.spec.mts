@@ -17,6 +17,11 @@ import { setPostOpenAIModerationFlaggedOnly } from '../../../backend/test-helper
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 
 test.describe('Post Images', () => {
+  test.use({
+    expectedServerErrors: [
+      { pattern: /\/moderation\/exposure/, reason: 'Mocked 503 asserts the exposure gate retry' },
+    ],
+  })
   test.use({ storageState: AUTH_STATE })
 
   test('shows upload button in post form', async ({ page }) => {
@@ -77,26 +82,36 @@ test.describe('Post Images', () => {
     expect(src).toMatch(/\/images\/[^?]+\?w=\d+/)
   })
 
-  test('offers a retry when moderator exposure state cannot load', async ({ page }) => {
-    const suffix = randomSuffix()
-    const slug = `image-exposure-retry-${suffix}`
-    const postId = await insertTestPost({
-      title: `Image Exposure Retry ${suffix}`,
-      slug,
-      createdById: TEST_USER_ID,
-      markdown: 'Sensitive post with an image.',
-      clearanceStatus: 'in_review',
+  test.describe('Failed moderator exposure load', () => {
+    test.use({
+      allowErrorToasts:
+        'The test injects a 503 from the moderation exposure endpoint on purpose, which shows the "API request failed: Service Unavailable" error toast',
     })
-    await setPostOpenAIModerationFlaggedOnly(postId, true)
-    const imageId = await insertTestImage(TEST_USER_ID)
-    await insertTestPostImage({ postId, imageId })
-    await allowTestPostImageDelivery({ postId, imageId })
-    await page.route('**/api/v1/moderation/exposure', route =>
-      route.fulfill({ status: 503, body: '{}' }),
-    )
 
-    await navigateTo(page, `/discussion/${slug}`)
-    await expect(page.getByTestId('post-detail-images-exposure-gate-retry')).toBeVisible()
+    test('offers a retry when moderator exposure state cannot load', async ({ page }) => {
+      const suffix = randomSuffix()
+      const slug = `image-exposure-retry-${suffix}`
+      const postId = await insertTestPost({
+        title: `Image Exposure Retry ${suffix}`,
+        slug,
+        createdById: TEST_USER_ID,
+        markdown: 'Sensitive post with an image.',
+        clearanceStatus: 'in_review',
+      })
+      await setPostOpenAIModerationFlaggedOnly(postId, true)
+      const imageId = await insertTestImage(TEST_USER_ID)
+      await insertTestPostImage({ postId, imageId })
+      await allowTestPostImageDelivery({ postId, imageId })
+      await page.route('**/api/v1/moderation/exposure', route =>
+        route.fulfill({ status: 503, body: '{}' }),
+      )
+
+      await navigateTo(page, `/discussion/${slug}`)
+      await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
+        'Service Unavailable',
+      )
+      await expect(page.getByTestId('post-detail-images-exposure-gate-retry')).toBeVisible()
+    })
   })
 
   test('opens fullscreen lightbox when post detail image is clicked', async ({ page }) => {

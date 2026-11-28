@@ -5,6 +5,12 @@ const SESSION_ROUTE = '**/api/v1/session'
 const RENEWAL_URL = '/session-renewal?next=%2Fnews'
 
 test.describe('Session renewal page', () => {
+  test.use({
+    expectedServerErrors: [
+      { pattern: /\/api\/v1\/session/, reason: 'Mocked 500 renewal failure then retry' },
+    ],
+  })
+
   test('shows the pending state while the browser session renews', async ({ page }) => {
     let releaseRenewal: () => void = () => undefined
     const renewalHeld = new Promise<void>(resolve => {

@@ -17,6 +17,10 @@ type OAuthProvidersResponse = {
 }
 
 test.describe('Login Page', () => {
+  test.use({
+    allowErrorToasts: 'One test asserts the disposable-email error toast',
+  })
+
   test('should render login form', async ({ page }) => {
     await navigateTo(page, '/login')
 

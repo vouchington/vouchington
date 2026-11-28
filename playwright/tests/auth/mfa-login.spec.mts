@@ -43,6 +43,10 @@ async function navigateToMfaStep(page: Page) {
 }
 
 test.describe('MFA login step', () => {
+  test.use({
+    allowErrorToasts: 'One test asserts the invalid TOTP error toast',
+  })
+
   test('shows MFA step when login returns mfa_required', async ({ page }) => {
     await navigateToMfaStep(page)
 

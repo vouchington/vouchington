@@ -179,27 +179,37 @@ test.describe('Topic claim form states', () => {
     await expect(page.getByTestId('domain-tabs-submit-for-review')).toBeVisible()
   })
 
-  test('domain verification exposes its backend failure', async ({ page }) => {
-    await loginAsUser(page, reviewerId)
-    await page.route(
-      `**/api/v1/topics/${verificationTopicSlug}/claims/${verificationClaimId}/domain-verification`,
-      route =>
-        route.fulfill({
-          status: 422,
-          contentType: 'application/json',
-          body: JSON.stringify({ message: 'Verification record was not found.' }),
-        }),
-    )
-    await navigateTo(page, `/topic-claims/${verificationTopicSlug}`)
-    await page.getByTestId('domain-tabs-generate-verification-token').click()
-    await expect(page.getByTestId('verification-token-instructions-copy-dns-value')).toBeVisible()
-    await expect(page.getByTestId('verify-domain')).toBeVisible()
-    await page.getByRole('tab', { name: /well.known file/i }).click()
-    await expect(page.getByTestId('verification-token-instructions-verify-now')).toBeVisible()
-    await page.getByRole('tab', { name: 'DNS TXT Record' }).click()
-    await page.getByTestId('verify-domain').click()
-    await expect(page.getByTestId('verification-error')).toContainText(
-      'Verification record was not found.',
-    )
+  test.describe('Failed domain verification', () => {
+    test.use({
+      allowErrorToasts:
+        'The test stubs a 422 from domain verification on purpose, which shows the "Verification record was not found." error toast',
+    })
+
+    test('domain verification exposes its backend failure', async ({ page }) => {
+      await loginAsUser(page, reviewerId)
+      await page.route(
+        `**/api/v1/topics/${verificationTopicSlug}/claims/${verificationClaimId}/domain-verification`,
+        route =>
+          route.fulfill({
+            status: 422,
+            contentType: 'application/json',
+            body: JSON.stringify({ message: 'Verification record was not found.' }),
+          }),
+      )
+      await navigateTo(page, `/topic-claims/${verificationTopicSlug}`)
+      await page.getByTestId('domain-tabs-generate-verification-token').click()
+      await expect(page.getByTestId('verification-token-instructions-copy-dns-value')).toBeVisible()
+      await expect(page.getByTestId('verify-domain')).toBeVisible()
+      await page.getByRole('tab', { name: /well.known file/i }).click()
+      await expect(page.getByTestId('verification-token-instructions-verify-now')).toBeVisible()
+      await page.getByRole('tab', { name: 'DNS TXT Record' }).click()
+      await page.getByTestId('verify-domain').click()
+      await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
+        'Verification record was not found.',
+      )
+      await expect(page.getByTestId('verification-error')).toContainText(
+        'Verification record was not found.',
+      )
+    })
   })
 })
