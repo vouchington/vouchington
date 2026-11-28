@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { read } from '@data-stores/psql'
 import { searchTopicAliases } from './search-topic-aliases.mts'
 import { createTestUser, createTestTopic } from '@voucha/test-helpers'
+import { getPostgresLowerForTest } from '@voucha/test-helpers/topic-aliases'
 import { createTopicAliases } from './aliases.mts'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from './get.mts'
@@ -90,10 +90,7 @@ describe('searchTopicAliases - merged topic filter', () => {
   it('folds uppercase non-ASCII prefixes in PostgreSQL LOWER()', async () => {
     const topic = await createTestTopic()
     const id = crypto.randomUUID()
-    const { rows } = await read<{ lowered: string }>(
-      `/* searchTopicAliasesTest lowerDottedI */ SELECT LOWER('İ') AS lowered`,
-    )
-    const pgLoweredDottedI = rows[0]!.lowered
+    const pgLoweredDottedI = await getPostgresLowerForTest('İ')
     const accented = `éclair-${id}`
     const dottedI = `${pgLoweredDottedI}stanbul-${id}`
     await createTopicAliases(topic.id, [accented, dottedI, `eclair-${id}`])
