@@ -9,9 +9,9 @@ const CAPS_BY_SCENARIO: Readonly<
 > = {
   // 11 seeded matches for 'seed-alias-199'; capped tightly so any full walk fails in both plan modes.
   'search-topic-aliases-selective-prefix': { candidateCap: 30, hydrationCap: 30 },
-  // 2,500 seeded 'seed-alias-*' matches out of 4,026 total seeded topic_aliases; only 26 topics hydrate.
-  'search-topic-aliases': { candidateCap: 2_600, hydrationCap: 40 },
-  'search-topic-aliases-cursor': { candidateCap: 2_600, hydrationCap: 40 },
+  // 2,757 seeded 'seed*' matches out of 4,026 total seeded topic_aliases; only 26 topics hydrate.
+  'search-topic-aliases': { candidateCap: 2_900, hydrationCap: 40 },
+  'search-topic-aliases-cursor': { candidateCap: 2_900, hydrationCap: 40 },
 }
 
 export function assertTopicAliasPrefixCandidates(result: ExplainResult): void {
