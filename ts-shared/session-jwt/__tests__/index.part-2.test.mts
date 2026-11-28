@@ -97,7 +97,13 @@ describe('index', () => {
       vi.unstubAllGlobals()
 
       const token = await tokenPromise
-      expect(token).toBeDefined()
+      const payload = await verifySessionJwt(token, {
+        env: {
+          VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: '',
+          VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: '',
+        },
+      })
+      expect(payload?.sid).toBe(sid)
     })
 
     it('throws in production mode when keys are missing', async () => {
@@ -117,36 +123,20 @@ describe('index', () => {
       ).rejects.toThrow('must be configured in a deployed environment')
     })
 
-    it('falls back to development mode in test environment', async () => {
-      vi.stubEnv('NODE_ENV', 'test')
-      const { did, sid, uid } = makeIds()
-      const token = await signSessionJwt(
-        { did, sid, uid },
-        {
-          env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: '',
-            VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: '',
-          },
-          expiresIn: '2 days',
-        },
-      )
-      expect(token).toBeDefined()
-    })
-
-    it('falls back to development mode for other environments', async () => {
-      vi.stubEnv('NODE_ENV', 'other')
-      const { did, sid, uid } = makeIds()
-      const token = await signSessionJwt(
-        { did, sid, uid },
-        {
-          env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: '',
-            VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: '',
-          },
-          expiresIn: '2 days',
-        },
-      )
-      expect(token).toBeDefined()
-    })
+    it.each(['test', 'other'])(
+      'falls back to a verifiable development token when NODE_ENV is %s',
+      async nodeEnv => {
+        vi.stubEnv('NODE_ENV', nodeEnv)
+        const { did, sid, uid } = makeIds()
+        const env = {
+          VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: '',
+          VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: '',
+        }
+        const token = await signSessionJwt({ did, sid, uid }, { env, expiresIn: '2 days' })
+        const payload = await verifySessionJwt(token, { env })
+        expect(payload?.sid).toBe(sid)
+        expect(payload?.uid).toBe(uid)
+      },
+    )
   })
 })

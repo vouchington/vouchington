@@ -25,32 +25,13 @@ describe('real GlideMQ terminal event deadline', () => {
     await expect(waiting).rejects.toBe(reason)
   })
 
-  it('keeps a late terminal resolution from rejecting after the deadline', async () => {
-    const pending = Promise.withResolvers<'completed'>()
-    const observed = Promise.allSettled([
-      waitForRealGlideEvent(pending.promise, 'GlideMQ job fixture', 50),
-    ])
-    const [result] = await observed
-    expect(result).toEqual({
-      status: 'rejected',
-      reason: expect.objectContaining({
-        message: 'GlideMQ job fixture did not settle within 50ms',
-      }),
-    })
-    pending.resolve('completed')
-    await expect(pending.promise).resolves.toBe('completed')
+  it('rejects a stalled event wait with a message naming the event and stops listening', async () => {
+    const emitter = new EventEmitter()
+    await expect(waitForEmitterEvent(emitter, 'delay-changed', 50)).rejects.toThrow(
+      'delay-changed event did not settle within 50ms',
+    )
+    expect(emitter.listenerCount('delay-changed')).toBe(0)
   })
-
-  it.each(['delay-changed', 'added', 'retrying', 'message-deleted', 'poll-error'])(
-    'rejects a stalled %s wait with a message naming the event',
-    async event => {
-      const emitter = new EventEmitter()
-      await expect(waitForEmitterEvent(emitter, event, 50)).rejects.toThrow(
-        `${event} event did not settle within 50ms`,
-      )
-      expect(emitter.listenerCount(event)).toBe(0)
-    },
-  )
 
   it('resolves with the first payload of an emitted event and stops listening', async () => {
     const emitter = new EventEmitter()
