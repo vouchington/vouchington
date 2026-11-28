@@ -1610,10 +1610,6 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fields jsonb)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT COALESCE(jsonb_object_agg(field, jsonb_build_object(\n    'before', before_fields -> field, 'after', after_fields -> field)), '{}'::jsonb)\n  FROM (SELECT jsonb_object_keys(before_fields || after_fields) AS field) fields\n  WHERE before_fields -> field IS DISTINCT FROM after_fields -> field\n$function$\n",
       "returnsSet": false
     },
-    "fn_immutable_array_to_string(p_array text[], p_delimiter text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p_delimiter text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT array_to_string(p_array, p_delimiter)\n$function$\n",
-      "returnsSet": false
-    },
     "fn_lock_active_user_for_mutation(target_user_id uuid, for_update boolean)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_active_user_for_mutation(target_user_id uuid, for_update boolean DEFAULT false)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  user_deleted_at TIMESTAMPTZ;\nBEGIN\n  -- lock-reason: prevents: committing a user-owned write after that account has entered erasure.\n  -- Writer: deleteUser sets users.deleted_at under the account-deletion privacy fence.\n  -- Lock by id only and branch on the locked row version: a writer that waited on deletion must\n  -- see the committed deleted_at, which a filtered or EXISTS-wrapped lock would not re-evaluate.\n  -- Writers that also UPDATE the users row pass for_update so two same-user transactions cannot\n  -- deadlock upgrading a shared lock; both modes conflict with deletion's FOR NO KEY UPDATE.\n  IF for_update THEN\n    SELECT deleted_at INTO user_deleted_at FROM users WHERE id = target_user_id FOR NO KEY UPDATE;\n  ELSE\n    SELECT deleted_at INTO user_deleted_at FROM users WHERE id = target_user_id FOR SHARE;\n  END IF;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'user % does not exist', target_user_id\n      USING ERRCODE = 'no_data_found';\n  ELSIF user_deleted_at IS NOT NULL THEN\n    RAISE EXCEPTION 'user % cannot own new data after deletion', target_user_id\n      USING ERRCODE = 'check_violation';\n  END IF;\nEND;\n$function$\n",
       "returnsSet": false
@@ -154299,7 +154295,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45
+          "ordinalPosition": 44
         },
         "lingua_rs_detected_at": {
           "comment": null,
@@ -154309,7 +154305,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48
+          "ordinalPosition": 47
         },
         "lingua_rs_detected_language": {
           "comment": null,
@@ -154319,7 +154315,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44
+          "ordinalPosition": 43
         },
         "lingua_rs_input_sha256": {
           "comment": null,
@@ -154329,7 +154325,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46
+          "ordinalPosition": 45
         },
         "lingua_rs_results": {
           "comment": null,
@@ -154339,7 +154335,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47
+          "ordinalPosition": 46
         },
         "logo_image_id": {
           "comment": "Reference to the topic's logo image.",
@@ -154409,7 +154405,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43
+          "ordinalPosition": 42
         },
         "rewards_program_topic_id": {
           "comment": "The rewards program this topic is associated with. Any topic type can link to a rewards program.",
@@ -154417,16 +154413,6 @@
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 42
-        },
-        "search_vector": {
-          "comment": null,
-          "dataType": "tsvector",
-          "defaultExpression": null,
-          "generated": "stored",
-          "generatedExpression": "(((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(fn_immutable_array_to_string(aliases, ' '::text), ''::text)), 'B'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'D'::\"char\"))",
           "identity": null,
           "nullable": true,
           "ordinalPosition": 41
@@ -155195,29 +155181,6 @@
           ],
           "live": true,
           "predicate": "(rewards_program_topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_topics__search_vector": {
-          "accessMethod": "gin",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__search_vector ON public.topics USING gin (search_vector) WHERE (deleted_at IS NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "search_vector",
-              "descending": false,
-              "expression": "search_vector",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.tsvector_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(deleted_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

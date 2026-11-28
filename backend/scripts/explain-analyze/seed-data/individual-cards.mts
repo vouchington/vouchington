@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { seedUuid } from './common.mts'
+import { seedUuid, TOPIC_SEED_COUNT } from './common.mts'
 
 export const INDIVIDUAL_CARD_SEED_COUNT = 10_000
 export const INDIVIDUAL_CARD_SEED_OWNER_COUNT = 100
@@ -44,7 +44,7 @@ export async function seedIndividualCards(count = INDIVIDUAL_CARD_SEED_COUNT): P
         values.push(
           seedUuid(idx, '1c'),
           seedUuid(idx % ownerCount, '1b'),
-          seedUuid(idx % 2500, '04'),
+          seedUuid(Math.floor((idx * TOPIC_SEED_COUNT) / count), '04'),
         )
         const base = values.length - 2
         rows.push(`($${base}, $${base + 1}, $${base + 2})`)

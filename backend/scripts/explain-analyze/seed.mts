@@ -120,7 +120,7 @@ async function main() {
   await seedUserAgentStrings()
   await seedCopyrightStaffEvidence()
   await seedUrls()
-  await seedTopics(2500)
+  await seedTopics()
   await seedIndividualCards(INDIVIDUAL_CARD_SEED_COUNT)
   await seedPointValuations(POINT_VALUATION_SEED_COUNT)
   await seedSpendingCategories(SPENDING_CATEGORY_SEED_COUNT)

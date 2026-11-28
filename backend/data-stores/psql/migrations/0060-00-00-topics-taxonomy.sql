@@ -101,13 +101,6 @@ CREATE TABLE IF NOT EXISTS topics (
   bedrock_nova_multimodal_v1_input_token_count INT,
   CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
 
-  search_vector TSVECTOR GENERATED ALWAYS AS (
-    setweight(to_tsvector('voucha_english', COALESCE(name, '')), 'A') ||
-    setweight(to_tsvector('voucha_english', COALESCE(slug, '')), 'A') ||
-    setweight(to_tsvector('voucha_english', COALESCE(fn_immutable_array_to_string(aliases, ' '), '')), 'B') ||
-    setweight(to_tsvector('voucha_english', COALESCE(markdown, '')), 'D')
-  ) STORED,
-
   rewards_program_topic_id UUID,  -- FK to rewards_program_topics added below
   referral_program_topic_id UUID,  -- FK to referral_program_topics added below
 
@@ -347,12 +340,6 @@ ADD CONSTRAINT fk_url_hostnames_topic_id FOREIGN KEY (topic_id) REFERENCES topic
 ALTER TABLE url_hostnames VALIDATE CONSTRAINT fk_url_hostnames_topic_id;
 
 COMMENT ON COLUMN url_hostnames.topic_id IS 'The topic associated with this hostname (e.g. the company''s topic page).';
-
--- text search
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_topics__search_vector
-ON topics USING GIN (search_vector)
-WHERE deleted_at IS NULL;
 
 -- find existing embeddings by input hash
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
