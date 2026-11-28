@@ -8,6 +8,7 @@ export function assertBoundedSemanticNearestPlan(
     relation: string
     limit: number
     maxProcessed?: number
+    lateral?: boolean
   },
 ): void {
   if (result.scenario_id !== options.scenarioId) return
@@ -15,7 +16,11 @@ export function assertBoundedSemanticNearestPlan(
   const nodes = collectPlanNodes(result.plan)
   const candidate = nodes.find(node => node['Subplan Name'] === 'CTE semantic_nearest')
   const candidateNodes = candidate ? collectPlanNodes(candidate) : []
-  const limitNode = candidateNodes.find(node => node['Node Type'] === 'Limit')
+  const limitNode = options.lateral
+    ? candidateNodes.find(node => node['Node Type'] === 'Limit')
+    : candidate?.['Node Type'] === 'Limit'
+      ? candidate
+      : undefined
   if (
     !candidate ||
     !limitNode ||

@@ -141,6 +141,31 @@ describe('assertSemanticTopicSearchPlan', () => {
   )
 
   it.each(['force_custom_plan', 'force_generic_plan'] as const)(
+    'rejects a nested Limit when direct semantic_nearest CTE is not itself a Limit in %s',
+    mode => {
+      const nestedUnderDirect = makeExplainResult(
+        [makeBoundedSimilarTopicNearestCte(SEMANTIC_TOPIC_CANDIDATE_LIMIT, 0)],
+        mode,
+        'topic-search-semantic-cursor',
+      )
+      expect(() => assertSemanticTopicSearchPlan(nestedUnderDirect)).toThrow(
+        'must materialize a bounded semantic_nearest prefix',
+      )
+    },
+  )
+
+  it('ignores results with missing or unrelated scenario_id', () => {
+    const missingId = makeExplainResult([])
+    delete missingId.scenario_id
+    expect(() => assertSemanticTopicSearchPlan(missingId)).not.toThrow()
+    expect(() =>
+      assertSemanticTopicSearchPlan(
+        makeExplainResult([], 'force_custom_plan', 'topic-search-text'),
+      ),
+    ).not.toThrow()
+  })
+
+  it.each(['force_custom_plan', 'force_generic_plan'] as const)(
     'passes a bounded similar_topic_id HNSW plan (k + anchor rows) and rejects excess rows in %s',
     mode => {
       const bounded = makeExplainResult(

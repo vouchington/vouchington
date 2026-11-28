@@ -101,6 +101,32 @@ describe('tools semantic topic search plan gate', () => {
     expect(() =>
       assertToolsSemanticTopicSearchPlan(
         buildPlanResult({
+          candidateNode: {
+            'Node Type': 'Nested Loop',
+            Plans: [
+              {
+                'Node Type': 'Limit',
+                'Actual Rows': TOOLS_SEMANTIC_TOPIC_CANDIDATE_LIMIT,
+                'Actual Loops': 1,
+                Plans: [
+                  {
+                    'Node Type': 'Index Scan',
+                    'Relation Name': 'topics',
+                    'Index Name': 'idx_topics__bedrock_nova_multimodal_v1_embedding',
+                    'Order By': '(bedrock_nova_multimodal_v1_embedding <=> ($1)::vector)',
+                    'Actual Rows': TOOLS_SEMANTIC_TOPIC_CANDIDATE_LIMIT,
+                    'Actual Loops': 1,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      ),
+    ).toThrow('bounded semantic_nearest prefix')
+    expect(() =>
+      assertToolsSemanticTopicSearchPlan(
+        buildPlanResult({
           candidateNode: { 'Actual Rows': TOOLS_SEMANTIC_TOPIC_CANDIDATE_LIMIT + 1 },
         }),
       ),

@@ -5,12 +5,6 @@ type SemanticNearestLateralAnchorCte =
   | 'similar_post_embedding'
   | 'similar_rss_feed_item_embedding'
 
-const LATERAL_ANCHOR_SQL: Readonly<Record<SemanticNearestLateralAnchorCte, string>> = {
-  similar_topic_embedding: 'similar_topic_embedding',
-  similar_post_embedding: 'similar_post_embedding',
-  similar_rss_feed_item_embedding: 'similar_rss_feed_item_embedding',
-}
-
 type SemanticNearestCteOptions = {
   selectColumns: readonly string[]
   from: string
@@ -123,7 +117,7 @@ export function buildSemanticNearestCte({
     .append(sql`,
         nearest.embedding_distance
       FROM `)
-    .append(LATERAL_ANCHOR_SQL[lateralAnchor.cte]).append(sql` anchor_embedding
+    .append(lateralAnchor.cte).append(sql` anchor_embedding
       CROSS JOIN LATERAL (
         `)
   appendBoundedNearestSelect(query, {
