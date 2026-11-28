@@ -9,30 +9,39 @@ import type { CopyrightStaffCase } from './read-models-staff-types.mts'
 import { getCopyrightSweepLimits } from './work-limits.mts'
 
 export async function selectStaffTargets(noticeIds: readonly string[], query: TransactionQuery) {
-  const { rows } = await query<
-    CopyrightStaffCase['targets'][number] & { copyright_notice_id: string }
-  >(
-    sql`/* getPendingCopyrightStaffCase:targets */
-      SELECT target.copyright_notice_id, target.id,
-        concat('image-placement:', target.placement_id) AS placement_key,
-        target.placement_revision, image.image_id, target.hosted_use_url,
-        COALESCE(surface.surface_kind::text, 'post-image') AS surface,
-        CASE WHEN activation.placement_id IS NULL THEN NULL ELSE jsonb_build_object(
-          'set_by_id', activation.bound_by_id,
-          'set_by_administrator', activation.is_bound_by_administrator,
-          'uploaded_by_id', activation.uploaded_by_id
-        ) END AS provenance
-      FROM copyright_notice_targets target JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id
-      LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
-      LEFT JOIN LATERAL (
-        SELECT recorded.placement_id, recorded.bound_by_id, recorded.is_bound_by_administrator,
-          recorded.uploaded_by_id
-        FROM image_surface_placement_activations recorded
-        WHERE recorded.placement_id = target.placement_id
-          AND recorded.placement_revision = target.surface_activation_revision
-      ) activation ON true
-      WHERE target.copyright_notice_id = ANY(${noticeIds}::uuid[]) ORDER BY target.id
-    `,
+  type StaffTargetRow = CopyrightStaffCase['targets'][number] & { copyright_notice_id: string }
+  const rows = await collectKeysetPages<StaffTargetRow, string>(
+    getCopyrightSweepLimits().batchSize,
+    async (afterId, limit) => {
+      const { rows: page } = await query<StaffTargetRow>(
+        sql`/* getPendingCopyrightStaffCase:targets */
+          SELECT target.copyright_notice_id, target.id,
+            concat('image-placement:', target.placement_id) AS placement_key,
+            target.placement_revision, image.image_id, target.hosted_use_url,
+            COALESCE(surface.surface_kind::text, 'post-image') AS surface,
+            CASE WHEN activation.placement_id IS NULL THEN NULL ELSE jsonb_build_object(
+              'set_by_id', activation.bound_by_id,
+              'set_by_administrator', activation.is_bound_by_administrator,
+              'uploaded_by_id', activation.uploaded_by_id
+            ) END AS provenance
+          FROM copyright_notice_targets target JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id
+          LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
+          LEFT JOIN LATERAL (
+            SELECT recorded.placement_id, recorded.bound_by_id, recorded.is_bound_by_administrator,
+              recorded.uploaded_by_id
+            FROM image_surface_placement_activations recorded
+            WHERE recorded.placement_id = target.placement_id
+              AND recorded.placement_revision = target.surface_activation_revision
+          ) activation ON true
+          WHERE target.copyright_notice_id = ANY(${noticeIds}::uuid[])
+            AND (${afterId}::uuid IS NULL OR target.id > ${afterId}::uuid)
+          ORDER BY target.id ASC
+          LIMIT ${limit}
+        `,
+      )
+      return page
+    },
+    row => row.id,
   )
   return groupByNotice(rows)
 }

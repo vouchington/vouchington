@@ -5,7 +5,9 @@ import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { toCopyrightAiRun, type CopyrightAiRun } from './ai-run-types.mts'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { collectKeysetPages } from './bounded-reads.mts'
 import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
 import {
@@ -149,14 +151,22 @@ async function getCopyrightEmailLinkedNotice(noticeId: string): Promise<{
   targets: Array<{ id: string; placement_key: string }>
 } | null> {
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{
-    id: string
-    placement_key: string
-  }>(sql`/* getCopyrightEmailLinkedNotice */
-    SELECT id, concat('image-placement:', placement_id) AS placement_key FROM copyright_notice_targets
-    WHERE copyright_notice_id = ${noticeId}
-    ORDER BY id
-  `)
+  const rows = await collectKeysetPages<{ id: string; placement_key: string }, string>(
+    getCopyrightSweepLimits().batchSize,
+    async (afterId, limit) => {
+      const { rows: page } = await transaction<{ id: string; placement_key: string }>(sql`
+        /* getCopyrightEmailLinkedNotice */
+        SELECT id, concat('image-placement:', placement_id) AS placement_key
+        FROM copyright_notice_targets
+        WHERE copyright_notice_id = ${noticeId}
+          AND (${afterId}::uuid IS NULL OR id > ${afterId}::uuid)
+        ORDER BY id ASC
+        LIMIT ${limit}
+      `)
+      return page
+    },
+    row => row.id,
+  )
   await transaction.commit()
   return rows.length > 0 ? { id: noticeId, targets: rows } : null
 }

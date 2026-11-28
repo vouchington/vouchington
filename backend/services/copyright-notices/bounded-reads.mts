@@ -1,3 +1,4 @@
+import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
@@ -135,4 +136,56 @@ export async function selectParticipantNoticeSubmissions(
     },
     row => ({ receivedAt: row.received_at, id: row.id }),
   )
+}
+
+export async function selectParticipantRespondableTargetIds(
+  noticeId: string,
+  userId: string,
+  transaction: TransactionQuery,
+): Promise<string[]> {
+  const rows = await collectKeysetPages<{ id: string }, string>(
+    getCopyrightSweepLimits().batchSize,
+    async (afterId, limit) => {
+      const targetSql = sql`/* getCopyrightParticipantNoticeDetail:respondableTargets */
+        SELECT DISTINCT target.id
+        FROM copyright_notice_targets target
+        CROSS JOIN LATERAL `
+      targetSql.append(copyrightPlacementPartiesSql('respond'))
+      targetSql.append(sql` party
+        WHERE target.copyright_notice_id = ${noticeId}
+          AND party.user_id = ${userId}
+          AND (${afterId}::uuid IS NULL OR target.id > ${afterId}::uuid)
+        ORDER BY target.id ASC
+        LIMIT ${limit}`)
+      const { rows: page } = await transaction<{ id: string }>(targetSql)
+      return page
+    },
+    row => row.id,
+  )
+  return rows.map(row => row.id)
+}
+
+export async function selectNoticeTargetUrls(
+  query: QueryExecutor,
+  noticeId: string,
+  targetIds: readonly string[] | null,
+): Promise<string[]> {
+  const rows = await collectKeysetPages<{ id: string; hosted_use_url: string }, string>(
+    getCopyrightSweepLimits().batchSize,
+    async (afterId, limit) => {
+      const { rows: page } = await query<{ id: string; hosted_use_url: string }>(sql`
+        /* getCopyrightSubmissionGuidanceSource:targets */
+        SELECT target.id, target.hosted_use_url
+        FROM copyright_notice_targets target
+        WHERE target.copyright_notice_id = ${noticeId}
+          AND (${targetIds}::uuid[] IS NULL OR target.id = ANY(${targetIds}::uuid[]))
+          AND (${afterId}::uuid IS NULL OR target.id > ${afterId}::uuid)
+        ORDER BY target.id ASC
+        LIMIT ${limit}
+      `)
+      return page
+    },
+    row => row.id,
+  )
+  return rows.map(row => row.hosted_use_url)
 }

@@ -1,7 +1,9 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AutomaticWithholdingRefusalReason } from './automatic-withholding-gates.mts'
+import { collectKeysetPages } from './bounded-reads.mts'
 import type { AutomaticWithholdingThresholds } from './config.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -20,15 +22,24 @@ export async function checkAutomaticWithholdingCaps(
   },
 ): Promise<AutomaticWithholdingRefusalReason | null> {
   const windowStart = new Date((input.now ?? new Date()).getTime() - DAY_MS)
-  const { rows: posterRows } = await transaction<{ user_id: string }>(sql`
-    /* checkAutomaticWithholdingCaps:posters */
-    SELECT DISTINCT post.created_by_id AS user_id
-    FROM copyright_notice_targets target
-    JOIN image_placements image_placement ON image_placement.placement_id = target.placement_id
-    JOIN posts post ON post.id = image_placement.post_id
-    WHERE target.copyright_notice_id = ${input.noticeId}
-    ORDER BY post.created_by_id
-  `)
+  const posterRows = await collectKeysetPages<{ user_id: string }, string>(
+    getCopyrightSweepLimits().batchSize,
+    async (afterUserId, limit) => {
+      const { rows } = await transaction<{ user_id: string }>(sql`
+        /* checkAutomaticWithholdingCaps:posters */
+        SELECT DISTINCT post.created_by_id AS user_id
+        FROM copyright_notice_targets target
+        JOIN image_placements image_placement ON image_placement.placement_id = target.placement_id
+        JOIN posts post ON post.id = image_placement.post_id
+        WHERE target.copyright_notice_id = ${input.noticeId}
+          AND (${afterUserId}::uuid IS NULL OR post.created_by_id > ${afterUserId}::uuid)
+        ORDER BY post.created_by_id ASC
+        LIMIT ${limit}
+      `)
+      return rows
+    },
+    row => row.user_id,
+  )
   const posterIds = posterRows.map(row => row.user_id)
   const { rows: claimantRows } = await transaction<{ total: number }>(sql`
     /* checkAutomaticWithholdingCaps:claimant */

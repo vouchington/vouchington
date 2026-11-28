@@ -2,8 +2,10 @@ import { beginTransaction } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
-import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
-import { selectParticipantNoticeSubmissions } from './bounded-reads.mts'
+import {
+  selectParticipantNoticeSubmissions,
+  selectParticipantRespondableTargetIds,
+} from './bounded-reads.mts'
 import { selectCopyrightParticipantStatements } from './participant-statements.mts'
 import type {
   CopyrightParticipantNoticeDetail,
@@ -51,14 +53,13 @@ export async function getEuParticipantNoticeDetail(
     WHERE notice.id = ${noticeId} AND notice.jurisdiction = 'eu_dsa'
       AND notice.current_territorial_decision_identity_id IS NOT NULL`)
   const decision = decisions[0]
-  const targetSql = sql`/* getEuParticipantNoticeDetail:respondableTargets */
-    SELECT DISTINCT target.id FROM copyright_notice_targets target CROSS JOIN LATERAL `
-  targetSql.append(copyrightPlacementPartiesSql('respond'))
-  targetSql.append(sql` party WHERE target.copyright_notice_id = ${noticeId}
-    AND party.user_id = ${currentUser.id} ORDER BY target.id`)
-  const { rows: targets } = await transaction<{ id: string }>(targetSql)
+  const respondableTargetIds = await selectParticipantRespondableTargetIds(
+    noticeId,
+    currentUser.id,
+    transaction,
+  )
   const notifier = notice.claimant_user_id === currentUser.id
-  const poster = targets.length > 0
+  const poster = respondableTargetIds.length > 0
   const informed =
     decision && (notifier || poster)
       ? await getTerritorialInformedWindow(

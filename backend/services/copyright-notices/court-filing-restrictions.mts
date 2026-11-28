@@ -4,6 +4,8 @@ import { runSequentially } from '@modules/utils/run-sequentially'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { insertCopyrightActionIntents } from './action-intent-insertion.mts'
+import { collectKeysetPages } from './bounded-reads.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 
 /** Retain the filing itself as the real ground, without claiming it has been assessed. */
 export async function imposeCopyrightCourtFilingRestrictions(
@@ -12,12 +14,23 @@ export async function imposeCopyrightCourtFilingRestrictions(
   now: Date,
   query: TransactionQuery,
 ): Promise<string[]> {
-  const { rows: placements } = await query<{ id: string }>(sql`
-    /* imposeCopyrightCourtFilingRestrictions:placements */
-    SELECT DISTINCT placement.id FROM media_placements placement
-    JOIN copyright_notice_targets target ON target.placement_id = placement.id
-    WHERE target.copyright_notice_id = ${noticeId} ORDER BY placement.id
-  `)
+  const pageSize = getCopyrightSweepLimits().batchSize
+  const placements = await collectKeysetPages<{ id: string }, string>(
+    pageSize,
+    async (afterId, limit) => {
+      const { rows } = await query<{ id: string }>(sql`
+        /* imposeCopyrightCourtFilingRestrictions:placements */
+        SELECT DISTINCT placement.id FROM media_placements placement
+        JOIN copyright_notice_targets target ON target.placement_id = placement.id
+        WHERE target.copyright_notice_id = ${noticeId}
+          AND (${afterId}::uuid IS NULL OR placement.id > ${afterId}::uuid)
+        ORDER BY placement.id ASC
+        LIMIT ${limit}
+      `)
+      return rows
+    },
+    row => row.id,
+  )
   await lockCopyrightPlacementTransitions(
     placements.map(placement => placement.id),
     query,
@@ -62,15 +75,30 @@ export async function imposeCopyrightCourtFilingRestrictions(
       if (withheld[0]) previousRevision.set(placement.id, withheld[0].prior_revision)
     }),
   )
-  const { rows } = await query<{ id: string; placement_id: string; revision: number }>(sql`
-    /* imposeCopyrightCourtFilingRestrictions:actions */
-    SELECT restriction.id, placement.id AS placement_id, placement.revision
-    FROM copyright_restrictions restriction
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    JOIN media_placements placement ON placement.id = target.placement_id
-    WHERE target.copyright_notice_id = ${noticeId} AND restriction.lifted_at IS NULL
-    ORDER BY restriction.id
-  `)
+  const rows = await collectKeysetPages<
+    { id: string; placement_id: string; revision: number },
+    string
+  >(
+    pageSize,
+    async (afterId, limit) => {
+      const { rows: page } = await query<{ id: string; placement_id: string; revision: number }>(
+        sql`
+          /* imposeCopyrightCourtFilingRestrictions:actions */
+          SELECT restriction.id, placement.id AS placement_id, placement.revision
+          FROM copyright_restrictions restriction
+          JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+          JOIN media_placements placement ON placement.id = target.placement_id
+          WHERE target.copyright_notice_id = ${noticeId}
+            AND restriction.lifted_at IS NULL
+            AND (${afterId}::uuid IS NULL OR restriction.id > ${afterId}::uuid)
+          ORDER BY restriction.id ASC
+          LIMIT ${limit}
+        `,
+      )
+      return page
+    },
+    row => row.id,
+  )
   const intents = await insertCopyrightActionIntents(
     query,
     rows.map(row => ({
@@ -87,17 +115,26 @@ export async function insertCopyrightCourtFilingRestoreIntents(
   noticeId: string,
   query: TransactionQuery,
 ): Promise<string[]> {
-  const { rows } = await query<{ id: string; revision: number }>(sql`
-    /* insertCopyrightCourtFilingRestoreIntents */
-    SELECT restriction.id, placement.revision
-    FROM copyright_restrictions restriction
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    JOIN media_placements placement ON placement.id = target.placement_id
-    WHERE target.copyright_notice_id = ${noticeId}
-      AND restriction.copyright_notice_submission_id IS NOT NULL
-      AND restriction.lifted_at IS NULL
-    ORDER BY restriction.id
-  `)
+  const rows = await collectKeysetPages<{ id: string; revision: number }, string>(
+    getCopyrightSweepLimits().batchSize,
+    async (afterId, limit) => {
+      const { rows: page } = await query<{ id: string; revision: number }>(sql`
+        /* insertCopyrightCourtFilingRestoreIntents */
+        SELECT restriction.id, placement.revision
+        FROM copyright_restrictions restriction
+        JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+        JOIN media_placements placement ON placement.id = target.placement_id
+        WHERE target.copyright_notice_id = ${noticeId}
+          AND restriction.copyright_notice_submission_id IS NOT NULL
+          AND restriction.lifted_at IS NULL
+          AND (${afterId}::uuid IS NULL OR restriction.id > ${afterId}::uuid)
+        ORDER BY restriction.id ASC
+        LIMIT ${limit}
+      `)
+      return page
+    },
+    row => row.id,
+  )
   const intents = await insertCopyrightActionIntents(
     query,
     rows.map(row => ({
