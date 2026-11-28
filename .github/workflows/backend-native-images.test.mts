@@ -10,7 +10,7 @@ import picomatch from 'picomatch'
 type Job = {
   permissions?: Record<string, string>
   services?: unknown
-  steps?: { run?: string }[]
+  steps?: { uses?: string; run?: string; with?: Record<string, unknown> }[]
 }
 const smoke = parse(readFileSync('.github/workflows/checks-backend-smoke.yml', 'utf8')) as {
   jobs: Record<string, Job>
@@ -24,6 +24,11 @@ describe('backend native image validation', () => {
     expect(JSON.stringify(native)).not.toMatch(
       /secrets\.|id-token|setup-aws|trusted.secret.context|publish-images/,
     )
+    expect(
+      native.steps?.find(step => step.uses?.startsWith('actions/checkout@'))?.with?.[
+        'persist-credentials'
+      ],
+    ).toBe(false)
     const build = native.steps?.find(step => step.run?.includes('docker buildx bake'))?.run
     expect(build).toBeDefined()
     expect(build).not.toContain('--push')

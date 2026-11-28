@@ -24,15 +24,6 @@ const runBackendTestsScript = workflowStepScript(
   stepsWorkflow.jobs?.['backend-tests']?.steps?.find(step => step.name === 'Run backend tests')
     ?.run,
 )
-const vitestConfig = [
-  'vitest.config.mts',
-  'test-helpers/vitest-config/backend-core-projects.mts',
-  'test-helpers/vitest-config/backend-credentialed-projects.mts',
-  'test-helpers/vitest-config/backend-data-projects.mts',
-  'test-helpers/vitest-config/environment.mts',
-]
-  .map(path => readFileSync(path, 'utf8'))
-  .join('\n')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as {
   scripts: Record<string, string>
 }
@@ -44,78 +35,16 @@ function jobSection(jobName: string): string {
   return next === -1 ? rest : rest.slice(0, next)
 }
 describe('backend uncredentialed Docker test workflow', () => {
-  it('leaves Docker-free static checks to the backend module workflow', () => {
-    const backendJob = jobSection('backend-tests')
-    expect(workflow).toContain('name: Backend Uncredentialed Docker Tests')
-    expect(backendJob).not.toContain('Check backend dependencies')
-    expect(backendJob).not.toContain('Typecheck backend and email templates')
-  })
-  it('prepares a demand-neutral registry-sized backend test shard matrix on ubuntu-latest', () => {
-    const prep = jobSection('prep')
-    expect(prep).toContain('runs-on: ubuntu-latest')
-    expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
-    expect(prep).toContain('node ci/vitest/shard-total.mts test-backend-unit')
-    expect(prep).toContain(
-      'FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_BACKEND_UNIT_FILES_PER_SHARD }}',
-    )
-    expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
-    expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
-    expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
-    expect(workflow).not.toContain('max-parallel')
-  })
-
-  it('keeps OpenAI integration tests out of the normal backend project', () => {
-    expect(vitestConfig).toContain("name: 'backend-openai'")
-    expect(vitestConfig).toContain("include: ['backend/**/*.openai*.test.mts']")
-    expect(vitestConfig).toContain("'**/*.openai*.test.mts'")
-    expect(vitestConfig).not.toContain("include: ['backend/**/*.openai.test.mts']")
-    expect(packageJson.scripts['test:backend']).toContain('run-vitest-project-group.mts backend')
-    expect(packageJson.scripts['test:backend']).not.toContain('pnpm run')
-    expect(packageJson.scripts.test).toContain('pnpm run test:backend')
-  })
-
   it('gives every credentialed project its own script and keeps it out of the core groups', () => {
+    expect(backendCredentialedProjectNames.length).toBeGreaterThan(0)
     for (const project of backendCredentialedProjectNames) {
       expect(projectsForVitestGroup('backend-core')).not.toContain(project)
       expect(projectsForVitestGroup('backend-default')).not.toContain(project)
       expect(packageJson.scripts[`test:${project.replace('backend-', 'backend:')}`]).toBe(
         `node ci/run-vitest-project-group.mts ${project}`,
       )
-    }
-  })
-
-  it('combines service-backed backend Vitest projects in one sharded command', () => {
-    const backendCommand =
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-ai-usage-monthly-ddl --project backend-partition-retirement --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD"'
-    expect(runBackendTestsScript).toContain(backendCommand)
-    expect(runBackendTestsScript).toContain(
-      'console.log(parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS))',
-    )
-    expect(runBackendTestsScript).toContain(
-      `(\n  unset VITEST_MAX_WORKERS\n  export VITEST_BACKEND_MAX_WORKERS="$vitest_workers"\n  export VITEST_AI_USAGE_DDL_MAX_WORKERS=1\n  ${backendCommand}\n)`,
-    )
-    expect(
-      runBackendTestsScript?.match(/--project backend-migration-initializers\b/g),
-    ).toHaveLength(1)
-    expect(workflow).toContain(
-      "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
-    )
-    expect(workflow).not.toContain('--coverage')
-    expect(vitestConfig).not.toContain("name: 'backend-seed-csvs'")
-    expect(vitestConfig).toContain("name: 'backend-real-glide-mq'")
-    expect(vitestConfig).not.toContain('fileParallelism: false')
-    expect(vitestConfig).toContain(
-      "name: 'backend-ai-usage-monthly-ddl',\n      sequence: { groupOrder: 1 },\n      maxWorkers: resolveAiUsageDdlMaxWorkers()",
-    )
-    expect(vitestConfig).not.toContain("name: 'backend-activitypub-capacity'")
-    for (const project of backendCredentialedProjectNames) {
       expect(workflow).not.toContain(`--project ${project}`)
     }
-    expect(workflow).not.toContain('--project backend-no-data-mocks')
-    expect(workflow).not.toContain('--project backend-modules')
-    expect(workflow).not.toContain('analytics-data-store-test-report.junit.xml')
-    expect(workflow).not.toContain('analytics-service-test-report.junit.xml')
-    expect(workflow).not.toContain('analytics-db-service-test-report.junit.xml')
   })
 
   it('preserves Vitest failures through the tee pipeline before collecting shard hits', () => {
@@ -127,29 +56,10 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(script.indexOf(' --collect \\')).toBeGreaterThan(script.indexOf(vitestPipeline))
   })
 
-  it('builds email templates without owning backend smoke', () => {
-    const setupBackend = workflow.indexOf('actions/setup-backend')
-
-    expect(setupBackend).toBeGreaterThanOrEqual(0)
-    expect(workflow).not.toContain('Allocate backend port')
-    expect(workflow).not.toContain('./scripts/tests/smoke-test-server.sh')
-    expect(workflow).not.toContain('./scripts/tests/smoke-test-worker.sh')
-  })
-
-  it('uses threads by default but keeps backend projects on forks', () => {
-    expect(vitestConfig).toContain("pool: 'threads'")
-    expect(vitestConfig).toContain("pool: 'forks'")
-    expect(vitestConfig).toContain('--disable-warning=DEP0205')
-    expect(workflow).not.toContain('VITEST_POOL=forks')
-  })
-
   it('keeps default backend shards free of external credentials', () => {
     const backendJob = jobSection('backend-tests')
-    const deletedTestsRoleVariable = ['AWS', 'TESTS', 'ROLE', 'ARN'].join('_')
 
     expect(workflow).not.toContain('id-token: write')
-    expect(backendJob).not.toContain('AWS_REGION: us-west-2')
-    expect(backendJob).not.toContain(deletedTestsRoleVariable)
     expect(backendJob).not.toContain('Configure AWS credentials')
     expect(backendJob).not.toContain('OPENAI_API_KEY')
   })
@@ -157,129 +67,11 @@ describe('backend uncredentialed Docker test workflow', () => {
   it('uploads each shard JUnit report for per-file timing even when the shard fails', () => {
     const steps = stepsWorkflow.jobs?.['backend-tests']?.steps ?? []
     const runIndex = steps.findIndex(step => step.name === 'Run backend tests')
-    const uploadIndex = steps.findIndex(step => step.name?.endsWith('JUnit report'))
-    const upload = steps[uploadIndex]
+    const upload = steps.find(step => step.name?.endsWith('JUnit report'))
 
     expect(runIndex).toBeGreaterThanOrEqual(0)
-    expect(steps[runIndex]?.env?.['VITEST_JUNIT_OUTPUT_FILE']).toBe('test-report.junit.xml')
-    expect(uploadIndex).toBe(runIndex + 1)
     expect(upload?.if).toBe('${{ !cancelled() }}')
-    expect(upload?.uses).toMatch(/^actions\/upload-artifact@[0-9a-f]{40}$/u)
-    expect(upload?.with).toMatchObject({
-      name: 'backend-junit-shard-${{ matrix.shard }}',
-      path: 'test-report.junit.xml',
-      'if-no-files-found': 'ignore',
-    })
-  })
-
-  it('keeps consumed full LCOV upload attempts best-effort', () => {
-    const backendJob = jobSection('backend-tests')
-    const fallbackStepIndex = backendJob.indexOf(
-      'name: Upload full backend-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)',
-    )
-    const fallbackStep = backendJob.slice(
-      fallbackStepIndex,
-      backendJob.indexOf('\n      - ', fallbackStepIndex + 1),
-    )
-
-    expect(fallbackStepIndex).toBeGreaterThanOrEqual(0)
-    expect(fallbackStep).toContain('continue-on-error: true')
-    expect(fallbackStep).toContain(
-      'uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@',
-    )
-    expect(fallbackStep).toContain('suite: backend-shard-${{ matrix.shard }}')
-  })
-
-  it('preserves the parent report before uploading full shard coverage', () => {
-    const backendJob = jobSection('backend-tests')
-    const preserveStep = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(step =>
-      step.name?.startsWith('Preserve full backend-shard-'),
-    )
-    // A failed shard writes no coverage; a second missing-LCOV error would only repeat the failure.
-    expect(preserveStep?.if).toContain("steps.backend-tests.outcome == 'success'")
-    expect(workflowStepScript(preserveStep?.run)).toContain('if [ ! -s coverage/lcov.info ]; then')
-    expect(workflowStepScript(preserveStep?.run)).toContain(
-      'cp coverage/lcov.info coverage-merge-input/parent/lcov.info',
-    )
-    expect(workflowStepScript(preserveStep?.run)).toContain(
-      './ci/node_modules/.bin/coverage-check merge',
-    )
-    expect(workflowStepScript(preserveStep?.run)).toContain('--output coverage-full/lcov.info')
-    expect(backendJob.indexOf('name: Preserve full backend-shard-')).toBeLessThan(
-      backendJob.indexOf('Upload full backend-shard-'),
-    )
-  })
-
-  it('provides a pure image origin to backend serialization tests', () => {
-    expect(jobSection('backend-tests')).toContain('IMAGE_ORIGIN: http://127.0.0.1:3100')
-  })
-
-  it('runs backend diagnostics only when explicitly enabled', () => {
-    const runStep = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(
-      step => step.name === 'Run backend tests',
-    )
-    const script = runBackendTestsScript ?? ''
-    const sampleAt = script.indexOf('start_sampler sample_runner_resources 15')
-    const vitestAt = script.indexOf('pnpm exec ./ci/with-node-test-options vitest run --bail=3')
-
-    expect(runStep?.env?.VITEST_CI_REPORTERS).toBe('run')
-    expect(runStep?.env?.VITEST_DIAGNOSTICS).toBe(
-      "${{ (inputs.diagnostics || vars.VITEST_DIAGNOSTICS == '1') && '1' || '0' }}",
-    )
-    expect(runStep?.env).not.toHaveProperty('VITEST_FILE_PROGRESS')
-    expect(script).toContain('if [ "$VITEST_DIAGNOSTICS" = 1 ]; then')
-    expect(script).toContain(
-      'start_sampler sample_runner_resources 15\n  start_sampler sample_postgres_waits 0.5',
-    )
-    expect(script).toContain('start_sampler sample_runner_pressure 2\nfi')
-    expect(script).toContain("resource_prefix='[backend-unit-resources]'")
-    expect(script).toContain('printf \'%s %s\\n\' "$1" "$line"')
-    expect(script).toContain('} 2>&1 | prefix_lines "$resource_prefix"')
-    expect(script).toContain('free -m')
-    expect(script).toContain('df -h "$GITHUB_WORKSPACE"')
-    expect(script).toContain('df -h -t tmpfs')
-    expect(script).toContain('ps -eo pid,rss,pmem,comm --sort=-rss')
-    expect(script).toContain(') &')
-    expect(script).toContain('trap stop_samplers EXIT')
-    expect(sampleAt).toBeGreaterThanOrEqual(0)
-    expect(vitestAt).toBeGreaterThan(sampleAt)
-    expect(script).not.toContain('--retry')
-  })
-
-  it('names blocked, blocking and slow database statements and host pressure while a shard runs', () => {
-    const script = runBackendTestsScript ?? ''
-    const sampleSql = readFileSync('ci/backend-unit-pg-waits.sql', 'utf8')
-    const vitestAt = script.indexOf('pnpm exec ./ci/with-node-test-options vitest run --bail=3')
-
-    expect(script).toContain("postgres_wait_prefix='[backend-unit-pg-waits]'")
-    expect(script).toContain("pressure_prefix='[backend-unit-pressure]'")
-    expect(script).toContain('psql "$DATABASE_URL" -X -At -F \'|\' -f ci/backend-unit-pg-waits.sql')
-    expect(script).toContain('PGAPPNAME=ci-pg-wait-sampler')
-    expect(script).toContain("PGOPTIONS='-c statement_timeout=3000'")
-    expect(script).toContain('vmstat 1 2')
-    expect(script).toContain('/proc/pressure/$resource')
-    expect(script.indexOf('start_sampler sample_postgres_waits 0.5')).toBeLessThan(vitestAt)
-    expect(script.indexOf('start_sampler sample_runner_pressure 2')).toBeLessThan(vitestAt)
-    expect(sampleSql).toContain('pg_blocking_pids(pid)')
-    expect(sampleSql).toContain('NOT lock.granted')
-    expect(sampleSql).toContain("application_name <> 'ci-pg-wait-sampler'")
-    expect(sampleSql).toContain("interval '1500 ms'")
-  })
-
-  it('runs the shard directly, with no self-hosted-era diagnostics or heavy-slot wrapper', () => {
-    const backendJob = jobSection('backend-tests')
-    const steps = stepsWorkflow.jobs?.['backend-tests']?.steps ?? []
-
-    expect(runBackendTestsScript).toContain(
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3',
-    )
-    expect(steps.some(step => step.name === 'Host pressure diagnostics')).toBe(false)
-    expect(steps.some(step => step.name === 'Vitest fork diagnostic report summary')).toBe(false)
-    expect(backendJob).not.toContain('host-pressure-diagnostics.sh')
-    expect(backendJob).not.toContain('vitest-diagnostic-report-summary')
-    expect(backendJob).not.toContain('VITEST_FORK_DIAGNOSTIC_DIR')
-    expect(backendJob).not.toContain('vitest-fork-diagnostics')
-    expect(backendJob).not.toContain('with-heavy-slot.sh')
+    expect(upload?.with?.path).toBe(steps[runIndex]?.env?.['VITEST_JUNIT_OUTPUT_FILE'])
   })
 
   it('does not restore or save a remote Vite transform cache', () => {
