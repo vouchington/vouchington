@@ -20,6 +20,17 @@ export const HNSW_SEARCH_BASE_SETTINGS = {
 } as const
 
 /**
+ * Default `hnsw.ef_search = '40'` for bounded semantic prefixes on 25k-40k row corpora (RSS feed
+ * items, topics): with `iterative_scan = relaxed_order` and `max_scan_tuples = 20000`, pgvector
+ * resumes graph traversal past the initial 40-entry list to fill `LIMIT k` while keeping pgvector's
+ * HNSW cost estimate below a parallel sequential scan in both custom and generic plans.
+ */
+export const HNSW_SEARCH_DEFAULT_SETTINGS = {
+  ...HNSW_SEARCH_BASE_SETTINGS,
+  'hnsw.ef_search': '40',
+} as const satisfies HnswSearchSettings
+
+/**
  * Runs a read-replica HNSW search query in a transaction with transaction-local `set_config`
  * parameters and `plan_cache_mode = 'force_custom_plan'`.
  */

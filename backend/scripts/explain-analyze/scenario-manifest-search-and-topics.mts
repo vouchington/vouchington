@@ -56,6 +56,7 @@ export const SEARCH_AND_TOPICS_SCENARIOS = [
   'topic-search-similar-topic',
   'topic-search-text',
   'topic-search-text-at-cap',
+  'tools-topic-search-semantic',
   'topic-viewer-counts',
   'topic-viewer-counts-dense',
   'topic-viewer-counts-many-aliases',

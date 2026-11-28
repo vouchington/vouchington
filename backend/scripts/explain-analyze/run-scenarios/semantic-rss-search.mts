@@ -1,4 +1,4 @@
-import { SEMANTIC_RSS_ITEM_SEARCH_SETTINGS } from '@services/rss-feed-items/search-semantic-query'
+import { HNSW_SEARCH_DEFAULT_SETTINGS } from '@data-stores/psql'
 import { runAndCapture } from '../run-support.mts'
 import { searchRssFeedItems } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
@@ -36,6 +36,6 @@ export async function runSemanticRssSearchScenario(): Promise<void> {
     },
     'cursor',
     'searchRssFeedItemsBySemantic',
-    { localSettings: SEMANTIC_RSS_ITEM_SEARCH_SETTINGS },
+    { localSettings: HNSW_SEARCH_DEFAULT_SETTINGS },
   )
 }

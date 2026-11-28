@@ -75,6 +75,8 @@ export const backgroundWorkRegistryEntries7 = {
         'Maximum ancestry depth inspected before a topic merge fails closed.',
       semantic_topic_candidate_limit:
         'Maximum nearest-neighbour topic candidates inspected by semantic topic search.',
+      tools_semantic_topic_candidate_limit:
+        'Maximum nearest-neighbor topic candidates scanned by topic tools semantic search.',
       viewer_count_input_cap:
         'Maximum aliases and relation rows inspected per topic viewer discussion count.',
     },
