@@ -51,15 +51,15 @@ export async function fetchRssFeed(
   const crawlableCheck = dependencies.checkRssFeedCrawlable ?? checkRssFeedCrawlable
   const fetchCrawlerRss = dependencies.crawlerRss ?? CrawlerRss
   const upsertItems = dependencies.upsertRssFeedItems ?? upsertRssFeedItems
-  const rssFeed = await getRssFeedByIdToFetch(rssFeedId, { ttl })
-  if (!rssFeed) return []
-  const feedUrl = overrideUrl ?? rssFeed.url
-  if (!rssFeed.crawlable) {
-    await stampFetchOutcome(rssFeedId, { kind: 'skipped' })
-    return []
-  }
   let skipFinalFailureStamp = false
   try {
+    const rssFeed = await getRssFeedByIdToFetch(rssFeedId, { ttl })
+    if (!rssFeed) return []
+    const feedUrl = overrideUrl ?? rssFeed.url
+    if (!rssFeed.crawlable) {
+      await stampFetchOutcome(rssFeedId, { kind: 'skipped' })
+      return []
+    }
     const fetchHostnameId = await getFetchHostnameId(rssFeed.url_hostname_id, rssFeed.url, feedUrl)
     const networkBackoff = await loadRssFetchPreflightHealth(fetchHostnameId, feedUrl)
     if (!networkBackoff || networkBackoff.isOpen) return []

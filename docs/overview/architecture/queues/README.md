@@ -116,8 +116,10 @@ cursor key `lastFetchSucceededAt,id`, and cross-tier failing retry Lane 6 seeks
 `(last_fetch_failed_at, rss_feed_id)` with cursor key `lastFetchFailedAt,id`, stopping at the first
 row past the dynamic-config tier SLA or retry cutoff. Each page bounds its index walk to
 `remainingRawBudget`, applies hostname backoff and rate-limit eligibility inside the walk so a
-rate-limited host at the front cannot block healthy work behind it, and decrements both
-`remainingBudget` (by admissions) and `remainingRawBudget` (by scanned state rows) so skipped pages
+rate-limited or backed-off prefix within `remainingRawBudget` is skipped without blocking healthy
+work behind it (a blocked prefix that fills the entire raw-row budget stops the sweep until the
+hostname limit expires), and decrements both `remainingBudget` (by admissions) and
+`remainingRawBudget` (by visited state rows, including hostname-filtered rows) so skipped pages
 cannot chain without bound. Healthy due lanes run ahead of the failing retry lane, and backfill
 lanes wait until earlier lanes finish. Friend-account dispatch and Bedrock stale cleanup still
 advance by raw source IDs. A full page may need one empty continuation to confirm the tail while

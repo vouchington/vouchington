@@ -11,6 +11,7 @@ export const FAILING_DISPATCH_LANE = 6
 
 type FailingRawRow = RssFeedToFetch & {
   dispatch_lane: number
+  raw_pos: number
   raw_id: string
   raw_last_fetch_failed_at: string
 }
@@ -31,6 +32,7 @@ export async function getRssFeedsFailing(
   const query = `/* getRssFeedsFailing */
     WITH bounded_walk AS NOT MATERIALIZED (
       SELECT
+        ROW_NUMBER() OVER (ORDER BY s.last_fetch_failed_at ASC, s.rss_feed_id ASC)::int AS raw_pos,
         s.rss_feed_id AS raw_id,
         s.last_fetch_failed_at AS sort_last_fetch_failed_at,
         to_char(s.last_fetch_failed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS raw_last_fetch_failed_at,
@@ -48,7 +50,7 @@ export async function getRssFeedsFailing(
       LIMIT $3::int
     )
     SELECT
-      bw.raw_id, bw.raw_last_fetch_failed_at,
+      bw.raw_pos, bw.raw_id, bw.raw_last_fetch_failed_at,
       feed.id, feed.url, feed.url_hostname_id, feed.crawlable,
       feed.title, feed.declared_language, feed.last_modified_at, feed.etag,
       bw.last_fetch_succeeded_at, bw.last_fetch_failed_at,
@@ -135,12 +137,18 @@ export async function getRssFeedsFailing(
   const consumed = rows.slice(0, limit)
   const hasMoreInLane = rows.length > limit || (rawBudget <= limit && rows.length === limit)
   const lastConsumed = consumed.at(-1)
+  const rawRowsRead = rows.at(-1)?.raw_pos ?? rows.length
   return {
     feeds: consumed.map(row => {
-      const { raw_id: _rawId, raw_last_fetch_failed_at: _rawFailedAt, ...feed } = row
+      const {
+        raw_pos: _rawPos,
+        raw_id: _rawId,
+        raw_last_fetch_failed_at: _rawFailedAt,
+        ...feed
+      } = row
       return feed
     }),
-    rawRowsRead: rows.length,
+    rawRowsRead,
     ...(hasMoreInLane && lastConsumed
       ? {
           nextCursor: {

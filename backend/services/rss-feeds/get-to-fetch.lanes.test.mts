@@ -285,6 +285,7 @@ describe('RSS dispatcher healthy and failing lanes', () => {
         },
       })
       expect(page.feeds.map(f => f.id)).toEqual(healthyIds)
+      expect(page.rawRowsRead).toBe(ids.length)
     } finally {
       restore()
     }

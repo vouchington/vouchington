@@ -12,6 +12,7 @@ const MAX_UUID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 
 type HealthyRawRow = RssFeedToFetch & {
   dispatch_lane: number
+  raw_pos: number
   raw_id: string
   raw_last_fetch_succeeded_at: string | null
 }
@@ -27,12 +28,7 @@ function resolveHealthyBounds(
   tier: RssFeedCrawlTier,
   asOf: Date,
   cursor?: RssFeedDispatchCursor,
-): {
-  lowerLastSucceededAt: string | Date
-  lowerId: string
-  upperLastSucceededAt: Date
-  isEmptyRange: boolean
-} {
+) {
   const tierSlaMs = crawlConfig.getTierSlaMs(tier)
   const dueCutoff = new Date(asOf.getTime() - tierSlaMs)
   if (lane <= 5) {
@@ -88,6 +84,7 @@ export async function getRssFeedsHealthy(
   const query = `/* getRssFeedsHealthy */
     WITH bounded_walk AS NOT MATERIALIZED (
       SELECT
+        ROW_NUMBER() OVER (ORDER BY COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) ASC, s.rss_feed_id ASC)::int AS raw_pos,
         s.rss_feed_id AS raw_id,
         COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) AS sort_last_fetch_succeeded_at,
         to_char(s.last_fetch_succeeded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS raw_last_fetch_succeeded_at,
@@ -105,7 +102,7 @@ export async function getRssFeedsHealthy(
       LIMIT $6::int
     )
     SELECT
-      bw.raw_id, bw.raw_last_fetch_succeeded_at,
+      bw.raw_pos, bw.raw_id, bw.raw_last_fetch_succeeded_at,
       feed.id, feed.url, feed.url_hostname_id, feed.crawlable,
       feed.title, feed.declared_language, feed.last_modified_at, feed.etag,
       bw.last_fetch_succeeded_at, bw.last_fetch_failed_at,
@@ -177,12 +174,12 @@ export async function getRssFeedsHealthy(
   const consumed = rows.slice(0, limit)
   const hasMoreInLane = rows.length > limit || (rawBudget <= limit && rows.length === limit)
   const lastConsumed = consumed.at(-1)
+  const rawRowsRead = rows.at(-1)?.raw_pos ?? rows.length
   return {
-    feeds: consumed.map(row => {
-      const { raw_id: _rawId, raw_last_fetch_succeeded_at: _rawSucceededAt, ...feed } = row
-      return feed
-    }),
-    rawRowsRead: rows.length,
+    feeds: consumed.map(
+      ({ raw_pos: _p, raw_id: _i, raw_last_fetch_succeeded_at: _s, ...feed }) => feed,
+    ),
+    rawRowsRead,
     ...(hasMoreInLane && lastConsumed
       ? {
           nextCursor: {
