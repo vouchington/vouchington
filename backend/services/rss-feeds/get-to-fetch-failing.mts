@@ -105,11 +105,17 @@ export async function getRssFeedsFailing(
     const skippedCursorPredicate = hasTimestampCursor
       ? `AND (s.last_fetch_failed_at, s.rss_feed_id) > ($4::timestamptz, $5::uuid)`
       : ''
-    const { rows: skippedRows } = await read<{ scanned: number }>(
+    const { rows: skippedRows } = await read<{
+      scanned: number
+      raw_id: string
+      raw_last_fetch_failed_at: string
+    }>(
       `/* countSkippedFailingRssFeeds */
-      SELECT COUNT(*)::int AS scanned
-      FROM (
-        SELECT 1
+      WITH skipped AS (
+        SELECT
+          ROW_NUMBER() OVER (ORDER BY s.last_fetch_failed_at ASC, s.rss_feed_id ASC)::int AS raw_pos,
+          s.rss_feed_id AS raw_id,
+          to_char(s.last_fetch_failed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS raw_last_fetch_failed_at
         FROM rss_feed_fetch_states s
         WHERE s.last_fetch_failed_at IS NOT NULL
           AND (s.last_fetch_succeeded_at IS NULL
@@ -119,7 +125,9 @@ export async function getRssFeedsFailing(
           AND s.rss_feed_id <= $2::uuid
         ORDER BY s.last_fetch_failed_at ASC, s.rss_feed_id ASC
         LIMIT $3::int
-      ) skipped`,
+      )
+      SELECT raw_pos AS scanned, raw_id, raw_last_fetch_failed_at
+      FROM skipped ORDER BY raw_pos DESC LIMIT 1`,
       [
         retryCutoff,
         throughId,
@@ -127,11 +135,23 @@ export async function getRssFeedsFailing(
         ...(hasTimestampCursor ? [cursor.afterLastFailedAt, cursor.afterId ?? NIL_UUID] : []),
       ],
     )
-    const scanned = skippedRows[0]?.scanned ?? 0
+    const lastSkipped = skippedRows[0]
+    const scanned = lastSkipped?.scanned ?? 0
     return {
       feeds: [],
       rawRowsRead: scanned,
-      ...(scanned < rawBudget ? nextLaneCursor : {}),
+      ...(scanned < rawBudget
+        ? nextLaneCursor
+        : lastSkipped
+          ? {
+              nextCursor: {
+                lane: FAILING_DISPATCH_LANE,
+                afterId: lastSkipped.raw_id,
+                afterLastFailedAt: lastSkipped.raw_last_fetch_failed_at,
+                throughId,
+              },
+            }
+          : {}),
     }
   }
   const consumed = rows.slice(0, limit)

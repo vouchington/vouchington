@@ -29,26 +29,16 @@ function resolveHealthyBounds(
   asOf: Date,
   cursor?: RssFeedDispatchCursor,
 ) {
-  const tierSlaMs = crawlConfig.getTierSlaMs(tier)
-  const dueCutoff = new Date(asOf.getTime() - tierSlaMs)
+  const dueCutoff = new Date(asOf.getTime() - crawlConfig.getTierSlaMs(tier))
   if (lane <= 5) {
     return {
       lowerLastSucceededAt: cursor?.afterLastSucceededAt ?? '-infinity',
       lowerId: cursor?.afterId ?? NIL_UUID,
       upperLastSucceededAt: dueCutoff,
-      isEmptyRange: false,
     }
   }
-  const tier1SlaMs = crawlConfig.getTierSlaMs(1)
-  const backfillCutoff = new Date(asOf.getTime() - tier1SlaMs)
-  if (dueCutoff.getTime() >= backfillCutoff.getTime()) {
-    return {
-      lowerLastSucceededAt: dueCutoff,
-      lowerId: MAX_UUID,
-      upperLastSucceededAt: backfillCutoff,
-      isEmptyRange: true,
-    }
-  }
+  const backfillCutoff = new Date(asOf.getTime() - crawlConfig.getTierSlaMs(1))
+  if (dueCutoff.getTime() >= backfillCutoff.getTime()) return null
   const afterTs = cursor?.afterLastSucceededAt
   const afterMs = typeof afterTs === 'string' ? Date.parse(afterTs) : Number.NaN
   const useCursor =
@@ -59,7 +49,6 @@ function resolveHealthyBounds(
     lowerLastSucceededAt: useCursor ? afterTs : dueCutoff,
     lowerId: useCursor ? (cursor?.afterId ?? NIL_UUID) : MAX_UUID,
     upperLastSucceededAt: backfillCutoff,
-    isEmptyRange: false,
   }
 }
 
@@ -72,13 +61,11 @@ export async function getRssFeedsHealthy(
   cursor?: RssFeedDispatchCursor,
 ): Promise<RssFeedDispatchPage> {
   const tier = (lane <= 5 ? lane : lane - 5) as RssFeedCrawlTier
-  const { lowerLastSucceededAt, lowerId, upperLastSucceededAt, isEmptyRange } =
-    resolveHealthyBounds(lane, tier, asOf, cursor)
+  const bounds = resolveHealthyBounds(lane, tier, asOf, cursor)
   const nextLaneCursor =
     lane < 10 ? { nextCursor: { lane: lane + 1, afterId: NIL_UUID, throughId } } : {}
-  if (isEmptyRange) {
-    return { feeds: [], rawRowsRead: 0, ...nextLaneCursor }
-  }
+  if (!bounds) return { feeds: [], rawRowsRead: 0, ...nextLaneCursor }
+  const { lowerLastSucceededAt, lowerId, upperLastSucceededAt } = bounds
   const priorityGroup = lane <= 5 ? 1 : 2
   const eligibleLimit = Math.min(limit + 1, rawBudget)
   const query = `/* getRssFeedsHealthy */
@@ -147,48 +134,65 @@ export async function getRssFeedsHealthy(
     eligibleLimit,
   ])
   if (rows.length === 0) {
-    const { rows: skippedRows } = await read<{ scanned: number }>(
+    const { rows: skippedRows } = await read<{
+      scanned: number
+      raw_id: string
+      raw_last_fetch_succeeded_at: string | null
+    }>(
       `/* countSkippedHealthyRssFeeds */
-      SELECT COUNT(*)::int AS scanned
-      FROM (
-        SELECT 1
+      WITH skipped AS (
+        SELECT
+          ROW_NUMBER() OVER (ORDER BY COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) ASC, s.rss_feed_id ASC)::int AS raw_pos,
+          s.rss_feed_id AS raw_id,
+          to_char(s.last_fetch_succeeded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS raw_last_fetch_succeeded_at
         FROM rss_feed_fetch_states s
         WHERE s.crawl_tier = $1::smallint
-          AND (s.last_fetch_failed_at IS NULL
-            OR s.last_fetch_failed_at < s.last_fetch_succeeded_at)
+          AND (s.last_fetch_failed_at IS NULL OR s.last_fetch_failed_at < s.last_fetch_succeeded_at)
           AND COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) <= $2::timestamptz
           AND (COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz), s.rss_feed_id) > ($3::timestamptz, $4::uuid)
           AND s.rss_feed_id <= $5::uuid
         ORDER BY COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) ASC, s.rss_feed_id ASC
         LIMIT $6::int
-      ) skipped`,
+      )
+      SELECT raw_pos AS scanned, raw_id, raw_last_fetch_succeeded_at
+      FROM skipped ORDER BY raw_pos DESC LIMIT 1`,
       [tier, upperLastSucceededAt, lowerLastSucceededAt, lowerId, throughId, rawBudget],
     )
-    const scanned = skippedRows[0]?.scanned ?? 0
+    const lastSkipped = skippedRows[0]
+    const scanned = lastSkipped?.scanned ?? 0
     return {
       feeds: [],
       rawRowsRead: scanned,
-      ...(scanned < rawBudget ? nextLaneCursor : {}),
+      ...(scanned < rawBudget
+        ? nextLaneCursor
+        : lastSkipped
+          ? { nextCursor: buildHealthyCursor(lane, lastSkipped, throughId) }
+          : {}),
     }
   }
   const consumed = rows.slice(0, limit)
   const hasMoreInLane = rows.length > limit || (rawBudget <= limit && rows.length === limit)
   const lastConsumed = consumed.at(-1)
-  const rawRowsRead = rows.at(-1)?.raw_pos ?? rows.length
   return {
     feeds: consumed.map(
       ({ raw_pos: _p, raw_id: _i, raw_last_fetch_succeeded_at: _s, ...feed }) => feed,
     ),
-    rawRowsRead,
+    rawRowsRead: rows.at(-1)?.raw_pos ?? rows.length,
     ...(hasMoreInLane && lastConsumed
-      ? {
-          nextCursor: {
-            lane,
-            afterId: lastConsumed.raw_id,
-            afterLastSucceededAt: lastConsumed.raw_last_fetch_succeeded_at,
-            throughId,
-          },
-        }
+      ? { nextCursor: buildHealthyCursor(lane, lastConsumed, throughId) }
       : nextLaneCursor),
+  }
+}
+
+function buildHealthyCursor(
+  lane: number,
+  row: { raw_id: string; raw_last_fetch_succeeded_at: string | null },
+  throughId: string,
+): RssFeedDispatchCursor {
+  return {
+    lane,
+    afterId: row.raw_id,
+    afterLastSucceededAt: row.raw_last_fetch_succeeded_at,
+    throughId,
   }
 }

@@ -41,6 +41,14 @@ export async function getRssFeedCrawlTierAssignments(
   return new Map(rows.map(row => [row.rss_feed_id, row.crawl_tier]))
 }
 
+export async function getRssFeedFetchStateCrawlTier(feedId: string): Promise<number | undefined> {
+  const { rows } = await read<{ crawl_tier: number }>(
+    '/* getRssFeedFetchStateCrawlTier */ SELECT crawl_tier FROM rss_feed_fetch_states WHERE rss_feed_id = $1',
+    [feedId],
+  )
+  return rows[0]?.crawl_tier
+}
+
 export async function setCanonicalRssFeed(
   sourceFeedId: string,
   canonicalFeedId: string,

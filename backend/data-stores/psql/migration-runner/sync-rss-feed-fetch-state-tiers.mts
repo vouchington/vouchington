@@ -1,4 +1,5 @@
-import type { Pool, PoolClient } from 'pg'
+import type { RunViewsOptions as PlatformRunViewsOptions } from '@vouchington/postgres/views'
+import type { QueryExecutor, TransactionQuery } from '../types.mts'
 
 export const SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL = `/* syncRssFeedFetchStateCrawlTiers */
 UPDATE rss_feed_fetch_states s
@@ -11,8 +12,32 @@ FROM (
 ) next_tiers
 WHERE s.rss_feed_id = next_tiers.rss_feed_id`
 
-export async function syncRssFeedFetchStateCrawlTiers(
-  executor: Pick<Pool | PoolClient, 'query'>,
-): Promise<void> {
-  await executor.query(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL)
+export async function refreshRssFeedCrawlTiersInTransaction(tx: TransactionQuery): Promise<void> {
+  await tx(
+    '/* refreshMaterializedView */ REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_rss_feed_crawl_tiers"',
+  )
+  await tx(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL)
+}
+
+export function createCrawlTiersSyncTransactionRunner(
+  runInTx: <Result>(handler: (tx: QueryExecutor) => Promise<Result>) => Promise<Result>,
+): NonNullable<PlatformRunViewsOptions['withTransaction']> {
+  return execute =>
+    runInTx(async tx => {
+      let createdCrawlTiers = false
+      const trackingWriter: QueryExecutor = (input, values) => {
+        if (
+          typeof input === 'string' &&
+          input.includes('CREATE MATERIALIZED VIEW mv_rss_feed_crawl_tiers')
+        ) {
+          createdCrawlTiers = true
+        }
+        return tx(input, values)
+      }
+      const result = await execute(trackingWriter)
+      if (createdCrawlTiers) {
+        await tx(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL)
+      }
+      return result
+    })
 }

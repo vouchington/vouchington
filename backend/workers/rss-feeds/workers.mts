@@ -48,11 +48,12 @@ export const rssFeedsHandlers = [
       targetName: 'background',
       readAndDispatch: async pageSize => {
         const limit = Math.min(pageSize, remainingBudget, getCrawlCapacityBudget())
+        const pageRawBudget = Math.min(Math.max(pageSize * 4, limit + 1), remainingRawBudget)
         const result = await processRssFeedsDispatcher({
           cursor: job.data.cursor,
           asOf: asOfDate,
           limit,
-          rawBudget: remainingRawBudget,
+          rawBudget: pageRawBudget,
         })
         const nextBudget = remainingBudget - result.count
         const nextRawBudget = Math.max(0, remainingRawBudget - result.rawRowsRead)

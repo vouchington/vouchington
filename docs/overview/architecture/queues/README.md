@@ -114,13 +114,14 @@ dedicated covering partial indexes on `rss_feed_fetch_states`: healthy due Lanes
 Lanes 7–10 seek `(crawl_tier, COALESCE(last_fetch_succeeded_at, '-infinity'), rss_feed_id)` with
 cursor key `lastFetchSucceededAt,id`, and cross-tier failing retry Lane 6 seeks
 `(last_fetch_failed_at, rss_feed_id)` with cursor key `lastFetchFailedAt,id`, stopping at the first
-row past the dynamic-config tier SLA or retry cutoff. Each page bounds its index walk to
-`remainingRawBudget`, applies hostname backoff and rate-limit eligibility inside the walk so a
-rate-limited or backed-off prefix within `remainingRawBudget` is skipped without blocking healthy
-work behind it (a blocked prefix that fills the entire raw-row budget stops the sweep until the
-hostname limit expires), and decrements both `remainingBudget` (by admissions) and
-`remainingRawBudget` (by visited state rows, including hostname-filtered rows) so skipped pages
-cannot chain without bound. Healthy due lanes run ahead of the failing retry lane, and backfill
+row past the dynamic-config tier SLA or retry cutoff. Each page bounds its index walk to a
+per-page `rawBudget` capped by `remainingRawBudget` and applies hostname backoff and rate-limit
+eligibility inside the walk. When blocked hosts fill an entire page's `rawBudget`, the page returns
+the last scanned `(sort key, id)` as `nextCursor` so continuations advance past the blocked prefix
+to reach healthy feeds behind it and subsequent lanes, while decrementing both `remainingBudget`
+(by admissions) and `remainingRawBudget` (by visited state rows, including hostname-filtered rows)
+so the sweep still terminates within its raw-read cap. Healthy due lanes run ahead of the failing
+retry lane, and backfill
 lanes wait until earlier lanes finish. Friend-account dispatch and Bedrock stale cleanup still
 advance by raw source IDs. A full page may need one empty continuation to confirm the tail while
 keeping the physical read bound exact.

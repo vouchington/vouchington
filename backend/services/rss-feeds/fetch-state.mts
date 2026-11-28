@@ -29,11 +29,7 @@ export async function insertRssFeedCrawlAndStampState(params: {
       ),
       updated_state AS (
         UPDATE rss_feed_fetch_states
-        SET last_fetch_succeeded_at = CASE
-          WHEN last_fetch_failed_at = CURRENT_TIMESTAMP
-            THEN CURRENT_TIMESTAMP + INTERVAL '1 microsecond'
-          ELSE CURRENT_TIMESTAMP
-        END
+        SET last_fetch_succeeded_at = CURRENT_TIMESTAMP
         WHERE rss_feed_id = ${params.rss_feed_id}
       )
       SELECT id FROM inserted_crawl

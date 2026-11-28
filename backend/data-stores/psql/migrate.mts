@@ -20,10 +20,14 @@ import {
   type RunConfigDrivenOptions,
 } from './migration-runner/migrations.mts'
 import { refreshMaterializedView } from './migration-runner/refresh-materialized-view.mts'
-import { SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL } from './migration-runner/sync-rss-feed-fetch-state-tiers.mts'
+import {
+  createCrawlTiersSyncTransactionRunner,
+  SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL,
+} from './migration-runner/sync-rss-feed-fetch-state-tiers.mts'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { verifyLiveSchemaMatchesSnapshot } from './schema-snapshot/verify-live-schema.mts'
-import { psql, write } from './setup.mts'
+import { beginTransaction, psql, withTransactionOptions, write } from './setup.mts'
+import type { PoolClient } from './types.mts'
 
 const __dirname = import.meta.dirname
 
@@ -55,8 +59,17 @@ export async function runViews(options: RunViewsOptions = {}) {
   const folder = options.folder ?? defaultFolder
   const writer = options.writer ?? write
   const logger = options.logger ?? console
-  await runPlatformViews({ ...options, folder, writer, logger })
-  if (folder === defaultFolder) {
+  const withTransaction =
+    folder === defaultFolder && !options.writer
+      ? createCrawlTiersSyncTransactionRunner(async handler => {
+          await using tx = await beginTransaction()
+          const result = await handler(tx)
+          await tx.commit()
+          return result
+        })
+      : options.withTransaction
+  await runPlatformViews({ ...options, folder, writer, logger, withTransaction })
+  if (folder === defaultFolder && options.writer) {
     await writer(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL)
   }
 }
@@ -84,11 +97,21 @@ async function applyViewsAndSyncTiers(
   forced: boolean | undefined,
   logger: Pick<Console, 'error' | 'log'>,
   writer: NonNullable<RunConfigDrivenOptions['writer']>,
+  client: PoolClient,
 ): Promise<void> {
-  await runPlatformViews({ folder: path.resolve(rootDir, 'views'), forced, logger, writer })
-  if (rootDir === __dirname) {
-    await writer(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL)
-  }
+  const withTransaction =
+    rootDir === __dirname
+      ? createCrawlTiersSyncTransactionRunner(handler =>
+          withTransactionOptions({ client }, handler),
+        )
+      : undefined
+  await runPlatformViews({
+    folder: path.resolve(rootDir, 'views'),
+    forced,
+    logger,
+    writer,
+    withTransaction,
+  })
 }
 
 async function applyMigrationsInSession(
@@ -106,7 +129,7 @@ async function applyMigrationsInSession(
       logger,
     })
     await runConfigDrivenFromFolder(rootDir, { logger, writer })
-    return applyViewsAndSyncTiers(rootDir, forced, logger, writer)
+    return applyViewsAndSyncTiers(rootDir, forced, logger, writer, client)
   })
 }
 
