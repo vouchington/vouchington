@@ -1,6 +1,8 @@
+import { UnrecoverableError } from 'glide-mq'
 import type { AccountLifecycleExportRequestData } from '@queues/background/enqueues/account-lifecycle-jobs'
 
-export class AccountLifecycleJobPayloadError extends Error {
+/** A retry cannot repair a malformed payload, so the worker fails the job without retrying. */
+export class AccountLifecycleJobPayloadError extends UnrecoverableError {
   constructor(detail: string) {
     super(`Invalid account lifecycle job payload: ${detail}`)
     this.name = 'AccountLifecycleJobPayloadError'

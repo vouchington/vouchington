@@ -10,6 +10,8 @@ import {
 } from '@queues/background/enqueues/account-lifecycle-jobs'
 import { recoverExportRequests } from './account-data-requests.mts'
 import { processAccountDataRequestJob } from './account-data-request-job.mts'
+import { UnrecoverableError } from 'glide-mq'
+import { AccountLifecycleJobPayloadError } from '@queues/account-lifecycle/payload/job-payload'
 
 describe('processAccountDataRequestJob', () => {
   it('rejects unknown jobs', async () => {
@@ -29,12 +31,18 @@ describe('processAccountDataRequestJob', () => {
           userId: user.id,
         }),
       ),
-    ).rejects.toThrow('processingAttemptId must be a non-empty string')
+    ).rejects.toBeInstanceOf(AccountLifecycleJobPayloadError)
 
     expect(await getDataRequestById(user.id, user.id, request.id)).toMatchObject({
       status: 'pending',
       last_error_message: null,
     })
+  })
+
+  it('fails an export job whose data is not an object without retrying it', async () => {
+    await expect(
+      processAccountDataRequestJob(job(ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name, null)),
+    ).rejects.toBeInstanceOf(UnrecoverableError)
   })
 
   it('routes a recovery job to the recovery sweep', async () => {
@@ -90,10 +98,7 @@ function exportJobId(request: { id: string; processing_attempt_id: string }): st
   return `account-data-export__${request.id}__${request.processing_attempt_id}`
 }
 
-function job(
-  name: string,
-  data: Record<string, unknown> = {},
-): Parameters<typeof processAccountDataRequestJob>[0] {
+function job(name: string, data: unknown = {}): Parameters<typeof processAccountDataRequestJob>[0] {
   return { name, data, attemptsMade: 2, opts: { attempts: 3 } } as unknown as Parameters<
     typeof processAccountDataRequestJob
   >[0]
