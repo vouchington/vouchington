@@ -2,18 +2,31 @@ import { collectPlanNodes, type ExplainResult, processedRows } from '@vouchingto
 import { SEMANTIC_TOPIC_CANDIDATE_LIMIT } from '@services/topics/work-limits'
 import { baseRelationName } from '../plan-nodes.mts'
 
+// Anchor lookup via topics_pkey (1 row) plus excluding the source topic itself (t.id <> anchor, 1 row).
+const SIMILAR_TOPIC_ANCHOR_ROWS = 2
+
+const SCENARIO_EXTRA_TOPIC_ROWS: Readonly<Record<string, number>> = {
+  'topic-search-semantic-cursor': 0,
+  'topic-search-similar-topic': SIMILAR_TOPIC_ANCHOR_ROWS,
+}
+
 export function assertSemanticTopicSearchPlan(result: ExplainResult): void {
-  if (result.scenario_id !== 'topic-search-semantic-cursor') return
+  const extraAnchorRows =
+    result.scenario_id !== undefined ? SCENARIO_EXTRA_TOPIC_ROWS[result.scenario_id] : undefined
+  if (extraAnchorRows === undefined) return
+  const maxProcessed = SEMANTIC_TOPIC_CANDIDATE_LIMIT + extraAnchorRows
   const nodes = collectPlanNodes(result.plan)
   const candidate = nodes.find(node => node['Subplan Name'] === 'CTE semantic_nearest')
+  const candidateNodes = candidate ? collectPlanNodes(candidate) : []
+  const limitNode = candidateNodes.find(node => node['Node Type'] === 'Limit')
   if (
     !candidate ||
-    candidate['Node Type'] !== 'Limit' ||
-    Number(candidate['Actual Rows']) > SEMANTIC_TOPIC_CANDIDATE_LIMIT
+    !limitNode ||
+    Number(candidate['Actual Rows']) > SEMANTIC_TOPIC_CANDIDATE_LIMIT ||
+    Number(limitNode['Actual Rows']) > SEMANTIC_TOPIC_CANDIDATE_LIMIT
   ) {
     throw new Error(`${result.name} must materialize a bounded semantic_nearest prefix`)
   }
-  const candidateNodes = collectPlanNodes(candidate)
   const orderedVectorScan = candidateNodes.some(
     node =>
       node['Node Type'] === 'Index Scan' &&
@@ -39,9 +52,9 @@ export function assertSemanticTopicSearchPlan(result: ExplainResult): void {
   const processed = nodes
     .filter(node => baseRelationName(node) === 'topics')
     .reduce((sum, node) => sum + processedRows(node), 0)
-  if (processed > SEMANTIC_TOPIC_CANDIDATE_LIMIT) {
+  if (processed > maxProcessed) {
     throw new Error(
-      `${result.name} processed ${processed} rows from topics; expected at most ${SEMANTIC_TOPIC_CANDIDATE_LIMIT}`,
+      `${result.name} processed ${processed} rows from topics; expected at most ${maxProcessed}`,
     )
   }
 }

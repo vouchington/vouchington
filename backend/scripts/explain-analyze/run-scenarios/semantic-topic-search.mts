@@ -1,5 +1,5 @@
 import { SEMANTIC_TOPIC_SEARCH_SETTINGS } from '@services/topics/search/query-builder-semantic'
-import { runAndCapture } from '../run-support.mts'
+import { runAndCapture, seedTopicId } from '../run-support.mts'
 import { getTopicIds } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 
@@ -29,6 +29,33 @@ export async function runSemanticTopicSearchScenario(): Promise<void> {
       })
       if (cursorPage.results.length === 0)
         throw new Error('Expected non-empty semantic topic search cursor page')
+    },
+    'cursor',
+    'buildTopicSearchQuery',
+    { localSettings: SEMANTIC_TOPIC_SEARCH_SETTINGS },
+  )
+
+  registerScenarioContract('topic-search-similar-topic', {
+    expectations: [{ kind: 'custom', name: 'semanticTopic' }],
+  })
+  await runAndCapture(
+    'topic-search-similar-topic',
+    async () => {
+      const firstPage = await getTopicIds({
+        similar_topic_id: seedTopicId,
+        sort: 'relevance',
+        limit: 10,
+      })
+      const after = firstPage.page_info.end_cursor
+      if (!after) throw new Error('Expected similar-topic search continuation cursor')
+      const cursorPage = await getTopicIds({
+        similar_topic_id: seedTopicId,
+        sort: 'relevance',
+        limit: 10,
+        after,
+      })
+      if (cursorPage.results.length === 0)
+        throw new Error('Expected non-empty similar-topic search cursor page')
     },
     'cursor',
     'buildTopicSearchQuery',
