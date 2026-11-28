@@ -1,13 +1,18 @@
 import type { Application } from '@jongleberry/api-server'
 
 // Under `isolate: false` the shared app keeps routes that earlier test files in the same fork add,
-// some at import time before the production route modules load. The API test server loads those
-// modules through `loadProductionRoutes`, which records exactly the routes that load adds, so the
-// route-authentication sweep reads only production routes.
+// and route modules that a test file imports directly stay cached. A setup file that runs before
+// any test file loads the production route modules through `loadProductionRoutes`, which records
+// exactly the routes that load adds. The route-authentication sweep reads only that snapshot.
+// Setup files rerun for every test file, so the snapshot lives on `globalThis`.
 
 type RouteEntry = { method: string; path: string }
 
-const SNAPSHOTS = new WeakMap<Application, readonly string[]>()
+const PRODUCTION_ROUTES_KEY = '__vouchaProductionRoutes'
+
+type ProductionRoutesGlobal = typeof globalThis & {
+  [PRODUCTION_ROUTES_KEY]?: readonly string[]
+}
 
 function routeTable(app: Application): RouteEntry[] {
   // The router is private to the api-server package and exposes its table as `routes`.
@@ -17,12 +22,13 @@ function routeTable(app: Application): RouteEntry[] {
   return table as RouteEntry[]
 }
 
-/** Runs `load` once per app and records the routes it registers as the production routes. */
+/** Runs `load` on the first call in the process and records the routes it registers. */
 export async function loadProductionRoutes(
   app: Application,
   load: () => Promise<unknown>,
 ): Promise<void> {
-  if (SNAPSHOTS.has(app)) return
+  const state = globalThis as ProductionRoutesGlobal
+  if (state[PRODUCTION_ROUTES_KEY]) return
   const existing = new Set(routeTable(app))
   await load()
   const routes = new Set<string>()
@@ -30,12 +36,14 @@ export async function loadProductionRoutes(
     if (!existing.has(entry)) routes.add(`${entry.method} ${entry.path}`)
   }
   if (routes.size === 0) throw new Error('Loading the API routes registered no production routes')
-  SNAPSHOTS.set(app, [...routes].toSorted())
+  state[PRODUCTION_ROUTES_KEY] = [...routes].toSorted()
 }
 
 /** The `METHOD path` routes the production route modules registered on the app. */
-export function listProductionRoutes(app: Application): readonly string[] {
-  const routes = SNAPSHOTS.get(app)
-  if (!routes) throw new Error('Production routes were not recorded; import the API test server')
+export function listProductionRoutes(): readonly string[] {
+  const routes = (globalThis as ProductionRoutesGlobal)[PRODUCTION_ROUTES_KEY]
+  if (!routes) {
+    throw new Error('Production routes were not recorded by the production-routes setup file')
+  }
   return routes
 }

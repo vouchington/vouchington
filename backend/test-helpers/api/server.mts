@@ -1,5 +1,6 @@
 import supertest from 'supertest'
 import fn, { createApiRequestGuardedListener } from '../../api/app.mts'
+import '../../api/index.mts'
 import http from 'node:http'
 import { Buffer } from 'node:buffer'
 import type { PrivateUser } from '../../services/users/types.mts'
@@ -16,7 +17,6 @@ import {
 import { recordServerErrorResponse } from './server-error-responses.mts'
 import { profileRequestQueries } from './request-query-profile.mts'
 import { API_TEST_SERVER_STATE_KEY } from './server-global.mts'
-import { loadProductionRoutes } from './production-routes.mts'
 
 type ApiTestListener = ReturnType<typeof createApiRequestGuardedListener>
 type ApiTestServerAddress = { host: LoopbackHost; port: number }
@@ -34,8 +34,6 @@ type ApiTestServerGlobal = typeof globalThis & {
   [API_TEST_SERVER_LISTENER_KEY]?: ApiTestListener
   [API_TEST_SERVER_MATCHER_KEY]?: typeof fn
 }
-
-await loadProductionRoutes(fn, () => import('../../api/index.mts'))
 
 const { host: serverHost, port: serverPort } = await sharedApiTestServerAddress()
 export const apiTestServerPort = serverPort

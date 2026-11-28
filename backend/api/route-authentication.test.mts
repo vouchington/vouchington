@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { listProductionRoutes } from '@voucha/test-helpers/api/production-routes'
-import app from './app.mts'
 
 // Deny-list: every registered route must answer an anonymous request with 401 unless it is named
 // below with the reason an anonymous caller may reach it. Route handlers carry no auth metadata
@@ -177,7 +176,7 @@ type RouteSweep = { route: string; status: number }
 
 function listRegisteredRoutes(): string[] {
   // The snapshot excludes routes that other test files add to the shared app under `isolate: false`.
-  return listProductionRoutes(app).filter(route => !route.startsWith('HEAD '))
+  return listProductionRoutes().filter(route => !route.startsWith('HEAD '))
 }
 
 function sendAnonymously(route: string) {
