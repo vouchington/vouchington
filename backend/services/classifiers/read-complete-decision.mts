@@ -5,6 +5,7 @@ import { assertRetainedActiveDecisionReservation } from './classifier-retained-a
 import { readResults, toScope } from './read-complete-decision-results.mts'
 import { assertClassifierBatchWithinRetention } from './retention-window.mts'
 import type { ClassifierDecisionScope, PersistedClassifierDecision } from './types.mts'
+import { getClassifiersWorkLimit } from './work-limits.mts'
 
 type BatchRow = {
   id: string
@@ -124,12 +125,29 @@ async function readCalls(
   query: QueryExecutor,
   batchId: string,
 ): Promise<PersistedClassifierDecision['calls']> {
-  const { rows } = await query<CallRow>(sql`
-    /* readCompleteClassifierDecisionCalls */
-    SELECT id, shard_ordinal FROM classifier_decision_calls
-    WHERE batch_id = ${batchId} ORDER BY shard_ordinal
-  `)
-  return rows.map(row => ({ id: row.id, shardOrdinal: row.shard_ordinal }))
+  const pageSize = getClassifiersWorkLimit('decision_calls_page_size')
+  const calls: Array<{ id: string; shardOrdinal: number }> = []
+  let afterOrdinal: number | null = null
+  while (true) {
+    const cursorOrdinal: number | null = afterOrdinal
+    // oxlint-disable-next-line no-await-in-loop -- keyset page advances sequentially through one batch's decision calls
+    const result: { rows: CallRow[] } = await query<CallRow>( // no-mistakes-disable-line query-reached-per-item: keyset pagination over one decision batch's shard calls in DynamicConfig decision_calls_page_size pages (hard max 1000)
+      sql`
+        /* readCompleteClassifierDecisionCalls */
+        SELECT id, shard_ordinal FROM classifier_decision_calls
+        WHERE batch_id = ${batchId}
+          AND (${cursorOrdinal}::integer IS NULL OR shard_ordinal > ${cursorOrdinal}::integer)
+        ORDER BY shard_ordinal ASC
+        LIMIT ${pageSize}
+      `,
+    )
+    for (const row of result.rows) {
+      calls.push({ id: row.id, shardOrdinal: row.shard_ordinal })
+    }
+    if (result.rows.length < pageSize) break
+    afterOrdinal = result.rows.at(-1)!.shard_ordinal
+  }
+  return calls
 }
 
 function toSubject(

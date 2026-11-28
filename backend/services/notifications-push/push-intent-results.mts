@@ -1,4 +1,5 @@
 import { beginTransaction, write } from '@data-stores/psql'
+import { getNotificationsWorkLimit } from '@services/notifications/work-limits'
 import sql from 'sql-template-strings'
 import type { NotificationPushIntent } from './push-intents.mts'
 import {
@@ -26,55 +27,94 @@ export async function listPendingActivePushSubscriptions(
   intent: NotificationPushIntent,
 ): Promise<PushSubscriptionRow[]> {
   const now = Date.now()
-  const { rows } = await write<PushSubscriptionRow>(sql`
-    /* listPendingActivePushSubscriptions */
-    WITH active_claim AS MATERIALIZED (
-      SELECT 1
-      FROM notification_push_intents
-      WHERE user_id = ${intent.user_id}
-        AND notification_id = ${intent.notification_id}
-        AND lease_token = ${intent.lease_token}
-        AND lease_expires_at > CURRENT_TIMESTAMP
-    ), expired AS (
-      UPDATE web_push_subscriptions subscription
-      SET deleted_at = CURRENT_TIMESTAMP
-      WHERE subscription.user_id = ${intent.user_id}
-        AND subscription.deleted_at IS NULL
-        AND subscription.expiration_time_milliseconds IS NOT NULL
-        AND subscription.expiration_time_milliseconds <= ${now}
-        AND EXISTS (SELECT 1 FROM active_claim)
-        AND EXISTS (
-          SELECT 1 FROM web_push_endpoint_owners owner
-          WHERE owner.user_id = subscription.user_id
-            AND owner.subscription_id = subscription.id
-            AND owner.endpoint = subscription.endpoint
-        )
-      RETURNING subscription.user_id, subscription.id, subscription.endpoint
-    ), expired_owners AS (
-      DELETE FROM web_push_endpoint_owners owner
-      USING expired
-      WHERE owner.user_id = expired.user_id
-        AND owner.subscription_id = expired.id
-        AND owner.endpoint = expired.endpoint
+  const batchSize = getNotificationsWorkLimit('push_intent_recovery_page_size')
+  while (true) {
+    // oxlint-disable-next-line no-await-in-loop -- bounded batch expires stale subscriptions while lease remains active
+    const { rows: expiredRows } = await write<{ id: string }>( // no-mistakes-disable-line query-reached-per-item: batched expiration of stale push subscriptions in DynamicConfig push_intent_recovery_page_size pages (hard max 1000)
+      sql`
+      /* listPendingActivePushSubscriptions:expire */
+      WITH active_claim AS MATERIALIZED (
+        SELECT 1
+        FROM notification_push_intents
+        WHERE user_id = ${intent.user_id}
+          AND notification_id = ${intent.notification_id}
+          AND lease_token = ${intent.lease_token}
+          AND lease_expires_at > CURRENT_TIMESTAMP
+      ), target AS (
+        SELECT subscription.user_id, subscription.id, subscription.endpoint
+        FROM web_push_subscriptions subscription
+        CROSS JOIN active_claim
+        WHERE subscription.user_id = ${intent.user_id}
+          AND subscription.deleted_at IS NULL
+          AND subscription.expiration_time_milliseconds IS NOT NULL
+          AND subscription.expiration_time_milliseconds <= ${now}
+          AND EXISTS (
+            SELECT 1 FROM web_push_endpoint_owners owner
+            WHERE owner.user_id = subscription.user_id
+              AND owner.subscription_id = subscription.id
+              AND owner.endpoint = subscription.endpoint
+          )
+        ORDER BY subscription.id ASC
+        LIMIT ${batchSize}
+      ), expired AS (
+        UPDATE web_push_subscriptions subscription
+        SET deleted_at = CURRENT_TIMESTAMP
+        FROM target
+        WHERE subscription.user_id = target.user_id
+          AND subscription.id = target.id
+        RETURNING subscription.user_id, subscription.id, subscription.endpoint
+      ), expired_owners AS (
+        DELETE FROM web_push_endpoint_owners owner
+        USING expired
+        WHERE owner.user_id = expired.user_id
+          AND owner.subscription_id = expired.id
+          AND owner.endpoint = expired.endpoint
+      )
+      SELECT id FROM expired`,
     )
-    SELECT subscription.id, subscription.user_id, subscription.endpoint, subscription.p256dh, subscription.auth
-    FROM web_push_subscriptions subscription
-    CROSS JOIN active_claim
-    INNER JOIN web_push_endpoint_owners owner
-      ON owner.user_id = subscription.user_id
-      AND owner.subscription_id = subscription.id
-      AND owner.endpoint = subscription.endpoint
-    LEFT JOIN notification_push_intent_subscription_receipts receipt
-      ON receipt.user_id = ${intent.user_id}
-      AND receipt.notification_id = ${intent.notification_id}
-      AND receipt.subscription_id = subscription.id
-    WHERE subscription.user_id = ${intent.user_id}
-      AND subscription.deleted_at IS NULL
-      AND (subscription.expiration_time_milliseconds IS NULL OR subscription.expiration_time_milliseconds > ${now})
-      AND NOT EXISTS (SELECT 1 FROM expired WHERE expired.id = subscription.id)
-      AND COALESCE(receipt.status, 'pending') = 'pending'
-  `)
-  return rows
+    if (expiredRows.length < batchSize) break
+  }
+
+  const pending: PushSubscriptionRow[] = []
+  let afterId: string | null = null
+  while (true) {
+    const cursorId: string | null = afterId
+    // oxlint-disable-next-line no-await-in-loop -- keyset page reads active pending push subscriptions while lease remains active
+    const result: { rows: PushSubscriptionRow[] } = await write<PushSubscriptionRow>( // no-mistakes-disable-line query-reached-per-item: keyset pagination over active pending push subscriptions in DynamicConfig push_intent_recovery_page_size pages (hard max 1000)
+      sql`
+        /* listPendingActivePushSubscriptions */
+        WITH active_claim AS MATERIALIZED (
+          SELECT 1
+          FROM notification_push_intents
+          WHERE user_id = ${intent.user_id}
+            AND notification_id = ${intent.notification_id}
+            AND lease_token = ${intent.lease_token}
+            AND lease_expires_at > CURRENT_TIMESTAMP
+        )
+        SELECT subscription.id, subscription.user_id, subscription.endpoint, subscription.p256dh, subscription.auth
+        FROM web_push_subscriptions subscription
+        CROSS JOIN active_claim
+        INNER JOIN web_push_endpoint_owners owner
+          ON owner.user_id = subscription.user_id
+          AND owner.subscription_id = subscription.id
+          AND owner.endpoint = subscription.endpoint
+        LEFT JOIN notification_push_intent_subscription_receipts receipt
+          ON receipt.user_id = ${intent.user_id}
+          AND receipt.notification_id = ${intent.notification_id}
+          AND receipt.subscription_id = subscription.id
+        WHERE subscription.user_id = ${intent.user_id}
+          AND subscription.deleted_at IS NULL
+          AND (subscription.expiration_time_milliseconds IS NULL OR subscription.expiration_time_milliseconds > ${now})
+          AND COALESCE(receipt.status, 'pending') = 'pending'
+          AND (${cursorId}::uuid IS NULL OR subscription.id > ${cursorId}::uuid)
+        ORDER BY subscription.id ASC
+        LIMIT ${batchSize}`,
+    )
+    pending.push(...result.rows)
+    if (result.rows.length < batchSize) break
+    afterId = result.rows.at(-1)!.id
+  }
+  return pending
 }
 
 /** Commits delivery outcomes only if the exact lease still owns the intent. */

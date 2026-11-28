@@ -3,7 +3,9 @@ import {
   extractLeadingQueryAnnotation,
   type Psql,
   type QueryInput,
+  type QueryOptions,
   type QueryValues,
+  type TransactionQuery,
 } from '@vouchington/postgres'
 
 type CursorOptions = NonNullable<Parameters<Psql['createAsyncGeneratorFromCursor']>[2]>
@@ -89,6 +91,21 @@ export function createBoundedCursorApi(psql: Psql) {
     return result
   }
   return { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches }
+}
+
+export function resolveCursorOptionsFromQueryOptions(
+  options: QueryOptions,
+  batchSize: number,
+): CursorOptions {
+  if (options.query && !('client' in options.query)) {
+    throw new Error('Cursor read requires query.client to preserve transaction visibility')
+  }
+  const client = (options.query as TransactionQuery | undefined)?.client ?? options.client
+  return {
+    batchSize,
+    readOnly: client ? false : (options.readOnly ?? true),
+    ...(client ? { client } : {}),
+  }
 }
 
 function resolveOptions<Row>(

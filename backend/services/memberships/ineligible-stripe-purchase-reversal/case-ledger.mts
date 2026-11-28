@@ -1,5 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getMembershipWorkLimits } from '../work-limits.mts'
 
 export type IneligiblePurchaseReversalCase = {
   collisionAt: Date
@@ -23,21 +24,37 @@ export async function getReversalCaseTargetAllocations(
   caseId: string,
   query: QueryExecutor,
 ): Promise<Map<string, number>> {
-  const { rows } = await query(sql`/* getReversalCaseTargetAllocations */
-    SELECT operation.idempotency_key AS "idempotencyKey",
-      operation.qualifying_allocation_minor_units::TEXT AS "qualifyingAllocationMinorUnits"
-    FROM membership_ineligible_purchase_reversal_case_operations case_operation
-    INNER JOIN membership_operations operation ON operation.id = case_operation.membership_operation_id
-    WHERE case_operation.membership_ineligible_purchase_reversal_case_id = ${caseId}
-    ORDER BY operation.id
-
-  `)
-  return new Map(
-    (rows as Array<{ idempotencyKey: string; qualifyingAllocationMinorUnits: string }>).map(row => [
-      row.idempotencyKey,
-      Number(row.qualifyingAllocationMinorUnits),
-    ]),
-  )
+  const { batchSize } = getMembershipWorkLimits()
+  const allocations = new Map<string, number>()
+  let afterOperationId: string | null = null
+  type AllocationRow = {
+    operationId: string
+    idempotencyKey: string
+    qualifyingAllocationMinorUnits: string
+  }
+  while (true) {
+    const cursorOperationId: string | null = afterOperationId
+    // oxlint-disable-next-line no-await-in-loop -- keyset page advances sequentially through one reversal case's operations
+    const result: { rows: AllocationRow[] } = await query<AllocationRow>( // no-mistakes-disable-line query-reached-per-item: keyset pagination over one reversal case's operations in DynamicConfig batchSize pages (hard max 5000)
+      sql`/* getReversalCaseTargetAllocations */
+        SELECT operation.id AS "operationId",
+          operation.idempotency_key AS "idempotencyKey",
+          operation.qualifying_allocation_minor_units::TEXT AS "qualifyingAllocationMinorUnits"
+        FROM membership_ineligible_purchase_reversal_case_operations case_operation
+        INNER JOIN membership_operations operation ON operation.id = case_operation.membership_operation_id
+        WHERE case_operation.membership_ineligible_purchase_reversal_case_id = ${caseId}
+          AND (${cursorOperationId}::uuid IS NULL OR operation.id > ${cursorOperationId}::uuid)
+        ORDER BY operation.id ASC
+        LIMIT ${batchSize}
+      `,
+    )
+    for (const row of result.rows) {
+      allocations.set(row.idempotencyKey, Number(row.qualifyingAllocationMinorUnits))
+    }
+    if (result.rows.length < batchSize) break
+    afterOperationId = result.rows.at(-1)!.operationId
+  }
+  return allocations
 }
 
 export async function getLockedIneligiblePurchaseReversalCase(

@@ -2,6 +2,7 @@ import type { QueryExecutor } from '@data-stores/psql'
 import type Stripe from 'stripe'
 import sql from 'sql-template-strings'
 import { getStripeObjectTimestamp, getStripeSubscriptionPeriod } from '@vouchington/stripe'
+import { getMembershipWorkLimits } from '@services/memberships/work-limits'
 import { mapStripeSubscriptionStatus } from '../event-utils.mts'
 
 export class StripeProviderFactVerdictError extends Error {
@@ -122,8 +123,8 @@ export async function getAuthoritativeStripeMembershipSnapshot(
 function createRenewalSnapshot(
   renewalPrice: Stripe.Price,
   currentPrice: Stripe.Price,
-  currentMapping: StripeProviderProductMapping,
-  renewalMapping: StripeProviderProductMapping | null,
+  currentMapping: MappingRow,
+  renewalMapping: MappingRow | null,
   effectiveAt: Date,
 ): AuthoritativeStripeMembershipSnapshot['renewal'] {
   const mapping = renewalPrice.id === currentPrice.id ? currentMapping : renewalMapping
@@ -151,20 +152,35 @@ async function getStripeProviderProductMappings(
   currentPriceId: string,
   renewalPriceId: string | undefined,
   query: QueryExecutor,
-): Promise<Map<string, StripeProviderProductMapping>> {
-  const { rows } = await query(sql`/* getStripeProviderProductsForObservation */
-    SELECT product.id, product.membership_product_id, product.provider_product_id
-    FROM membership_provider_products product
-    JOIN membership_provider_contexts context ON context.id = product.membership_provider_context_id
-    WHERE context.provider = 'stripe' AND context.environment = ${subscription.livemode ? 'production' : 'test'}
-      AND context.application_id = ${applicationId}
-      AND (provider_product_id = ${currentPriceId} OR provider_product_id = ${renewalPriceId ?? currentPriceId})`)
-  return new Map(
-    (rows as StripeProviderProductMapping[]).map(mapping => [mapping.provider_product_id, mapping]),
-  )
+): Promise<Map<string, MappingRow>> {
+  const { batchSize } = getMembershipWorkLimits()
+  const mappings = new Map<string, MappingRow>()
+  let afterId: string | null = null
+  while (true) {
+    const cursorId: string | null = afterId
+    // oxlint-disable-next-line no-await-in-loop -- keyset page advances sequentially through Stripe product mappings
+    const result: { rows: MappingRow[] } = await query<MappingRow>( // no-mistakes-disable-line query-reached-per-item: keyset pagination over Stripe product mappings in DynamicConfig batchSize pages (hard max 5000)
+      sql`/* getStripeProviderProductsForObservation */
+        SELECT product.id, product.membership_product_id, product.provider_product_id
+        FROM membership_provider_products product
+        JOIN membership_provider_contexts context ON context.id = product.membership_provider_context_id
+        WHERE context.provider = 'stripe' AND context.environment = ${subscription.livemode ? 'production' : 'test'}
+          AND context.application_id = ${applicationId}
+          AND (provider_product_id = ${currentPriceId} OR provider_product_id = ${renewalPriceId ?? currentPriceId})
+          AND (${cursorId}::uuid IS NULL OR product.id > ${cursorId}::uuid)
+        ORDER BY product.id ASC
+        LIMIT ${batchSize}`,
+    )
+    for (const mapping of result.rows) {
+      mappings.set(mapping.provider_product_id, mapping)
+    }
+    if (result.rows.length < batchSize) break
+    afterId = result.rows.at(-1)!.id
+  }
+  return mappings
 }
 
-type StripeProviderProductMapping = {
+type MappingRow = {
   id: string
   membership_product_id: string
   provider_product_id: string

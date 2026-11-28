@@ -126,12 +126,19 @@ async function createOrLockProviderSource(
     source_kind: MembershipProviderSourceKind
   }
   // lock-reason: prevents: a concurrent provider observation from advancing source state between source ownership validation and projection; writer: lockAndCreateProviderObservationSource
-  const { rows } = await query<SourceRow>(sql`/* createMembership: lock provider source */
-    SELECT id, user_id, source_kind FROM membership_sources
-    WHERE membership_provider_lineage_id = ${lineageId}
-      AND source_kind = ${options.sourceKind}
-      AND (${options.sourceKind} = 'direct' OR user_id = ${options.userId})
-    FOR UPDATE`)
+  const { rows } =
+    options.sourceKind === 'direct'
+      ? await query<SourceRow>(sql`/* createMembership: lock provider source */
+          SELECT id, user_id, source_kind FROM membership_sources
+          WHERE membership_provider_lineage_id = ${lineageId}
+            AND source_kind = 'direct'
+          FOR UPDATE`)
+      : await query<SourceRow>(sql`/* createMembership: lock provider source */
+          SELECT id, user_id, source_kind FROM membership_sources
+          WHERE membership_provider_lineage_id = ${lineageId}
+            AND source_kind = 'family'
+            AND user_id = ${options.userId}
+          FOR UPDATE`)
   let source = rows[0]
   if (options.sourceKind === 'direct' && source?.user_id === null) {
     const { rows: reboundRows } =

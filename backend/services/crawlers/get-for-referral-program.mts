@@ -1,6 +1,11 @@
-import { read } from '@data-stores/psql'
+import {
+  createAsyncGeneratorFromCursor,
+  read,
+  resolveCursorOptionsFromQueryOptions,
+} from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
+import { getPaginationLimit } from '@services/pagination/config'
 import createError from 'http-errors'
 import { getOrCreateCrawlerForHostname } from './get-or-create.mts'
 import { getCrawlerById, toCrawler } from './get.mts'
@@ -46,7 +51,8 @@ export async function getCrawlersByReferralProgramId(
     throw createError(422, `Invalid referral program ID: ${referralProgramId}`)
   }
 
-  const { rows } = await read(
+  const rows: Array<Crawler & { hostname: string }> = []
+  for await (const row of createAsyncGeneratorFromCursor(
     `/* getCrawlersByReferralProgramId */
     SELECT
       c.id,
@@ -70,8 +76,10 @@ export async function getCrawlersByReferralProgramId(
     ORDER BY c.priority DESC, c.id ASC
   `,
     [referralProgramId],
-    options,
-  )
+    resolveCursorOptionsFromQueryOptions(options, getPaginationLimit('bulk_default_limit')),
+  )) {
+    rows.push({ ...toCrawler(row), hostname: row.hostname as string })
+  }
 
-  return rows.map(row => ({ ...toCrawler(row), hostname: row.hostname as string }))
+  return rows
 }

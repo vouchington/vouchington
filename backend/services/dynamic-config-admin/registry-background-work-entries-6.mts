@@ -64,6 +64,8 @@ export const backgroundWorkRegistryEntries6 = {
     maxValues: classifiersWorkMaxValues,
     descriptions: {
       comparison_max_batches: 'Comparison max batches for classifiers processing.',
+      decision_calls_page_size:
+        'Keyset page size when reading persisted classifier decision calls for a batch.',
     },
   }),
   'elections-votes-work-config': defineBoundedWorkNamespace({

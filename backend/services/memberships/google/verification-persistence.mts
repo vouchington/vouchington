@@ -10,6 +10,7 @@ import {
 } from './subscription-verifier.mts'
 import type { GooglePlayMembershipObservation } from './types.mts'
 import type { Context } from './process-verification-types.mts'
+import { getMembershipWorkLimits } from '../work-limits.mts'
 export async function allocateGooglePlayObservationOrder(): Promise<number> {
   const { rows } = await write<{ provider_order: string }>(
     sql`/* allocateGooglePlayObservationOrder */ SELECT nextval('membership_google_play_observation_order_seq') AS provider_order`,
@@ -51,17 +52,32 @@ export async function getMapping(
   basePlanId: string | null
   offerId: string | null
 } | null> {
-  const { rows } = await query<{
+  const { batchSize } = getMembershipWorkLimits()
+  const rows: Array<{
     membershipProductId: string
     membershipProviderProductId: string
     providerProductId: string
     basePlanId: string | null
     offerId: string | null
-  }>(sql`/* getGooglePlayVerificationMapping */
-    SELECT mapping.id AS "membershipProviderProductId", mapping.membership_product_id AS "membershipProductId", mapping.provider_product_id AS "providerProductId", mapping.base_plan_id AS "basePlanId", mapping.offer_id AS "offerId"
-    FROM membership_provider_products mapping
-    WHERE mapping.membership_provider_context_id = ${context.providerContextId}::UUID
-      AND (${context.purchaseIntentId}::UUID IS NULL OR mapping.id = (SELECT membership_provider_product_id FROM membership_purchase_intents WHERE id = ${context.purchaseIntentId}::UUID AND user_id = ${context.userId} AND membership_provider_context_id = ${context.providerContextId}::UUID))`)
+  }> = []
+  let afterId: string | null = null
+  while (true) {
+    const cursorId: string | null = afterId
+    // oxlint-disable-next-line no-await-in-loop -- keyset page advances sequentially through provider product mappings
+    const result: { rows: (typeof rows)[number][] } = await query<(typeof rows)[number]>( // no-mistakes-disable-line query-reached-per-item: keyset pagination over provider product mappings in DynamicConfig batchSize pages (hard max 5000)
+      sql`/* getGooglePlayVerificationMapping */
+        SELECT mapping.id AS "membershipProviderProductId", mapping.membership_product_id AS "membershipProductId", mapping.provider_product_id AS "providerProductId", mapping.base_plan_id AS "basePlanId", mapping.offer_id AS "offerId"
+        FROM membership_provider_products mapping
+        WHERE mapping.membership_provider_context_id = ${context.providerContextId}::UUID
+          AND (${context.purchaseIntentId}::UUID IS NULL OR mapping.id = (SELECT membership_provider_product_id FROM membership_purchase_intents WHERE id = ${context.purchaseIntentId}::UUID AND user_id = ${context.userId} AND membership_provider_context_id = ${context.providerContextId}::UUID))
+          AND (${cursorId}::UUID IS NULL OR mapping.id > ${cursorId}::UUID)
+        ORDER BY mapping.id ASC
+        LIMIT ${batchSize}`,
+    )
+    rows.push(...result.rows)
+    if (result.rows.length < batchSize) break
+    afterId = result.rows.at(-1)!.membershipProviderProductId
+  }
   const exact = rows.find(row =>
     subscription.lineItems?.some(item => matchesExpectedGooglePlayProduct(item, row)),
   )

@@ -131,7 +131,9 @@ export async function getMapping(
         SELECT intent.membership_provider_product_id FROM membership_purchase_intents intent
         WHERE intent.id = ${context.purchaseIntentId}::UUID AND intent.user_id = ${context.userId}
           AND intent.membership_provider_context_id = mapping.membership_provider_context_id
-      ))`)
+      ))
+    ORDER BY mapping.id ASC
+    LIMIT 1`)
   return rows[0] ?? null
 }
 

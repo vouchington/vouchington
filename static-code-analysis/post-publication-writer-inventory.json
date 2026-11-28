@@ -225,6 +225,10 @@
       "reason": "caller records the refresh aggregate inside its enclosing transaction"
     },
     {
+      "path": "backend/services/stories/refresh-story-post-topics.mts",
+      "reason": "called inside refreshStoryPostForStory, whose caller records the refresh aggregate inside its enclosing transaction"
+    },
+    {
       "path": "backend/services/topics/create-unlinked-alias.mts",
       "reason": "inserts or reads unowned aliases only; no existing alias ownership changes or post-topic projection exists."
     },

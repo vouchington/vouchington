@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CuratedAsideEntityData, CuratedAsideItem, CuratedAsideType } from './types.mts'
 
@@ -7,7 +7,9 @@ type CuratedAsideItemRow = Omit<CuratedAsideItem, 'entity_data'> & {
 }
 
 export async function listCuratedItems(asideType: CuratedAsideType): Promise<CuratedAsideItem[]> {
-  const { rows } = await read<CuratedAsideItemRow>(sql`/* listCuratedItems */
+  const rows: CuratedAsideItemRow[] = []
+  for await (const row of createAsyncGeneratorFromCursor<CuratedAsideItemRow>(
+    sql`/* listCuratedItems */
     SELECT
       cai.id,
       cai.aside_type,
@@ -56,7 +58,11 @@ export async function listCuratedItems(asideType: CuratedAsideType): Promise<Cur
     WHERE cai.aside_type = ${asideType}
       AND cai.deleted_at IS NULL
     ORDER BY cai.position ASC, cai.id ASC
-  `)
+  `,
+    { readOnly: true },
+  )) {
+    rows.push(row)
+  }
 
   return rows
 }

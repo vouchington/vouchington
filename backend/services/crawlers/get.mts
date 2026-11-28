@@ -1,6 +1,11 @@
-import { read } from '@data-stores/psql'
+import {
+  createAsyncGeneratorFromCursor,
+  read,
+  resolveCursorOptionsFromQueryOptions,
+} from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
+import { getPaginationLimit } from '@services/pagination/config'
 import type { Crawler } from './types.mts'
 import createError from 'http-errors'
 
@@ -89,7 +94,8 @@ export const getCrawlersForHostname = async (
     throw createError(422, `Invalid hostname ID: ${hostnameId}`)
   }
 
-  const { rows } = await read(
+  const rows: Array<Crawler & { hostname: string }> = []
+  for await (const row of createAsyncGeneratorFromCursor(
     `/* getCrawlersForHostname */
     SELECT
       c.id,
@@ -113,10 +119,12 @@ export const getCrawlersForHostname = async (
     ORDER BY c.priority DESC, c.id ASC
   `,
     [hostnameId],
-    options,
-  )
+    resolveCursorOptionsFromQueryOptions(options, getPaginationLimit('bulk_default_limit')),
+  )) {
+    rows.push({ ...toCrawler(row), hostname: row.hostname as string })
+  }
 
-  return rows.map(row => ({ ...toCrawler(row), hostname: row.hostname as string }))
+  return rows
 }
 
 export function toCrawler(row: Record<string, unknown>): Crawler {

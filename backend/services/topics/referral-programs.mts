@@ -10,6 +10,7 @@ import {
   validateOptionalTimestamp,
 } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
+import { assertReferralProgramRuleSetCapacity } from './referral-link-validation-limits.mts'
 import { upsertTopicAttributes, type TopicAttributeRowMap } from './upsert-attributes.mts'
 
 type ReferralProgramAttributes = {
@@ -62,6 +63,7 @@ export async function linkValidationToReferralProgram(
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
   await assertReferralProgramAndLinkValidationExist(referralProgramId, validationId, options)
   await withTransactionOptions(options ?? {}, async query => {
+    await assertReferralProgramRuleSetCapacity(referralProgramId, validationId, query)
     await query(sql`/* linkValidationToReferralProgram */
         INSERT INTO referral_program_topic_link_validation_rule_sets (referral_program_topic_id, referral_program_link_validation_rule_set_id)
         VALUES (${referralProgramId}, ${validationId})

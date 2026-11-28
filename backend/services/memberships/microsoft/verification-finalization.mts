@@ -65,7 +65,8 @@ export async function persistCredentials(
     current: boolean
   }>(sql`/* isCurrentMicrosoftStoreObservation */
     SELECT TRUE AS current FROM membership_sources source INNER JOIN membership_source_states state ON state.membership_source_id = source.id
-    WHERE source.user_id = ${context.userId} AND source.membership_provider_lineage_id = ${lineageId} AND state.membership_provider_observation_id = ${observationId}::UUID`)
+    WHERE source.user_id = ${context.userId} AND source.membership_provider_lineage_id = ${lineageId} AND state.membership_provider_observation_id = ${observationId}::UUID
+    LIMIT 1`)
   const isCurrent = current.at(0)?.current ?? false
   const collectionsDigest = digest(evidence.collectionsKey)
   const purchaseDigest = digest(evidence.purchaseKey)

@@ -11,7 +11,9 @@ export async function listProfileLinks(userId: string): Promise<ProfileLink[]> {
         FROM user_profile_links pl
         LEFT JOIN urls u ON u.id = pl.url_id
         LEFT JOIN image_surface_placements surface
-          ON surface.user_profile_link_id = pl.id AND surface.surface_kind = 'user-profile-link-image'
+          ON surface.user_profile_link_id = pl.id
+          AND surface.image_id = pl.image_id
+          AND surface.surface_kind = 'user-profile-link-image'
         LEFT JOIN media_placements placement
           ON placement.id = surface.placement_id AND placement.retired_at IS NULL
         LEFT JOIN view_publicly_projected_image_placements public_delivery

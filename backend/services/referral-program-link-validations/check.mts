@@ -1,4 +1,9 @@
-import { read, type QueryOptions } from '@data-stores/psql'
+import {
+  createAsyncGeneratorFromCursor,
+  resolveCursorOptionsFromQueryOptions,
+} from '@data-stores/psql/cursors'
+import type { QueryOptions } from '@data-stores/psql/types'
+import { getReferralLinkValidationLimit } from '@services/topics/referral-link-validation-limits'
 import sql from 'sql-template-strings'
 import { isHttpUrlWithoutFragment, normalizeUrlForUrlTable } from '@modules/utils/urls'
 import { matchDomain, matchesPathnamePattern } from '@ts-shared/utils/urls'
@@ -165,6 +170,15 @@ async function loadEnabledReferralLinkRules(
       rp.topic_id ASC
   `)
 
-  const { rows } = await read<ValidationRule>(query, queryOptions)
-  return rows
+  const rules: ValidationRule[] = []
+  for await (const rule of createAsyncGeneratorFromCursor<ValidationRule>(
+    query,
+    resolveCursorOptionsFromQueryOptions(
+      queryOptions,
+      getReferralLinkValidationLimit('rule_cursor_batch_size'),
+    ),
+  )) {
+    rules.push(rule)
+  }
+  return rules
 }

@@ -1,6 +1,7 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { ClassifierRunSubject } from './types.mts'
+import { getClassifierRunsWorkLimit } from './work-limits.mts'
 
 function requestSubject(subject: ClassifierRunSubject): SQLStatement {
   return subject.postId !== null
@@ -136,8 +137,26 @@ export async function reopenClassifierRunRequests(
   query: QueryExecutor,
   runId: string,
 ): Promise<void> {
-  await query(sql`/* reopenClassifierRunRequests */
-    UPDATE classifier_run_requests SET run_identity_id = NULL, run_settled_at = NULL
-    WHERE run_identity_id = ${runId}
-  `)
+  const batchSize = getClassifierRunsWorkLimit('discovery_page_size')
+  while (true) {
+    // oxlint-disable no-await-in-loop -- bounded batch UPDATE drains requests settled by this run
+    // no-mistakes-disable-next-line query-reached-per-item: batched UPDATE reopening requests for one run in DynamicConfig discovery_page_size pages (hard max 1000)
+    const { rowCount } = await query(
+      sql`/* reopenClassifierRunRequests */
+      WITH target AS (
+        SELECT id
+        FROM classifier_run_requests
+        WHERE run_identity_id = ${runId}
+        ORDER BY id
+        LIMIT ${batchSize}
+      )
+      UPDATE classifier_run_requests request
+      SET run_identity_id = NULL, run_settled_at = NULL
+      FROM target
+      WHERE request.id = target.id
+    `,
+    )
+    // oxlint-enable no-await-in-loop
+    if ((rowCount ?? 0) < batchSize) break
+  }
 }

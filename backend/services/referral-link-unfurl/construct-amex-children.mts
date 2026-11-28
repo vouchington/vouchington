@@ -1,4 +1,9 @@
-import { read, type QueryOptions } from '@data-stores/psql'
+import {
+  createAsyncGeneratorFromCursor,
+  resolveCursorOptionsFromQueryOptions,
+} from '@data-stores/psql/cursors'
+import type { QueryOptions } from '@data-stores/psql/types'
+import { getReferralLinkValidationLimit } from '@services/topics/referral-link-validation-limits'
 import sql from 'sql-template-strings'
 
 const AMEX_HOSTNAME = '*.americanexpress.com'
@@ -20,9 +25,8 @@ interface AmexCardSlug {
  * (`seed/referral-programs-topics.csv`) rather than any separate catalog artifact —
  * the seeded rows are the single source of truth. Adding a card means adding one CSV row.
  */
-export async function getAmexCardSlugCatalog(options?: QueryOptions): Promise<AmexCardSlug[]> {
-  const { rows } = await read(
-    sql`/* getAmexCardSlugCatalog */
+export async function getAmexCardSlugCatalog(options: QueryOptions = {}): Promise<AmexCardSlug[]> {
+  const query = sql`/* getAmexCardSlugCatalog */
       SELECT DISTINCT rpvr.pathname
       FROM referral_program_topics rp
       JOIN referral_program_topic_link_validation_rule_sets trplv
@@ -39,12 +43,16 @@ export async function getAmexCardSlugCatalog(options?: QueryOptions): Promise<Am
           rpvr.pathname LIKE ${`${PATHNAME_PREFIXES.personal}%`}
           OR rpvr.pathname LIKE ${`${PATHNAME_PREFIXES.business}%`}
         )
-    `,
-    options,
-  )
+    `
 
   const catalog: AmexCardSlug[] = []
-  for (const row of rows as { pathname: string }[]) {
+  for await (const row of createAsyncGeneratorFromCursor<{ pathname: string }>(
+    query,
+    resolveCursorOptionsFromQueryOptions(
+      options,
+      getReferralLinkValidationLimit('rule_cursor_batch_size'),
+    ),
+  )) {
     const entry = parseCardSlugFromPathname(row.pathname)
     if (entry) catalog.push(entry)
   }

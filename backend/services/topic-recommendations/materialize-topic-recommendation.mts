@@ -1,6 +1,7 @@
 import type { QueryOptions } from '@data-stores/psql/types'
 import { write } from '@data-stores/psql'
 import { createPostTextEmbeddingContent } from '@services/posts/content'
+import { getTopicsWorkLimit } from '@services/topics/work-limits'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import sql from 'sql-template-strings'
 import { normalizeTopicRecommendationValues } from './shared.mts'
@@ -52,21 +53,37 @@ export async function replaceTopicRecommendationHostnames(
   hostnameIds: string[],
   options: QueryOptions,
 ): Promise<void> {
-  // Deleted ids and inserted ids are disjoint, so the CTE cannot miss a row the insert adds.
+  // Deleted ids and inserted ids are disjoint, so deleting removed rows before inserting preserves the set.
+  const batchSize = getTopicsWorkLimit('alias_post_invalidation_batch_size')
+  while (true) {
+    // oxlint-disable no-await-in-loop -- bounded batch DELETE removes dropped recommendation hostnames
+    // no-mistakes-disable-next-line query-reached-per-item: batched DELETE of dropped recommendation hostnames in DynamicConfig alias_post_invalidation_batch_size pages (hard max 1000)
+    const { rowCount } = await write(
+      sql`/* replaceTopicRecommendationHostnames:delete */
+        WITH target AS (
+          SELECT post_id, hostname_id
+          FROM post_topic_recommendation_hostnames
+          WHERE post_id = ${postId}
+            AND hostname_id <> ALL(${hostnameIds}::uuid[])
+          ORDER BY hostname_id
+          LIMIT ${batchSize}
+        )
+        DELETE FROM post_topic_recommendation_hostnames existing
+        USING target
+        WHERE existing.post_id = target.post_id
+          AND existing.hostname_id = target.hostname_id
+      `,
+      options,
+    )
+    // oxlint-enable no-await-in-loop
+    if ((rowCount ?? 0) < batchSize) break
+  }
+  if (hostnameIds.length === 0) return
   await write(
     sql`/* replaceTopicRecommendationHostnames */
-      WITH removed AS (
-        DELETE FROM post_topic_recommendation_hostnames
-        WHERE post_id = ${postId}
-          AND hostname_id <> ALL(${hostnameIds}::uuid[])
-        RETURNING hostname_id
-      )
       INSERT INTO post_topic_recommendation_hostnames (post_id, hostname_id)
       SELECT ${postId}::uuid, hostnames.hostname_id
       FROM UNNEST(${hostnameIds}::uuid[]) AS hostnames(hostname_id)
-      WHERE NOT EXISTS (
-        SELECT 1 FROM removed WHERE removed.hostname_id = hostnames.hostname_id
-      )
       ORDER BY hostnames.hostname_id
       ON CONFLICT (post_id, hostname_id) DO NOTHING
       RETURNING hostname_id

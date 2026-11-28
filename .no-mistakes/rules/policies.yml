@@ -2173,31 +2173,51 @@
       - integration-tests/**/*.{ts,mts,tsx,js,sql}
       - playwright/**/*.{ts,mts,tsx,js,sql}
       - web/**/*.{ts,mts,tsx,js,sql}
-    extraGeneratedColumns:
-      - { table: agent_moderation_votes, column: created_at }
-      - { table: hostname_votes, column: created_at }
-      - { table: post_votes, column: created_at }
-      - { table: relation__post__category__topic__votes, column: created_at }
-      - { table: relation__post__category__topic_alias__votes, column: created_at }
-      - { table: relation__post__related__post__votes, column: created_at }
-      - { table: relation__post__related__url__votes, column: created_at }
-      - { table: relation__rss_feed_item__category__topic__votes, column: created_at }
-      - { table: relation__rss_feed_item__category__topic_alias__votes, column: created_at }
-      - { table: relation__topic__category__topic__votes, column: created_at }
-      - { table: relation__topic__faq__post__votes, column: created_at }
-      - { table: relation__topic__faq__url__votes, column: created_at }
-      - { table: relation__topic__guide__url__votes, column: created_at }
-      - { table: relation__topic__landing_page__url__votes, column: created_at }
-      - { table: relation__topic__publisher_type__topic__votes, column: created_at }
-      - { table: relation__topic__related__post__votes, column: created_at }
-      - { table: relation__topic__related__topic__votes, column: created_at }
-      - { table: relation__topic__related__url__votes, column: created_at }
-      - { table: relation__topic__terms_of_service__url__votes, column: created_at }
-      - { table: relation__user__category__topic__votes, column: created_at }
-      - { table: rss_feed_item_votes, column: created_at }
-      - { table: topic_votes, column: created_at }
-      - { table: user_deletion_relation_impacts, column: created_at }
-      - { table: user_vouch_votes, column: created_at }
+    extraGeneratedColumns: &vote_generated_created_at_columns
+      - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
+      - { table: hostname_votes, column: created_at, sourceColumn: id }
+      - { table: post_votes, column: created_at, sourceColumn: id }
+      - { table: relation__post__category__topic__votes, column: created_at, sourceColumn: id }
+      - {
+          table: relation__post__category__topic_alias__votes,
+          column: created_at,
+          sourceColumn: id,
+        }
+      - { table: relation__post__related__post__votes, column: created_at, sourceColumn: id }
+      - { table: relation__post__related__url__votes, column: created_at, sourceColumn: id }
+      - {
+          table: relation__rss_feed_item__category__topic__votes,
+          column: created_at,
+          sourceColumn: id,
+        }
+      - {
+          table: relation__rss_feed_item__category__topic_alias__votes,
+          column: created_at,
+          sourceColumn: id,
+        }
+      - { table: relation__topic__category__topic__votes, column: created_at, sourceColumn: id }
+      - { table: relation__topic__faq__post__votes, column: created_at, sourceColumn: id }
+      - { table: relation__topic__faq__url__votes, column: created_at, sourceColumn: id }
+      - { table: relation__topic__guide__url__votes, column: created_at, sourceColumn: id }
+      - { table: relation__topic__landing_page__url__votes, column: created_at, sourceColumn: id }
+      - {
+          table: relation__topic__publisher_type__topic__votes,
+          column: created_at,
+          sourceColumn: id,
+        }
+      - { table: relation__topic__related__post__votes, column: created_at, sourceColumn: id }
+      - { table: relation__topic__related__topic__votes, column: created_at, sourceColumn: id }
+      - { table: relation__topic__related__url__votes, column: created_at, sourceColumn: id }
+      - {
+          table: relation__topic__terms_of_service__url__votes,
+          column: created_at,
+          sourceColumn: id,
+        }
+      - { table: relation__user__category__topic__votes, column: created_at, sourceColumn: id }
+      - { table: rss_feed_item_votes, column: created_at, sourceColumn: id }
+      - { table: topic_votes, column: created_at, sourceColumn: id }
+      - { table: user_deletion_relation_impacts, column: created_at, sourceColumn: id }
+      - { table: user_vouch_votes, column: created_at, sourceColumn: id }
 
 - name: tests must not eval markdown shell fences
   rule: markdown-eval-tests
@@ -2401,106 +2421,86 @@
         reason: 'ISO 3166-1 alpha-2 catalogue; code is UNIQUE with CHECK ^[A-Z]{2}$ (0000-00-00-core-functions-sites.sql), so at most 676 rows'
       - object: table:domain_blocklist_sources
         reason: 'configuration-seeded catalogue (config-driven/0050-00-01-seed-blacklist-sources.mts seeds the BLACKLISTS constant); name is UNIQUE and staff add sources only by code change'
-      - object: table:referral_program_link_validation_rule_sets
-        reason: 'staff-curated catalogue written only by staff routes and the admin topic CSV import (backend/services/admin-imports/process-topic-row-referral.mts), never by user content; NO write cap exists on rule sets per program or in total, so growth is bounded only by staff data entry, and link validation reads every enabled rule set of one program per call'
-      - object: table:referral_program_link_validation_rules
-        reason: 'staff-curated catalogue written only by staff routes and the admin topic CSV import (backend/services/admin-imports/process-topic-row-referral.mts), never by user content; NO write cap exists on rules per rule set or in total, so growth is bounded only by staff data entry, and link validation reads every enabled rule of one program per call'
       - object: table:migrations
         reason: 'migration ledger; one row per file in backend/data-stores/psql/migrations (id is the primary key), written only by the migration runner'
     columnBounds:
       user_landing_pages.user_id:
         {
-          reason: 'pages_per_user (DynamicConfig, hard max LANDING_PAGE_LIMIT_MAX_VALUES.pages_per_user = 100 in my/landing-pages/limits.mts) is enforced inside the create INSERT (create.mts) and pages are hard-deleted (delete.mts), so a user has at most 100 rows',
+          reason: 'pages_per_user (DynamicConfig landing-page-limits-config, hard max LANDING_PAGE_LIMIT_MAX_VALUES.pages_per_user = 100 in my/landing-pages/limits.mts) is enforced inside the create INSERT (create.mts) and pages are hard-deleted (delete.mts), so a user has at most 100 rows',
         }
-      post_images.post_id: { reason: 'a post carries at most 20 attached images' }
-      post_images.image_id: { reason: 'an uploaded image attaches to one post' }
-      image_placements.post_id: { reason: 'one placement per attached image of a post' }
-      image_surface_placements.user_profile_link_id:
-        { reason: 'a profile link has one image surface' }
-      image_surface_placement_activations.placement_id:
-        { reason: 'a few activation revisions per surface placement' }
-      user_aside_preferences.user_id: { reason: 'one row per finite aside key per user' }
+      post_images.post_id:
+        {
+          reason: 'post_images_max (DynamicConfig post-content-limits-config, hard max POST_CONTENT_LIMITS_MAX_VALUES.post_images_max = 50 in post-content-limits/config.mts) is enforced on create/update (image-input-validation.mts, image-placements.mts)',
+        }
+      post_images.image_id:
+        {
+          reason: 'max_placements_per_image (DynamicConfig media-delivery-safety-work-config, hard max mediaDeliverySafetyWorkMaxValues.max_placements_per_image = 20 in media-delivery-safety/work-limits.mts) is enforced best-effort by admitImagePlacements (placement-capacity.mts)',
+        }
       user_profile_links.user_id:
         {
-          reason: 'profile_links_max (DynamicConfig, hard max USER_PROFILE_LINKS_MAX = 50) caps links per user',
+          reason: 'profile_links_max (DynamicConfig user-product-limits-config, hard max USER_PROFILE_LINKS_MAX = 50 in user-product-limits/config.mts) caps links per user',
         }
-      user_landing_page_items.landing_page_id: { reason: 'a landing page has a few items' }
+      user_landing_page_items.landing_page_id:
+        {
+          reason: 'items_per_page (DynamicConfig landing-page-limits-config, hard max LANDING_PAGE_LIMIT_MAX_VALUES.items_per_page = 1000 in my/landing-pages/limits.mts) is enforced by assertLandingPageItemLimit (replace-items.mts)',
+        }
       user_landing_page_group_members.landing_page_item_id:
-        { reason: 'a group item has a few members' }
-      web_push_subscriptions.user_id: { reason: 'a user has a few push-enabled devices' }
-      web_push_endpoint_owners.user_id: { reason: 'a user has a few push-enabled devices' }
+        {
+          reason: 'items_per_page (DynamicConfig landing-page-limits-config, hard max LANDING_PAGE_LIMIT_MAX_VALUES.items_per_page = 1000 in my/landing-pages/limits.mts) caps total items and group entries per landing page in assertLandingPageItemLimit (replace-items.mts)',
+        }
       autotagger_agent_run_topics.run_id:
-        { reason: 'autotagger runs choose from at most 10 candidates' }
-      classifier_decision_calls.batch_id: { reason: 'a few shards per decision batch' }
-      classifier_run_requests.run_identity_id:
-        { reason: 'a run settles one request per classifier subject' }
-      community_pinned_posts.community_id: { reason: 'a community pins at most 3 posts' }
+        {
+          reason: 'PRIMARY KEY (run_id, topic_id) selected solely from classifier_run_candidates (autotagger/agent/facts.mts), which is capped at CLASSIFIER_MAX_TOPIC_CANDIDATES = 20 (classifiers/decision-result-limits.mts)',
+        }
+      community_pinned_posts.community_id:
+        {
+          reason: 'UNIQUE (community_id, order_index) with CHECK (order_index >= 0 AND order_index < 3), so at most 3 pinned posts per community',
+        }
       community_auto_tagger_agents.community_id:
-        { reason: 'a community enables a few tagger agents' }
-      conversation_participants.conversation_id:
-        { reason: 'a conversation has at most 50 participants' }
-      url_hostname_blocks.url_hostname_id:
-        { reason: 'a hostname has a short block and lift history' }
-      curated_aside_items.aside_type: { reason: 'staff curate a short list per aside type' }
-      copyright_notice_targets.copyright_notice_id:
-        { reason: 'intake caps targets at 20 per notice' }
-      copyright_notice_target_images.copyright_notice_target_id: { reason: 'one image per target' }
+        {
+          reason: 'PRIMARY KEY (community_id, agent_id) restricted by write validation (moderation/community-auto-taggers.mts) to the 7 code-defined slugs in FIXED_LABEL_MODERATOR_SLUGS (moderation/community-auto-tagger-data.mts)',
+        }
+      copyright_notice_target_images.copyright_notice_target_id:
+        { reason: 'PRIMARY KEY (copyright_notice_target_id), so at most 1 row per target' }
       copyright_notice_email_intake_attachments.copyright_notice_email_intake_id:
-        { reason: 'at most 100 attachments per intake email' }
+        {
+          reason: 'UNIQUE (copyright_notice_email_intake_id, ordinal) with intake check input.attachments.length <= 100 (copyright-notices/email-intake-parse-input.mts)',
+        }
       copyright_notice_counter_notice_assessment_targets.copyright_notice_submission_assessment_identity_id:
-        { reason: 'at most the notice targets (20)' }
+        {
+          reason: 'PRIMARY KEY (copyright_notice_submission_assessment_identity_id, copyright_notice_target_id) subset of the notice targets (form intake hard max COPYRIGHT_CLAIMANT_TARGETS_MAX = 50 in copyright-notices/config.mts)',
+        }
       copyright_legal_hold_restrictions.copyright_notice_legal_hold_assessment_id:
-        { reason: 'at most the notice targets (20)' }
-      membership_sources.user_id: { reason: 'a user has a few membership sources' }
-      membership_sources.membership_provider_lineage_id:
-        { reason: 'a provider lineage backs a few sources' }
-      membership_provider_products.membership_provider_context_id:
-        { reason: 'a provider context maps the four catalog products' }
-      membership_ineligible_purchase_reversal_case_operations.membership_ineligible_purchase_reversal_case_id:
-        { reason: 'a few operations per reversal case' }
-      membership_refund_operation_attempts.membership_operation_id:
-        { reason: 'a few refund attempts per operation' }
-      post_review_topic_ratings.post_id: { reason: 'a review rates a few topics' }
-      post_dispute_annotations.post_id: { reason: 'staff add a few annotations per post' }
-      relation__post__category__topic.subject_id: { reason: 'a post has a few category topics' }
-      relation__post__category__topic_alias.subject_id:
-        { reason: 'a post has a few category aliases' }
-      post_topic_recommendation_hostnames.post_id:
-        { reason: 'a recommendation lists a few hostnames' }
-      post_topic_recommendation_landing_page_urls.post_id:
-        { reason: 'a recommendation lists a few landing pages' }
-      review_succession_topics.review_succession_id: { reason: 'a succession covers a few topics' }
-      moderation_queue_claims.post_id: { reason: 'one live claim per queue entry' }
-      moderation_queue_claims.report_id: { reason: 'one live claim per queue entry' }
-      rss_feed_categories.rss_feed_id: { reason: 'a podcast feed lists a few iTunes categories' }
-      relation__rss_feed_item__category__topic.subject_id:
-        { reason: 'an item maps to a few topics' }
-      relation__rss_feed_item__category__topic_alias.subject_id:
-        { reason: 'an item maps to a few aliases' }
-      rss_feeds.canonical_rss_feed_id: { reason: 'a canonical feed has a few duplicates' }
+        {
+          reason: 'PRIMARY KEY (copyright_restriction_id, copyright_notice_legal_hold_assessment_id) subset of the notice target restrictions (form intake hard max COPYRIGHT_CLAIMANT_TARGETS_MAX = 50 in copyright-notices/config.mts)',
+        }
+      post_review_topic_ratings.post_id:
+        {
+          reason: 'review_topic_ratings_max_items (DynamicConfig post-content-limits-config, hard max POST_CONTENT_LIMITS_MAX_VALUES.review_topic_ratings_max_items = 100 in post-content-limits/config.mts) is enforced on create/add (posts/post-ratings.mts)',
+        }
+      rss_feed_categories.rss_feed_id:
+        {
+          reason: 'PRIMARY KEY (rss_feed_id, category_identity_id) written solely from extractFeedCategories (rss-feeds/podcast-extractors.mts), capped by podcast_max_categories (DynamicConfig rss-feeds-work-config, hard max rssFeedsWorkMaxValues.podcast_max_categories = 20 in rss-feeds/work-limits.mts) with dropped categories removed in upsertRssFeedCategories',
+        }
       retailer_countries.retailer_topic_id:
-        { reason: 'a retailer serves a finite set of countries' }
-      hostname_crawler_configurations.hostname_id:
-        { reason: 'a hostname has a few crawler configurations' }
-      hostname_crawler_configurations.referral_program_topic_id:
-        { reason: 'a referral program has a few crawler hostnames' }
-      referral_program_topic_link_validation_rule_sets.referral_program_topic_id:
-        { reason: 'a program has a few rule sets' }
-      referral_program_link_validation_rules.referral_program_link_validation_rule_set_id:
-        { reason: 'a rule set has a few rules' }
+        {
+          reason: 'PRIMARY KEY (retailer_topic_id, country_id) referencing countries (ISO 3166-1 alpha-2 CHECK ^[A-Z]{2}$), so at most 676 rows per retailer',
+        }
       hostname_path_boilerplate_removal_urls.hostname_path_boilerplate_removal_id:
-        { reason: 'the sole writer stores the at most 3 sampled candidate urls per removal' }
+        {
+          reason: 'PRIMARY KEY (hostname_path_boilerplate_removal_id, url_id); sole writer processBoilerplateRemoval (workers/crawl-dispatch/processors/boilerplate.mts) samples at most 3 URLs and replaces prior rows in createBoilerplateRemoval',
+        }
       households.owner_user_id:
         {
-          reason: 'create counts at most 2 owned households (LIMIT 3) before insert; a race may overshoot and the schema has no maximum',
+          reason: 'create counts at most 2 owned households (LIMIT 3) before insert (household-limits-config); a race may overshoot and the schema has no maximum',
         }
       household_members.household_id:
         {
-          reason: 'membership create counts at most 25 members (LIMIT 26) before insert; a race may overshoot and the schema has no maximum',
+          reason: 'membership create counts at most 25 members (LIMIT 26) before insert (household-limits-config); a race may overshoot and the schema has no maximum',
         }
       household_members.individual_id:
         {
-          reason: 'membership create counts at most 5 households per individual (LIMIT 6) before insert; a race may overshoot and the schema has no maximum',
+          reason: 'membership create counts at most 5 households per individual (LIMIT 6) before insert (household-limits-config); a race may overshoot and the schema has no maximum',
         }
 
 - name: grouping does not stand in for aggregation
@@ -2612,51 +2612,7 @@
     functions: [uuid_extract_timestamp]
     requireArgumentIsPrimaryKey: false
     clauses: [where, join, order-by]
-    extraGeneratedColumns:
-      - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
-      - { table: hostname_votes, column: created_at, sourceColumn: id }
-      - { table: post_votes, column: created_at, sourceColumn: id }
-      - { table: relation__post__category__topic__votes, column: created_at, sourceColumn: id }
-      - {
-          table: relation__post__category__topic_alias__votes,
-          column: created_at,
-          sourceColumn: id,
-        }
-      - { table: relation__post__related__post__votes, column: created_at, sourceColumn: id }
-      - { table: relation__post__related__url__votes, column: created_at, sourceColumn: id }
-      - {
-          table: relation__rss_feed_item__category__topic__votes,
-          column: created_at,
-          sourceColumn: id,
-        }
-      - {
-          table: relation__rss_feed_item__category__topic_alias__votes,
-          column: created_at,
-          sourceColumn: id,
-        }
-      - { table: relation__topic__category__topic__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__faq__post__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__faq__url__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__guide__url__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__landing_page__url__votes, column: created_at, sourceColumn: id }
-      - {
-          table: relation__topic__publisher_type__topic__votes,
-          column: created_at,
-          sourceColumn: id,
-        }
-      - { table: relation__topic__related__post__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__related__topic__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__related__url__votes, column: created_at, sourceColumn: id }
-      - {
-          table: relation__topic__terms_of_service__url__votes,
-          column: created_at,
-          sourceColumn: id,
-        }
-      - { table: relation__user__category__topic__votes, column: created_at, sourceColumn: id }
-      - { table: rss_feed_item_votes, column: created_at, sourceColumn: id }
-      - { table: topic_votes, column: created_at, sourceColumn: id }
-      - { table: user_deletion_relation_impacts, column: created_at, sourceColumn: id }
-      - { table: user_vouch_votes, column: created_at, sourceColumn: id }
+    extraGeneratedColumns: *vote_generated_created_at_columns
     unanalyzableSql: ignore
 
 - name: development-runtime helpers avoid generated UUIDv7 timestamp predicates
@@ -2680,51 +2636,7 @@
     functions: [uuid_extract_timestamp]
     requireArgumentIsPrimaryKey: false
     clauses: [where, join, order-by]
-    extraGeneratedColumns:
-      - { table: agent_moderation_votes, column: created_at, sourceColumn: id }
-      - { table: hostname_votes, column: created_at, sourceColumn: id }
-      - { table: post_votes, column: created_at, sourceColumn: id }
-      - { table: relation__post__category__topic__votes, column: created_at, sourceColumn: id }
-      - {
-          table: relation__post__category__topic_alias__votes,
-          column: created_at,
-          sourceColumn: id,
-        }
-      - { table: relation__post__related__post__votes, column: created_at, sourceColumn: id }
-      - { table: relation__post__related__url__votes, column: created_at, sourceColumn: id }
-      - {
-          table: relation__rss_feed_item__category__topic__votes,
-          column: created_at,
-          sourceColumn: id,
-        }
-      - {
-          table: relation__rss_feed_item__category__topic_alias__votes,
-          column: created_at,
-          sourceColumn: id,
-        }
-      - { table: relation__topic__category__topic__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__faq__post__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__faq__url__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__guide__url__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__landing_page__url__votes, column: created_at, sourceColumn: id }
-      - {
-          table: relation__topic__publisher_type__topic__votes,
-          column: created_at,
-          sourceColumn: id,
-        }
-      - { table: relation__topic__related__post__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__related__topic__votes, column: created_at, sourceColumn: id }
-      - { table: relation__topic__related__url__votes, column: created_at, sourceColumn: id }
-      - {
-          table: relation__topic__terms_of_service__url__votes,
-          column: created_at,
-          sourceColumn: id,
-        }
-      - { table: relation__user__category__topic__votes, column: created_at, sourceColumn: id }
-      - { table: rss_feed_item_votes, column: created_at, sourceColumn: id }
-      - { table: topic_votes, column: created_at, sourceColumn: id }
-      - { table: user_deletion_relation_impacts, column: created_at, sourceColumn: id }
-      - { table: user_vouch_votes, column: created_at, sourceColumn: id }
+    extraGeneratedColumns: *vote_generated_created_at_columns
     unanalyzableSql: ignore
 
 - name: PostgreSQL object names follow the relational naming contract

@@ -35,13 +35,18 @@ export async function getAdministratorRefundContext(
 
 export async function needsRefundMetadataDiscovery(operationId: string): Promise<boolean> {
   const { rows } = await write(sql`/* needsRefundMetadataDiscovery */
-    SELECT attempt.id <= uuidv7(INTERVAL '-23 hours')
+    WITH latest_attempt AS (
+      SELECT id
+      FROM membership_refund_operation_attempts
+      WHERE membership_operation_id = ${operationId} AND provider_refund_id IS NULL
+      ORDER BY attempt_ordinal DESC
+      LIMIT 1
+    )
+    SELECT latest_attempt.id <= uuidv7(INTERVAL '-23 hours')
       OR scan.completed_at IS NOT NULL AS "unknown"
-    FROM membership_refund_operation_attempts attempt
+    FROM latest_attempt
     LEFT JOIN membership_refund_operation_attempt_metadata_scans scan
-      ON scan.membership_refund_operation_attempt_id = attempt.id
-    WHERE attempt.membership_operation_id = ${operationId} AND attempt.provider_refund_id IS NULL
-    ORDER BY attempt.attempt_ordinal DESC LIMIT 1
+      ON scan.membership_refund_operation_attempt_id = latest_attempt.id
   `)
   return Boolean((rows[0] as { unknown?: boolean } | undefined)?.unknown)
 }

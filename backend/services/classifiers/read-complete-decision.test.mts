@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
 import {
@@ -12,6 +12,7 @@ import {
   readCompleteClassifierDecisionForActiveRun,
   readCompleteClassifierDecisionIfExistsFromPrimary,
 } from './read-complete-decision.mts'
+import * as workLimits from './work-limits.mts'
 
 describe('readCompleteClassifierDecisionIfExistsFromPrimary', () => {
   it('returns null for a batch ID that was never committed', async () => {
@@ -124,5 +125,38 @@ describe('readCompleteClassifierDecisionIfExistsFromPrimary', () => {
         readCompleteClassifierDecisionForActiveRun(query, run.id, batchId, 'topic'),
       ),
     ).rejects.toThrow('outside the retention window')
+  })
+
+  it('paginates decision calls across a full keyset page boundary', async () => {
+    const fixture = await createClassifierFixture()
+    await fixture.activateClassifierConfigurations()
+    const batchId = uuidv7()
+    await persistClassifierDecision({
+      batchId,
+      classifierId: fixture.classifierId,
+      promptVersionId: fixture.promptVersionId,
+      subject: { postId: fixture.postId, rssFeedItemId: null },
+      scope: { scopeCategory: 'global', scopeCommunityId: null },
+      calls: [
+        {
+          shardOrdinal: 0,
+          results: [
+            {
+              candidateKind: 'topic',
+              topicId: fixture.topicId,
+              storedCandidateId: fixture.topicCandidateId,
+              probability: 0.6,
+              rawResponse: { type: 'noul', probability: 0.6 },
+            },
+          ],
+        },
+      ],
+    })
+    const spy = vi.spyOn(workLimits, 'getClassifiersWorkLimit').mockReturnValue(1)
+    onTestFinished(() => spy.mockRestore())
+
+    const decision = await readCompleteClassifierDecisionIfExistsFromPrimary(batchId, 'topic')
+    expect(decision?.calls.map(call => call.shardOrdinal)).toEqual([0])
+    expect(spy).toHaveBeenCalledWith('decision_calls_page_size')
   })
 })

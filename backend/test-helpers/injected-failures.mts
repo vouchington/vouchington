@@ -18,6 +18,7 @@ import {
   type WriteQueryTarget,
 } from 'vouchington-tooling/postgres-test-faults'
 import { backgroundQueue } from './shared-background-queue.mts'
+import { answerCursorReadsForTest, rejectCursorReadsForTest } from './injected-cursor-failures.mts'
 export { rejectNextClassifierRunDispatcherAddForTest } from './injected-classifier-queue-failures.mts'
 export {
   rejectNextQueueJobAddForTest,
@@ -66,13 +67,18 @@ export function rejectPostgresReadForTest(
   onRejected: (values: readonly unknown[]) => void = () => {},
   matchesValues: (values: readonly unknown[]) => boolean = () => true,
 ): () => void {
-  return rejectTargetPostgresRead(
+  const restoreRead = rejectTargetPostgresRead(
     psql as unknown as ReadQueryTarget,
     marker,
     error,
     onRejected,
     matchesValues,
   )
+  const restoreCursor = rejectCursorReadsForTest(marker, error, onRejected, matchesValues)
+  return () => {
+    restoreRead()
+    restoreCursor()
+  }
 }
 
 /** Reject matching pool writes outside caller-owned transactions; returns the restore. */
@@ -100,7 +106,12 @@ export function answerPostgresReadsForTest(
   marker: string,
   answers: ReadonlyArray<Record<string, unknown>[]>,
 ): () => void {
-  return answerTargetPostgresReads(psql as unknown as ReadQueryTarget, marker, answers)
+  const restoreRead = answerTargetPostgresReads(psql as unknown as ReadQueryTarget, marker, answers)
+  const restoreCursor = answerCursorReadsForTest(marker, answers)
+  return () => {
+    restoreRead()
+    restoreCursor()
+  }
 }
 
 /** Answer matching pool writes in order; undefined/exhausted answers run for real. Returns the restore. */

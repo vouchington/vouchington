@@ -4,6 +4,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
 import { validateUUID } from '@modules/utils'
 import { assertReferralLinkValidationExists } from '@services/topics/validation'
+import { assertReferralLinkValidationRuleCapacity } from '@services/topics/referral-link-validation-limits'
 import type { ReferralLinkValidationRule } from './types.mts'
 import { withTransactionOptions } from '@data-stores/psql'
 
@@ -63,6 +64,7 @@ export async function createReferralLinkValidationRule(
   }
 
   return withTransactionOptions({}, async query => {
+    await assertReferralLinkValidationRuleCapacity(validationId, query)
     const { rows } =
       await query<ReferralLinkValidationRule>(sql`/* createReferralLinkValidationRule */
       INSERT INTO referral_program_link_validation_rules (

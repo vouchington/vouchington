@@ -1,4 +1,5 @@
 import { read, withTransactionOptions } from '@data-stores/psql'
+import { assertReferralLinkValidationRuleCapacity } from '@services/topics/referral-link-validation-limits'
 import sql from 'sql-template-strings'
 import type { ReferralLinkValidationRule } from './types.mts'
 
@@ -39,6 +40,7 @@ export async function upsertReferralLinkValidationRule(
   const exampleUrls = data.example_urls ?? null
 
   return withTransactionOptions({}, async query => {
+    await assertReferralLinkValidationRuleCapacity(validationId, query)
     const { rows } =
       await query<ReferralLinkValidationRule>(sql`/* upsertReferralLinkValidationRule:insert */
       INSERT INTO referral_program_link_validation_rules (

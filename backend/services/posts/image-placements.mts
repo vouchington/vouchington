@@ -5,6 +5,12 @@ import { createCodedError } from '@vouchington/sentry'
 import { POST_IMAGE_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import { admitImagePlacements } from '@services/media-delivery-safety/placement-capacity'
+import {
+  lockChangedPostImagePlacements,
+  retireAbsentPostImagePlacements,
+} from './image-placement-retire.mts'
+
+export { retirePostImagePlacements } from './image-placement-retire.mts'
 
 export type PostImagePlacement = {
   placement_id: string
@@ -12,23 +18,6 @@ export type PostImagePlacement = {
   image_id: string
   order_index: number
   caption: string
-}
-
-/** Retires every hosted image use for a deleted post in the deletion transaction. */
-export async function retirePostImagePlacements(
-  postId: string,
-  query: TransactionQuery,
-): Promise<void> {
-  await query(sql`/* retirePostImagePlacements */
-    UPDATE media_placements placement
-    SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),
-        retirement_reason = 'owner_removed',
-        revision = placement.revision + 1
-    FROM image_placements image_placement
-    WHERE image_placement.placement_id = placement.id
-      AND image_placement.post_id = ${postId}
-      AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'
-  `)
 }
 
 /** Keeps post attachment identity stable while making removed attachment routes fail closed. */
@@ -42,32 +31,8 @@ export async function syncPostImagePlacements(
   // Only same-transaction callers that checked these exact requested images may skip admission.
   if (!options.capacityChecked)
     await assertPostImagePlacementCapacity(postId, distinctImageIds, query)
-  await query(sql`/* syncPostImagePlacements:lockChangedPlacements */
-    SELECT placement.id
-    FROM image_placements image_placement
-    JOIN media_placements placement ON placement.id = image_placement.placement_id
-    WHERE image_placement.post_id = ${postId}
-      AND (
-        (image_placement.image_id = ANY(${distinctImageIds}::uuid[])
-          AND placement.retired_at IS NOT NULL)
-        OR (image_placement.image_id <> ALL(${distinctImageIds}::uuid[])
-          AND placement.retirement_reason IS DISTINCT FROM 'owner_removed')
-      )
-    ORDER BY placement.id
-    -- lock-reason: prevents: retiring and reviving overlapping placements in different row orders; writer: image placement synchronization and retirement.
-    FOR UPDATE OF placement
-  `)
-  await query(sql`/* syncPostImagePlacements:retireAbsent */
-    UPDATE media_placements placement
-    SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),
-        retirement_reason = 'owner_removed',
-        revision = placement.revision + 1
-    FROM image_placements image_placement
-    WHERE image_placement.placement_id = placement.id
-      AND image_placement.post_id = ${postId}
-      AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'
-      AND NOT (image_placement.image_id = ANY(${distinctImageIds}::uuid[]))
-  `)
+  await lockChangedPostImagePlacements(postId, distinctImageIds, query)
+  await retireAbsentPostImagePlacements(postId, distinctImageIds, query)
   if (distinctImageIds.length === 0) return
   await runSequentially([
     () =>
