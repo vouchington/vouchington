@@ -47,6 +47,8 @@ export const backgroundWorkRegistryEntries5 = {
     label: 'Rss feed items',
     maxValues: rssFeedItemsWorkMaxValues,
     descriptions: {
+      semantic_rss_item_candidate_limit:
+        'Maximum RSS feed item candidates in an unscoped semantic search window.',
       category_backfill_batch_size: 'Category backfill batch size for rss feed items processing.',
       backfill_invalidation_chunk_size:
         'Backfill invalidation chunk size for rss feed items processing.',

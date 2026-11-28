@@ -1,6 +1,13 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 
 /**
+ * Converts one cosine-distance SQL expression into its `1 / (1 + distance)` ranking factor.
+ */
+export function buildSemanticDistanceScore(distanceExpression: string): SQLStatement {
+  return sql`(1.0 / (1.0 + (`.append(distanceExpression).append(sql`)))`)
+}
+
+/**
  * Builds a geometric-mean-style semantic ranking score expression.
  * Each active signal contributes a `1/(1+distance)` factor; they are multiplied together.
  *
@@ -38,30 +45,24 @@ export function buildSemanticRankingScore(
 
   if (hasSemanticSearch) {
     scoreExpressions.push(
-      sql`(1.0 / (1.0 + (`
-        .append(embeddingColumn)
-        .append(sql` <=> semantic_search_embedding.embedding)))`),
+      buildSemanticDistanceScore(`${embeddingColumn} <=> semantic_search_embedding.embedding`),
     )
   }
   if (hasSimilarPostSearch) {
     scoreExpressions.push(
-      sql`(1.0 / (1.0 + (`
-        .append(embeddingColumn)
-        .append(sql` <=> similar_post_embedding.embedding)))`),
+      buildSemanticDistanceScore(`${embeddingColumn} <=> similar_post_embedding.embedding`),
     )
   }
   if (hasSimilarTopicSearch) {
     scoreExpressions.push(
-      sql`(1.0 / (1.0 + (`
-        .append(embeddingColumn)
-        .append(sql` <=> similar_topic_embedding.embedding)))`),
+      buildSemanticDistanceScore(`${embeddingColumn} <=> similar_topic_embedding.embedding`),
     )
   }
   if (hasSimilarRssFeedItemSearch) {
     scoreExpressions.push(
-      sql`(1.0 / (1.0 + (`
-        .append(embeddingColumn)
-        .append(sql` <=> similar_rss_feed_item_embedding.embedding)))`),
+      buildSemanticDistanceScore(
+        `${embeddingColumn} <=> similar_rss_feed_item_embedding.embedding`,
+      ),
     )
   }
 
