@@ -588,9 +588,6 @@
         "pending_user_import_requests"
       ]
     },
-    "http_request_methods": {
-      "values": ["GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"]
-    },
     "identity_verification_attempt_sources": {
       "values": ["self_paid", "membership_included", "support_grant"]
     },

@@ -1324,15 +1324,36 @@ CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON copyri
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_action_intent()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE next_state copyright_notice_action_intent_states;
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_copyright_case_purge_permitted(TG_TABLE_NAME) THEN RETURN OLD; END IF;
+  next_state := CASE WHEN NEW.completed_at IS NOT NULL THEN NEW.completed_at_reason WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_action_intent_states ELSE 'pending'::copyright_notice_action_intent_states END;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright action intents are durable saga records' USING ERRCODE = 'check_violation';
   END IF;
-  IF ROW(OLD.copyright_restriction_id, OLD.expected_placement_revision, OLD.action)
-    IS DISTINCT FROM ROW(NEW.copyright_restriction_id, NEW.expected_placement_revision, NEW.action) THEN
+  IF ROW(OLD.copyright_restriction_id, OLD.copyright_notice_deadline_id,
+      OLD.expected_placement_revision, OLD.action)
+    IS DISTINCT FROM ROW(NEW.copyright_restriction_id, NEW.copyright_notice_deadline_id,
+      NEW.expected_placement_revision, NEW.action) THEN
     RAISE EXCEPTION 'copyright action intent identity and revision fence are immutable' USING ERRCODE = 'check_violation';
   END IF;
-  IF OLD.completed_at IS NOT NULL AND OLD.completed_at IS DISTINCT FROM NEW.completed_at THEN
+  IF OLD.state IN ('completed', 'stale') AND next_state IS DISTINCT FROM OLD.state THEN
+    RAISE EXCEPTION 'terminal copyright action intent cannot change' USING ERRCODE = 'check_violation';
+  END IF;
+  IF OLD.state IN ('blocked', 'failed') AND next_state IS DISTINCT FROM OLD.state
+    AND NOT (next_state = 'pending' AND NEW.completed_at IS NULL
+      AND NEW.completed_at_reason IS NULL AND NEW.leased_at IS NULL
+      AND NEW.attempt_count = 0) THEN
+    RAISE EXCEPTION 'blocked and failed copyright actions may only be explicitly replayed' USING ERRCODE = 'check_violation';
+  END IF;
+  IF (NEW.attempt_count < OLD.attempt_count
+      AND NOT (OLD.state IN ('blocked', 'failed') AND next_state = 'pending'
+        AND NEW.attempt_count = 0))
+    OR NEW.attempt_count > OLD.attempt_count + 1 THEN
+    RAISE EXCEPTION 'copyright action intent attempts must advance one at a time' USING ERRCODE = 'check_violation';
+  END IF;
+  IF OLD.completed_at IS NOT NULL AND OLD.completed_at IS DISTINCT FROM NEW.completed_at
+    AND NOT (OLD.state IN ('blocked', 'failed') AND next_state = 'pending' AND NEW.completed_at IS NULL) THEN
     RAISE EXCEPTION 'copyright action intent completion is immutable' USING ERRCODE = 'check_violation';
   END IF;
   RETURN NEW;

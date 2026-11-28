@@ -612,11 +612,6 @@ CREATE INDEX IF NOT EXISTS idx_facebook_accounts__friends_synced_at
 ON facebook_accounts (friends_synced_at)
 WHERE user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_x_accounts__friends_synced_at
-ON x_accounts (friends_synced_at)
-WHERE user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL;
-
 -- SES Bounce Events
 DO $$ BEGIN
   CREATE TYPE amazon_ses_notification_types AS ENUM ('bounce', 'complaint');
