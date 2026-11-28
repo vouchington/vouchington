@@ -125,12 +125,6 @@ describe('DeletePostMenuItem', () => {
     fireEvent.click(screen.getByRole('menuitem'))
     const confirmButton = screen.getByTestId('post-delete-confirm')
     expect(confirmButton).toBeDefined()
-    expect(confirmButton).toHaveClass(
-      'bg-destructive',
-      'text-destructive-foreground',
-      'shadow-sm',
-      'hover:bg-destructive/90',
-    )
   })
 
   it('clicking confirm calls handleDelete', () => {

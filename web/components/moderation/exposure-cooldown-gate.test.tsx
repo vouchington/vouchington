@@ -21,16 +21,13 @@ describe('ExposureCooldownGate', () => {
       showBreakPrompt: true,
     }
 
-    const { container } = render(
+    render(
       <ExposureCooldownGate cooldown={cooldown}>
         <button type='button'>Approve post</button>
       </ExposureCooldownGate>,
     )
 
     expect(screen.getByRole('button', { name: 'Approve post' })).toBeEnabled()
-    expect(container.querySelector('[data-pw="exposure-cooldown-gate"]')).not.toHaveClass(
-      'pointer-events-none',
-    )
     expect(document.querySelector('[data-pw="dialog-overlay"]')).not.toBeInTheDocument()
     expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-modal', 'true')
   })

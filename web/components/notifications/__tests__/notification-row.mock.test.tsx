@@ -135,7 +135,7 @@ describe('NotificationRow', () => {
         />,
       )
 
-      expect(container.querySelector('.bg-destructive')).not.toBeNull()
+      expect(container.querySelector('[data-pw="notification-unread-indicator"]')).not.toBeNull()
     })
 
     it('does not show unread indicator when read_at is set', () => {
@@ -147,19 +147,7 @@ describe('NotificationRow', () => {
         />,
       )
 
-      expect(container.querySelector('.bg-destructive')).toBeNull()
-    })
-
-    it('inner action button is a flex column for vertical stacking', () => {
-      render(
-        <NotificationRow
-          notification={baseNotification}
-          onOpen={vi.fn<VitestLooseMock>()}
-          onDelete={vi.fn<VitestLooseMock>()}
-        />,
-      )
-      const mainButton = screen.getByRole('button', { name: /Someone clicked your referral link/i })
-      expect(mainButton.className).toContain('flex-col')
+      expect(container.querySelector('[data-pw="notification-unread-indicator"]')).toBeNull()
     })
   })
 

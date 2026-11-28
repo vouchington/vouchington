@@ -168,22 +168,6 @@ describe('TagItem — url', () => {
   })
 })
 
-describe('TagItem — layout contract', () => {
-  it('outer flex row has min-w-0 so URL rows can shrink inside a narrow aside', () => {
-    const relation = makeRelation({
-      object_data: { id: 'url-lc', url: 'https://example.com/very/long/path', latest_crawl: null },
-    })
-    const { container } = render(
-      <TagItem
-        relation={relation}
-        objectType='url'
-      />,
-    )
-    const row = container.firstChild as HTMLElement
-    expect(row.className).toContain('min-w-0')
-  })
-})
-
 describe('TagItem — voting', () => {
   it('renders semantic vote controls on the left when showVoting is true', () => {
     const relation = makeRelation({

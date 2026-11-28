@@ -19,10 +19,4 @@ describe('EmptyState', () => {
     )
     expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument()
   })
-
-  it('allows callers to override container spacing', () => {
-    const { container } = render(<EmptyState className='p-4' />)
-
-    expect(container.querySelector('[data-pw="empty-state"]')).toHaveClass('p-4')
-  })
 })

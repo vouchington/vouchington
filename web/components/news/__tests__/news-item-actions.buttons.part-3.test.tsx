@@ -21,14 +21,13 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
   })
 
   it('does not render trailingAction wrapper when trailingAction is not provided', () => {
-    const { container } = render(
+    render(
       <NewsItemActions
         item={MOCK_ITEM}
         relatedPosts={[]}
       />,
     )
 
-    const actionsDiv = container.querySelector('.scrollbar-hide')
-    expect(actionsDiv?.querySelectorAll('.ml-auto').length).toBe(0)
+    expect(screen.queryByTestId('trailing')).toBeNull()
   })
 })

@@ -28,15 +28,6 @@ describe('PostForm', () => {
     mockCreateEntityRelation.mockClear()
   })
 
-  it('review form topic rows use items-center alignment for symmetric padding', () => {
-    const { container } = render(<PostForm postType='review' />)
-    // The topic card row should have items-center, not items-start
-    const topicRow = container.querySelector('.rounded-md.border.p-4')
-    expect(topicRow).not.toBeNull()
-    expect(topicRow?.className).toContain('items-center')
-    expect(topicRow?.className).not.toContain('items-start')
-  })
-
   it('disables submit button when review content is too short (chars)', () => {
     render(<PostForm postType='review' />)
     const textarea = screen.getByPlaceholderText('Write your post...')

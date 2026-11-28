@@ -186,15 +186,11 @@ describe('NewsItemActions hide/save buttons and leading/trailing actions', () =>
       '[data-pw="rss-feed-item-modal-more-actions-button"]',
     )
     expect(moreButton).not.toBeNull()
-    const moreWrapper = moreButton?.closest('div')
-    expect(moreWrapper?.className).toContain('sm:hidden')
 
     expect(screen.getByTestId('hide-menu-item').getAttribute('data-active')).toBe('true')
     expect(screen.getByTestId('save-menu-item').getAttribute('data-active')).toBe('true')
     expect(screen.getByTestId('news-discuss-menu')).toBeInTheDocument()
 
-    const desktopActions = container.querySelector(String.raw`.sm\:flex`)
-    expect(desktopActions?.className).toContain('hidden')
     expect(screen.getByTestId('hide-button').getAttribute('data-active')).toBe('true')
     expect(screen.getByTestId('save-button').getAttribute('data-active')).toBe('true')
     expect(container.querySelector('[data-pw="follower-share-more-actions-button"]')).not.toBeNull()

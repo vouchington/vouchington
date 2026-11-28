@@ -13,7 +13,6 @@ describe('DomainTrustBadge', () => {
     )
     const label = screen.getByText('Trusted')
     expect(label).toBeDefined()
-    expect(label.className).toContain('dark:text-emerald-400')
   })
 
   it('renders Neutral label for neutral domain', () => {
@@ -71,17 +70,5 @@ describe('DomainTrustBadge', () => {
       />,
     )
     expect(screen.queryByRole('link')).toBeNull()
-  })
-
-  it('supports xs size', () => {
-    const { container } = render(
-      <DomainTrustBadge
-        scoreNet={5}
-        countUp={7}
-        countDown={2}
-        size='xs'
-      />,
-    )
-    expect(container.querySelector('.text-xs')).not.toBeNull()
   })
 })

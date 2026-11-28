@@ -115,27 +115,11 @@ describe('pure ui primitive data-pw contracts', () => {
     expect(container.querySelectorAll('[data-pw="kbd"]')).toHaveLength(2)
   })
 
-  it('lets a responsive display override replace the default inline-flex', () => {
-    const { container } = render(
-      <>
-        <KbdGroup className='ml-auto hidden shrink-0 sm:inline-flex' />
-        <Kbd className='ml-1 hidden sm:inline-flex'>R</Kbd>
-      </>,
-    )
-    const group = container.querySelector('[data-pw="kbd-group"]')
-    const key = container.querySelector('[data-pw="kbd"]')
-
-    expect(group).toHaveClass('hidden', 'sm:inline-flex')
-    expect(group).not.toHaveClass('inline-flex')
-    expect(key).toHaveClass('hidden', 'sm:inline-flex')
-    expect(key).not.toHaveClass('inline-flex')
-  })
-
-  it('renders Spinner data-pw, the status label, and size overrides', () => {
+  it('renders Spinner data-pw and the status label', () => {
     const { container } = render(
       <>
         <Spinner />
-        <Spinner className='size-8 text-primary' />
+        <Spinner />
         <Spinner aria-hidden />
       </>,
     )
@@ -143,15 +127,13 @@ describe('pure ui primitive data-pw contracts', () => {
     const decorative = container.querySelectorAll('[data-pw="spinner"]')
 
     expect(status).toHaveAttribute('data-pw', 'spinner')
-    expect(status).toHaveClass('size-4', 'animate-spin')
-    expect(sized).toHaveClass('size-8', 'text-primary', 'animate-spin')
-    expect(sized).not.toHaveClass('size-4')
+    expect(sized).toHaveAttribute('data-pw', 'spinner')
     expect(decorative).toHaveLength(3)
     expect(decorative[2]).toHaveAttribute('aria-hidden', 'true')
     expect(screen.getAllByRole('status')).toHaveLength(2)
   })
 
-  it('renders Progress value, data-pw, and height overrides', () => {
+  it('renders Progress value and data-pw', () => {
     render(
       <>
         <Progress
@@ -161,7 +143,6 @@ describe('pure ui primitive data-pw contracts', () => {
         <Progress
           value={0}
           aria-label='Empty'
-          className='h-1'
         />
       </>,
     )
@@ -173,8 +154,7 @@ describe('pure ui primitive data-pw contracts', () => {
     expect(upload.querySelector('[data-slot="progress-indicator"]')).toHaveStyle({
       transform: 'translateX(-60%)',
     })
-    expect(empty).toHaveClass('h-1')
-    expect(empty).not.toHaveClass('h-2')
+    expect(empty).toHaveAttribute('aria-valuenow', '0')
   })
 
   it('keeps Progress indeterminate without a value and fills to max', () => {

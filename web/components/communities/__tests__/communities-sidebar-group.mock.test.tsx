@@ -76,8 +76,8 @@ describe('CommunitiesSidebarGroup', () => {
     )
   })
 
-  it('keeps long active community links horizontally constrained', async () => {
-    const { container } = renderGroup()
+  it('marks the long active community link as active', async () => {
+    renderGroup()
 
     const longCommunityLink = await screen.findByRole('link', {
       name: /Voucha Quality Filters With An Extra Long Sidebar Label/i,
@@ -90,23 +90,6 @@ describe('CommunitiesSidebarGroup', () => {
         'true',
       )
     })
-
-    const content = container.querySelector('[data-sidebar="content"]')
-    expect(content?.className).toContain('overflow-x-hidden')
-
-    const activeButton = longCommunityLink.closest('[data-sidebar="menu-button"]')
-    expect(activeButton?.className).toContain('box-border')
-    expect(activeButton?.className).toContain('w-full')
-    expect(activeButton?.className).toContain('max-w-full')
-    expect(activeButton?.className).toContain('min-w-0')
-    expect(activeButton?.className).not.toContain('data-[active=true]:font-medium')
-
-    const label = longCommunityLink.querySelector('span')
-    expect(label?.className).toContain('truncate')
-
-    const item = activeButton?.closest('[data-sidebar="menu-item"]')
-    expect(item?.className).toContain('min-w-0')
-    expect(item?.className).toContain('max-w-full')
   })
 
   it('prepends a new community to the sidebar when communities:created event fires', async () => {

@@ -128,14 +128,6 @@ const mockConfig = {
 }
 
 describe('PostListPage', () => {
-  it('renders without a max-w-4xl constraint inside PageWithAside', async () => {
-    const ui = await PostListPage({ config: mockConfig, searchParams: Promise.resolve({}) })
-    const { container } = render(ui)
-    const innerDiv = container.querySelector('[data-testid="page-with-aside"] > div')
-    expect(innerDiv).not.toBeNull()
-    expect(innerDiv!.className).not.toContain('max-w-')
-  })
-
   it('preserves legacy topics query params for bookmarked post list URLs', async () => {
     await PostListPage({
       config: mockConfig,

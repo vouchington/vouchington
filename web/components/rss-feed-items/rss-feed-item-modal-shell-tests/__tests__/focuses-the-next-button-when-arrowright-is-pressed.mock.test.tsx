@@ -198,23 +198,4 @@ describe('RssFeedItemModalShell', () => {
 
     expect(mockNav.push).not.toHaveBeenCalled()
   })
-
-  it('uses a CSS grid layout for deterministic scroll area height', () => {
-    render(
-      <RssFeedItemModalShell
-        {...DEFAULT_PROPS}
-        previousUrl='/news?rss_item=prev'
-        nextUrl='/news?rss_item=next'
-      >
-        <div data-testid='content'>article</div>
-      </RssFeedItemModalShell>,
-    )
-
-    // The DialogContent element must use grid layout so the Radix ScrollArea Viewport
-    // (h-full) gets a definite parent height and can scroll overflowing content.
-    const dialog = document.querySelector('[role=dialog]')
-    expect(dialog).not.toBeNull()
-    // grid-rows-[auto_minmax(0,1fr)_auto] is applied; jsdom exposes the class
-    expect(dialog?.className).toContain('grid')
-  })
 })

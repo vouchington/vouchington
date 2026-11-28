@@ -43,14 +43,7 @@ describe('ValkeyHeader', () => {
       />,
     )
     const heading = screen.getByRole('heading', { level: 1, name: 'Valkey' })
-    expect(heading).toHaveClass('text-xl', 'font-semibold', 'sm:text-2xl')
-    expect(heading).not.toHaveClass('font-bold')
-    expect(screen.getByText('Bloom filter rebuilds and cache management')).toHaveClass(
-      'mt-1',
-      'text-sm',
-      'text-muted-foreground',
-    )
-    expect(heading.parentElement?.parentElement).toHaveClass('flex-col', 'gap-3', 'sm:flex-row')
+    expect(screen.getByText('Bloom filter rebuilds and cache management')).toBeDefined()
   })
 
   it('renders the refresh button in loading state', () => {

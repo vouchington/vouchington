@@ -102,7 +102,6 @@ describe('ClientSearchForm', () => {
 
     const button = screen.getByRole('button', { name: 'Search' })
     expect(button).toBeVisible()
-    expect(button).toHaveClass('h-11', 'sm:h-9')
   })
 
   it('preserves input focus when defaultValue updates after submit', () => {

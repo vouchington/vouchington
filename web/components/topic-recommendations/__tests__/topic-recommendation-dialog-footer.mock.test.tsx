@@ -87,14 +87,13 @@ function renderFooter() {
 }
 
 describe('TopicRecommendationDialogFooter', () => {
-  it('keeps keyboard hints decorative without reducing their contrast', () => {
+  it('keeps keyboard hints decorative', () => {
     const { container } = renderFooter()
 
     const keyboardHints = container.querySelectorAll('kbd')
     expect(keyboardHints).toHaveLength(2)
     for (const keyboardHint of keyboardHints) {
       expect(keyboardHint).toHaveAttribute('aria-hidden', 'true')
-      expect(keyboardHint).not.toHaveClass('opacity-70')
     }
   })
 

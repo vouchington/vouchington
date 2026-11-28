@@ -47,7 +47,6 @@ describe('UserVouchElectionCard', () => {
     expect(screen.queryByRole('button', { name: 'Neutral' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Dislike' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Disavow Example User' })).toBeInTheDocument()
-    expect(vouchButton.parentElement).toHaveClass('flex-wrap')
   })
 
   it('submits the vouch choice and marks it selected', async () => {

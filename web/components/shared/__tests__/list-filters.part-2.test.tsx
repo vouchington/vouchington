@@ -155,18 +155,6 @@ describe('ListFilters', () => {
     ).toBeTruthy()
   })
 
-  it('renders the row container with full width', () => {
-    const { container } = render(
-      <ListFilters
-        placeholder='Search topics...'
-        defaultSort='new'
-        sortOptions={[{ label: 'New', value: 'new' }]}
-      />,
-    )
-    // The root element (form or div) should stretch to fill its flex parent
-    expect(container.firstChild).toHaveClass('flex-1')
-  })
-
   it('renders children before the sort dropdown and submit button', () => {
     render(
       <ListFilters

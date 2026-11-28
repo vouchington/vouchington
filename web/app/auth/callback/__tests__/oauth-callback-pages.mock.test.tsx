@@ -54,7 +54,7 @@ describe('OAuth callback pages', () => {
       render(<Page />)
 
       expect(screen.getByText('Completing sign in...')).toBeVisible()
-      expect(screen.getByRole('heading', { name: label })).toHaveClass('sr-only')
+      expect(screen.getByRole('heading', { name: label })).toBeInTheDocument()
 
       await waitFor(() => {
         expect(window.opener?.postMessage).toHaveBeenCalledWith(

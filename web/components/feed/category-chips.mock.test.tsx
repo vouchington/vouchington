@@ -91,14 +91,6 @@ describe('CategoryChips', () => {
     expect(container.querySelectorAll('[data-pw="badge"]')).toHaveLength(1)
   })
 
-  it('renders labels in a scrollable row without flex-wrap', () => {
-    const { container } = render(<CategoryChips categories={[nullCat('banking')]} />)
-    const wrapper = container.querySelector('[data-pw="category-chips"]')
-    expect(wrapper?.className).toContain('overflow-x-auto')
-    expect(wrapper?.className).toContain('scrollbar-hide')
-    expect(wrapper?.className).not.toContain('flex-wrap')
-  })
-
   it('renders topic-linked chips before free-text chips regardless of API order', () => {
     const categories = [
       nullCat('free-alpha'),

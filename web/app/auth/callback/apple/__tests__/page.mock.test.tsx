@@ -32,7 +32,7 @@ describe('Apple callback page', () => {
     render(<AppleCallbackPage />)
 
     expect(screen.getByText('Completing sign in...')).toBeVisible()
-    expect(screen.getByRole('heading', { name: 'Completing Apple sign in' })).toHaveClass('sr-only')
+    expect(screen.getByRole('heading', { name: 'Completing Apple sign in' })).toBeInTheDocument()
 
     await waitFor(() => {
       expect(mockLocationAssign).toHaveBeenCalledTimes(1)

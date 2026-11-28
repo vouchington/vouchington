@@ -35,7 +35,7 @@ describe('ModerationSummary', () => {
     ['sexual_minors', 'flagged'],
     ['future_reason', 'pending'],
   ])('renders the %s reason with a safe localized label', (reasonCode, label) => {
-    const { container } = render(
+    render(
       <ModerationSummary
         summary={{
           disposition: 'review',
@@ -45,7 +45,7 @@ describe('ModerationSummary', () => {
       />,
     )
 
-    expect(container.querySelector('.text-muted-foreground')).toHaveTextContent(label)
+    expect(screen.getAllByText(label).length).toBeGreaterThan(0)
     expect(screen.queryByText(reasonCode)).toBeNull()
   })
 })

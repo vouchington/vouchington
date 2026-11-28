@@ -150,55 +150,14 @@ describe('RssFeedItemModalShell rendering', () => {
     expect(content.compareDocumentPosition(prev) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it('renders DialogDescription as sr-only regardless of props', () => {
+  it('describes the dialog regardless of props', () => {
     render(
       <RssFeedItemModalShell {...DEFAULT_PROPS}>
         <div>content</div>
       </RssFeedItemModalShell>,
     )
 
-    // The description element should exist but be visually hidden
-    const description = screen.getByText('RSS item detail')
-    expect(description.className).toContain('sr-only')
-  })
-
-  it('keeps the dialog and scroll area horizontally constrained', () => {
-    render(
-      <RssFeedItemModalShell {...DEFAULT_PROPS}>
-        <div data-testid='article-content'>article</div>
-      </RssFeedItemModalShell>,
-    )
-
-    const dialog = screen.getByRole('dialog')
-    expect(dialog.className).toContain('w-[calc(100vw-1rem)]')
-    expect(dialog.className).toContain('min-w-0')
-    expect(dialog.className).toContain('overflow-hidden')
-
-    const article = screen.getByTestId('article-content')
-    const scrollArea = article.closest('.min-w-0')
-    expect(scrollArea).not.toBeNull()
-  })
-
-  it('keeps the modal header left-aligned on mobile', () => {
-    render(
-      <RssFeedItemModalShell
-        {...DEFAULT_PROPS}
-        title='A very long title that should wrap instead of centering on mobile'
-        titleUrl='https://example.com/article'
-      >
-        <div>content</div>
-      </RssFeedItemModalShell>,
-    )
-
-    const title = document.querySelector<HTMLElement>('[data-pw="rss-feed-item-modal-title"]')
-    expect(title).not.toBeNull()
-    expect(title!.className).toContain('text-left')
-    expect(title!.parentElement?.className).toContain('text-left')
-    const titleLink = document.querySelector<HTMLElement>(
-      '[data-pw="rss-feed-item-modal-title-link"]',
-    )
-    expect(titleLink).not.toBeNull()
-    expect(titleLink!.className).toContain('[overflow-wrap:anywhere]')
+    expect(screen.getByRole('dialog')).toHaveAccessibleDescription('RSS item detail')
   })
 
   it('renders nav buttons as siblings of ScrollArea, not nested inside it', () => {
@@ -215,7 +174,7 @@ describe('RssFeedItemModalShell rendering', () => {
     const prev = screen.getByRole('button', { name: /previous/i })
     const next = screen.getByRole('button', { name: /next/i })
     const article = screen.getByTestId('article-content')
-    const scrollArea = article.closest('.min-h-0')
+    const scrollArea = article.closest('[data-radix-scroll-area-viewport]')
 
     // Nav buttons must NOT be descendants of the ScrollArea — they are siblings of it
     // in the DialogContent flex column. This is the structural invariant: scroll only

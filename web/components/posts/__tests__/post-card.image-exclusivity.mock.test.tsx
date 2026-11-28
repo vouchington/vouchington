@@ -87,12 +87,7 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/shared-byline'), () => ({
-  SharedByline: ({ className }: { className?: string }) => (
-    <div
-      data-testid='shared-byline'
-      data-class={className ?? ''}
-    />
-  ),
+  SharedByline: () => <div data-testid='shared-byline' />,
 }))
 
 const mockPost: Post = {

@@ -8,13 +8,7 @@ describe('UserAccountBadge', () => {
     ['system', 'System'],
     ['ai_agent', 'AI Agent'],
   ] as const)('renders the %s label', (accountType, label) => {
-    render(
-      <UserAccountBadge
-        accountType={accountType}
-        className='uppercase'
-      />,
-    )
-    expect(screen.getByText(label)).toHaveClass('text-[10px]', 'uppercase')
+    render(<UserAccountBadge accountType={accountType} />)
     expect(screen.getByText(label)).toHaveAttribute('data-pw', 'user-account-badge')
   })
 

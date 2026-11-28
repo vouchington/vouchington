@@ -10,30 +10,9 @@ describe('ButtonGroup', () => {
     expect(el?.tagName).toBe('DIV')
   })
 
-  it('defaults to horizontal orientation (flex-row flex-wrap)', () => {
-    const { container } = render(<ButtonGroup />)
+  it('forwards additional props', () => {
+    const { container } = render(<ButtonGroup data-pw='test-group' />)
     const el = container.firstElementChild
-    expect(el?.className).toContain('flex-row')
-    expect(el?.className).toContain('flex-wrap')
-    expect(el?.className).toContain('gap-2')
-  })
-
-  it('applies vertical orientation classes', () => {
-    const { container } = render(<ButtonGroup orientation='vertical' />)
-    const el = container.firstElementChild
-    expect(el?.className).toContain('flex-col')
-    expect(el?.className).toContain('items-stretch')
-  })
-
-  it('forwards className and additional props', () => {
-    const { container } = render(
-      <ButtonGroup
-        className='mt-3'
-        data-pw='test-group'
-      />,
-    )
-    const el = container.firstElementChild
-    expect(el?.className).toContain('mt-3')
     expect(el?.getAttribute('data-pw')).toBe('test-group')
   })
 

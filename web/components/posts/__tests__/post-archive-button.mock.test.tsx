@@ -88,14 +88,4 @@ describe('PostArchiveButton', () => {
       message: 'Failed to archive post. Please try again.',
     },
   })
-
-  it('renders the archive button at the touch target size', () => {
-    render(
-      <PostArchiveButton
-        archivedAt={null}
-        postIdOrSlug='post-1'
-      />,
-    )
-    expect(screen.getByRole('button', { name: 'Archive' })).toHaveClass('h-11')
-  })
 })

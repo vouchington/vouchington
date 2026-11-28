@@ -96,7 +96,7 @@ describe('PlanCards', () => {
 
     // Cancelled membership — Free plan should be marked as current
     const freeHeading = screen.getByRole('heading', { name: 'Free' })
-    const freeCard = freeHeading.closest('.relative')!
+    const freeCard = freeHeading.closest('[data-pw="card"]')!
     expect(freeCard).toHaveTextContent('Current Plan')
     // Plus should show checkout button, not current plan
     expect(screen.getByRole('button', { name: /subscribe to plus/i })).toBeInTheDocument()
@@ -110,7 +110,7 @@ describe('PlanCards', () => {
       />,
     )
 
-    const freeCard = screen.getByRole('heading', { name: 'Free' }).closest('.relative')!
+    const freeCard = screen.getByRole('heading', { name: 'Free' }).closest('[data-pw="card"]')!
     expect(freeCard).toHaveTextContent('Current Plan')
     expect(screen.getByRole('button', { name: /manage billing/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /subscribe to plus/i })).not.toBeInTheDocument()

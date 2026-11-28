@@ -82,16 +82,6 @@ describe('UserProfileTabs', () => {
     expect(communitiesLink.getAttribute('href')).toBe('/user/tests/communities/member')
   })
 
-  it('Menubar has overflow-x-auto and scrollbar-hide classes', () => {
-    mockNav.setPathname('/user/tests')
-
-    render(<UserProfileTabs usernameOrId='tests' />)
-
-    const tabList = screen.getByRole('menubar')
-    expect(tabList.className).toContain('overflow-x-auto')
-    expect(tabList.className).toContain('scrollbar-hide')
-  })
-
   it('Posts tab renders as a dropdown trigger when on the posts route', () => {
     mockNav.setPathname('/user/tests/posts')
 

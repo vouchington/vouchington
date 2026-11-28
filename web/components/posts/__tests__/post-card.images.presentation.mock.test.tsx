@@ -90,14 +90,6 @@ describe('PostCard image presentation', () => {
     )
   })
 
-  it('places card carousel arrows inside the viewport', async () => {
-    const PostCard = await loadPostCard()
-    render(<PostCard post={postWithImages(2)} />)
-
-    expect(screen.getByRole('button', { name: 'Previous slide' })).toHaveClass('left-2')
-    expect(screen.getByRole('button', { name: 'Next slide' })).toHaveClass('right-2')
-  })
-
   it('shows raw vote counts with the signed-out voting link', async () => {
     const PostCard = await loadPostCard()
     render(

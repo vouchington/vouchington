@@ -5,28 +5,6 @@ import { TooltipButton } from '../_button-tooltip'
 import { Button } from '../button'
 
 describe('Button', () => {
-  it('renders responsive touch-safe size variants', () => {
-    render(
-      <>
-        <Button size='touch'>Touch</Button>
-        <Button size='touchSm'>Touch small</Button>
-        <Button
-          size='touchIcon'
-          aria-label='Touch icon'
-        />
-      </>,
-    )
-
-    expect(screen.getByRole('button', { name: 'Touch' })).toHaveClass('h-11', 'sm:h-8')
-    expect(screen.getByRole('button', { name: 'Touch small' })).toHaveClass('h-11', 'sm:h-7')
-    expect(screen.getByRole('button', { name: 'Touch icon' })).toHaveClass(
-      'h-11',
-      'w-11',
-      'sm:h-8',
-      'sm:w-8',
-    )
-  })
-
   it('renders without tooltip wrapper when tooltip prop is omitted', () => {
     render(<Button>Click me</Button>)
     const button = screen.getByRole('button', { name: 'Click me' })

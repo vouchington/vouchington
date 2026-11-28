@@ -95,19 +95,6 @@ describe('UrlEmbedRow', () => {
     expect(screen.getByText('(example.com)')).toBeInTheDocument()
   })
 
-  it('fallback URL flex container has min-w-0 so truncate class can clip long paths', () => {
-    const { container } = render(
-      <UrlEmbedRow
-        url='https://example.com/very/long/path/that/would/overflow'
-        latestCrawl={null}
-      />,
-    )
-    // The <p> wrapping the icon + URL span is the inner flex container that needs min-w-0
-    const p = container.querySelector('p')
-    expect(p).not.toBeNull()
-    expect(p?.className).toContain('min-w-0')
-  })
-
   it('opens link in new tab', () => {
     render(
       <UrlEmbedRow

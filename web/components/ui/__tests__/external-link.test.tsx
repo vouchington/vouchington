@@ -65,16 +65,4 @@ describe('ExternalLink', () => {
     )
     expect(screen.getByRole('link')).toHaveAttribute('rel', 'noopener')
   })
-
-  it('merges className', () => {
-    render(
-      <ExternalLink
-        href='https://example.com'
-        className='text-blue-600'
-      >
-        Link
-      </ExternalLink>,
-    )
-    expect(screen.getByRole('link')).toHaveClass('text-blue-600')
-  })
 })

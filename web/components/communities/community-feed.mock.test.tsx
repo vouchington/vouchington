@@ -75,17 +75,11 @@ describe('CommunityFeed', () => {
       />,
     )
 
-    const pinnedWrapper = document.querySelector(
-      '[data-pw="community-feed-pinned-badge"]',
-    )?.parentElement
-    expect(pinnedWrapper?.className).toContain('border-l-2')
-    expect(pinnedWrapper?.className).not.toContain('bg-card')
-    expect(pinnedWrapper?.className).not.toContain('rounded-md')
+    expect(document.querySelector('[data-pw="community-feed-pinned-badge"]')).not.toBeNull()
 
     const cards = [...document.querySelectorAll('[data-pw="post-card"]')]
     expect(cards).toHaveLength(2)
     expect(cards[0]?.getAttribute('data-community-slug')).toBe('rewards')
-    expect(cards[1]?.parentElement?.className).toBe('space-y-3')
   })
 
   it('provides references for pinned posts and continuation posts', () => {

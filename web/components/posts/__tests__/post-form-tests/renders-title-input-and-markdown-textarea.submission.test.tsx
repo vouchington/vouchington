@@ -162,7 +162,7 @@ describe('PostForm submission', () => {
 
   it('keeps the declared language on an existing post preview', async () => {
     mockPreviewMarkdown.mockResolvedValue({ html: '<p>مرحبا</p>' })
-    const { container } = render(
+    render(
       <PostForm
         postType='discussion'
         post={{ ...mockDiscussion, declared_language: 'ar' }}
@@ -171,10 +171,9 @@ describe('PostForm submission', () => {
 
     fireEvent.focus(screen.getByRole('tab', { name: 'Preview' }))
 
-    await waitFor(() => {
-      expect(container.querySelector('.prose')).toHaveAttribute('lang', 'ar')
-      expect(container.querySelector('.prose')).toHaveAttribute('dir', 'rtl')
-    })
+    const preview = await screen.findByText('مرحبا')
+    expect(preview.parentElement).toHaveAttribute('lang', 'ar')
+    expect(preview.parentElement).toHaveAttribute('dir', 'rtl')
   })
 
   it('shows muted placeholder when switching to Preview tab with empty content', async () => {

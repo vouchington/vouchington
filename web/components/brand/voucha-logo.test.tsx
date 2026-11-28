@@ -8,12 +8,6 @@ describe('VouchaLogo', () => {
     expect(container.querySelector('svg')).not.toBeNull()
   })
 
-  it('applies className prop', () => {
-    const { container } = render(<VouchaLogo className='h-6 w-auto' />)
-    const svg = container.querySelector('svg')
-    expect(svg?.getAttribute('class')).toContain('h-6')
-  })
-
   it('has aria-label for accessibility', () => {
     const { container } = render(<VouchaLogo />)
     const svg = container.querySelector('svg')

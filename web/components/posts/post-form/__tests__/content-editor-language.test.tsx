@@ -1,6 +1,6 @@
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import { createRef } from 'react'
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ContentEditor } from '../content-editor'
 
@@ -35,7 +35,7 @@ describe('ContentEditor preview language', () => {
   })
 
   it('uses dir auto when the draft has no declared language', () => {
-    const { container } = render(
+    render(
       <ContentEditor
         {...editorProps}
         language={null}
@@ -43,7 +43,7 @@ describe('ContentEditor preview language', () => {
       />,
     )
 
-    const preview = container.querySelector('.prose')
+    const preview = screen.getByText('Hello').parentElement
     expect(preview).not.toBeNull()
     expect(preview).toHaveAttribute('lang', '')
     expect(preview).toHaveAttribute('dir', 'auto')

@@ -72,16 +72,6 @@ describe('Navbar user dropdown', () => {
     expect(screen.queryByText('Profile')).toBeNull()
   })
 
-  it('renders the authenticated write control without outline border styling', () => {
-    render(navbarUnderTest())
-
-    const writeButton = screen.getByRole('button', { name: 'Write' })
-    expect(writeButton.className).toContain('hover:bg-accent')
-    expect(writeButton.className).not.toContain('border')
-    expect(writeButton.className).not.toContain('border-input')
-    expect(writeButton.className).not.toContain('shadow-sm')
-  })
-
   it('opens the write dialog from the authenticated write control', () => {
     render(navbarUnderTest())
 

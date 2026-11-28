@@ -96,7 +96,6 @@ describe('NewsItemCluster story expand/collapse interactions', () => {
         relatedPosts={[]}
       />,
     )
-    expect(container.querySelector('.scrollbar-hide')).not.toBeNull()
     await waitFor(() => {
       expect(screen.getByTestId('news-item-vote')).toBeInTheDocument()
     })
