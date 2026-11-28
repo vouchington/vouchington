@@ -2,7 +2,7 @@ import { HNSW_SEARCH_BASE_SETTINGS } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { getTopicsWorkLimit, SEMANTIC_TOPIC_CANDIDATE_MAX } from '../work-limits.mts'
 import type { TopicSearchOptions } from './types.mts'
-import type { TopicSearchState, TopicSemanticAnchorCte } from './query-builder-state.mts'
+import type { TopicSearchState, TopicSimilarityAnchorCte } from './query-builder-state.mts'
 import { appendTopicSearchWhere, buildTopicSearchBaseWhereClauses } from './query-builder-where.mts'
 
 /**
@@ -16,6 +16,12 @@ export const SEMANTIC_TOPIC_SEARCH_SETTINGS = {
   'hnsw.ef_search': '40',
 } as const
 
+const SIMILARITY_ANCHOR_FROM_SQL: Readonly<Record<TopicSimilarityAnchorCte, () => SQLStatement>> = {
+  similar_topic_embedding: () => sql`similar_topic_embedding`,
+  similar_post_embedding: () => sql`similar_post_embedding`,
+  similar_rss_feed_item_embedding: () => sql`similar_rss_feed_item_embedding`,
+}
+
 function getSemanticTopicCandidateLimit(): number {
   const candidateLimit = getTopicsWorkLimit('semantic_topic_candidate_limit')
   if (
@@ -26,23 +32,6 @@ function getSemanticTopicCandidateLimit(): number {
     throw new Error('Invalid semantic topic candidate limit')
   }
   return candidateLimit
-}
-
-function appendAnchorFromClause(query: SQLStatement, anchor: TopicSemanticAnchorCte): void {
-  switch (anchor) {
-    case 'semantic_search_embedding':
-      query.append(sql`semantic_search_embedding`)
-      return
-    case 'similar_topic_embedding':
-      query.append(sql`similar_topic_embedding`)
-      return
-    case 'similar_post_embedding':
-      query.append(sql`similar_post_embedding`)
-      return
-    case 'similar_rss_feed_item_embedding':
-      query.append(sql`similar_rss_feed_item_embedding`)
-      break
-  }
 }
 
 /**
@@ -105,7 +94,7 @@ export function buildSemanticTopicNearestCte(
   query.append(sql`,
         nearest.embedding_distance
       FROM `)
-  appendAnchorFromClause(query, anchor)
+  query.append(SIMILARITY_ANCHOR_FROM_SQL[anchor]())
   query.append(sql` anchor_embedding
       CROSS JOIN LATERAL (
         SELECT

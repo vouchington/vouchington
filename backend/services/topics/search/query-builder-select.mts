@@ -1,7 +1,17 @@
 import type { TopicSearchOptions, TopicSearchSort } from './types.mts'
-import type { TopicSearchState } from './query-builder-state.mts'
+import type { TopicSearchState, TopicSimilarityAnchorCte } from './query-builder-state.mts'
 import { buildTopicSemanticRankingScoreSql, escapeLikePattern } from './query-builder-utils.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
+
+const SECONDARY_EMBEDDING_JOIN_SQL: Readonly<Record<TopicSimilarityAnchorCte, () => SQLStatement>> =
+  {
+    similar_post_embedding: () => sql`
+    CROSS JOIN similar_post_embedding`,
+    similar_topic_embedding: () => sql`
+    CROSS JOIN similar_topic_embedding`,
+    similar_rss_feed_item_embedding: () => sql`
+    CROSS JOIN similar_rss_feed_item_embedding`,
+  }
 
 export function appendTopicSearchSelect(
   query: SQLStatement,
@@ -73,23 +83,6 @@ export function appendTopicSearchJoins(
 
 function appendTopicSearchEmbeddingJoins(query: SQLStatement, state: TopicSearchState) {
   for (const cte of state.secondarySemanticCtes) {
-    switch (cte) {
-      case 'semantic_search_embedding':
-        query.append(sql`
-    CROSS JOIN semantic_search_embedding`)
-        break
-      case 'similar_post_embedding':
-        query.append(sql`
-    CROSS JOIN similar_post_embedding`)
-        break
-      case 'similar_topic_embedding':
-        query.append(sql`
-    CROSS JOIN similar_topic_embedding`)
-        break
-      case 'similar_rss_feed_item_embedding':
-        query.append(sql`
-    CROSS JOIN similar_rss_feed_item_embedding`)
-        break
-    }
+    query.append(SECONDARY_EMBEDDING_JOIN_SQL[cte]())
   }
 }

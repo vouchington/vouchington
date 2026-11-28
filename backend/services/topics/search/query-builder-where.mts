@@ -1,8 +1,19 @@
 import type { TopicSearchOptions, TopicSearchSort } from './types.mts'
-import type { TopicSearchState, TopicSemanticAnchorCte } from './query-builder-state.mts'
+import type { TopicSearchState, TopicSimilarityAnchorCte } from './query-builder-state.mts'
 import { buildTopicSemanticRankingScoreSql, escapeLikePattern } from './query-builder-utils.mts'
 import { EMBEDDING_DISTANCE_THRESHOLD } from '@modules/search-utils'
 import sql, { type SQLStatement } from 'sql-template-strings'
+
+const SECONDARY_DISTANCE_THRESHOLD_SQL: Readonly<
+  Record<TopicSimilarityAnchorCte, () => SQLStatement>
+> = {
+  similar_topic_embedding: () =>
+    sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_topic_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+  similar_post_embedding: () =>
+    sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_post_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+  similar_rss_feed_item_embedding: () =>
+    sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_rss_feed_item_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`,
+}
 
 export function buildTopicSearchBaseWhereClauses(
   options: TopicSearchOptions,
@@ -60,7 +71,7 @@ export function buildTopicSearchWhereClauses(
   if (state.hasSemanticSignal) {
     return [
       sql`t.embedding_distance < ${EMBEDDING_DISTANCE_THRESHOLD}`,
-      ...state.secondarySemanticCtes.map(secondaryDistanceThresholdClause),
+      ...state.secondarySemanticCtes.map(cte => SECONDARY_DISTANCE_THRESHOLD_SQL[cte]()),
       ...paginationFilters(options, sort, state),
     ]
   }
@@ -81,19 +92,6 @@ export function appendTopicSearchWhere(query: SQLStatement, whereClauses: SQLSta
       AND `)
     query.append(clause)
   })
-}
-
-function secondaryDistanceThresholdClause(cte: TopicSemanticAnchorCte): SQLStatement {
-  switch (cte) {
-    case 'semantic_search_embedding':
-      return sql`(t.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`
-    case 'similar_topic_embedding':
-      return sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_topic_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`
-    case 'similar_post_embedding':
-      return sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_post_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`
-    case 'similar_rss_feed_item_embedding':
-      return sql`(t.bedrock_nova_multimodal_v1_embedding <=> similar_rss_feed_item_embedding.embedding) < ${EMBEDDING_DISTANCE_THRESHOLD}`
-  }
 }
 
 function fediverseInstanceFilters(options: TopicSearchOptions): SQLStatement[] {

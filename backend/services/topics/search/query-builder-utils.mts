@@ -1,18 +1,14 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildSemanticDistanceScore } from '@modules/search-utils'
-import type { TopicSearchState, TopicSemanticAnchorCte } from './query-builder-state.mts'
+import type { TopicSearchState, TopicSimilarityAnchorCte } from './query-builder-state.mts'
 
-function secondaryDistanceExpression(cte: TopicSemanticAnchorCte): string {
-  switch (cte) {
-    case 'semantic_search_embedding':
-      return 't.bedrock_nova_multimodal_v1_embedding <=> semantic_search_embedding.embedding'
-    case 'similar_topic_embedding':
-      return 't.bedrock_nova_multimodal_v1_embedding <=> similar_topic_embedding.embedding'
-    case 'similar_post_embedding':
-      return 't.bedrock_nova_multimodal_v1_embedding <=> similar_post_embedding.embedding'
-    case 'similar_rss_feed_item_embedding':
-      return 't.bedrock_nova_multimodal_v1_embedding <=> similar_rss_feed_item_embedding.embedding'
-  }
+const SECONDARY_DISTANCE_EXPRESSION: Readonly<Record<TopicSimilarityAnchorCte, string>> = {
+  similar_topic_embedding:
+    't.bedrock_nova_multimodal_v1_embedding <=> similar_topic_embedding.embedding',
+  similar_post_embedding:
+    't.bedrock_nova_multimodal_v1_embedding <=> similar_post_embedding.embedding',
+  similar_rss_feed_item_embedding:
+    't.bedrock_nova_multimodal_v1_embedding <=> similar_rss_feed_item_embedding.embedding',
 }
 
 export function buildTopicSemanticRankingScoreSql(
@@ -27,7 +23,7 @@ export function buildTopicSemanticRankingScoreSql(
   const scoreExpressions: SQLStatement[] = [
     buildSemanticDistanceScore('t.embedding_distance'),
     ...state.secondarySemanticCtes.map(cte =>
-      buildSemanticDistanceScore(secondaryDistanceExpression(cte)),
+      buildSemanticDistanceScore(SECONDARY_DISTANCE_EXPRESSION[cte]),
     ),
   ]
   if (scoreExpressions.length === 1) return scoreExpressions[0]!

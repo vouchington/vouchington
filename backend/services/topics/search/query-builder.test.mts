@@ -85,6 +85,38 @@ describe('query-builder', () => {
     expect(query.values).toContain(rssFeedItemId)
   })
 
+  it('buildTopicSearchQueryBody supports similar_post_id alone and combined semantic + all similarity signals', () => {
+    const postOnly = buildTopicSearchQueryBody({ similar_post_id: 'post-123' }, 'relevance')
+    expect(postOnly.sql).toContain('FROM similar_post_embedding anchor_embedding')
+    expect(postOnly.sql).toContain('CROSS JOIN LATERAL (')
+    expect(postOnly.sql).toContain('(1.0 / (1.0 + (t.embedding_distance))) AS ranking_score')
+
+    const combined = buildTopicSearchQueryBody(
+      {
+        semantic_search_query: 'amex',
+        semanticSearchEmbedding: testEmbedding,
+        similar_topic_id: 'topic-123',
+        similar_post_id: 'post-123',
+        similar_rss_feed_item_id: '123e4567-e89b-12d3-a456-426614174000',
+      },
+      'relevance',
+    )
+    expect(combined.sql).toContain('CROSS JOIN semantic_search_embedding')
+    expect(combined.sql).toContain('t.bedrock_nova_multimodal_v1_embedding,')
+    expect(combined.sql).toContain('CROSS JOIN similar_topic_embedding')
+    expect(combined.sql).toContain('CROSS JOIN similar_post_embedding')
+    expect(combined.sql).toContain('CROSS JOIN similar_rss_feed_item_embedding')
+    expect(combined.sql).toContain(
+      '(t.bedrock_nova_multimodal_v1_embedding <=> similar_topic_embedding.embedding) < ?',
+    )
+    expect(combined.sql).toContain(
+      '(t.bedrock_nova_multimodal_v1_embedding <=> similar_post_embedding.embedding) < ?',
+    )
+    expect(combined.sql).toContain(
+      '(t.bedrock_nova_multimodal_v1_embedding <=> similar_rss_feed_item_embedding.embedding) < ?',
+    )
+  })
+
   it('buildTopicSearchQueryBody supports hybrid text + semantic search and keeps tier relevance ordering', () => {
     const query = buildTopicSearchQueryBody(
       {
