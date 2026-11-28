@@ -41,23 +41,33 @@ export async function runTopicMergeParentCapacityScenario(): Promise<void> {
       VALUES (${sourceId}, ${destinationId}, ${seedUser.id}) RETURNING id`)
     assert.ok(operation)
     operationId = operation.id
-    await write('/* analyzeExplainTopicMergeParents */ ANALYZE relation__topic__parent__topic')
+    // Plain ANALYZE leaves relallvisible at 0 on newly inserted fixture pages, which makes the
+    // ordered index-only PK walk lose to a bitmap heap scan plus Sort. VACUUM marks those pages
+    // all-visible to match steady-state autovacuumed visibility before the captures.
+    await write(
+      '/* vacuumExplainTopicMergeParents */ VACUUM (ANALYZE) relation__topic__parent__topic',
+    )
     const scenario = 'topic-merge-parent-preflight-at-cap'
     registerScenarioContract(scenario, {
       expectations: [
-        // The generic continuation can revisit the prefix. https://github.com/vouchington/vouchington/issues/6601
+        {
+          kind: 'usesIndexes',
+          indexes: ['relation__topic__parent__topic_pkey'],
+          noSort: true,
+        },
         {
           kind: 'maxProcessedRows',
           relation: 'relation__topic__parent__topic',
-          max: limit + 1,
+          max: limit,
           captureIndex: 0,
         },
         {
           kind: 'maxProcessedRows',
           relation: 'relation__topic__parent__topic',
-          max: limit + 1,
+          max: 1,
           captureIndex: 1,
         },
+        { kind: 'custom', name: 'topicMergeParentCursorSeek' },
       ],
     })
     await runAndCapture(

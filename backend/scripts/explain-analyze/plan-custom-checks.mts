@@ -12,6 +12,7 @@ import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-custom/emb
 import { assertPaginationPlanShape } from './plan-custom/pagination-gates.mts'
 import { assertPostTopicMembershipIsReused } from './plan-custom/post-topic-membership.mts'
 import { assertTopicMergeAliasCursorSeek } from './plan-custom/topic-merge-alias-cursor.mts'
+import { assertTopicMergeParentCursorSeek } from './plan-custom/topic-merge-parent-cursor.mts'
 import { assertTopicViewerInputsAreBounded } from './plan-custom/topic-viewer-bounded-inputs.mts'
 import { assertPostCreationBypassPointRead } from './plan-custom/post-creation-bypass.mts'
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-custom/remote-followers.mts'
@@ -49,6 +50,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   postCreationBypassPointRead: assertPostCreationBypassPointRead,
   postTopicMembership: assertPostTopicMembershipIsReused,
   topicMergeAliasCursorSeek: assertTopicMergeAliasCursorSeek,
+  topicMergeParentCursorSeek: assertTopicMergeParentCursorSeek,
   topicViewerBoundedInputs: assertTopicViewerInputsAreBounded,
   remoteFollowers: assertRemoteFollowerPagePlanShapeIfApplicable,
   reviewRatingWriteBufferBound: assertReviewRatingWriteBufferBound,

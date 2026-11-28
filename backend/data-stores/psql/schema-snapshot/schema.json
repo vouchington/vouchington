@@ -109848,8 +109848,8 @@
         "relation__topic__parent__topic_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX relation__topic__parent__topic_pkey ON public.relation__topic__parent__topic USING btree (subject_id, object_id)",
-          "includedColumns": [],
+          "definition": "CREATE UNIQUE INDEX relation__topic__parent__topic_pkey ON public.relation__topic__parent__topic USING btree (subject_id, object_id) INCLUDE (deleted_at)",
+          "includedColumns": ["deleted_at"],
           "keys": [
             {
               "column": "subject_id",
@@ -109877,7 +109877,7 @@
       "physicalPartition": null,
       "primaryKey": {
         "columns": ["subject_id", "object_id"],
-        "definition": "PRIMARY KEY (subject_id, object_id)"
+        "definition": "PRIMARY KEY (subject_id, object_id) INCLUDE (deleted_at)"
       },
       "relationKind": "table",
       "triggers": {

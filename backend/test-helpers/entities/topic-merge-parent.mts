@@ -55,9 +55,10 @@ export async function getTopicMergeParentTestWork(operationId: string) {
     topic_id: string
     depth: number
     cursor_object_id: string | null
+    completed_at: Date | null
   }>(
     `/* getTopicMergeParentTestWork */
-      SELECT topic_id, depth, cursor_object_id FROM topic_merge_parent_ancestors
+      SELECT topic_id, depth, cursor_object_id, completed_at FROM topic_merge_parent_ancestors
       WHERE operation_id = $1::uuid ORDER BY topic_id LIMIT 10`,
     [operationId],
   )

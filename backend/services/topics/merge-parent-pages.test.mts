@@ -101,4 +101,65 @@ describe('topic merge parent preflight pages', () => {
       await deleteTopicMergeParentTestOperation(operationId)
     }
   })
+
+  it('counts tombstones toward the raw page, advances past them, and reserves only live ancestors', async () => {
+    const user = await createTestUser({ administrator: true })
+    const [source, destination, ...parents] = await Promise.all(
+      Array.from({ length: 5 }, () => createTestTopic({ user })),
+    )
+    const [firstTopic, secondTopic, thirdTopic] = parents.map(topic => topic.id).toSorted()
+    const [ownerId, peerId] = [source!.id, destination!.id].toSorted()
+    await seedTopicMergeParentEdges([
+      [ownerId!, firstTopic!],
+      [ownerId!, secondTopic!],
+      [ownerId!, thirdTopic!],
+    ])
+    await mutateTopicMergeParentTestEdge(ownerId!, firstTopic!, 'tombstone')
+    await mutateTopicMergeParentTestEdge(ownerId!, secondTopic!, 'tombstone')
+    const operationId = await createTopicMergeParentTestOperation(
+      source!.id,
+      destination!.id,
+      user.id,
+    )
+    try {
+      // First page of size 2 inspects both tombstones, reserves neither, and records the second tombstone as cursor.
+      await expect(
+        runTopicMergeParentTestPage(operationId, source!.id, destination!.id, 2),
+      ).resolves.toEqual({ hasMore: true, errorCode: null })
+      const afterFirst = await getTopicMergeParentTestWork(operationId)
+      expect(
+        afterFirst.map(item => [
+          item.topic_id,
+          item.depth,
+          item.cursor_object_id,
+          item.completed_at !== null,
+        ]),
+      ).toEqual([
+        [ownerId, 0, secondTopic, false],
+        [peerId, 0, null, false],
+      ])
+
+      // Continuation seeks past secondTopic, finds thirdTopic, reserves it at depth 1, and completes ownerId.
+      await expect(
+        runTopicMergeParentTestPage(operationId, source!.id, destination!.id, 2),
+      ).resolves.toEqual({ hasMore: true, errorCode: null })
+      const afterSecond = await getTopicMergeParentTestWork(operationId)
+      expect(
+        afterSecond.map(item => [
+          item.topic_id,
+          item.depth,
+          item.cursor_object_id,
+          item.completed_at !== null,
+        ]),
+      ).toEqual(
+        [
+          [ownerId!, 0, thirdTopic!, true],
+          [peerId!, 0, null, false],
+          [thirdTopic!, 1, null, false],
+        ].toSorted((a, b) => String(a[0]).localeCompare(String(b[0]))),
+      )
+    } finally {
+      await deleteTopicMergeParentTestOperation(operationId)
+    }
+  })
 })
