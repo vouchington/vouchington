@@ -63,7 +63,7 @@ describe('engagement email processors', () => {
     const user = await createTestUser()
     await claimEngagementEmailSend(user!.id, 'follow_topics')
     await processSendFollowTopicsEmail(
-      { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+      { userId: user!.id },
       {
         topics: [{ name: 'Travel', url: 'https://voucha.ai/topics/travel' }],
         ...createTestNotificationEmailFooter(),
@@ -84,7 +84,7 @@ describe('engagement email processors', () => {
     const user = await createTestUser()
     await claimEngagementEmailSend(user!.id, 'post_referral_link')
     await processSendPostReferralLinkEmail(
-      { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+      { userId: user!.id },
       {
         referralPrograms: [
           { name: 'Travel Card', url: 'https://voucha.ai/referral-programs/travel-card' },
@@ -107,7 +107,7 @@ describe('engagement email processors', () => {
     const user = await createTestUser()
     await claimEngagementEmailSend(user!.id, 'follow_news_sources')
     await processSendFollowNewsSourcesEmail(
-      { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+      { userId: user!.id },
       {
         sources: [{ name: 'Consumer Travel Daily', url: 'https://voucha.ai/rss/travel' }],
         ...createTestNotificationEmailFooter(),
@@ -149,7 +149,6 @@ describe('engagement email processors', () => {
     const currentEmailAddress = user!.email_address!
     await processSendCommunityModerationSummaryEmail(
       {
-        emailAddress: 'tests+moderator@voucha.ai',
         userId: user!.id,
         trackingKey,
         windowEnd,
@@ -192,14 +191,14 @@ describe('engagement email processors', () => {
     await claimEngagementEmailSend(user!.id, 'follow_news_sources')
 
     await processSendFollowTopicsEmail(
-      { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+      { userId: user!.id },
       {
         topics: [{ name: 'Travel', url: 'https://voucha.ai/topics/travel' }],
         ...createTestNotificationEmailFooter(),
       },
     )
     await processSendPostReferralLinkEmail(
-      { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+      { userId: user!.id },
       {
         referralPrograms: [
           { name: 'Travel Card', url: 'https://voucha.ai/referral-programs/travel-card' },
@@ -208,14 +207,14 @@ describe('engagement email processors', () => {
       },
     )
     await processSendFollowNewsSourcesEmail(
-      { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+      { userId: user!.id },
       {
         sources: [{ name: 'Consumer Travel Daily', url: 'https://voucha.ai/rss/travel' }],
         ...createTestNotificationEmailFooter(),
       },
     )
     await processSendCommunityModerationSummaryEmail(
-      { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
+      { userId: user!.id, trackingKey, windowEnd },
       {
         generatedForDate: '2026-07-10',
         ...createTestModerationEmailFooter(),
@@ -227,7 +226,7 @@ describe('engagement email processors', () => {
 
     await expect(
       processSendFollowTopicsEmail(
-        { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+        { userId: user!.id },
         {
           topics: [{ name: 'Travel', url: 'https://voucha.ai/topics/travel' }],
           ...createTestNotificationEmailFooter(),
@@ -236,7 +235,7 @@ describe('engagement email processors', () => {
     ).resolves.toBeNull()
     await expect(
       processSendPostReferralLinkEmail(
-        { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+        { userId: user!.id },
         {
           referralPrograms: [
             { name: 'Travel Card', url: 'https://voucha.ai/referral-programs/travel-card' },
@@ -247,7 +246,7 @@ describe('engagement email processors', () => {
     ).resolves.toBeNull()
     await expect(
       processSendFollowNewsSourcesEmail(
-        { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+        { userId: user!.id },
         {
           sources: [{ name: 'Consumer Travel Daily', url: 'https://voucha.ai/rss/travel' }],
           ...createTestNotificationEmailFooter(),
@@ -256,7 +255,7 @@ describe('engagement email processors', () => {
     ).resolves.toBeNull()
     await expect(
       processSendCommunityModerationSummaryEmail(
-        { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
+        { userId: user!.id, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-10',
           ...createTestModerationEmailFooter(),

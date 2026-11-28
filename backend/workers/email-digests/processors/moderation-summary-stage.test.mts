@@ -8,6 +8,8 @@ const variables = (dispatchTimeZone: string) => ({
   generatedForDate: '2026-01-20',
   dispatchTimeZone,
   settingsUrl: 'https://example.test/settings',
+  unsubscribeUrl: 'https://example.test/unsubscribe',
+  physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
   remainingCommunityCount: 0,
   communities: [],
   collection: createModerationSummaryCollection(),

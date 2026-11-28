@@ -57,7 +57,7 @@ describe('engagement email preference suppression', () => {
 
     await expect(
       processSendFollowTopicsEmail(
-        { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+        { userId: user!.id },
         {
           topics: [{ name: 'Travel', url: 'https://voucha.ai/topic/travel' }],
           ...createTestNotificationEmailFooter(),
@@ -66,7 +66,7 @@ describe('engagement email preference suppression', () => {
     ).resolves.toBeNull()
     await expect(
       processSendCommunityModerationSummaryEmail(
-        { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
+        { userId: user!.id, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-11',
           ...createTestModerationEmailFooter(),
@@ -88,7 +88,7 @@ describe('engagement email preference suppression', () => {
     await claimEngagementEmailSend(user!.id, 'follow_topics')
     await expect(
       processSendFollowTopicsEmail(
-        { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
+        { userId: user!.id },
         {
           topics: [{ name: 'Travel', url: 'https://voucha.ai/topic/travel' }],
           ...createTestNotificationEmailFooter(),

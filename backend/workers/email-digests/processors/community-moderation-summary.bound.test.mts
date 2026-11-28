@@ -61,6 +61,8 @@ describe('moderator summary continuation admission', () => {
         generatedForDate: windowEnd.slice(0, 10),
         dispatchTimeZone,
         settingsUrl: 'https://example.test/settings',
+        unsubscribeUrl: 'https://example.test/unsubscribe',
+        physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
         remainingCommunityCount: 0,
         collection: createModerationSummaryCollection(),
         communities: [],

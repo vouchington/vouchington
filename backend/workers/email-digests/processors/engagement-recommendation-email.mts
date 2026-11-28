@@ -1,6 +1,5 @@
 import type { EmailTemplateInput } from '@queues/emails/types'
 import onError from '@modules/on-error'
-import { getMarketingPostalAddress } from '@modules/utils'
 import { sendClassifiedEmail } from '@services/email-classification'
 import { createEmailUnsubscribeUrl } from '@services/users'
 import {
@@ -28,16 +27,7 @@ type EngagementRecommendationEmailKind =
 
 type RecommendationEmailVariables = {
   uiLocale?: string | null
-  physicalAddress?: string
-  unsubscribeUrl: string
-}
-
-type RecommendationEmailRenderProps<Variables extends RecommendationEmailVariables> = Omit<
-  Variables,
-  'physicalAddress'
-> & {
   physicalAddress: string
-  uiLocale?: string | null
   unsubscribeUrl: string
 }
 
@@ -52,9 +42,7 @@ type EngagementRecommendationEmailOptions<Variables extends RecommendationEmailV
     input: EmailTemplateInput
     variables: Variables
     isStillEligible: (userId: string) => Promise<boolean>
-    render: (
-      props: RecommendationEmailRenderProps<Variables>,
-    ) => Promise<RenderedRecommendationEmail>
+    render: (props: Variables) => Promise<RenderedRecommendationEmail>
   }
 
 export async function processEngagementRecommendationEmail<
@@ -75,7 +63,6 @@ export async function processEngagementRecommendationEmail<
   const { subject, html, text } = await render({
     ...variables,
     uiLocale: input.uiLocale ?? variables.uiLocale,
-    physicalAddress: variables.physicalAddress ?? getMarketingPostalAddress(),
     ...(input.userId
       ? {
           unsubscribeUrl: createEmailUnsubscribeUrl(input.userId, 'outcome_emails'),

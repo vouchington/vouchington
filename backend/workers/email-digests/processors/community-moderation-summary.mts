@@ -2,10 +2,8 @@ import { recheckModerationSummaryCommunities } from '@services/communities/moder
 import type { ProcessSendCommunityModerationSummaryEmailVariables } from '@queues/background/enqueues/email-digests-domain'
 import type { EmailTemplateInput } from '@queues/emails/types'
 import { renderCommunityModerationSummaryEmail } from '@email-templates/core'
-import { getMarketingPostalAddress } from '@modules/utils'
 import { isAwsThrottlingError } from '@vouchington/aws/errors'
 import { sendClassifiedEmail } from '@services/email-classification'
-import { createEmailUnsubscribeUrl } from '@services/users'
 import {
   markModerationEmailSent,
   resetRejectedModerationEmailSend,
@@ -56,10 +54,6 @@ export async function processSendCommunityModerationSummaryEmail(
   }
   const { subject, html, text } = await renderCommunityModerationSummaryEmail({
     ...renderVariables,
-    unsubscribeUrl:
-      renderVariables.unsubscribeUrl ??
-      (input.userId ? createEmailUnsubscribeUrl(input.userId, 'community_digest') : ''),
-    physicalAddress: renderVariables.physicalAddress ?? getMarketingPostalAddress(),
     uiLocale: input.uiLocale ?? renderVariables.uiLocale,
   })
   const { userId, trackingKey } = input

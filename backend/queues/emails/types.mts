@@ -23,10 +23,7 @@ type EmailInputMetadata = {
 
 export type EmailJobInput = EmailRecipient & EmailInputMetadata
 
-export type EmailTemplateInput = EmailInputMetadata & {
-  emailAddress?: string
-  userId?: string
-}
+export type EmailTemplateInput = EmailJobInput
 
 export type ProcessSendCommunityInviteEmailVariables = {
   communityName: string
