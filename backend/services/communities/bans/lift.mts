@@ -152,13 +152,17 @@ async function liftSelectedCommunityBans(
   }
   assert(result.candidate_count > 0, 404, 'No active ban found')
   assert(result.lifted_ban_ids.length > 0, 404, 'No active ban found')
+  await recordModeratorAction(
+    currentUser.id,
+    {
+      actionType: 'lift_ban',
+      communityId,
+      targetUserId: result.user_id!,
+    },
+    { query: transaction },
+  )
   await transaction.commit()
 
-  await recordModeratorAction(currentUser.id, {
-    actionType: 'lift_ban',
-    communityId,
-    targetUserId: result.user_id!,
-  })
   return {
     community_id: communityId,
     user_id: result.user_id!,
