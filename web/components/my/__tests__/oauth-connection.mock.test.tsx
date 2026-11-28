@@ -153,7 +153,9 @@ describe('OAuthConnection', () => {
         initialAccount={null}
       />,
     )
-    expect(container.querySelector('[data-pw="oauth-connection-google-heading"]')).toBeInTheDocument()
+    expect(
+      container.querySelector('[data-pw="oauth-connection-google-heading"]'),
+    ).toBeInTheDocument()
   })
 
   it('renders separator before content when separator prop is true', () => {
