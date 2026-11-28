@@ -64,7 +64,7 @@ function listVariables<T>(
   requiredString(record, 'settingsUrl')
   requiredString(record, 'unsubscribeUrl')
   optionalString(record, 'userName')
-  optionalString(record, 'physicalAddress')
+  requiredString(record, 'physicalAddress')
   optionalNullableString(record, 'uiLocale')
   const items = record[listKey]
   if (!Array.isArray(items)) throw new JobPayloadError(`${listKey} must be an array`)
@@ -107,8 +107,8 @@ export function moderationVariables(
   requiredString(record, 'dispatchTimeZone')
   requiredString(record, 'settingsUrl')
   optionalString(record, 'userName')
-  optionalString(record, 'unsubscribeUrl')
-  optionalString(record, 'physicalAddress')
+  requiredString(record, 'unsubscribeUrl')
+  requiredString(record, 'physicalAddress')
   optionalNullableString(record, 'uiLocale')
   parseModerationSummaryCollection(record.collection, stage)
   if (

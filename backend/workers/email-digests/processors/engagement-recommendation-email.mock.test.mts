@@ -72,7 +72,7 @@ describe('engagement email delivery guarantees', () => {
 })
 
 async function processEngagementEmail(emailType: EngagementEmailType, userId: string) {
-  const input = { emailAddress: 'tests+user@voucha.ai', userId }
+  const input = { userId }
   if (emailType === 'follow_topics') {
     return processSendFollowTopicsEmail(input, {
       topics: [{ name: 'Travel', url: 'https://voucha.ai/topics/travel' }],

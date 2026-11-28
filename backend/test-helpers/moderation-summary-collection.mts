@@ -65,6 +65,8 @@ export async function processTestModerationSummaryEmail(
 
 export function moderationSummaryVariableDefaults() {
   return {
+    unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
+    physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
     remainingCommunityCount: 0,
     collection: createModerationSummaryCollection(),
   }

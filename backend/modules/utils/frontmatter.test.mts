@@ -51,11 +51,4 @@ describe('toFrontmatter', () => {
     })
     expect(result).toBe('---\nitems:\n  - name: Test\n---')
   })
-
-  it('preserves the legacy shallow scalarization for top-level nested objects', () => {
-    const result = toFrontmatter({
-      nested: { child: { enabled: true, omitted: null }, empty: [] },
-    })
-    expect(result).toBe('---\nnested: "[object Object]"\n---')
-  })
 })

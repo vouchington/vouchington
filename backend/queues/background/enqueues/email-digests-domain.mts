@@ -40,32 +40,15 @@ export type EmailDigestInput = EmailDigestRecipient & {
   html?: string
 }
 
-// The queue payload is a trust boundary: the render props the processor backfills (the physical
-// address and, for the moderation summary, the unsubscribe link) are optional here.
-export type ProcessSendFollowTopicsEmailVariables = Omit<
-  FollowTopicsEmailProps,
-  'physicalAddress'
-> & { physicalAddress?: string }
+export type ProcessSendFollowTopicsEmailVariables = FollowTopicsEmailProps
+export type ProcessSendPostReferralLinkEmailVariables = PostReferralLinkEmailProps
+export type ProcessSendFollowNewsSourcesEmailVariables = FollowNewsSourcesEmailProps
 
-export type ProcessSendPostReferralLinkEmailVariables = Omit<
-  PostReferralLinkEmailProps,
-  'physicalAddress'
-> & { physicalAddress?: string }
-
-export type ProcessSendFollowNewsSourcesEmailVariables = Omit<
-  FollowNewsSourcesEmailProps,
-  'physicalAddress'
-> & { physicalAddress?: string }
-
-export type ProcessSendCommunityModerationSummaryEmailVariables = Omit<
-  CommunityModerationSummaryEmailProps,
-  'unsubscribeUrl' | 'physicalAddress'
-> & {
-  dispatchTimeZone: string
-  unsubscribeUrl?: string
-  physicalAddress?: string
-  collection: ModerationSummaryCollection
-}
+export type ProcessSendCommunityModerationSummaryEmailVariables =
+  CommunityModerationSummaryEmailProps & {
+    dispatchTimeZone: string
+    collection: ModerationSummaryCollection
+  }
 
 /** A digest email rendered at send time: the recipient plus the template's own variables. */
 export type EmailDigestSendData<TVariables> = { input: EmailDigestInput; variables: TVariables }

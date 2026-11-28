@@ -29,7 +29,7 @@ describe('validateScopeSet', () => {
     expect(hasScope([], 'rss:read')).toBe(false)
   })
 
-  it('lets legacy broad MCP grants satisfy resource-scoped requests', () => {
+  it('lets the mcp.user:read umbrella satisfy resource-scoped read requests', () => {
     expect(hasScope(['mcp.user:read'], 'topics:read')).toBe(true)
     expect(hasScope(['mcp.user:read'], 'cards:write')).toBe(false)
     expect(hasEveryScope(['cards:read', 'cards:write'], ['cards:write'])).toBe(true)

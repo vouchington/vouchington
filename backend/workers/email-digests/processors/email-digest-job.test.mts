@@ -51,6 +51,7 @@ describe('email-digests job router', () => {
       topics: [{ name: 'News', url: 'https://example.test/t' }],
       settingsUrl: 'https://example.test/settings',
       unsubscribeUrl: 'https://example.test/unsubscribe',
+      physicalAddress: '1 Main',
     }
     const templates = {
       processSendFollowTopicsEmail,

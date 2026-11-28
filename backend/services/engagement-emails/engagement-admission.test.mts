@@ -12,6 +12,7 @@ const variables = {
   topics: [{ name: 'Owned admission topic', url: 'https://example.com/topic' }],
   settingsUrl: 'https://example.com/settings',
   unsubscribeUrl: 'https://example.com/unsubscribe',
+  physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
 }
 
 describe('owned engagement admission lifecycle', () => {

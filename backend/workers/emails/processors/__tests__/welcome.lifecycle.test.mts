@@ -26,12 +26,9 @@ describe('processSendWelcomeEmail', () => {
     )
   })
 
-  it('revalidates the recipient by userId before sending', async () => {
+  it("sends to the user's verified address", async () => {
     const user = await createTestUser()
-    await processSendWelcomeEmail(
-      { emailAddress: 'tests+stale@voucha.ai', userId: user!.id },
-      { userName: 'Alex' },
-    )
+    await processSendWelcomeEmail({ userId: user!.id }, { userName: 'Alex' })
 
     expect(ses.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -43,13 +40,10 @@ describe('processSendWelcomeEmail', () => {
     )
   })
 
-  it('skips a legacy queued address when the recipient has no verified email', async () => {
+  it('skips when the recipient has no verified email', async () => {
     const user = await createTestUserDirect({ withEmail: false })
     await expect(
-      processSendWelcomeEmail(
-        { emailAddress: 'tests+oauth@voucha.ai', userId: user!.id },
-        { userName: 'Alex' },
-      ),
+      processSendWelcomeEmail({ userId: user!.id }, { userName: 'Alex' }),
     ).resolves.toEqual({
       status: 'skipped',
       reason: 'no_verified_email',
@@ -65,10 +59,10 @@ describe('processSendCommunityApplicationDecisionEmail', () => {
     vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
   })
 
-  it('revalidates the recipient by userId before sending', async () => {
+  it("sends to the user's verified address", async () => {
     const user = await createTestUser()
     await processSendCommunityApplicationDecisionEmail(
-      { emailAddress: 'tests+stale@voucha.ai', userId: user!.id },
+      { userId: user!.id },
       {
         communityName: 'Test Community',
         communityUrl: 'https://voucha.ai/communities/test-community',
@@ -113,10 +107,10 @@ describe('processSendCommunityRoleChangeEmail', () => {
     vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
   })
 
-  it('revalidates the recipient by userId before sending', async () => {
+  it("sends to the user's verified address", async () => {
     const user = await createTestUser()
     await processSendCommunityRoleChangeEmail(
-      { emailAddress: 'tests+stale@voucha.ai', userId: user!.id },
+      { userId: user!.id },
       {
         communityName: 'Test Community',
         communityUrl: 'https://voucha.ai/communities/test-community',
@@ -163,10 +157,10 @@ describe('processSendCommunityOwnershipTransferEmail', () => {
     vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
   })
 
-  it('revalidates the recipient by userId before sending', async () => {
+  it("sends to the user's verified address", async () => {
     const user = await createTestUser()
     await processSendCommunityOwnershipTransferEmail(
-      { emailAddress: 'tests+stale@voucha.ai', userId: user!.id },
+      { userId: user!.id },
       {
         communityName: 'Test Community',
         communityUrl: 'https://voucha.ai/communities/test-community',
@@ -221,14 +215,11 @@ describe('lifecycle email processors skip deleted recipients', () => {
     }
 
     await expect(
-      processSendWelcomeEmail(
-        { emailAddress: 'tests+stale@voucha.ai', userId: user!.id },
-        { userName: 'Alex' },
-      ),
+      processSendWelcomeEmail({ userId: user!.id }, { userName: 'Alex' }),
     ).resolves.toEqual(skipped)
     await expect(
       processSendCommunityApplicationDecisionEmail(
-        { emailAddress: 'tests+stale@voucha.ai', userId: user!.id },
+        { userId: user!.id },
         {
           communityName: 'Test Community',
           communityUrl: 'https://voucha.ai/communities/test-community',
@@ -238,7 +229,7 @@ describe('lifecycle email processors skip deleted recipients', () => {
     ).resolves.toEqual(skipped)
     await expect(
       processSendCommunityRoleChangeEmail(
-        { emailAddress: 'tests+stale@voucha.ai', userId: user!.id },
+        { userId: user!.id },
         {
           communityName: 'Test Community',
           communityUrl: 'https://voucha.ai/communities/test-community',
@@ -249,7 +240,7 @@ describe('lifecycle email processors skip deleted recipients', () => {
     ).resolves.toEqual(skipped)
     await expect(
       processSendCommunityOwnershipTransferEmail(
-        { emailAddress: 'tests+stale@voucha.ai', userId: user!.id },
+        { userId: user!.id },
         {
           communityName: 'Test Community',
           communityUrl: 'https://voucha.ai/communities/test-community',

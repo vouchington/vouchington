@@ -28,6 +28,7 @@ const moderationInput = {
 const links = {
   settingsUrl: 'https://example.test/settings',
   unsubscribeUrl: 'https://example.test/unsubscribe',
+  physicalAddress: '1 Main',
 }
 
 describe('engagement email payloads', () => {
@@ -37,7 +38,6 @@ describe('engagement email payloads', () => {
       variables: {
         ...links,
         userName: 'Ada',
-        physicalAddress: '1 Main',
         uiLocale: 'en',
         topics: [{ name: 'News', url: 'https://example.test/t', reason: 'new' }],
       },
@@ -116,6 +116,16 @@ describe('engagement email payloads', () => {
         variables: { ...links, topics: [], extra: true },
       }),
     ).toThrow(/unexpected property extra/)
+    expect(() =>
+      parseEmailDigestJob('processSendFollowTopicsEmail', {
+        input: address,
+        variables: {
+          settingsUrl: links.settingsUrl,
+          unsubscribeUrl: links.unsubscribeUrl,
+          topics: [],
+        },
+      }),
+    ).toThrow(/physicalAddress must be a string/)
     expect(() =>
       parseEmailDigestJob('processSendFollowTopicsEmail', {
         input: address,

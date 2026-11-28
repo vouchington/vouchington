@@ -9,7 +9,6 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-import { updateUserFields } from '@services/users/update-fields'
 import {
   moderationSummaryVariableDefaults,
   processTestModerationSummaryEmail as processSendCommunityModerationSummaryEmail,
@@ -55,7 +54,6 @@ describe('processSendCommunityModerationSummaryEmail', () => {
     )
 
     const input = {
-      emailAddress: 'tests+moderator@voucha.ai',
       userId: user!.id,
       trackingKey,
       windowEnd,
@@ -64,8 +62,6 @@ describe('processSendCommunityModerationSummaryEmail', () => {
       generatedForDate: '2026-07-13',
       dispatchTimeZone,
       settingsUrl: 'https://voucha.ai/my/notification-settings',
-      unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
-      physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
       ...moderationSummaryVariableDefaults(),
       communities: [
         {
@@ -129,13 +125,11 @@ describe('processSendCommunityModerationSummaryEmail', () => {
 
     await expect(
       processSendCommunityModerationSummaryEmail(
-        { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
+        { userId: user!.id, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-12',
           dispatchTimeZone,
           settingsUrl: 'https://voucha.ai/my/notification-settings',
-          unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
-          physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
           ...moderationSummaryVariableDefaults(),
           communities: [
             {
@@ -164,82 +158,5 @@ describe('processSendCommunityModerationSummaryEmail', () => {
       ),
     ).resolves.toBeNull()
     expect(ses.sendEmail).not.toHaveBeenCalled()
-  })
-
-  it('backfills unsubscribeUrl and physicalAddress for a legacy queue payload missing them', async () => {
-    const user = await createTestUser()
-    await updateUserFields(user!.id, { moderation_email_timezone: 'UTC' })
-    const community = await insertTestCommunity({ createdById: user!.id })
-    await insertTestCommunityMember({
-      communityId: community.id,
-      userId: user!.id,
-      role: 'owner',
-      approvedById: user!.id,
-    })
-    const postId = await insertTestPost({
-      title: 'Legacy payload moderator post',
-      slug: `legacy-payload-moderator-post-${user!.id}`,
-      createdById: user!.id,
-      markdown: 'Needs review.',
-      communityId: community.id,
-    })
-    await insertTestPendingCommunityPostReview({
-      communityId: community.id,
-      postId,
-      submittedById: user!.id,
-    })
-    const { trackingKey, windowEnd, dispatchTimeZone } = await claimCurrentModerationSummaryForTest(
-      user!.id,
-    )
-
-    // Simulates a job enqueued by pre-deploy dispatcher code, before
-    const legacyVariables = {
-      generatedForDate: '2026-07-12',
-      dispatchTimeZone,
-      settingsUrl: 'https://voucha.ai/my/notification-settings',
-      ...moderationSummaryVariableDefaults(),
-      communities: [
-        {
-          communityId: '01900000-0000-7000-8000-000000000001',
-          name: 'Travel Deals',
-          url: 'https://voucha.ai/communities/travel-deals',
-          pendingPostReviews: 1,
-          pendingApplications: 0,
-          pendingReports: 0,
-          escalatedItems: 0,
-          suspectedBanEvaders: 0,
-          newMembers: 0,
-          departedMembers: 0,
-          netMemberChange: 0,
-          totalActiveMembers: 0,
-          newDiscussionPosts: 0,
-          newReviewPosts: 0,
-          newDataPointPosts: 0,
-          topDiscussionTitle: null,
-          topDiscussionReplyCount: 0,
-          activeMemberCount: 0,
-          activeMemberRate: 0,
-        },
-      ],
-    }
-
-    await processSendCommunityModerationSummaryEmail(
-      { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
-      legacyVariables,
-    )
-
-    expect(ses.sendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        text: expect.stringContaining('/email/unsubscribe?token='),
-        headers: expect.objectContaining({
-          'List-Unsubscribe': expect.stringContaining('/api/v1/email-unsubscribe?token='),
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        }),
-      }),
-    )
-    const [[sentEmail]] = vi.mocked(ses.sendEmail).mock.calls
-    expect(sentEmail.text).toContain('[Voucha mailing address')
-    expect(sentEmail.text).not.toContain('undefined')
-    expect(sentEmail.html).not.toContain('undefined')
   })
 })

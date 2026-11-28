@@ -64,13 +64,11 @@ describe('moderation summary definitive SES rejection', () => {
 
     await expect(
       processSendCommunityModerationSummaryEmail(
-        { emailAddress, userId: user!.id, trackingKey, windowEnd },
+        { userId: user!.id, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-14',
           dispatchTimeZone,
           settingsUrl: 'https://voucha.ai/my/notification-settings',
-          unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
-          physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
           ...moderationSummaryVariableDefaults(),
           communities: [],
         },
@@ -105,7 +103,6 @@ describe('moderation summary definitive SES rejection', () => {
       user!.id,
     )
     const input = {
-      emailAddress: 'tests+moderator@voucha.ai',
       userId: user!.id,
       trackingKey,
       windowEnd,
@@ -114,8 +111,6 @@ describe('moderation summary definitive SES rejection', () => {
       generatedForDate: '2026-07-11',
       dispatchTimeZone,
       settingsUrl: 'https://voucha.ai/my/notification-settings',
-      unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
-      physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
       ...moderationSummaryVariableDefaults(),
       communities: [],
     }
@@ -193,7 +188,6 @@ describe('moderation summary queued retention', () => {
     const trackingKey = `daily:${expectedDate}`
     await claimTestModerationEmailSend(user!.id, trackingKey)
     const input = {
-      emailAddress: 'tests+moderator@voucha.ai',
       userId: user!.id,
       trackingKey,
       windowStart: '2020-01-01T00:00:00.000Z',
@@ -203,8 +197,6 @@ describe('moderation summary queued retention', () => {
       generatedForDate: '1900-01-01',
       dispatchTimeZone: 'Pacific/Kiritimati',
       settingsUrl: 'https://voucha.ai/my/notification-settings',
-      unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
-      physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
       ...moderationSummaryVariableDefaults(),
       communities: [
         {

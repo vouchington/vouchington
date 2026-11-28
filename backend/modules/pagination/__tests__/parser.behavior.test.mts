@@ -74,7 +74,7 @@ describe('PaginationParser — custom limit config', () => {
     expect(parser.parse({ limit: '999' }).limit).toBe(10)
   })
 
-  it('retains the legacy default when only a max is configured', () => {
+  it('uses the shared default of 25 when only a max is configured', () => {
     const parser = new PaginationParser({
       cursor: { type: 'simple' },
       limit: { max: 10 },

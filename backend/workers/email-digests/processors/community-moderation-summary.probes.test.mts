@@ -77,6 +77,8 @@ describe('moderator digest replacement-chain delivery', () => {
       generatedForDate: windowEnd.slice(0, 10),
       dispatchTimeZone,
       settingsUrl: 'https://example.test/settings',
+      unsubscribeUrl: 'https://example.test/unsubscribe',
+      physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
       remainingCommunityCount: 0,
       communities: collected.communities,
       collection,
@@ -152,6 +154,8 @@ describe('moderator summary final selection', () => {
         generatedForDate: windowEnd.slice(0, 10),
         dispatchTimeZone,
         settingsUrl: 'https://example.test/settings',
+        unsubscribeUrl: 'https://example.test/unsubscribe',
+        physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
         remainingCommunityCount: 0,
       },
     )

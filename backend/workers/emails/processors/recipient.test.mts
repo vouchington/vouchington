@@ -25,19 +25,6 @@ describe('resolveEmailRecipient', () => {
     })
   })
 
-  it('revalidates legacy jobs that contain both a user and stale address', async () => {
-    const user = await createTestUserDirect()
-    const emailAddress = `worker-${crypto.randomUUID()}@voucha.ai`
-    await addVerifiedEmailForUser(user.id, emailAddress)
-    await expect(
-      resolveEmailRecipient({ userId: user.id, emailAddress: 'tests+stale@voucha.ai' }),
-    ).resolves.toEqual({
-      status: 'resolved',
-      emailAddress,
-      userId: user.id,
-    })
-  })
-
   it('returns a typed no-address skip', async () => {
     const user = await createTestUserDirect()
     await expect(resolveEmailRecipient({ userId: user.id })).resolves.toEqual({
