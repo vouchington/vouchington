@@ -534,6 +534,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_retire_notification_push_intent()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_rss_feed_fetch_state`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_fetch_state()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_story_post_related_url_relation_mutation`
 
 ```sql
@@ -1493,14 +1501,6 @@ CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)
  RETURNS void
- LANGUAGE plpgsql
-```
-
-## `fn_sync_rss_feed_fetch_state`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_fetch_state()
- RETURNS trigger
  LANGUAGE plpgsql
 ```
 
