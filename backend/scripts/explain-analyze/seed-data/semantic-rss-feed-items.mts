@@ -71,8 +71,12 @@ async function attachSemanticVectorsAndStories(query: TransactionQuery): Promise
            ARRAY[1::real, semantic_items.row_index::real / 100000]
            || array_fill(0::real, ARRAY[1022])
          ELSE
-           ARRAY[0::real, 1::real, (sin(semantic_items.row_index::double precision) * 0.2)::real]
-           || array_fill(0::real, ARRAY[1021])
+           ARRAY[0.15::real, 0.25::real]
+           || ARRAY(
+             SELECT sin(semantic_items.row_index * coordinate::double precision)::real
+             FROM generate_series(1, 30) AS coordinate
+           )
+           || array_fill(0::real, ARRAY[992])
        END
      )::vector(1024),
      story_id = semantic_stories.id
