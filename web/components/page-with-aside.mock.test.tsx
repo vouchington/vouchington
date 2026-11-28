@@ -55,7 +55,7 @@ function ForwardRefAside({ ref }: { ref?: React.Ref<HTMLDivElement> }) {
 describe('PageWithAside', () => {
   it('renders children', () => {
     render(<PageWithAside>content</PageWithAside>)
-    expect(screen.getByText('content')).toBeDefined()
+    expect(screen.getByText('content')).toBeInTheDocument()
   })
 
   describe('without aside', () => {

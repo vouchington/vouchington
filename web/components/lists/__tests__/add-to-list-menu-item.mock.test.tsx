@@ -177,7 +177,7 @@ describe('AddToListMenuItem', () => {
       />,
     )
     fireEvent.click(screen.getByTestId('dropdown-menu-item'))
-    expect(screen.getByText('Choose which of your lists include this post.')).toBeDefined()
+    expect(screen.getByText('Choose which of your lists include this post.')).toBeInTheDocument()
   })
 
   it('renders a screen-reader description for the dialog - feed item', async () => {
@@ -188,7 +188,7 @@ describe('AddToListMenuItem', () => {
       />,
     )
     fireEvent.click(screen.getByTestId('dropdown-menu-item'))
-    expect(screen.getByText('Choose which of your lists include this feed item.')).toBeDefined()
+    expect(screen.getByText('Choose which of your lists include this feed item.')).toBeInTheDocument()
   })
 
   it('shows list names with checkboxes after loading', async () => {
