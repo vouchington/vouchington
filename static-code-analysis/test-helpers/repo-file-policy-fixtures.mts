@@ -1,5 +1,5 @@
 import { writeValidToolingPolicyFixture } from './tooling-policy-fixtures.mts'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import {
@@ -11,6 +11,7 @@ import {
   topicTypesSource,
 } from '../repo-file-policy/repo-file-policy-test-sources.mts'
 import { afterEach, beforeEach } from 'vitest'
+import { parse } from 'yaml'
 import { createFixtureDeadline } from 'vouchington-tooling/fixture-deadline'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
@@ -152,7 +153,12 @@ export function setupRepoFilePolicyTest() {
       trackedFiles,
       trackedFileSet: new Set(trackedFiles),
     }
+    // A fixture without a config still reaches the guard that rejects an untracked config.
+    const configText = await readFile(join(repoRoot, '.no-mistakes.yml'), 'utf8').catch(
+      () => 'rules: []\n',
+    )
     const result = await checkRepoFilePolicy(ctx, {
+      declaredConfig: parse(configText),
       schemaSnapshot: emptySchemaSnapshot(snapshotTablesByRepo.get(repoRoot) ?? {}),
       remaining,
     })

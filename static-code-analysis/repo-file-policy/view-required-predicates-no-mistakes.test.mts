@@ -24,6 +24,7 @@ type ViewRule = Rule & {
 
 describe('view lookup predicate configuration', () => {
   it('covers every non-materialized catalog view', async () => {
+    // no-mistakes-disable-next-line forbidden-calls: asserts the live required-predicates rule covers every catalog view, a cross-file invariant a fixture config cannot exercise.
     const config = (await resolveConfig({
       root: fileURLToPath(new URL('../../', import.meta.url)),
       view: 'declared',

@@ -9,12 +9,15 @@ describe('repo-file-policy', () => {
   const { makeRepo, run, track } = setupRepoFilePolicyTest()
 
   it('exits with an error outside a git repository', async () => {
-    const result = await checkRepoFilePolicy({
-      isInsideGitRepo: false,
-      repoRoot: '/repo',
-      trackedFileSet: new Set(),
-      trackedFiles: [],
-    })
+    const result = await checkRepoFilePolicy(
+      {
+        isInsideGitRepo: false,
+        repoRoot: '/repo',
+        trackedFileSet: new Set(),
+        trackedFiles: [],
+      },
+      { declaredConfig: { rules: [] } },
+    )
 
     expect(result.errors).toEqual([expect.stringContaining('not inside a git repository')])
   })

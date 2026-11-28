@@ -2,7 +2,7 @@ import { statSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
-import { resolveConfig, type DeclaredConfig } from 'no-mistakes'
+import type { DeclaredConfig } from 'no-mistakes'
 
 const NO_MISTAKES_PATH = '.no-mistakes.yml'
 const PLACEHOLDER_PATH = 'backend/data-stores/psql/migrations/.no-mistakes-schema-placeholder.sql'
@@ -35,7 +35,7 @@ export async function checkExtraGeneratedColumnsFreshness(
   trackedFiles: readonly string[],
   schema: Pick<SchemaSnapshot, 'tables'>,
   migrationCreateTableNames: ReadonlySet<string>,
-  declaredConfig?: DeclaredConfig,
+  declaredConfig: DeclaredConfig,
 ): Promise<string[]> {
   const errors: string[] = []
   if (!trackedFiles.includes(NO_MISTAKES_PATH)) {
@@ -47,8 +47,7 @@ export async function checkExtraGeneratedColumnsFreshness(
 
   // A missing tracked config must fail instead of resolving as an empty config.
   statSync(join(repoRoot, NO_MISTAKES_PATH))
-  const config = (declaredConfig ??
-    (await resolveConfig({ root: repoRoot, view: 'declared' }))) as NoMistakesConfig
+  const config = declaredConfig as NoMistakesConfig
   const generatedColumnRule = config.rules?.find(
     rule => rule.rule === 'postgres-no-generated-column-writes',
   )

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
+import type { DeclaredConfig } from 'no-mistakes'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
@@ -31,11 +32,11 @@ function configFixture(
     generatedTables?: string[]
     predicateTables?: string[]
     predicateRuleCount?: number
-    sqlInclude?: unknown
-    predicateRequiresPrimaryKey?: unknown
-    predicateSourceColumn?: unknown
+    sqlInclude?: string[]
+    predicateRequiresPrimaryKey?: boolean
+    predicateSourceColumn?: string
   } = {},
-) {
+): DeclaredConfig {
   const generatedTables = options.generatedTables ?? ['legacy_generated']
   const predicateTables = options.predicateTables ?? ['legacy_generated']
   return {
@@ -65,7 +66,7 @@ function configFixture(
   }
 }
 
-async function createConfigRoot(config: ReturnType<typeof configFixture>): Promise<string> {
+async function createConfigRoot(config: DeclaredConfig): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), 'generated-column-policy-'))
   roots.push(root)
   await writeFile(join(root, '.no-mistakes.yml'), JSON.stringify(config))
@@ -94,7 +95,8 @@ describe('extraGeneratedColumns freshness policy', () => {
   })
 
   it('accepts matching tracked migration and generated-column config fixtures', async () => {
-    const root = await createConfigRoot(configFixture())
+    const config = configFixture()
+    const root = await createConfigRoot(config)
     const schema = schemaFixture()
     expect([...findGeneratedCreatedAtTables(schema)]).toEqual([
       'legacy_generated',
@@ -106,6 +108,7 @@ describe('extraGeneratedColumns freshness policy', () => {
         ['.no-mistakes.yml', 'backend/data-stores/psql/migrations/001-example.sql'],
         schema,
         new Set(['migrated_generated']),
+        config,
       ),
     ).toEqual([])
   })
@@ -114,10 +117,22 @@ describe('extraGeneratedColumns freshness policy', () => {
     const root = await mkdtemp(join(tmpdir(), 'generated-column-partial-root-'))
     try {
       expect(
-        await checkExtraGeneratedColumnsFreshness(root, [], schemaFixture(), new Set()),
+        await checkExtraGeneratedColumnsFreshness(
+          root,
+          [],
+          schemaFixture(),
+          new Set(),
+          configFixture(),
+        ),
       ).toEqual([])
       await expect(
-        checkExtraGeneratedColumnsFreshness(root, ['.no-mistakes.yml'], schemaFixture(), new Set()),
+        checkExtraGeneratedColumnsFreshness(
+          root,
+          ['.no-mistakes.yml'],
+          schemaFixture(),
+          new Set(),
+          configFixture(),
+        ),
       ).rejects.toMatchObject({ code: 'ENOENT' })
     } finally {
       await rm(root, { force: true, recursive: true })
@@ -125,14 +140,14 @@ describe('extraGeneratedColumns freshness policy', () => {
   })
 
   it('reports missing and stale generated-column entries across both policy rules', async () => {
-    const root = await createConfigRoot(
-      configFixture({ generatedTables: ['stale_table'], predicateTables: [] }),
-    )
+    const config = configFixture({ generatedTables: ['stale_table'], predicateTables: [] })
+    const root = await createConfigRoot(config)
     const errors = await checkExtraGeneratedColumnsFreshness(
       root,
       ['.no-mistakes.yml'],
       schemaFixture(),
       new Set(['migrated_generated']),
+      config,
     )
     expect(errors).toEqual([
       expect.stringContaining('missing generated created_at table entry: legacy_generated'),
@@ -143,19 +158,19 @@ describe('extraGeneratedColumns freshness policy', () => {
   })
 
   it('rejects a changed SQL include, tracked placeholder, and incomplete predicate inventory', async () => {
-    const root = await createConfigRoot(
-      configFixture({
-        predicateRuleCount: 1,
-        sqlInclude: ['backend/data-stores/psql/migrations/*.sql'],
-        predicateRequiresPrimaryKey: true,
-        predicateSourceColumn: 'wrong',
-      }),
-    )
+    const config = configFixture({
+      predicateRuleCount: 1,
+      sqlInclude: ['backend/data-stores/psql/migrations/*.sql'],
+      predicateRequiresPrimaryKey: true,
+      predicateSourceColumn: 'wrong',
+    })
+    const root = await createConfigRoot(config)
     const errors = await checkExtraGeneratedColumnsFreshness(
       root,
       ['.no-mistakes.yml', trackedPlaceholder],
       schemaFixture(),
       new Set(['migrated_generated']),
+      config,
     )
     expect(errors).toEqual([
       expect.stringContaining('sqlInclude must target'),

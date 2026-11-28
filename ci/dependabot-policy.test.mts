@@ -38,6 +38,7 @@ function readDependabotUpdates(): Update[] {
   return (readYamlFile('.github/dependabot.yml') as { updates?: Update[] }).updates ?? []
 }
 
+// no-mistakes-disable-next-line forbidden-calls: asserts the live release-age policy matches dependabot.yml and pnpm-workspace.yaml, a cross-file invariant a fixture config cannot exercise.
 const noMistakesConfig = (await resolveConfig({ root: repoRoot, view: 'declared' })) as {
   rules?: NoMistakesRule[]
 }

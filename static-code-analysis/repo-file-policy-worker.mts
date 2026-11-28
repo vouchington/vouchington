@@ -1,5 +1,7 @@
 import { type MessagePort, parentPort, workerData } from 'node:worker_threads'
 
+import { resolveConfig } from 'no-mistakes'
+
 import { checkRepoFilePolicy } from './repo-file-policy/index.mts'
 import {
   buildContextFromTrackedFiles,
@@ -60,7 +62,9 @@ async function run(): Promise<void> {
           trackedFiles: [],
           trackedFileSet: new Set(),
         }
-    const report = await checkRepoFilePolicy(ctx)
+    const report = await checkRepoFilePolicy(ctx, {
+      declaredConfig: await resolveConfig({ root: ctx.repoRoot, view: 'declared' }),
+    })
     send({
       errors: report.errors,
       type: 'result',

@@ -689,6 +689,7 @@
       - moduleExport: { module: no-mistakes, export: dependencies }
       - moduleExport: { module: no-mistakes, export: importUsages }
       - moduleExport: { module: no-mistakes, export: resolveCheck }
+      - moduleExport: { module: no-mistakes, export: resolveConfig }
       - moduleExport: { module: no-mistakes, export: symbols }
       - moduleExport: { module: no-mistakes, export: testsPlan }
       - moduleExport: { module: no-mistakes, export: validateMermaidMarkdown }
