@@ -28,9 +28,15 @@ export function appendTopicSearchSelect(
     query.append(sql` AS ranking_score`)
   }
 
-  query.append(sql`
+  query.append(
+    state.hasSemanticSignal
+      ? sql`
+    FROM semantic_nearest t
+  `
+      : sql`
     FROM topics t
-  `)
+  `,
+  )
 }
 
 export function appendTopicSearchJoins(
@@ -66,20 +72,24 @@ export function appendTopicSearchJoins(
 }
 
 function appendTopicSearchEmbeddingJoins(query: SQLStatement, state: TopicSearchState) {
-  if (state.hasSemanticSearch) {
-    query.append(sql`
+  for (const cte of state.secondarySemanticCtes) {
+    switch (cte) {
+      case 'semantic_search_embedding':
+        query.append(sql`
     CROSS JOIN semantic_search_embedding`)
-  }
-  if (state.hasSimilarPostSearch) {
-    query.append(sql`
+        break
+      case 'similar_post_embedding':
+        query.append(sql`
     CROSS JOIN similar_post_embedding`)
-  }
-  if (state.hasSimilarTopicSearch) {
-    query.append(sql`
+        break
+      case 'similar_topic_embedding':
+        query.append(sql`
     CROSS JOIN similar_topic_embedding`)
-  }
-  if (state.hasSimilarRssFeedItemSearch) {
-    query.append(sql`
+        break
+      case 'similar_rss_feed_item_embedding':
+        query.append(sql`
     CROSS JOIN similar_rss_feed_item_embedding`)
+        break
+    }
   }
 }
