@@ -58,7 +58,7 @@ export async function selectStaffEvidence(noticeIds: readonly string[], query: T
         artifact.byte_size, artifact.sha256
       FROM copyright_notice_evidence_artifacts artifact
       WHERE artifact.copyright_notice_id = ANY(${noticeIds}::uuid[])
-      ORDER BY artifact.id ASC
+      ORDER BY artifact.copyright_notice_id, artifact.id
     `,
     { client: query.client, batchSize: getCopyrightSweepLimits().batchSize },
   )) {
