@@ -36,7 +36,7 @@ export const searchTopicAliases = async ({
     filters.push(`topic_aliases.alias COLLATE "C" >= LOWER(${rawPrefixParam}) COLLATE "C"`)
     if (hasUpperBound) {
       filters.push(
-        `topic_aliases.alias COLLATE "C" < (left(rtrim(LOWER(${rawPrefixParam}), chr(1114111)), -1) || chr(CASE WHEN ascii(right(rtrim(LOWER(${rawPrefixParam}), chr(1114111)), 1)) = 55295 THEN 57344 ELSE ascii(right(rtrim(LOWER(${rawPrefixParam}), chr(1114111)), 1)) + 1 END)) COLLATE "C"`,
+        `topic_aliases.alias COLLATE "C" < (SELECT left(t, -1) || chr(CASE WHEN ascii(right(t, 1)) = 55295 THEN 57344 ELSE ascii(right(t, 1)) + 1 END) FROM (VALUES (rtrim(LOWER(${rawPrefixParam}), chr(1114111)))) AS b(t)) COLLATE "C"`,
       )
     }
     filters.push(`topic_aliases.alias LIKE LOWER(${escapedPrefixParam}) || '%' ESCAPE '\\'`)

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { read } from '@data-stores/psql'
 import { searchTopicAliases } from './search-topic-aliases.mts'
 import { createTestUser, createTestTopic } from '@voucha/test-helpers'
 import { createTopicAliases } from './aliases.mts'
@@ -89,8 +90,12 @@ describe('searchTopicAliases - merged topic filter', () => {
   it('folds uppercase non-ASCII prefixes in PostgreSQL LOWER()', async () => {
     const topic = await createTestTopic()
     const id = crypto.randomUUID()
+    const { rows } = await read<{ lowered: string }>(
+      `/* searchTopicAliasesTest lowerDottedI */ SELECT LOWER('İ') AS lowered`,
+    )
+    const pgLoweredDottedI = rows[0]!.lowered
     const accented = `éclair-${id}`
-    const dottedI = `istanbul-${id}`
+    const dottedI = `${pgLoweredDottedI}stanbul-${id}`
     await createTopicAliases(topic.id, [accented, dottedI, `eclair-${id}`])
 
     const { results: accentedResults } = await searchTopicAliases({
@@ -98,11 +103,55 @@ describe('searchTopicAliases - merged topic filter', () => {
     })
     expect(accentedResults.map(result => result.alias)).toEqual([accented])
 
-    // In PostgreSQL en_US.UTF-8, LOWER('İ') is 'i' (matching ILIKE), whereas JS 'İ'.toLowerCase() is 'i\u0307'.
     const { results: dottedIResults } = await searchTopicAliases({
       prefixQuery: `İSTANBUL-${id.toUpperCase()}`,
     })
     expect(dottedIResults.map(result => result.alias)).toEqual([dottedI])
+  })
+
+  it('handles upper-bound edge prefixes (non-ASCII, U+D7FF, trailing U+10FFFF, all U+10FFFF)', async () => {
+    const topic = await createTestTopic()
+    const id = crypto.randomUUID()
+    const nonAsciiPrefix = `edge-${id}-é`
+    const nonAsciiMatch = `${nonAsciiPrefix}clair`
+    const nonAsciiNeighbour = `edge-${id}-êclair`
+
+    const d7ffPrefix = `edge-${id}-\uD7FF`
+    const d7ffMatch = `${d7ffPrefix}match`
+    const d7ffNeighbour = `edge-${id}-\uE000match`
+
+    const trailingMaxPrefix = `edge-${id}-a\u{10FFFF}`
+    const trailingMaxMatch = `${trailingMaxPrefix}match`
+    const trailingMaxPrev = `edge-${id}-a\u{10FFFE}match`
+    const trailingMaxNext = `edge-${id}-bmatch`
+
+    const allMaxPrefix = '\u{10FFFF}\u{10FFFF}'
+    const allMaxMatch = `${allMaxPrefix}${id}`
+    const allMaxNeighbour = `\u{10FFFF}${id}`
+
+    await createTopicAliases(topic.id, [
+      nonAsciiMatch,
+      nonAsciiNeighbour,
+      d7ffMatch,
+      d7ffNeighbour,
+      trailingMaxMatch,
+      trailingMaxPrev,
+      trailingMaxNext,
+      allMaxMatch,
+      allMaxNeighbour,
+    ])
+
+    const nonAscii = await searchTopicAliases({ prefixQuery: nonAsciiPrefix })
+    expect(nonAscii.results.map(r => r.alias)).toEqual([nonAsciiMatch])
+
+    const d7ff = await searchTopicAliases({ prefixQuery: d7ffPrefix })
+    expect(d7ff.results.map(r => r.alias)).toEqual([d7ffMatch])
+
+    const trailingMax = await searchTopicAliases({ prefixQuery: trailingMaxPrefix })
+    expect(trailingMax.results.map(r => r.alias)).toEqual([trailingMaxMatch])
+
+    const allMax = await searchTopicAliases({ topicId: topic.id, prefixQuery: allMaxPrefix })
+    expect(allMax.results.map(r => r.alias)).toEqual([allMaxMatch])
   })
 
   it('orders prefix matches by code point (COLLATE "C") across hyphens and accented letters', async () => {

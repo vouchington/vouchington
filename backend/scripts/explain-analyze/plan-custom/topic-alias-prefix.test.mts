@@ -107,12 +107,21 @@ describe('assertTopicAliasPrefixCandidates', () => {
     ).toThrow(/idx_topic_aliases__alias_c/)
   })
 
-  it('rejects missing upper bound, missing cursor bound, or a Sort node', () => {
+  it('rejects missing upper bound, non-alias bounds, missing cursor bound, or a Sort node', () => {
     expect(() =>
       assertTopicAliasPrefixCandidates(
         makeResult(
           'search-topic-aliases-selective-prefix',
           makePlan({ indexCond: '((alias)::text >= (lower($1))::text)' }),
+        ),
+      ),
+    ).toThrow(/>= and </)
+
+    expect(() =>
+      assertTopicAliasPrefixCandidates(
+        makeResult(
+          'search-topic-aliases-selective-prefix',
+          makePlan({ indexCond: '((alias >= lower($1)) AND (other_col < $2))' }),
         ),
       ),
     ).toThrow(/>= and </)

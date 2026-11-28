@@ -3,6 +3,9 @@ import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { baseRelationName } from '../plan-nodes.mts'
 
 const PREFIX_INDEX = 'idx_topic_aliases__alias_c'
+const LOWER_BOUND_PATTERN = /\b(?:topic_aliases\.)?alias\)?(?:::text)?\s*>=/
+const UPPER_BOUND_PATTERN = /\b(?:topic_aliases\.)?alias\)?(?:::text)?\s*</
+const CURSOR_BOUND_PATTERN = /\b(?:topic_aliases\.)?alias\)?(?:::text)?\s*>\s*(?!=)/
 
 const CAPS_BY_SCENARIO: Readonly<
   Record<
@@ -42,9 +45,10 @@ export function assertTopicAliasPrefixCandidates(result: ExplainResult): void {
 
   if (
     !candidateIndex ||
-    !indexCond.includes('>=') ||
-    !indexCond.includes('<') ||
-    (caps.requireCursor && !indexCond.includes('> ')) ||
+    baseRelationName(candidateIndex) !== 'topic_aliases' ||
+    !LOWER_BOUND_PATTERN.test(indexCond) ||
+    !UPPER_BOUND_PATTERN.test(indexCond) ||
+    (caps.requireCursor && !CURSOR_BOUND_PATTERN.test(indexCond)) ||
     hasSort ||
     processedRows(candidateIndex) > caps.candidateCap ||
     aliasAccesses.length === 0 ||
