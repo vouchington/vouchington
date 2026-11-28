@@ -1,3 +1,4 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { afterPostgresTransactionQueryForTest } from './injected-postgres-transactions.mts'
@@ -25,23 +26,35 @@ export async function raceConcurrentRepeatInfringerOpenReviewsForTest<Result>(
       `)
       const firstPid = pidRows[0]?.pid
       if (firstPid === undefined) throw new Error('Expected backend pid for first openReview')
-      let secondSettled = false
-      contender = second().finally(() => {
-        secondSettled = true
-      })
+      let secondOutcome: PromiseSettledResult<Result> | undefined
+      contender = second()
+      void contender
+        .then(value => {
+          secondOutcome = { status: 'fulfilled', value }
+        })
+        .catch((err: unknown) => {
+          secondOutcome = { status: 'rejected', reason: err }
+        })
       const deadline = performance.now() + 2_000
       while (performance.now() < deadline) {
-        if (secondSettled) break
+        if (secondOutcome) {
+          if (secondOutcome.status === 'rejected') throw secondOutcome.reason
+          throw new Error('Second sync completed without blocking on first openReview')
+        }
+        // Query the primary pool: pg_stat_activity on a read replica does not show primary write locks.
         const { rows } = await write<{ pid: number }>(sql`
           /* raceConcurrentRepeatInfringerOpenReviewsForTest:waitBlocked */
           SELECT waiting.pid
           FROM pg_stat_activity waiting
           WHERE waiting.wait_event_type = 'Lock'
+            AND waiting.query LIKE '%syncCopyrightRepeatInfringerIncidents:openReview%'
             AND ${firstPid} = ANY(pg_blocking_pids(waiting.pid))
           LIMIT 1
         `)
-        if (rows.length > 0) break
+        if (rows.length > 0) return
+        await delay(10)
       }
+      throw new Error('Timed out waiting for second sync to block on openReview')
     },
   )
   try {
