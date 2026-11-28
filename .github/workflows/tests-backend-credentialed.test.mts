@@ -11,6 +11,27 @@ describe('backend credentialed test workflow', () => {
 
     expect(projectFlags.length).toBeGreaterThan(0)
     for (const name of projectFlags) expect(backendCredentialedProjectNames).toContain(name)
+    // Paid providers live in tests-backend-live-providers.yml.
+    expect(workflow).not.toMatch(/OPENAI_API_KEY|OPENROUTER_API_KEY|LIGHTPANDA_TOKEN|ANTHROPIC/)
+  })
+
+  it('reports a failure without hiding the failed job', () => {
+    const steps = (
+      load(workflow) as {
+        jobs: Record<
+          string,
+          { steps: Array<{ name?: string; if?: string } & Record<string, unknown>> }
+        >
+      }
+    ).jobs['backend-credentialed-tests']!.steps
+    const report = steps.find(step => step.name === 'Report non-gating smoke check failure')
+    const run = steps.find(step => step.name === 'Run backend credentialed tests')
+
+    // Without a status function the condition adds an implicit `success()` and never runs on failure.
+    expect(report?.if).toMatch(/^\$\{\{ failure\(\) && \(/)
+    // The test step stays a hard failure: a red job keeps the Nightly alert and the check visible.
+    expect(run).toBeDefined()
+    expect(run).not.toHaveProperty('continue-on-error')
   })
 
   it('retains a best-effort JUnit report after the run', () => {

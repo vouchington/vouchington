@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 type Step = {
   'continue-on-error'?: boolean
+  if?: string
   name?: string
   run?: string
 }
@@ -50,6 +51,10 @@ describe('web image workflow', () => {
     expect(scan).toBeDefined()
     expect(guard?.['continue-on-error']).toBeUndefined()
     expect(scan?.['continue-on-error']).toBeUndefined()
+    // Exact expression: `||` instead of `&&` would run the guard when Install Trivy was skipped.
+    expect(guard?.if).toBe("${{ !cancelled() && steps.install-trivy.outcome != 'skipped' }}")
+    // Without a findings exit code Trivy exits 0 on findings, and the re-raise below re-raises 0.
+    expect(scan?.run).toContain('--exit-code "$TRIVY_FINDINGS_EXIT_CODE"')
     // The captured exit code must actually be re-raised, not just logged.
     expect(scan?.run).toContain('exit "$trivy_exit"')
   })

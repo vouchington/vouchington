@@ -1,5 +1,6 @@
 import { mergeConfig } from 'vitest/config'
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import config from '../vitest.config.mts'
 import { backendCoreProjects } from '../test-helpers/vitest-config/backend-core-projects.mts'
 import { backendDataProjects } from '../test-helpers/vitest-config/backend-data-projects.mts'
@@ -46,6 +47,34 @@ describe('backend Vitest project config', () => {
         setupFiles.indexOf('./test-helpers/vitest.setup.request-query-timing.mts'),
       ).toBeLessThan(setupFiles.indexOf('./test-helpers/vitest.setup.shared-db-scope-guard.mts'))
     }
+  })
+
+  it('registers the GlideMQ attachment guard runner only for backend-data-stores', () => {
+    const runner = './test-helpers/vitest.runner.backend-data-guards.mts'
+    const projects = config.test?.projects as BackendProject[] | undefined
+    const owners = projects?.filter(project => project.test?.runner === runner) ?? []
+    expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
+  })
+
+  it('raises the Valkey request budget before DB-backed setup creates clients', () => {
+    const setupSource = readFileSync('test-helpers/vitest.setup.data-stores.mts', 'utf8')
+    const timeoutAssignment = setupSource.indexOf(
+      "process.env.VALKEY_REQUEST_TIMEOUT_MS ??= '5000'",
+    )
+    const setupFunction = setupSource.indexOf('export async function setup()')
+
+    expect(timeoutAssignment).toBeGreaterThan(-1)
+    expect(timeoutAssignment).toBeLessThan(setupFunction)
+  })
+
+  it('forces the local analytics backend over an inherited value', () => {
+    const setupSource = readFileSync(
+      'backend/test-helpers/vitest.setup.analytics-local-env.mts',
+      'utf8',
+    )
+    // An inherited ANALYTICS_BACKEND must not route test writes to a real backend.
+    expect(setupSource).toContain("process.env.ANALYTICS_BACKEND = 'local'")
+    expect(setupSource).not.toContain('process.env.ANALYTICS_BACKEND ??=')
   })
 
   it('keeps every fork-leak project backed by data-store global setup', () => {
