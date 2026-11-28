@@ -69,8 +69,10 @@ export async function getVisiblePostCollectionRows(
     query.append(sql` AND candidate_post.post_type <> 'comment'`)
   }
   if (filters.after) appendPrivatePostCollectionCursorBoundary(query, filters.after)
+  // Cost the lookahead limit as an opaque scalar in either plan mode so custom plans keep the
+  // ordered subject-keyset index walk even when target visibility selectivity is underestimated.
   appendPrivatePostCollectionOrder(query).append(sql`
-    LIMIT ${rawLimit}`)
+    LIMIT (SELECT ${rawLimit}::bigint)`)
 
   const { rows } = await read<{ entity_id: string; created_us: string }>(query, options)
   const { window, hasMore } = sliceRawKeysetPage(

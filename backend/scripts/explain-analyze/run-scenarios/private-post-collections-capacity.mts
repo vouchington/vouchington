@@ -33,14 +33,17 @@ export async function runPrivatePostCollectionsCapacityScenarios(): Promise<void
       const relation = POST_LIST_TABLES[type]
       const scope = `user-posts:${viewer.id}:${type}:${PRIVATE_POST_COLLECTION_CURSOR_ORDER_SCOPE}`
       const terminalSize = expectedPosts.length - PAGE_SIZE * 2
-      // The subscribed custom plan can scan the full relation before sorting. See #6591.
-      const membershipRows =
-        type === 'subscribed'
-          ? [corpus.subscriptions, corpus.subscriptions, terminalSize]
-          : [type === 'hidden' ? 127 : 126, 101, terminalSize]
+      const membershipRows = [type === 'hidden' ? 127 : 126, 101, terminalSize]
       registerScenarioContract(scenario, {
+        forbidSequentialScans: [relation],
         expectations: [
           { kind: 'queryBinds', token: 'LIMIT', queryContains: PAGE_QUERY },
+          {
+            kind: 'usesIndexes',
+            indexes: [`idx_${relation}__subject__newest`],
+            queryContains: PAGE_QUERY,
+            noSort: true,
+          },
           ...membershipRows.map((max, pageIndex) => ({
             kind: 'maxProcessedRows' as const,
             relation,
