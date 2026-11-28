@@ -39,7 +39,7 @@
     "vouchington-tooling": "^3.11.0"
   },
   "devDependencies": {
-    "no-mistakes": "^0.109.123",
+    "no-mistakes": "^0.109.124",
     "oxfmt": "^0.79.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   }
