@@ -108,7 +108,7 @@ rule:
                   regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
                 - kind: template_string
                   regex: '^`\s*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
-    # Raw SQL statement passed as first argument to any non-assertion call, awaited or not (catches TransactionQuery variables like setup/blocker/cleanup and Promise.all([...]))
+    # Raw SQL statement (uppercase SQL keywords) passed as first argument to any non-assertion call, awaited or not (catches TransactionQuery variables like setup/blocker/cleanup and Promise.all([...]) without flagging sentence-case Playwright UI text)
     - all:
         - kind: call_expression
         - not:
@@ -121,9 +121,9 @@ rule:
               nthChild: 1
               any:
                 - kind: string
-                  regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[a-z_][a-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[a-z_][a-z0-9_."]*(?:\s*\(|(?:\s*,\s*[a-z_][a-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[a-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[a-z_][a-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[a-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[a-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[a-z_]|WITH\s+(?:RECURSIVE\s+)?[a-z_][a-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$))'
+                  regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
                 - kind: template_string
-                  regex: '^`\s*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[a-z_][a-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[a-z_][a-z0-9_."]*(?:\s*\(|(?:\s*,\s*[a-z_][a-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[a-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[a-z_][a-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[a-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[a-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[a-z_]|WITH\s+(?:RECURSIVE\s+)?[a-z_][a-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$))'
+                  regex: '^`\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
 examples:
   - code: "import { read } from '@data-stores/psql'"
     isValid: false
@@ -245,6 +245,12 @@ examples:
   - code: "await holder('SELECT id, name FROM users')"
     isValid: false
     file: 'backend/services/auth/auth.test.mts'
+  - code: "await holder('UPDATE users SET x = 1')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await holder('DELETE FROM t')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
   - code: "await Promise.all([q('INSERT INTO users (id) VALUES ($1)', [id])])"
     isValid: false
     file: 'backend/services/auth/auth.test.mts'
@@ -288,6 +294,36 @@ examples:
     isValid: true
     file: 'playwright/tests/profile/settings.spec.mts'
   - code: "x.fill('Select all, then')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Select all from the list')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Select all (3)')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Lock account')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Truncate text')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Create table')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Drop table here')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Insert into cart')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Delete from list')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Explain select')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "x.fill('Set up to date')"
     isValid: true
     file: 'playwright/tests/profile/settings.spec.mts'
   - code: "await findFirstGeneratedDdlViolation('CREATE TABLE vote_edges (id UUID);')"
