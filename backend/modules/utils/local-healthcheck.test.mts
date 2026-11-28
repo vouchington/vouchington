@@ -33,7 +33,7 @@ describe('compiled API local health probe', () => {
     { response: 503, healthy: false },
     { response: 'disconnect', healthy: false },
     { response: 'never sends headers', healthy: false },
-  ])('reports $healthy for $response within the ECS deadline', async ({ response, healthy }) => {
+  ])('reports $healthy for $response within the probe deadline', async ({ response, healthy }) => {
     const paths: string[] = []
     const server = createServer((request, reply) => {
       paths.push(request.url!)
@@ -45,7 +45,7 @@ describe('compiled API local health probe', () => {
     try {
       const address = server.address()
       if (!address || typeof address === 'string') throw new Error('missing HTTP listener')
-      await expect(checkLocalHealth(address.port)).resolves.toBe(healthy)
+      await expect(checkLocalHealth(address.port, 500)).resolves.toBe(healthy)
       expect(paths).toEqual(['/infra/ping'])
     } finally {
       server.closeAllConnections()
