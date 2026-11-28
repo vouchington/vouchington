@@ -1,5 +1,5 @@
-import { getCopyrightNoticesWorkLimit } from './work-limits.mts'
-import { beginTransaction, write } from '@data-stores/psql'
+import { getCopyrightNoticesWorkLimit, getCopyrightSweepLimits } from './work-limits.mts'
+import { beginTransaction, createAsyncGeneratorFromCursor, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -133,22 +133,26 @@ export async function markCopyrightDeliveryIntentBouncedBySesMessageId(input: {
   sesMessageId: string
   recipientEmails: string[]
 }): Promise<number> {
-  const { rows } = await write<CopyrightDeliveryRecipientRecord & { intent_id: string }>(
+  const bouncedRecipients = new Set(input.recipientEmails.map(normalizeEmailAddress))
+  const intentIds: string[] = []
+  for await (const row of createAsyncGeneratorFromCursor<
+    CopyrightDeliveryRecipientRecord & { intent_id: string }
+  >(
     sql`/* markCopyrightDeliveryIntentBouncedBySesMessageId:recipients */
       SELECT intent.id AS intent_id, recipient.copyright_notice_delivery_work_item_id, recipient.email_ciphertext
       FROM copyright_notice_delivery_work_items intent
       JOIN copyright_notice_delivery_recipients recipient
         ON recipient.copyright_notice_delivery_work_item_id = intent.id
-      WHERE intent.amazon_ses_message_id = ${input.sesMessageId} AND intent.state = 'sent'`,
-  )
-  const bouncedRecipients = new Set(input.recipientEmails.map(normalizeEmailAddress))
-  const intentIds = rows.flatMap(row => {
+      WHERE intent.amazon_ses_message_id = ${input.sesMessageId} AND intent.state = 'sent'
+      ORDER BY intent.id ASC`,
+    { batchSize: getCopyrightSweepLimits().batchSize, readOnly: false },
+  )) {
     const recipient = decryptSecret(
       row.email_ciphertext,
       `copyright-delivery-recipient:${row.copyright_notice_delivery_work_item_id}`,
     )
-    return bouncedRecipients.has(normalizeEmailAddress(recipient)) ? [row.intent_id] : []
-  })
+    if (bouncedRecipients.has(normalizeEmailAddress(recipient))) intentIds.push(row.intent_id)
+  }
   if (intentIds.length === 0) return 0
   const { rowCount } = await write(sql`/* markCopyrightDeliveryIntentBouncedBySesMessageId:update */
     UPDATE copyright_notice_delivery_work_items

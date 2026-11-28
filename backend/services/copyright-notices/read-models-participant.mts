@@ -3,6 +3,10 @@ import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placem
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import {
+  selectParticipantNoticeSubmissions,
+  selectParticipantRespondableTargetIds,
+} from './bounded-reads.mts'
 import { selectCopyrightParticipantStatements } from './participant-statements.mts'
 import { getCopyrightPublicNoticeDetail } from './read-models.mts'
 import type { CopyrightParticipantNoticeDetail } from './read-models-notice-types.mts'
@@ -32,26 +36,14 @@ export async function getCopyrightParticipantNoticeDetail(
   )
   if (!detail) return null
   await using transaction = await beginTransaction()
-  const respondableTargetsSql = sql`/* getCopyrightParticipantNoticeDetail:respondableTargets */
-      SELECT DISTINCT target.id
-      FROM copyright_notice_targets target
-      CROSS JOIN LATERAL `
-  respondableTargetsSql.append(copyrightPlacementPartiesSql('respond'))
-  respondableTargetsSql.append(sql` party
-      WHERE target.copyright_notice_id = ${noticeId}
-        AND party.user_id = ${currentUser.id}
-      ORDER BY target.id`)
-  const [{ rows: submissions }, { rows: respondableTargets }] = await Promise.all([
-    transaction<CopyrightParticipantNoticeDetail['submissions'][number]>(
-      sql`/* getCopyrightParticipantNoticeDetail:submissions */
-      SELECT id, kind, received_at, source_kind
-      FROM copyright_notice_submissions
-      WHERE copyright_notice_id = ${noticeId}
-        AND (${viewerRole === 'staff'} OR submitted_by_id = ${currentUser.id})
-      ORDER BY received_at, id
-    `,
+  const [submissions, respondableTargetIds] = await Promise.all([
+    selectParticipantNoticeSubmissions(
+      noticeId,
+      currentUser.id,
+      viewerRole === 'staff',
+      transaction,
     ),
-    transaction<{ id: string }>(respondableTargetsSql),
+    selectParticipantRespondableTargetIds(noticeId, currentUser.id, transaction),
   ])
   const statements = await selectCopyrightParticipantStatements(
     noticeId,
@@ -64,8 +56,7 @@ export async function getCopyrightParticipantNoticeDetail(
     ...detail,
     statements,
     viewer_role: viewerRole,
-    respondable_target_ids:
-      detail.jurisdiction === 'us_dmca' ? respondableTargets.map(target => target.id) : [],
+    respondable_target_ids: detail.jurisdiction === 'us_dmca' ? respondableTargetIds : [],
     submissions,
   }
 }

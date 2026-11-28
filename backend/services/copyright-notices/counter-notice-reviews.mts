@@ -9,6 +9,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { copyrightSubmissionHasGuidance } from './ai-assistance-disclosure.mts'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { selectSubmissionTargetIds } from './bounded-reads.mts'
 import { createCounterNoticeForwardingInTransaction } from './counter-notice-forwarding.mts'
 import { calculateUsCounterNoticeRestorationWindow } from './deadlines.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
@@ -66,15 +67,8 @@ export async function reviewCopyrightCounterNotice(input: {
     copyright_notice_id: string
     received_at: Date
     jurisdiction: string
-    target_ids: string[]
   }>(sql`/* reviewCopyrightCounterNotice:submission */
-    SELECT submission.copyright_notice_id, submission.received_at, notice.jurisdiction,
-      ARRAY(
-        SELECT submission_target.copyright_notice_target_id
-        FROM copyright_notice_submission_targets submission_target
-        WHERE submission_target.copyright_notice_submission_id = submission.id
-        ORDER BY submission_target.copyright_notice_target_id
-      ) AS target_ids
+    SELECT submission.copyright_notice_id, submission.received_at, notice.jurisdiction
     FROM copyright_notice_submissions submission
     JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
     WHERE submission.id = ${input.submissionId} AND submission.kind = 'counter_notice'
@@ -83,6 +77,9 @@ export async function reviewCopyrightCounterNotice(input: {
   const submission = submissionRows[0]
   assert(submission, 404, 'Copyright counter-notice not found')
   assert(submission.jurisdiction === 'us_dmca', 422, 'Only US DMCA counter-notices are supported')
+  const targetIds = input.is_accepted
+    ? await selectSubmissionTargetIds(transaction, input.submissionId)
+    : []
   const reviewedAt = new Date()
   const aiAssisted = await copyrightSubmissionHasGuidance(input.submissionId, transaction)
   const { rows: identityRows } = await transaction<{ id: string }>(sql`
@@ -113,7 +110,7 @@ export async function reviewCopyrightCounterNotice(input: {
     await transaction(sql`/* reviewCopyrightCounterNotice:targets */
       INSERT INTO copyright_notice_counter_notice_assessment_targets (
         copyright_notice_submission_assessment_identity_id, copyright_notice_target_id
-      ) SELECT ${assessment.id}, unnest(${submission.target_ids}::uuid[])
+      ) SELECT ${assessment.id}, unnest(${targetIds}::uuid[])
     `)
     const window = calculateUsCounterNoticeRestorationWindow(submission.received_at)
     const { rows } = await transaction<{

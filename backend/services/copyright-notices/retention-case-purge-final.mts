@@ -1,5 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { drainBatchedWrite } from './bounded-reads.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 
 /** Fixed replay anchors then root, with each table scoped in this transaction. */
 export const COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER = [
@@ -55,8 +57,13 @@ export async function deleteCopyrightCaseFinalTail(
     SELECT set_config('app.copyright_case_purge_table', ${COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER[4]}, true)`)
   await query(sql`/* deleteCopyrightCaseFinalSubmission */
     DELETE FROM copyright_notice_submissions
-    WHERE copyright_notice_id = ${noticeId}::uuid
-      AND kind = 'notice' AND source_kind <> 'staff'`)
+    WHERE id IN (
+      SELECT id FROM copyright_notice_submissions
+      WHERE copyright_notice_id = ${noticeId}::uuid
+        AND kind = 'notice' AND source_kind <> 'staff'
+      ORDER BY id ASC
+      LIMIT 1
+    )`)
 
   // The final result remains on the case through every earlier page. Null the
   // current FK only inside the same transaction that removes its case root.
@@ -76,9 +83,17 @@ export async function deleteCopyrightCaseFinalTail(
 
   await query(sql`/* scopeCopyrightCaseFinalDecisionIdentity */
     SELECT set_config('app.copyright_case_purge_table', ${COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER[5]}, true)`)
-  await query(sql`/* deleteCopyrightCaseFinalDecisionIdentity */
-    DELETE FROM copyright_territorial_decision_identities
-    WHERE copyright_notice_id = ${noticeId}::uuid`)
+  await drainBatchedWrite(getCopyrightSweepLimits().batchSize, async limit => {
+    const { rowCount } = await query(sql`/* deleteCopyrightCaseFinalDecisionIdentity */
+      DELETE FROM copyright_territorial_decision_identities
+      WHERE id IN (
+        SELECT id FROM copyright_territorial_decision_identities
+        WHERE copyright_notice_id = ${noticeId}::uuid
+        ORDER BY id ASC
+        LIMIT ${limit}
+      )`)
+    return rowCount ?? 0
+  })
 
   await query(sql`/* scopeCopyrightCaseFinalNotice */
     SELECT set_config('app.copyright_case_purge_table', ${COPYRIGHT_CASE_FINAL_TAIL_DELETE_ORDER[6]}, true)`)

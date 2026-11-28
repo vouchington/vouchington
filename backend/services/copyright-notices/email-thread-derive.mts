@@ -1,5 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { collectKeysetPages } from './bounded-reads.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 import {
   copyrightEmailMessageIdIsAmbiguous,
   recordCopyrightEmailAncestorEdges,
@@ -46,14 +48,25 @@ async function deriveCopyrightEmailThreadInTransaction(
     await transaction.commit()
     return null
   }
-  const { rows: currentTokens } = await transaction<{ id: string; lookup_digest: string }>(sql`
-    /* recordCopyrightEmailThreadReferences:currentTokens */
-    SELECT DISTINCT token.id, token.lookup_digest
-    FROM copyright_notice_email_thread_references reference
-    JOIN copyright_notice_email_thread_tokens token ON token.id = reference.token_id
-    WHERE reference.copyright_notice_email_intake_id = ${input.intakeId}
-      AND token.lookup_digest = ANY(${referenceRows.map(row => row.lookup_digest)}::text[])
-  `)
+  const lookupDigests = referenceRows.map(row => row.lookup_digest)
+  const currentTokens = await collectKeysetPages<{ id: string; lookup_digest: string }>(
+    getCopyrightSweepLimits().batchSize,
+    async (after, limit) => {
+      const afterTokenId = after?.id ?? null
+      const { rows } = await transaction<{ id: string; lookup_digest: string }>(sql`
+        /* recordCopyrightEmailThreadReferences:currentTokens */
+        SELECT DISTINCT token.id, token.lookup_digest
+        FROM copyright_notice_email_thread_references reference
+        JOIN copyright_notice_email_thread_tokens token ON token.id = reference.token_id
+        WHERE reference.copyright_notice_email_intake_id = ${input.intakeId}
+          AND token.lookup_digest = ANY(${lookupDigests}::text[])
+          AND (${afterTokenId}::uuid IS NULL OR token.id > ${afterTokenId}::uuid)
+        ORDER BY token.id ASC
+        LIMIT ${limit}
+      `)
+      return rows
+    },
+  )
   const tokenIds = new Map(currentTokens.map(row => [row.lookup_digest, row.id]))
   const ambiguous = await copyrightEmailMessageIdIsAmbiguous(transaction, input.intakeId)
   if (ambiguous) {

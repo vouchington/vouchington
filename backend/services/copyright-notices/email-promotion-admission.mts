@@ -71,6 +71,7 @@ export async function admitCopyrightEmailIntake(input: PromoteCopyrightEmailInta
         AND submission.kind = 'notice' AND submission.source_kind <> 'staff'
       LEFT JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
       WHERE receipt.id = ${intake.id} AND receipt.review_decision IS NOT NULL
+      LIMIT 1
     `,
   )
   const prior = priorPromotions[0]

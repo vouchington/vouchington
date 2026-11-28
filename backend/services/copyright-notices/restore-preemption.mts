@@ -1,5 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { drainBatchedWrite } from './bounded-reads.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 
 const PREEMPTED_MESSAGE = 'A court or CCB filing or legal hold preempted this restoration.'
 
@@ -17,21 +19,28 @@ export async function preemptCopyrightRestorations(
   query: TransactionQuery,
   targetIds: readonly string[] | null = null,
 ): Promise<string[]> {
-  const { rows } = await query<{ id: string }>(sql`/* preemptCopyrightRestorations */
-    UPDATE copyright_notice_action_work_items work
-    SET completed_at = clock_timestamp(), completed_at_reason = 'blocked',
-      failure_message = ${PREEMPTED_MESSAGE}
-    WHERE work.action = 'restore' AND work.state IN ('pending', 'claimed')
-      AND work.id IN (
-      SELECT candidate.id
-      FROM copyright_notice_action_work_items candidate
-      JOIN copyright_restrictions restriction ON restriction.id = candidate.copyright_restriction_id
-      WHERE candidate.copyright_notice_id = ${noticeId}
-        AND (${targetIds}::uuid[] IS NULL
-          OR restriction.copyright_notice_target_id = ANY(${targetIds}::uuid[]))
-        AND candidate.action = 'restore' AND candidate.state IN ('pending', 'claimed')
-    )
-    RETURNING work.id
-  `)
-  return rows.map(row => row.id)
+  const preemptedIds: string[] = []
+  await drainBatchedWrite(getCopyrightSweepLimits().batchSize, async limit => {
+    const { rows } = await query<{ id: string }>(sql`/* preemptCopyrightRestorations */
+      UPDATE copyright_notice_action_work_items work
+      SET completed_at = clock_timestamp(), completed_at_reason = 'blocked',
+        failure_message = ${PREEMPTED_MESSAGE}
+      WHERE work.action = 'restore' AND work.state IN ('pending', 'claimed')
+        AND work.id IN (
+          SELECT candidate.id
+          FROM copyright_notice_action_work_items candidate
+          JOIN copyright_restrictions restriction ON restriction.id = candidate.copyright_restriction_id
+          WHERE candidate.copyright_notice_id = ${noticeId}
+            AND (${targetIds}::uuid[] IS NULL
+              OR restriction.copyright_notice_target_id = ANY(${targetIds}::uuid[]))
+            AND candidate.action = 'restore' AND candidate.state IN ('pending', 'claimed')
+          ORDER BY candidate.id ASC
+          LIMIT ${limit}
+        )
+      RETURNING work.id
+    `)
+    for (const row of rows) preemptedIds.push(row.id)
+    return rows.length
+  })
+  return preemptedIds
 }

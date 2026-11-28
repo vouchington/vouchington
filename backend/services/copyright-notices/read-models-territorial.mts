@@ -2,7 +2,10 @@ import { beginTransaction } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
-import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
+import {
+  selectParticipantNoticeSubmissions,
+  selectParticipantRespondableTargetIds,
+} from './bounded-reads.mts'
 import { selectCopyrightParticipantStatements } from './participant-statements.mts'
 import type {
   CopyrightParticipantNoticeDetail,
@@ -11,8 +14,6 @@ import type {
 import { getTerritorialInformedWindow } from './territorial-informed-at.mts'
 import { selectEuParticipantSettlements } from './read-models-eu-settlements.mts'
 import { territorialLabels } from './territorial-labels.mts'
-
-type SubmissionRow = CopyrightParticipantNoticeDetail['submissions'][number]
 
 /** EU participants can read a received case before staff accepts or declines it. */
 export async function getEuParticipantNoticeDetail(
@@ -52,14 +53,13 @@ export async function getEuParticipantNoticeDetail(
     WHERE notice.id = ${noticeId} AND notice.jurisdiction = 'eu_dsa'
       AND notice.current_territorial_decision_identity_id IS NOT NULL`)
   const decision = decisions[0]
-  const targetSql = sql`/* getEuParticipantNoticeDetail:respondableTargets */
-    SELECT DISTINCT target.id FROM copyright_notice_targets target CROSS JOIN LATERAL `
-  targetSql.append(copyrightPlacementPartiesSql('respond'))
-  targetSql.append(sql` party WHERE target.copyright_notice_id = ${noticeId}
-    AND party.user_id = ${currentUser.id} ORDER BY target.id`)
-  const { rows: targets } = await transaction<{ id: string }>(targetSql)
+  const respondableTargetIds = await selectParticipantRespondableTargetIds(
+    noticeId,
+    currentUser.id,
+    transaction,
+  )
   const notifier = notice.claimant_user_id === currentUser.id
-  const poster = targets.length > 0
+  const poster = respondableTargetIds.length > 0
   const informed =
     decision && (notifier || poster)
       ? await getTerritorialInformedWindow(
@@ -130,13 +130,13 @@ export async function getEuParticipantNoticeDetail(
     viewerRole === 'staff',
     transaction,
   )
-  const [{ rows: submissions }, statements] = await Promise.all([
-    transaction<SubmissionRow>(sql`/* getEuParticipantNoticeDetail:submissions */
-      SELECT id, kind, received_at, source_kind FROM copyright_notice_submissions
-      WHERE copyright_notice_id = ${noticeId}
-        AND (${viewerRole === 'staff'} OR submitted_by_id = ${currentUser.id})
-      ORDER BY received_at, id
-    `),
+  const [submissions, statements] = await Promise.all([
+    selectParticipantNoticeSubmissions(
+      noticeId,
+      currentUser.id,
+      viewerRole === 'staff',
+      transaction,
+    ),
     selectCopyrightParticipantStatements(noticeId, currentUser.id, viewerRole, transaction),
   ])
   await transaction.commit()

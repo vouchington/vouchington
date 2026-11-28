@@ -101,6 +101,8 @@ export async function createEligibleCopyrightRestoreIntent(input: {
         AND h.commenced_at IS NOT NULL
         AND h.received_by_designated_agent_at IS NOT NULL
         AND h.received_by_designated_agent_at <= ${input.now}
+      ORDER BY h.id ASC
+      LIMIT 1
       FOR UPDATE OF h
     `)
   // Each case becomes independently eligible. The delivery worker lifts this case's restriction

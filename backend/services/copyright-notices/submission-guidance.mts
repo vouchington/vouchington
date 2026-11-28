@@ -5,6 +5,7 @@ import type {
   CopyrightCounterNoticeGuidance,
   CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
+import { selectNoticeTargetUrls } from './bounded-reads.mts'
 import { completeCopyrightSubmissionGuidanceRun } from './submission-guidance-runs.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { stripPersonalDetails } from './contact-redaction.mts'
@@ -74,17 +75,12 @@ async function readGuidanceSource(submissionId: string): Promise<GuidanceSource 
   )
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null
   const fields = body as Record<string, unknown>
-  const targetIds = row.kind === 'counter_notice' ? fields.targetIds : null
-  if (row.kind === 'counter_notice' && !isTargetIds(targetIds)) return null
-  const { rows: targets } = await read<{ hosted_use_url: string }>(sql`
-    /* getCopyrightSubmissionGuidanceSource:targets */
-    SELECT target.hosted_use_url
-    FROM copyright_notice_targets target
-    WHERE target.copyright_notice_id = ${row.copyright_notice_id}
-      AND (${row.kind} <> 'counter_notice' OR target.id = ANY(${targetIds}::uuid[]))
-    ORDER BY target.id
-  `)
-  const targetUrls = targets.map(target => target.hosted_use_url)
+  let targetIds: string[] | null = null
+  if (row.kind === 'counter_notice') {
+    if (!isTargetIds(fields.targetIds)) return null
+    targetIds = fields.targetIds
+  }
+  const targetUrls = await selectNoticeTargetUrls(read, row.copyright_notice_id, targetIds)
   if (row.kind === 'court_or_ccb_hold') {
     if (typeof fields.summary !== 'string' || !fields.summary.trim()) return null
     return {

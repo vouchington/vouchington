@@ -1,3 +1,4 @@
+import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret } from '@modules/token-secrets'
@@ -5,11 +6,12 @@ import sql from 'sql-template-strings'
 import { parseCopyrightFormGuidance } from './form-screening-guidance.mts'
 import { groupByNotice } from './read-models-staff-group.mts'
 import type { CopyrightStaffCase } from './read-models-staff-types.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 
 export async function selectStaffTargets(noticeIds: readonly string[], query: TransactionQuery) {
-  const { rows } = await query<
-    CopyrightStaffCase['targets'][number] & { copyright_notice_id: string }
-  >(
+  type StaffTargetRow = CopyrightStaffCase['targets'][number] & { copyright_notice_id: string }
+  const rows: StaffTargetRow[] = []
+  for await (const row of createAsyncGeneratorFromCursor<StaffTargetRow>(
     sql`/* getPendingCopyrightStaffCase:targets */
       SELECT target.copyright_notice_id, target.id,
         concat('image-placement:', target.placement_id) AS placement_key,
@@ -29,26 +31,39 @@ export async function selectStaffTargets(noticeIds: readonly string[], query: Tr
         WHERE recorded.placement_id = target.placement_id
           AND recorded.placement_revision = target.surface_activation_revision
       ) activation ON true
-      WHERE target.copyright_notice_id = ANY(${noticeIds}::uuid[]) ORDER BY target.id
+      WHERE target.copyright_notice_id = ANY(${noticeIds}::uuid[])
+      ORDER BY target.id ASC
     `,
-  )
+    { client: query.client, batchSize: getCopyrightSweepLimits().batchSize },
+  )) {
+    rows.push(row)
+  }
   return groupByNotice(rows)
 }
 
 export async function selectStaffEvidence(noticeIds: readonly string[], query: TransactionQuery) {
-  const { rows } = await query<{
+  type EvidenceRow = {
     copyright_notice_id: string
     id: string
     submission_id: string
     mime_type: string
     byte_size: number
     sha256: Buffer
-  }>(sql`/* getPendingCopyrightStaffCase:evidence */
-    SELECT artifact.copyright_notice_id, artifact.id, artifact.copyright_notice_submission_id AS submission_id, (SELECT mime_type FROM media_types WHERE id = artifact.media_type_id) AS mime_type, artifact.byte_size, artifact.sha256
-    FROM copyright_notice_evidence_artifacts artifact
-    WHERE artifact.copyright_notice_id = ANY(${noticeIds}::uuid[])
-    ORDER BY artifact.copyright_notice_id, artifact.id
-  `)
+  }
+  const rows: EvidenceRow[] = []
+  for await (const row of createAsyncGeneratorFromCursor<EvidenceRow>(
+    sql`/* getPendingCopyrightStaffCase:evidence */
+      SELECT artifact.copyright_notice_id, artifact.id, artifact.copyright_notice_submission_id AS submission_id,
+        (SELECT mime_type FROM media_types WHERE id = artifact.media_type_id) AS mime_type,
+        artifact.byte_size, artifact.sha256
+      FROM copyright_notice_evidence_artifacts artifact
+      WHERE artifact.copyright_notice_id = ANY(${noticeIds}::uuid[])
+      ORDER BY artifact.copyright_notice_id, artifact.id
+    `,
+    { client: query.client, batchSize: getCopyrightSweepLimits().batchSize },
+  )) {
+    rows.push(row)
+  }
   return groupByNotice(rows.map(row => ({ ...row, sha256: row.sha256.toString('hex') })))
 }
 

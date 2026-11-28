@@ -2,7 +2,9 @@ import type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
+import { collectKeysetPages } from './bounded-reads.mts'
 import { copyrightCorrespondencePurpose } from './correspondence.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 
 export type CopyrightParticipantStatement = {
   id: string
@@ -19,25 +21,36 @@ export async function selectCopyrightParticipantStatements(
   transaction: TransactionQuery,
 ): Promise<CopyrightParticipantStatement[]> {
   if (role === 'staff') return []
-  const { rows } = await transaction<{
+  type StatementRow = {
     id: string
     delivery_kind: string
     state: CopyrightDeliveryIntentRecord['state']
     sent_at: Date | null
     correspondence_id: string
     body_ciphertext: string
-  }>(sql`/* selectCopyrightParticipantStatements */
-    SELECT intent.id, intent.delivery_kind, intent.state, intent.sent_at, correspondence.id AS correspondence_id, correspondence.body_ciphertext
-    FROM copyright_notice_delivery_work_items intent
-    JOIN copyright_notice_correspondence_messages correspondence ON correspondence.id = intent.copyright_notice_correspondence_message_id
-    WHERE intent.copyright_notice_id = ${noticeId} AND intent.channel = 'email'
-      AND ((intent.recipient_role = 'poster' AND intent.recipient_user_id = ${userId}
-        AND intent.delivery_kind IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'redress_decision_notice'))
-        OR (${role === 'claimant'} AND intent.recipient_role = 'claimant'
-          AND intent.delivery_kind IN ('claimant_decision_notice', 'redress_decision_notice')
-          AND EXISTS (SELECT 1 FROM copyright_notices notice WHERE notice.id = intent.copyright_notice_id AND notice.claimant_user_id = ${userId})))
-    ORDER BY intent.id
-  `)
+  }
+  const rows = await collectKeysetPages<StatementRow>(
+    getCopyrightSweepLimits().batchSize,
+    async (after, limit) => {
+      const afterId = after?.id ?? null
+      const { rows: page } =
+        await transaction<StatementRow>(sql`/* selectCopyrightParticipantStatements */
+        SELECT intent.id, intent.delivery_kind, intent.state, intent.sent_at, correspondence.id AS correspondence_id, correspondence.body_ciphertext
+        FROM copyright_notice_delivery_work_items intent
+        JOIN copyright_notice_correspondence_messages correspondence ON correspondence.id = intent.copyright_notice_correspondence_message_id
+        WHERE intent.copyright_notice_id = ${noticeId} AND intent.channel = 'email'
+          AND (${afterId}::uuid IS NULL OR intent.id > ${afterId}::uuid)
+          AND ((intent.recipient_role = 'poster' AND intent.recipient_user_id = ${userId}
+            AND intent.delivery_kind IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice', 'redress_decision_notice'))
+            OR (${role === 'claimant'} AND intent.recipient_role = 'claimant'
+              AND intent.delivery_kind IN ('claimant_decision_notice', 'redress_decision_notice')
+              AND EXISTS (SELECT 1 FROM copyright_notices notice WHERE notice.id = intent.copyright_notice_id AND notice.claimant_user_id = ${userId})))
+        ORDER BY intent.id ASC
+        LIMIT ${limit}
+      `)
+      return page
+    },
+  )
   return rows.map(row => ({
     id: row.id,
     delivery_kind: row.delivery_kind,

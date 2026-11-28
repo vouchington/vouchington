@@ -1,5 +1,6 @@
 import { beginBoundedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { drainBatchedWrite } from './bounded-reads.mts'
 
 /** Each tick locks a raw due page before testing links, delivery and preservation. */
 export async function sweepCopyrightReceiptReviews(options: {
@@ -55,10 +56,19 @@ async function sweepReceiptReviewPage(
     SELECT set_config('app.copyright_receipt_review_retirement', 'on', true)`)
   const ids = candidates.map(candidate => candidate.id)
   // Children first, in their own statement: the hold trigger must still see the final review facts.
-  await transaction(sql`/* deleteExpiredCopyrightReceiptPreservationHolds */
-    DELETE FROM copyright_email_receipt_preservation_holds hold
-    WHERE hold.copyright_notice_email_intake_receipt_id = ANY(${ids}::uuid[])
-      AND fn_copyright_receipt_review_retirement_eligible(hold.copyright_notice_email_intake_receipt_id)`)
+  await drainBatchedWrite(batchSize, async limit => {
+    const { rowCount } = await transaction(sql`/* deleteExpiredCopyrightReceiptPreservationHolds */
+      DELETE FROM copyright_email_receipt_preservation_holds
+      WHERE copyright_notice_email_intake_receipt_id = ANY(${ids}::uuid[])
+        AND id IN (
+          SELECT hold.id
+          FROM copyright_email_receipt_preservation_holds hold
+          WHERE hold.copyright_notice_email_intake_receipt_id = ANY(${ids}::uuid[])
+            AND fn_copyright_receipt_review_retirement_eligible(hold.copyright_notice_email_intake_receipt_id)
+          LIMIT ${limit}
+        )`)
+    return rowCount ?? 0
+  })
   const { rows } = await transaction<{
     retired: boolean
   }>(sql`/* retireCopyrightReceiptReviewPage */

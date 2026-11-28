@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
+import { collectKeysetPages } from './bounded-reads.mts'
 import type {
   CopyrightPublicNotice,
   CopyrightPublicNoticeDetail,
@@ -9,6 +10,7 @@ import {
   copyrightTimelineEventTypesFor,
   type CopyrightTimelineAudience,
 } from './timeline-visibility.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 export type { CopyrightPublicNoticeDetail } from './read-models-notice-types.mts'
 
 export type CopyrightAcceptedNoticeCursorRow = CopyrightPublicNotice & {
@@ -97,6 +99,7 @@ export async function getCopyrightPublicNoticeDetail(
     LEFT JOIN view_users_public claimant ON claimant.id = notice.claimant_user_id
     WHERE notice.id = ${noticeId} AND notice.accepted_at IS NOT NULL
     GROUP BY notice.id, claimant.id, claimant.display_account, claimant.username
+    LIMIT 1
   `)
   const noticeRow = notices[0]
   if (!noticeRow) {
@@ -104,43 +107,62 @@ export async function getCopyrightPublicNoticeDetail(
     return null
   }
   const notice = toCopyrightPublicNotice(noticeRow)
-  const targetsSql = sql`/* getCopyrightPublicNotice:targets */
-      SELECT target.id, COALESCE(surface.surface_kind::text, 'post-image') AS surface,
-        CASE WHEN `
-  targetsSql.append(copyrightPlacementPublicVisibleSql())
-  targetsSql.append(sql` THEN target.hosted_use_url ELSE NULL END AS hosted_use_url,
-        CASE
-          WHEN restriction.id IS NULL THEN 'pending'
-          WHEN restriction.lifted_at IS NULL THEN 'active'
-          ELSE 'lifted'
-        END AS restriction_status
-      FROM copyright_notice_targets target
-      LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
-      LEFT JOIN LATERAL (
-        SELECT current_restriction.id, current_restriction.lifted_at
-        FROM copyright_restrictions current_restriction
-        WHERE current_restriction.copyright_notice_target_id = target.id
-        ORDER BY current_restriction.id DESC
-        LIMIT 1
-      ) restriction ON true
-      WHERE target.copyright_notice_id = ${noticeId}
-      ORDER BY target.id
-    `)
+  const pageSize = getCopyrightSweepLimits().batchSize
   const [targets, timeline] = await Promise.all([
-    transaction<CopyrightPublicNoticeDetail['targets'][number]>(targetsSql),
-    transaction<
-      CopyrightPublicNoticeDetail['timeline'][number]
-    >(sql`/* getCopyrightPublicNotice:timeline */
-      SELECT id, change_type AS event_type, created_at
-      -- no-mistakes-disable-next-line postgres-required-predicates: the full single-case timeline uses the notice/id index across every retained history partition; a UUID-age cutoff would omit retained case events
-      FROM copyright_notice_lifecycle_changes
-      WHERE copyright_notice_id = ${noticeId}
-        AND (${timelineEventTypes}::text[] IS NULL OR change_type = ANY(${timelineEventTypes}::copyright_notice_lifecycle_change_types[]))
-      ORDER BY id
-    `),
+    collectKeysetPages<CopyrightPublicNoticeDetail['targets'][number]>(
+      pageSize,
+      async (after, limit) => {
+        const afterId = after?.id ?? null
+        const targetsSql = sql`/* getCopyrightPublicNotice:targets */
+          SELECT target.id, COALESCE(surface.surface_kind::text, 'post-image') AS surface,
+            CASE WHEN `
+        targetsSql.append(copyrightPlacementPublicVisibleSql())
+        targetsSql.append(sql` THEN target.hosted_use_url ELSE NULL END AS hosted_use_url,
+            CASE
+              WHEN restriction.id IS NULL THEN 'pending'
+              WHEN restriction.lifted_at IS NULL THEN 'active'
+              ELSE 'lifted'
+            END AS restriction_status
+          FROM copyright_notice_targets target
+          LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
+          LEFT JOIN LATERAL (
+            SELECT current_restriction.id, current_restriction.lifted_at
+            FROM copyright_restrictions current_restriction
+            WHERE current_restriction.copyright_notice_target_id = target.id
+            ORDER BY current_restriction.id DESC
+            LIMIT 1
+          ) restriction ON true
+          WHERE target.copyright_notice_id = ${noticeId}
+            AND (${afterId}::uuid IS NULL OR target.id > ${afterId}::uuid)
+          ORDER BY target.id ASC
+          LIMIT ${limit}
+        `)
+        const { rows } =
+          await transaction<CopyrightPublicNoticeDetail['targets'][number]>(targetsSql)
+        return rows
+      },
+    ),
+    collectKeysetPages<CopyrightPublicNoticeDetail['timeline'][number]>(
+      pageSize,
+      async (after, limit) => {
+        const afterId = after?.id ?? null
+        const { rows } = await transaction<CopyrightPublicNoticeDetail['timeline'][number]>(
+          sql`/* getCopyrightPublicNotice:timeline */
+            SELECT id, change_type AS event_type, created_at
+            FROM copyright_notice_lifecycle_changes
+            WHERE copyright_notice_id = ${noticeId}
+              AND (${timelineEventTypes}::text[] IS NULL OR change_type = ANY(${timelineEventTypes}::copyright_notice_lifecycle_change_types[]))
+              AND (${afterId}::uuid IS NULL OR id > ${afterId}::uuid)
+            ORDER BY id ASC
+            LIMIT ${limit}
+          `,
+        )
+        return rows
+      },
+    ),
   ])
   await transaction.commit()
-  return { ...notice, targets: targets.rows, timeline: timeline.rows }
+  return { ...notice, targets, timeline }
 }
 
 function toCopyrightAcceptedNoticeCursorRow(
