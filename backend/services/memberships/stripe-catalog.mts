@@ -5,6 +5,7 @@ import { resolveRecurringCatalogPrice } from '@modules/stripe/catalog'
 import { DEFAULT_STRIPE_CATALOG_CONTEXT, type StripeCatalogContext } from './get-catalog.mts'
 import { publishStripeCatalogMapping } from './stripe-catalog-mappings.mts'
 import { getOrCreateProviderContextId } from './provider-context.mts'
+import { getMembershipWorkLimits } from './work-limits.mts'
 const CATALOG = [
   {
     plan: 'plus',
@@ -126,14 +127,30 @@ async function reconcileStripeMembershipCatalogBody(
       query: transaction,
     })
   }
-  await write(
-    sql`/* reconcileStripeMembershipCatalog: retire superseded mappings */
-      UPDATE membership_provider_products SET retired_at = CURRENT_TIMESTAMP
-      WHERE membership_provider_context_id = ${contextId}::UUID AND retired_at IS NULL
-        AND updated_at < CURRENT_TIMESTAMP
-        AND provider_product_id NOT IN (${prices[0]!.id}, ${prices[1]!.id}, ${prices[2]!.id}, ${prices[3]!.id})`,
-    { query: transaction },
-  )
+  const { batchSize } = getMembershipWorkLimits()
+  while (true) {
+    // oxlint-disable no-await-in-loop -- bounded batch UPDATE retires superseded active Stripe mappings
+    // no-mistakes-disable-next-line query-reached-per-item: batched UPDATE retiring superseded Stripe catalog mappings in DynamicConfig batchSize pages (hard max 5000)
+    const { rowCount } = await write(
+      sql`/* reconcileStripeMembershipCatalog: retire superseded mappings */
+        WITH target AS (
+          SELECT id
+          FROM membership_provider_products
+          WHERE membership_provider_context_id = ${contextId}::UUID AND retired_at IS NULL
+            AND updated_at < CURRENT_TIMESTAMP
+            AND provider_product_id NOT IN (${prices[0]!.id}, ${prices[1]!.id}, ${prices[2]!.id}, ${prices[3]!.id})
+          ORDER BY id
+          LIMIT ${batchSize}
+        )
+        UPDATE membership_provider_products mapping
+        SET retired_at = CURRENT_TIMESTAMP
+        FROM target
+        WHERE mapping.id = target.id`,
+      { query: transaction },
+    )
+    // oxlint-enable no-await-in-loop
+    if ((rowCount ?? 0) < batchSize) break
+  }
   await transaction.commit()
 }
 
@@ -148,13 +165,27 @@ async function retireStripeCatalogMappings(
       { provider: 'stripe', ...context },
       transaction,
     )
-    await write(
-      sql`/* reconcileStripeMembershipCatalog: fail closed */
-        UPDATE membership_provider_products SET retired_at = CURRENT_TIMESTAMP
-        WHERE membership_provider_context_id = ${contextId}::UUID AND retired_at IS NULL
-          AND updated_at < ${startedAt}`,
-      { query: transaction },
-    )
+    const { batchSize } = getMembershipWorkLimits()
+    while (true) {
+      // oxlint-disable no-await-in-loop -- bounded batch UPDATE retires active Stripe mappings on reconciliation failure
+      // no-mistakes-disable-next-line query-reached-per-item: batched UPDATE retiring active Stripe catalog mappings on failure in DynamicConfig batchSize pages (hard max 5000)
+      const { rowCount } = await write(
+        sql`/* reconcileStripeMembershipCatalog: fail closed */
+          UPDATE membership_provider_products
+          SET retired_at = CURRENT_TIMESTAMP
+          WHERE id IN (
+            SELECT id
+            FROM membership_provider_products
+            WHERE membership_provider_context_id = ${contextId}::UUID AND retired_at IS NULL
+              AND updated_at < ${startedAt}
+            ORDER BY id
+            LIMIT ${batchSize}
+          )`,
+        { query: transaction },
+      )
+      // oxlint-enable no-await-in-loop
+      if ((rowCount ?? 0) < batchSize) break
+    }
     await transaction.commit()
   } catch (err) {
     throw new AggregateError(

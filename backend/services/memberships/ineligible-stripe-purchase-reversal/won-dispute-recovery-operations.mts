@@ -85,6 +85,8 @@ export async function getOriginalReversalWithReceipt(
     WHERE case_operation.membership_ineligible_purchase_reversal_case_id = ${reversalCaseId}
       AND operation.idempotency_key = ${originalKey}
       AND operation.completed_at IS NOT NULL
+    ORDER BY operation.id ASC
+    LIMIT 1
   `)
   return rows[0] as
     | {

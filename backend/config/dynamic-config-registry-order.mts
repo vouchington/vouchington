@@ -139,6 +139,7 @@ export const REGISTRY_ORDER = [
   'mcp-tools-work-config',
   'search-params-config',
   'dispute-annotations-config',
+  'referral-link-validation-limits-config',
 ] as const
 
 export type RegisteredDynamicConfigKey = (typeof REGISTRY_ORDER)[number]

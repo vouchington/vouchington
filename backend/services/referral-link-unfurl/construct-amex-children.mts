@@ -1,4 +1,6 @@
-import { read, type QueryOptions } from '@data-stores/psql'
+import { createAsyncGeneratorFromCursor } from '@data-stores/psql/cursors'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import { getReferralLinkValidationLimit } from '@services/topics/referral-link-validation-limits'
 import sql from 'sql-template-strings'
 
 const AMEX_HOSTNAME = '*.americanexpress.com'
@@ -20,9 +22,8 @@ interface AmexCardSlug {
  * (`seed/referral-programs-topics.csv`) rather than any separate catalog artifact —
  * the seeded rows are the single source of truth. Adding a card means adding one CSV row.
  */
-export async function getAmexCardSlugCatalog(options?: QueryOptions): Promise<AmexCardSlug[]> {
-  const { rows } = await read(
-    sql`/* getAmexCardSlugCatalog */
+export async function getAmexCardSlugCatalog(options: QueryOptions = {}): Promise<AmexCardSlug[]> {
+  const query = sql`/* getAmexCardSlugCatalog */
       SELECT DISTINCT rpvr.pathname
       FROM referral_program_topics rp
       JOIN referral_program_topic_link_validation_rule_sets trplv
@@ -39,16 +40,35 @@ export async function getAmexCardSlugCatalog(options?: QueryOptions): Promise<Am
           rpvr.pathname LIKE ${`${PATHNAME_PREFIXES.personal}%`}
           OR rpvr.pathname LIKE ${`${PATHNAME_PREFIXES.business}%`}
         )
-    `,
-    options,
-  )
+    `
 
   const catalog: AmexCardSlug[] = []
-  for (const row of rows as { pathname: string }[]) {
+  for await (const row of createAsyncGeneratorFromCursor<{ pathname: string }>(
+    query,
+    resolveCursorOptions(options),
+  )) {
     const entry = parseCardSlugFromPathname(row.pathname)
     if (entry) catalog.push(entry)
   }
   return catalog
+}
+
+function resolveCursorOptions(options: QueryOptions) {
+  if (options.query && !hasCursorClient(options.query)) {
+    throw new Error(
+      'getAmexCardSlugCatalog requires query.client to preserve transaction visibility',
+    )
+  }
+  const client = options.query?.client ?? options.client
+  return {
+    batchSize: getReferralLinkValidationLimit('rule_cursor_batch_size'),
+    readOnly: client ? false : (options.readOnly ?? true),
+    ...(client ? { client } : {}),
+  }
+}
+
+function hasCursorClient(query: QueryOptions['query']): query is TransactionQuery {
+  return Boolean(query && 'client' in query)
 }
 
 function parseCardSlugFromPathname(pathname: string): AmexCardSlug | null {

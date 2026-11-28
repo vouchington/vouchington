@@ -47,24 +47,29 @@ async function getOrCreateCrawlersForHostnamesInTransaction(
   const { rows } = await write(
     sql`/* getOrCreateCrawlersForHostnames */
       WITH existing AS MATERIALIZED (
-        SELECT DISTINCT ON (c.hostname_id)
-          c.id,
-          c.hostname_id,
-          c.description,
-          c.crawler_type,
-          c.priority,
-          c.css_selectors_to_remove,
-          c.link_text_content_to_remove,
-          c.link_hrefs_to_remove,
-          c.content_selectors,
-          c.referral_program_topic_id AS referral_program_id,
-          c.created_at,
-          c.updated_at,
-          c.deleted_at
-        FROM hostname_crawler_configurations c
-        WHERE c.hostname_id = ANY(${hostnameIds}::uuid[])
-          AND c.deleted_at IS NULL
-        ORDER BY c.hostname_id, c.priority DESC, c.id ASC
+        SELECT chosen.*
+        FROM unnest(${hostnameIds}::uuid[]) AS input(hostname_id)
+        JOIN LATERAL (
+          SELECT
+            c.id,
+            c.hostname_id,
+            c.description,
+            c.crawler_type,
+            c.priority,
+            c.css_selectors_to_remove,
+            c.link_text_content_to_remove,
+            c.link_hrefs_to_remove,
+            c.content_selectors,
+            c.referral_program_topic_id AS referral_program_id,
+            c.created_at,
+            c.updated_at,
+            c.deleted_at
+          FROM hostname_crawler_configurations c
+          WHERE c.hostname_id = input.hostname_id
+            AND c.deleted_at IS NULL
+          ORDER BY c.priority DESC, c.id ASC
+          LIMIT 1
+        ) chosen ON TRUE
       ), inserted AS (
         INSERT INTO hostname_crawler_configurations (
           hostname_id,

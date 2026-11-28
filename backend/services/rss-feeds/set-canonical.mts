@@ -1,5 +1,6 @@
 import { read, beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
+import { getRssFeedsWorkLimit } from './work-limits.mts'
 
 export class CircularRssFeedCanonicalError extends Error {
   readonly code = 'CIRCULAR_CANONICAL_REFERENCE'
@@ -83,10 +84,28 @@ export const setCanonicalRssFeed = async (
     )
 
     // Flatten back-references: any feed pointing to rssFeedId should now point to finalCanonicalId
-    await query(
-      `/* flattenCanonicalRssFeedChain */ UPDATE rss_feeds SET canonical_rss_feed_id = $1 WHERE canonical_rss_feed_id = $2 AND id != $3`,
-      [finalCanonicalId, rssFeedId, rssFeedId],
-    )
+    const batchSize = getRssFeedsWorkLimit('category_sql_batch_size')
+    while (true) {
+      // oxlint-disable no-await-in-loop -- bounded batch UPDATE flattens duplicate canonical back-references within this transaction
+      // no-mistakes-disable-next-line query-reached-per-item: batched UPDATE flattening canonical RSS feed back-references in DynamicConfig category_sql_batch_size pages (hard max 5000)
+      const { rowCount } = await query(
+        `/* flattenCanonicalRssFeedChain */
+        WITH target AS (
+          SELECT id
+          FROM rss_feeds
+          WHERE canonical_rss_feed_id = $2 AND id != $3
+          ORDER BY id
+          LIMIT $4
+        )
+        UPDATE rss_feeds
+        SET canonical_rss_feed_id = $1
+        FROM target
+        WHERE rss_feeds.id = target.id`,
+        [finalCanonicalId, rssFeedId, rssFeedId, batchSize],
+      )
+      // oxlint-enable no-await-in-loop
+      if ((rowCount ?? 0) < batchSize) break
+    }
   }
   await query.commit()
 }

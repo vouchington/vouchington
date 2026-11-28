@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getMembershipByUserId } from './get.mts'
 import {
@@ -6,6 +6,7 @@ import {
   type MembershipPurchaseProvider,
 } from './purchase-intents.mts'
 import { getMembershipPendingState } from './membership-overview-pending.mts'
+import { getMembershipWorkLimits } from './work-limits.mts'
 
 type SourceSummaryRow = {
   id: string
@@ -27,10 +28,11 @@ type SourceSummaryRow = {
   is_effective: boolean
 }
 
-export async function getMembershipOverview(userId: string) {
-  const [membership, sourceResult, pending] = await Promise.all([
-    getMembershipByUserId(userId),
-    read<SourceSummaryRow>(sql`/* getMembershipOverview.sources */
+async function readMembershipOverviewSources(userId: string): Promise<SourceSummaryRow[]> {
+  const { batchSize } = getMembershipWorkLimits()
+  const rows: SourceSummaryRow[] = []
+  for await (const row of createAsyncGeneratorFromCursor<SourceSummaryRow>(
+    sql`/* getMembershipOverview.sources */
       SELECT source.id, source.source_kind, provider_context.provider, product.plan,
         state.effective_at, state.expires_at, state.cancelled_at,
         state.expired_at, state.past_due_at, state.paused_at, state.should_auto_renew,
@@ -55,10 +57,21 @@ export async function getMembershipOverview(userId: string) {
       LEFT JOIN membership_provider_evidence_records evidence
         ON evidence.id = observation.membership_provider_evidence_record_id
       WHERE source.user_id = ${userId}
-      ORDER BY state.effective_at DESC, source.id DESC`),
+      ORDER BY state.effective_at DESC, source.id DESC`,
+    { batchSize, readOnly: true },
+  )) {
+    rows.push(row)
+  }
+  return rows
+}
+
+export async function getMembershipOverview(userId: string) {
+  const [membership, sourceRows, pending] = await Promise.all([
+    getMembershipByUserId(userId),
+    readMembershipOverviewSources(userId),
     getMembershipPendingState(userId),
   ])
-  const sources = sourceResult.rows.map(row => ({
+  const sources = sourceRows.map(row => ({
     id: row.id,
     kind: row.source_kind,
     provider: row.provider,

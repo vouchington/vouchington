@@ -81,6 +81,7 @@ async function getMembershipProductIdForProviderSourceCreation(
       AND context.environment = ${options.sourceIdentity.environment}
       AND context.application_id = ${options.sourceIdentity.applicationId}
       AND lineage.provider_lineage_id = ${options.sourceIdentity.providerLineageId}
+    LIMIT 1
 `)
   if (!retainedRows[0]) throw new InvalidMembershipGrantSkuError()
   return (retainedRows[0] as { id: string }).id

@@ -1,6 +1,7 @@
-import { read } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
+import { getPaginationLimit } from '@services/pagination/config'
 import createError from 'http-errors'
 import { getOrCreateCrawlerForHostname } from './get-or-create.mts'
 import { getCrawlerById, toCrawler } from './get.mts'
@@ -46,7 +47,8 @@ export async function getCrawlersByReferralProgramId(
     throw createError(422, `Invalid referral program ID: ${referralProgramId}`)
   }
 
-  const { rows } = await read(
+  const rows: Array<Crawler & { hostname: string }> = []
+  for await (const row of createAsyncGeneratorFromCursor(
     `/* getCrawlersByReferralProgramId */
     SELECT
       c.id,
@@ -70,8 +72,28 @@ export async function getCrawlersByReferralProgramId(
     ORDER BY c.priority DESC, c.id ASC
   `,
     [referralProgramId],
-    options,
-  )
+    resolveCrawlerCursorOptions(options),
+  )) {
+    rows.push({ ...toCrawler(row), hostname: row.hostname as string })
+  }
 
-  return rows.map(row => ({ ...toCrawler(row), hostname: row.hostname as string }))
+  return rows
+}
+
+function resolveCrawlerCursorOptions(options: QueryOptions) {
+  if (options.query && !hasCursorClient(options.query)) {
+    throw new Error(
+      'getCrawlersByReferralProgramId requires query.client to preserve transaction visibility',
+    )
+  }
+  const client = options.query?.client ?? options.client
+  return {
+    batchSize: getPaginationLimit('bulk_default_limit'),
+    readOnly: client ? false : (options.readOnly ?? true),
+    ...(client ? { client } : {}),
+  }
+}
+
+function hasCursorClient(query: QueryOptions['query']): query is TransactionQuery {
+  return Boolean(query && 'client' in query)
 }

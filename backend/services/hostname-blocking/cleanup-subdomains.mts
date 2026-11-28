@@ -16,6 +16,7 @@ import {
   lockHostnameBlockSubdomainCandidatePage,
   type LockedSubdomainCandidatePage,
 } from './lock-subdomain-candidate-page.mts'
+import { getHostnameBlockingWorkLimit } from './work-limits.mts'
 
 export async function projectNextHostnameBlockSubdomainPage(
   blockId: string,
@@ -74,22 +75,37 @@ export async function projectNextHostnameBlockSubdomainPage(
       UPDATE url_hostnames SET publicly_introduced_at = CURRENT_TIMESTAMP
       WHERE id = ANY(${hostnameIds}::uuid[]) AND publicly_introduced_at IS NULL
     `)
-    const { rows: attached } = await query<{ url_hostname_id: string }>(
-      sql`/* projectNextHostnameBlockSubdomainPage:attachExisting */
-      UPDATE url_hostname_blocks block
-      SET relation_cleanup_root_block_id = ${blockId}
-      WHERE block.url_hostname_id = ANY(${hostnameIds}::uuid[])
-        AND block.lifted_at IS NULL AND block.domain_blocklist_source_id IS NULL
-        AND block.relation_cleanup_root_block_id IS NULL
-        AND NOT EXISTS (
-          SELECT 1 FROM url_hostname_blocks owner
-          WHERE owner.url_hostname_id = block.url_hostname_id
-            AND owner.lifted_at IS NULL AND owner.domain_blocklist_source_id IS NULL
-            AND owner.relation_cleanup_root_block_id IS NOT NULL
+    const batchSize = getHostnameBlockingWorkLimit('hostname_scan_batch_size')
+    const attached: Array<{ url_hostname_id: string }> = []
+    while (true) {
+      // oxlint-disable-next-line no-await-in-loop -- bounded batch UPDATE attaches unowned active staff blocks for this subdomain page
+      const { rows: attachedBatch } = await query<{ url_hostname_id: string }>( // no-mistakes-disable-line query-reached-per-item: batched UPDATE attaching unowned blocks in DynamicConfig hostname_scan_batch_size pages (hard max 5000)
+        sql`/* projectNextHostnameBlockSubdomainPage:attachExisting */
+        WITH target AS (
+          SELECT block.id
+          FROM url_hostname_blocks block
+          WHERE block.url_hostname_id = ANY(${hostnameIds}::uuid[])
+            AND block.lifted_at IS NULL AND block.domain_blocklist_source_id IS NULL
+            AND block.relation_cleanup_root_block_id IS NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM url_hostname_blocks owner
+              WHERE owner.url_hostname_id = block.url_hostname_id
+                AND owner.lifted_at IS NULL AND owner.domain_blocklist_source_id IS NULL
+                AND owner.relation_cleanup_root_block_id IS NOT NULL
+            )
+          ORDER BY block.id
+          LIMIT ${batchSize}
         )
-      RETURNING block.url_hostname_id
-    `,
-    )
+        UPDATE url_hostname_blocks block
+        SET relation_cleanup_root_block_id = ${blockId}
+        FROM target
+        WHERE block.id = target.id
+        RETURNING block.url_hostname_id
+      `,
+      )
+      attached.push(...attachedBatch)
+      if (attachedBatch.length < batchSize) break
+    }
     const { rows: inserted } = await query<{ url_hostname_id: string }>(
       sql`/* projectNextHostnameBlockSubdomainPage:insertMissing */
       INSERT INTO url_hostname_blocks (

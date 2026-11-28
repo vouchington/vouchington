@@ -1,8 +1,12 @@
-import { it, beforeAll, describe } from 'vitest'
+import { it, beforeAll, describe, onTestFinished } from 'vitest'
 import assert from 'node:assert/strict'
 import { createTestUser, createReferralProgramLinkValidation } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { randomUUID } from 'node:crypto'
+import { REFERRAL_LINK_VALIDATION_RULE_LIMIT_REACHED } from '@modules/on-error/error-codes'
+import { referralLinkValidationLimitsConfig } from '@services/topics/referral-link-validation-limits'
 import { createReferralLinkValidationRule } from './create.mts'
+import { upsertReferralLinkValidationRule } from './upsert.mts'
 import type { PrivateUser } from '@services/users/types'
 
 describe('create', () => {
@@ -10,6 +14,8 @@ describe('create', () => {
   let validationId: string | null = null
 
   beforeAll(async () => {
+    await referralLinkValidationLimitsConfig.waitForInitialization()
+    await referralLinkValidationLimitsConfig.close()
     adminUser = await createTestUser({ administrator: true })
 
     const randomSuffix = Math.random().toString(36).slice(7)
@@ -88,5 +94,64 @@ describe('create', () => {
       assert.ok(err && typeof err === 'object' && 'status' in err)
       assert.equal(err.status, 422)
     }
+  })
+
+  it('rejects creating or upserting a new rule above rules_per_rule_set while keeping existing upserts idempotent', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(referralLinkValidationLimitsConfig, {
+        rules_per_rule_set: 2,
+      }),
+    )
+    const cappedValidationId = await createReferralProgramLinkValidation(
+      `test_capped_rules_${Math.random().toString(36).slice(2, 10)}`,
+    )
+    const first = await createReferralLinkValidationRule(adminUser, cappedValidationId, {
+      hostname: 'example.com',
+      pathname: '/one',
+    })
+    await upsertReferralLinkValidationRule(cappedValidationId, {
+      hostname: 'example.com',
+      pathname: '/two',
+    })
+
+    const existing = await upsertReferralLinkValidationRule(cappedValidationId, {
+      hostname: 'example.com',
+      pathname: '/one',
+    })
+    assert.equal(existing.id, first.id)
+
+    await assert.rejects(
+      () =>
+        createReferralLinkValidationRule(adminUser, cappedValidationId, {
+          hostname: 'example.com',
+          pathname: '/three',
+        }),
+      (err: unknown) =>
+        Boolean(
+          err &&
+          typeof err === 'object' &&
+          'status' in err &&
+          err.status === 409 &&
+          'code' in err &&
+          err.code === REFERRAL_LINK_VALIDATION_RULE_LIMIT_REACHED,
+        ),
+    )
+
+    await assert.rejects(
+      () =>
+        upsertReferralLinkValidationRule(cappedValidationId, {
+          hostname: 'example.com',
+          pathname: '/four',
+        }),
+      (err: unknown) =>
+        Boolean(
+          err &&
+          typeof err === 'object' &&
+          'status' in err &&
+          err.status === 409 &&
+          'code' in err &&
+          err.code === REFERRAL_LINK_VALIDATION_RULE_LIMIT_REACHED,
+        ),
+    )
   })
 })

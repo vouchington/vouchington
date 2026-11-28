@@ -5,6 +5,7 @@ import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostn
 import createHttpError from 'http-errors'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
+import { getHostnameBlockingWorkLimit } from './work-limits.mts'
 
 export async function unblockHostname(
   adminUserId: string,
@@ -78,16 +79,35 @@ async function liftStaffBlocksAndEnqueue(
   hostnameId: string,
   introduced: boolean,
 ): Promise<boolean> {
-  const { rows: updateRows } = await query(sql`/* unblockHostname */
-    UPDATE url_hostname_blocks
-    SET lifted_at = CURRENT_TIMESTAMP,
-        lifted_by_id = ${adminUserId}
-    WHERE url_hostname_id = ${hostnameId}
-      AND lifted_at IS NULL
-      AND domain_blocklist_source_id IS NULL  -- feed-owned blocks lift only when their source row is removed
-    RETURNING url_hostname_id
-  `)
-  const changed = introduced || updateRows.length > 0
+  const batchSize = getHostnameBlockingWorkLimit('hostname_scan_batch_size')
+  let lifted = false
+  while (true) {
+    // oxlint-disable no-await-in-loop -- bounded batch UPDATE lifts active staff blocks for this locked hostname
+    // no-mistakes-disable-next-line query-reached-per-item: batched UPDATE lifting active staff blocks in DynamicConfig hostname_scan_batch_size pages (hard max 5000)
+    const { rows: updateRows } = await query(
+      sql`/* unblockHostname */
+      WITH target AS (
+        SELECT id
+        FROM url_hostname_blocks
+        WHERE url_hostname_id = ${hostnameId}
+          AND lifted_at IS NULL
+          AND domain_blocklist_source_id IS NULL  -- feed-owned blocks lift only when their source row is removed
+        ORDER BY id
+        LIMIT ${batchSize}
+      )
+      UPDATE url_hostname_blocks block
+      SET lifted_at = CURRENT_TIMESTAMP,
+          lifted_by_id = ${adminUserId}
+      FROM target
+      WHERE block.id = target.id
+      RETURNING block.url_hostname_id
+    `,
+    )
+    // oxlint-enable no-await-in-loop
+    if (updateRows.length > 0) lifted = true
+    if (updateRows.length < batchSize) break
+  }
+  const changed = introduced || lifted
   if (changed) await enqueueHostnameCacheInvalidation(query, [hostnameId])
   return changed
 }

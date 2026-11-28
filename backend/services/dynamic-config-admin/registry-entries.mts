@@ -1,4 +1,5 @@
 import { communityApplicationLimitsRegistryEntry } from './registry-community-application-limits-entry.mts'
+import { referralLinkValidationLimitsRegistryEntry } from './registry-referral-link-validation-limits-entry.mts'
 import { stuckResolutionRunExpiryRegistryEntry } from './registry-stuck-resolution-run-expiry-entry.mts'
 import { reportingRollupWorkRegistryEntry } from './registry-reporting-rollup-work-entry.mts'
 import { moderationSummaryWorkRegistryEntry } from './registry-moderation-summary-work-entry.mts'
@@ -51,6 +52,7 @@ const unorderedRegistryEntries = [
   relationLimitsRegistryEntry,
   householdLimitsRegistryEntry,
   communityApplicationLimitsRegistryEntry,
+  referralLinkValidationLimitsRegistryEntry,
   profileCountRegistryEntry,
   webSearchRegistryEntry,
   topicDataPointInsightsRegistryEntry,

@@ -1,4 +1,4 @@
-import { read, beginTransaction, registerPostCommitAction, write } from '@data-stores/psql'
+import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { getSystemUserByUsername } from '@services/users/system-users'
@@ -14,6 +14,10 @@ import {
   type StoryPostRelationEffects,
 } from './story-post-relation-effects.mts'
 import { markStoryPostRelatedUrlProjection } from './story-post-related-url-projection.mts'
+import {
+  pruneStoryPostCategoryTopics,
+  readPriorStoryPostCategoryTopicIds,
+} from './refresh-story-post-topics.mts'
 import type { PrivateUser } from '@services/users/types'
 
 type RefreshStoryPostQueryOptions = Omit<QueryOptions, 'query'> & {
@@ -88,18 +92,12 @@ async function refreshStoryPostForStoryInTransaction(
   await markStoryPostRelatedUrlProjection(options.query, postId, storyId)
 
   // Topic sources may change while the relation locks wait. Use the new snapshot for writes.
-  const topicIds = await readStoryTopicIds(options.query, storyId)
-  const storyTellerUser = await getStoryTellerUser()
+  const [topicIds, storyTellerUser] = await Promise.all([
+    readStoryTopicIds(options.query, storyId),
+    getStoryTellerUser(),
+  ])
 
-  const { rows: priorTopicRows } = await read<{ object_id: string }>(
-    sql`/* refreshStoryPostForStory:priorTopics */
-      SELECT object_id
-      FROM relation__post__category__topic
-      WHERE subject_id = ${postId} AND deleted_at IS NULL
-    `,
-    options,
-  )
-  const priorTopicIds = priorTopicRows.map(row => row.object_id)
+  const priorTopicIds = await readPriorStoryPostCategoryTopicIds(postId, options)
   const categoryTopicRelation = getEntityRelationMetadataOrThrow({
     subjectType: 'post',
     objectType: 'topic',
@@ -115,16 +113,7 @@ async function refreshStoryPostForStoryInTransaction(
       topicIds.map(id => ({ id })),
     )
   }
-  await write(
-    sql`/* refreshStoryPostForStory:pruneTopics */
-      UPDATE relation__post__category__topic
-      SET deleted_at = CURRENT_TIMESTAMP, deleted_by_id = ${storyTellerUser.id}
-      WHERE subject_id = ${postId}
-        AND deleted_at IS NULL
-        AND (${topicIds.length} = 0 OR object_id != ALL(${topicIds}::uuid[]))
-    `,
-    options,
-  )
+  await pruneStoryPostCategoryTopics(postId, topicIds, storyTellerUser.id, options)
   const categoryTopicRelations =
     topicIds.length > 0
       ? await writeEntityRelations(

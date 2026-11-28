@@ -1,6 +1,6 @@
 import { type TransactionQuery, write } from '@data-stores/psql'
 import createHttpError from 'http-errors'
-import { getMembershipWorkLimit } from './work-limits.mts'
+import { getMembershipWorkLimit, getMembershipWorkLimits } from './work-limits.mts'
 import sql from 'sql-template-strings'
 import type { StripeCatalogContext } from './get-catalog.mts'
 
@@ -96,20 +96,33 @@ async function findStripeCatalogMappings(
   context: StripeCatalogContext,
   query: TransactionQuery,
 ): Promise<StripeCatalogMapping[]> {
-  const { rows } = await write(
-    sql`/* findStripeCatalogMappings */
-      SELECT mapping.id, mapping.membership_product_id, mapping.provider_product_id,
-        mapping.sku_id, mapping.price_minor_units, mapping.currency_code, mapping.retired_at
-      FROM membership_provider_products mapping
-      INNER JOIN membership_provider_contexts provider_context
-        ON provider_context.id = mapping.membership_provider_context_id
-      WHERE provider_context.provider = 'stripe'
-        AND provider_context.environment = ${context.environment}
-        AND provider_context.application_id = ${context.applicationId}
-        AND (mapping.provider_product_id = ${providerProductId} OR mapping.sku_id = ${skuId})`,
-    { query },
-  )
-  return rows as StripeCatalogMapping[]
+  const { batchSize } = getMembershipWorkLimits()
+  const mappings: StripeCatalogMapping[] = []
+  let afterId: string | null = null
+  while (true) {
+    const cursorId: string | null = afterId
+    // oxlint-disable-next-line no-await-in-loop -- keyset page advances sequentially through matching Stripe catalog mappings
+    const result: { rows: StripeCatalogMapping[] } = await write<StripeCatalogMapping>( // no-mistakes-disable-line query-reached-per-item: keyset pagination over matching Stripe catalog mappings in DynamicConfig batchSize pages (hard max 5000)
+      sql`/* findStripeCatalogMappings */
+          SELECT mapping.id, mapping.membership_product_id, mapping.provider_product_id,
+            mapping.sku_id, mapping.price_minor_units, mapping.currency_code, mapping.retired_at
+          FROM membership_provider_products mapping
+          INNER JOIN membership_provider_contexts provider_context
+            ON provider_context.id = mapping.membership_provider_context_id
+          WHERE provider_context.provider = 'stripe'
+            AND provider_context.environment = ${context.environment}
+            AND provider_context.application_id = ${context.applicationId}
+            AND (mapping.provider_product_id = ${providerProductId} OR mapping.sku_id = ${skuId})
+            AND (${cursorId}::uuid IS NULL OR mapping.id > ${cursorId}::uuid)
+          ORDER BY mapping.id ASC
+          LIMIT ${batchSize}`,
+      { query },
+    )
+    mappings.push(...result.rows)
+    if (result.rows.length < batchSize) break
+    afterId = result.rows.at(-1)!.id
+  }
+  return mappings
 }
 
 type StripeCatalogMapping = {

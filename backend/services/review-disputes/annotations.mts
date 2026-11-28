@@ -1,6 +1,7 @@
-import { write, read } from '@data-stores/psql'
+import { createAsyncGeneratorFromCursor, write, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
+import { getDisputeAnnotationPostLimit } from './annotation-limits.mts'
 import type { PostDisputeAnnotation } from './config.mts'
 
 const ANNOTATION_SELECT = sql`
@@ -26,14 +27,19 @@ export async function getActiveAnnotationsForPosts(
   postIds: string[],
 ): Promise<PostDisputeAnnotation[]> {
   if (postIds.length === 0) return []
-  const { rows } = await read<PostDisputeAnnotation>(
+  const rows: PostDisputeAnnotation[] = []
+  for await (const row of createAsyncGeneratorFromCursor<PostDisputeAnnotation>(
     sql`/* getActiveAnnotationsForPosts */
-    SELECT `.append(ANNOTATION_SELECT).append(sql`
+    SELECT id, post_id, review_dispute_id, body_text, created_by_id, removed_at, removed_by_id
     FROM post_dispute_annotations
     WHERE post_id = ANY(${postIds}::uuid[])
       AND removed_at IS NULL
-  `),
-  )
+    ORDER BY id ASC
+  `,
+    { batchSize: getDisputeAnnotationPostLimit(), readOnly: true },
+  )) {
+    rows.push(row)
+  }
   return rows
 }
 

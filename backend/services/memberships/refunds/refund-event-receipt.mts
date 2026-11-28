@@ -94,10 +94,11 @@ export async function recordMembershipRefundEvent(options: {
       FROM membership_refunds
       WHERE stripe_refund_id = ${options.stripeRefundId}
         AND NOT EXISTS (SELECT 1 FROM receipt)
-    ), matched_attempt AS (
-      UPDATE membership_refund_operation_attempts attempt
-      SET provider_refund_id = receipt.stripe_refund_id
-      FROM persisted_receipt receipt, membership_operations operation,
+    ), matched_attempt_target AS (
+      SELECT attempt.id AS attempt_id, receipt.stripe_refund_id
+      FROM persisted_receipt receipt,
+        membership_refund_operation_attempts attempt,
+        membership_operations operation,
         membership_administrator_refund_operation_requests request
       WHERE (attempt.id = ${attemptId} OR attempt.provider_request_original_attempt_id = ${attemptId})
         AND attempt.rejected_at IS NULL
@@ -118,6 +119,13 @@ export async function recordMembershipRefundEvent(options: {
         AND operation.provider_payment_reference IN (
           receipt.stripe_charge_id, receipt.stripe_payment_intent_id
         )
+      ORDER BY attempt.attempt_ordinal DESC
+      LIMIT 1
+    ), matched_attempt AS (
+      UPDATE membership_refund_operation_attempts attempt
+      SET provider_refund_id = target.stripe_refund_id
+      FROM matched_attempt_target target
+      WHERE attempt.id = target.attempt_id
       RETURNING attempt.membership_operation_id
     ), woken_operation AS (
       UPDATE membership_operation_execution_work_items work
