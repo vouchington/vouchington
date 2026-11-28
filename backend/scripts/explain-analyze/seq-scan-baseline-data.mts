@@ -25,15 +25,6 @@ export const BASELINE_FINGERPRINTS = [
   'mv-rss-feed-crawl-tiers-refresh|0|mv-rss-feed-crawl-tiers-refresh:force_generic_plan|force_generic_plan:topics',
   'mv-trending-communities-refresh|0|mv-trending-communities-refresh:force_custom_plan|force_custom_plan:community_post_reviews',
   'mv-trending-communities-refresh|0|mv-trending-communities-refresh:force_generic_plan|force_generic_plan:community_post_reviews',
-  // Paired restored CI fixture for followed-feed hydration. Remove with #6602.
-  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:rss_feeds',
-  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:topics',
-  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:rss_feeds',
-  'rss-followed-feed-hydration-at-cap|0|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:topics',
-  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:rss_feeds',
-  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_custom_plan|force_custom_plan:topics',
-  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:rss_feeds',
-  'rss-followed-feed-hydration-at-cap|1|getRssFeedsByIdBatch:force_generic_plan|force_generic_plan:topics',
   // Hosted pair 45776788119, main-4 artifact 15097307795. Remove with #6551.
   'topic-import-reference-resolution-at-cap|0|getTopicsByReferenceBatch:force_custom_plan|force_custom_plan:topic_aliases',
   'topic-import-reference-resolution-at-cap|0|getTopicsByReferenceBatch:force_custom_plan|force_custom_plan:topics',

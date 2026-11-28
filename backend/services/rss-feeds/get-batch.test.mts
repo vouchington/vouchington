@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { it, expect, describe } from 'vitest'
 import {
   createTestTopic,
@@ -7,6 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { createRssFeed } from './create.mts'
 import { softDeleteRssFeedById } from './delete.mts'
+import { getRssFeedById } from './get.mts'
 import { filterRssFeedIdsByFeedType, getRssFeedsByIdBatch } from './get-batch.mts'
 
 describe('get-batch', () => {
@@ -77,6 +79,46 @@ describe('get-batch', () => {
     expect(results).toHaveLength(2)
     expect(results[0]).toBeNull()
     expect(results[1]?.id).toBe(feed.id)
+  })
+
+  it('getRssFeedsByIdBatch preserves full projections, input order, duplicates, and null slots', async () => {
+    await createTestUser({ administrator: true })
+    const firstTopic = await createTestTopic({
+      slug: `test-topic-proj-1-${randomUUID()}`,
+      name: `Test Topic Proj 1 ${randomUUID()}`,
+      hostname: `proj-1-${randomUUID()}.example.com`,
+    })
+    const secondTopic = await createTestTopic({
+      slug: `test-topic-proj-2-${randomUUID()}`,
+      name: `Test Topic Proj 2 ${randomUUID()}`,
+      hostname: `proj-2-${randomUUID()}.example.com`,
+    })
+    const first = await createRssFeed({
+      provenance: WEB_PROVENANCE,
+      skipRemoteValidation: true,
+      topic_id: firstTopic.id,
+      title: 'Projection Feed 1',
+      rss_feed_url: `https://example.com/proj-1-${randomUUID()}.xml`,
+    })
+    const second = await createRssFeed({
+      provenance: WEB_PROVENANCE,
+      skipRemoteValidation: true,
+      topic_id: secondTopic.id,
+      title: 'Projection Feed 2',
+      rss_feed_url: `https://example.com/proj-2-${randomUUID()}.xml`,
+    })
+    const missingId = randomUUID()
+
+    const [expectedFirst, expectedSecond] = await Promise.all([
+      getRssFeedById(first.id),
+      getRssFeedById(second.id),
+    ])
+    expect(expectedFirst).not.toBeNull()
+    expect(expectedSecond).not.toBeNull()
+
+    const results = await getRssFeedsByIdBatch([second.id, missingId, first.id, second.id])
+
+    expect(results).toEqual([expectedSecond, null, expectedFirst, expectedSecond])
   })
 
   it('getRssFeedsByIdBatch throws for invalid IDs', async () => {

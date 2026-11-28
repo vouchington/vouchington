@@ -35,8 +35,16 @@ async function captureFollowingFeedHydration(feedCount: number): Promise<void> {
     registerScenarioContract(scenario, {
       seededRows: { rss_feeds: feedCount },
       expectations: [
-        // Main does two feed-catalog walks. https://github.com/vouchington/vouchington/issues/6602
-        { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 2 * feedCount },
+        // Keyed to the requested page in both plan modes (view_rss_feeds reads rss_feeds + view_rss_feed_current_states).
+        { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 2 * limit, captureIndex: 0 },
+        { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 2, captureIndex: 1 },
+        { kind: 'maxProcessedRows', relation: 'topics', max: limit, captureIndex: 0 },
+        { kind: 'maxProcessedRows', relation: 'topics', max: 1, captureIndex: 1 },
+        { kind: 'maxProcessedRows', relation: 'urls', max: limit, captureIndex: 0 },
+        { kind: 'maxProcessedRows', relation: 'urls', max: 1, captureIndex: 1 },
+        { kind: 'noSeqScan', relation: 'rss_feeds' },
+        { kind: 'noSeqScan', relation: 'topics' },
+        { kind: 'noSeqScan', relation: 'urls' },
       ],
     })
     await runAndCapture(
