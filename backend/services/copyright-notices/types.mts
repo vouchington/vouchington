@@ -151,5 +151,5 @@ export type CopyrightActionIntentRecord = {
     'completed' | 'stale' | 'blocked' | 'failed'
   > | null
   failure_message: string | null
-  available_at: Date | null
+  available_at: Date
 }
