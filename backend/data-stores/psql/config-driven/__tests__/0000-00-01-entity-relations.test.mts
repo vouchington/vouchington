@@ -26,6 +26,17 @@ describe('user-subject entity relation tables', () => {
     expect(sql).not.toContain('ADD COLUMN outbound_activitypub_follow_activity_id')
   })
 
+  it('covers deleted_at on relation__topic__parent__topic primary key only', () => {
+    const sql = generateEntityRelationsSql()
+
+    expect(sql.match(/PRIMARY KEY \(subject_id, object_id\) INCLUDE \(deleted_at\)/g)).toHaveLength(
+      1,
+    )
+    expect(sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS "relation__topic__parent__topic"[^;]*PRIMARY KEY \(subject_id, object_id\) INCLUDE \(deleted_at\)/,
+    )
+  })
+
   it('generates a concrete vote table and composite relation foreign key per election table', () => {
     const sql = generateEntityRelationsSql()
     const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)

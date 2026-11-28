@@ -118129,7 +118129,7 @@
         "relation__topic__parent__topic_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX relation__topic__parent__topic_pkey ON public.relation__topic__parent__topic USING btree (subject_id, object_id)",
+          "definition": "CREATE UNIQUE INDEX relation__topic__parent__topic_pkey ON public.relation__topic__parent__topic USING btree (subject_id, object_id) INCLUDE (deleted_at)",
           "immediate": true,
           "keys": [
             {

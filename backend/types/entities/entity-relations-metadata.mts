@@ -1,3 +1,4 @@
+import type { EntityRelationPrimaryKeyIncludeColumn } from './entity-relations-config-relations.mts'
 import {
   entityRelations,
   entityRelationPredicates,
@@ -15,6 +16,7 @@ export type EntityRelationMetadata = {
   bidirectional: boolean
   table_name: string
   extra_indexes: string[]
+  primary_key_include_columns: readonly EntityRelationPrimaryKeyIncludeColumn[]
 }
 
 export const entityRelationMetadatum: EntityRelationMetadata[] = Object.keys(
@@ -37,6 +39,7 @@ export const entityRelationMetadatum: EntityRelationMetadata[] = Object.keys(
         bidirectional: entityRelationPredicates[predicate].bidirectional ?? false,
         table_name: ['relation', subjectType, predicate, objectType].join('__'),
         extra_indexes: options?.extra_indexes ?? [],
+        primary_key_include_columns: options?.primary_key_include_columns ?? [],
       }
     })
   })

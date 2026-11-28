@@ -37,14 +37,23 @@ export async function processTopicMergeParentPreflightPage(
   if (!workItem) return { hasMore: false, errorCode: null }
 
   const maxDepth = getTopicsWorkLimit('parent_merge_cycle_max_depth')
-  const { rows: edgePage } = await query<{ object_id: string; deleted_at: Date | null }>(
-    `/* pageTopicMergeParentEdges */
-      SELECT object_id, deleted_at FROM relation__topic__parent__topic
-      WHERE subject_id = $1
-        AND ($2::uuid IS NULL OR object_id > $2::uuid)
-      ORDER BY object_id LIMIT $3`,
-    [workItem.topic_id, workItem.cursor_object_id, limit],
-  )
+  const { rows: edgePage } =
+    workItem.cursor_object_id === null
+      ? await query<{ object_id: string; deleted_at: Date | null }>(
+          `/* pageTopicMergeParentEdges */
+            SELECT object_id, deleted_at FROM relation__topic__parent__topic
+            WHERE subject_id = $1::uuid
+            ORDER BY object_id LIMIT $2::integer`,
+          [workItem.topic_id, limit],
+        )
+      : await query<{ object_id: string; deleted_at: Date | null }>(
+          `/* pageTopicMergeParentEdges */
+            SELECT object_id, deleted_at FROM relation__topic__parent__topic
+            WHERE subject_id = $1::uuid
+              AND object_id > $2::uuid
+            ORDER BY object_id LIMIT $3::integer`,
+          [workItem.topic_id, workItem.cursor_object_id, limit],
+        )
   // Page tombstones too: the composite primary key supplies the order and cannot scan an
   // unbounded deleted prefix while trying to fill a live-edge page.
   const edges = edgePage.filter(

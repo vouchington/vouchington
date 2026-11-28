@@ -88,8 +88,12 @@ function createEntityRelationTable(metadata: EntityRelationMetadata) {
     ${getElectionConstraintClause(metadata.table_name, ['subject_id', 'id'], 'uq')}UNIQUE (subject_id, id)`
   }
 
+  const primaryKeyInclude =
+    metadata.primary_key_include_columns.length > 0
+      ? ` INCLUDE (${metadata.primary_key_include_columns.join(', ')})`
+      : ''
   query += `,
-    PRIMARY KEY (${primary_keys.join(', ')})`
+    PRIMARY KEY (${primary_keys.join(', ')})${primaryKeyInclude}`
 
   query += `\n  )`
 
