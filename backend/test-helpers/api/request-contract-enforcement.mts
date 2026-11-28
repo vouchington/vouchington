@@ -22,23 +22,8 @@ class ContractViolation extends Error {
 type RoutePatch = Application['route'] & { requestContractEnforced?: true }
 
 const VIOLATIONS_KEY = '__vouchaRequestContractViolations'
-const TEST_ROUTES_KEY = '__vouchaTestRegisteredRoutes'
 const REGISTRIES = new WeakMap<Application, RuntimeRequestValidatorRegistry>()
-const globals = globalThis as typeof globalThis & {
-  [VIOLATIONS_KEY]?: ContractViolation[]
-  [TEST_ROUTES_KEY]?: Set<string>
-}
-// A frame that is executing inside a test file, as opposed to an `at async` frame of a test file
-// that is only awaiting the import which registers a production route.
-const TEST_FILE_FRAME = /^\s+at (?!async )[^\n]*\.test\.mts:\d+/m
-
-/**
- * Whether a `.test.mts` file registered this route. Under `isolate: false` the shared app keeps
- * routes that earlier files in the same fork added, so a sweep of the production routes skips them.
- */
-export function isTestRegisteredRoute(method: string, path: string): boolean {
-  return globals[TEST_ROUTES_KEY]?.has(`${method.toUpperCase()} ${path}`) ?? false
-}
+const globals = globalThis as typeof globalThis & { [VIOLATIONS_KEY]?: ContractViolation[] }
 
 /** Drains violations recorded since the last call, so a test that provokes one can own it. */
 export function takeRequestContractViolations(): ContractViolation[] {
@@ -68,17 +53,11 @@ export function installRequestContractEnforcement(): void {
     >
     for (const method of ['get', 'post', 'put', 'patch', 'delete'] as const) {
       const originalMethod = methods[method]
-      methods[method] = (handler, ...options) => {
-        if (TEST_FILE_FRAME.test(new Error().stack ?? '')) {
-          const testRoutes = globals[TEST_ROUTES_KEY] ?? new Set<string>()
-          testRoutes.add(`${method.toUpperCase()} ${path}`)
-          globals[TEST_ROUTES_KEY] = testRoutes
-        }
-        return Reflect.apply(originalMethod, builder, [
+      methods[method] = (handler, ...options) =>
+        Reflect.apply(originalMethod, builder, [
           withContractCheck(handler, `${method.toUpperCase()}:${path}`, this),
           ...options,
         ])
-      }
     }
     return builder
   }

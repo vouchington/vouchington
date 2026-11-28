@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { isTestRegisteredRoute } from '@voucha/test-helpers/api/request-contract-enforcement'
+import { listProductionRoutes } from '@voucha/test-helpers/api/production-routes'
 import app from './app.mts'
 
 // Deny-list: every registered route must answer an anonymous request with 401 unless it is named
@@ -176,16 +176,8 @@ type RouteMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 type RouteSweep = { route: string; status: number }
 
 function listRegisteredRoutes(): string[] {
-  // The router is private to the api-server package and exposes its table as `routes`.
-  const router: unknown = Reflect.get(app, 'router')
-  const table: unknown = router && Reflect.get(router as object, 'routes')
-  if (!Array.isArray(table)) throw new Error('The API router no longer exposes its route table')
-  const routes = new Set<string>()
-  for (const entry of table as { method: string; path: string }[]) {
-    if (entry.method === 'HEAD' || isTestRegisteredRoute(entry.method, entry.path)) continue
-    routes.add(`${entry.method} ${entry.path}`)
-  }
-  return [...routes].toSorted()
+  // The snapshot excludes routes that other test files add to the shared app under `isolate: false`.
+  return listProductionRoutes(app).filter(route => !route.startsWith('HEAD '))
 }
 
 function sendAnonymously(route: string) {
