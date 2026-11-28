@@ -1,10 +1,13 @@
 import { createTestDataRequestSweepNeighbor } from '@voucha/test-helpers/account-data-request-sweep-neighbor'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { createDataRequest } from '@services/account-data-requests'
+import { createDataRequest, getDataRequestById } from '@services/account-data-requests'
 import { background } from '@queues/background/queues'
 import { runBeforePostgresStatementForTest } from '@voucha/test-helpers/injected-failures'
 import { createTestUser, makeUserDataRequestRecoverableForTest } from '@voucha/test-helpers'
-import { ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB } from '@queues/background/enqueues/account-lifecycle-jobs'
+import {
+  ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
+  ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
+} from '@queues/background/enqueues/account-lifecycle-jobs'
 import { recoverExportRequests } from './account-data-requests.mts'
 import { processAccountDataRequestJob } from './account-data-request-job.mts'
 
@@ -13,6 +16,25 @@ describe('processAccountDataRequestJob', () => {
     await expect(processAccountDataRequestJob(job('unknown'))).rejects.toThrow(
       'Unknown job name: unknown',
     )
+  })
+
+  it('rejects an export job without processingAttemptId before claiming the request', async () => {
+    const user = await createTestUser()
+    const request = await createDataRequest(user.id, user.id)
+
+    await expect(
+      processAccountDataRequestJob(
+        job(ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name, {
+          requestId: request.id,
+          userId: user.id,
+        }),
+      ),
+    ).rejects.toThrow('processingAttemptId must be a non-empty string')
+
+    expect(await getDataRequestById(user.id, user.id, request.id)).toMatchObject({
+      status: 'pending',
+      last_error_message: null,
+    })
   })
 
   it('routes a recovery job to the recovery sweep', async () => {

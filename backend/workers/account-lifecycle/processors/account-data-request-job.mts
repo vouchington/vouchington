@@ -5,6 +5,7 @@ import {
   ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
   type AccountLifecycleJobPayloads,
 } from '@queues/background/enqueues/account-lifecycle-jobs'
+import { parseExportRequestJobData } from '@queues/account-lifecycle/payload/job-payload'
 import {
   processCleanupExpiredExports,
   processExportRequest,
@@ -30,13 +31,9 @@ type AccountDataRequestJob = Extract<
 export async function processAccountDataRequestJob(job: AccountDataRequestJob): Promise<void> {
   const jobName: string = job.name
   if (job.name === ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name) {
+    const { requestId, userId, processingAttemptId } = parseExportRequestJobData(job.data)
     const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1)
-    await processExportRequest(
-      job.data.requestId,
-      job.data.userId,
-      job.data.processingAttemptId,
-      isFinalAttempt,
-    )
+    await processExportRequest(requestId, userId, processingAttemptId, isFinalAttempt)
     return
   }
   if (job.name === ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.name) {
