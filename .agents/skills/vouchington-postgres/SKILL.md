@@ -37,4 +37,5 @@ Schema and migration rules live in [`backend/data-stores/psql/AGENTS.md`](../../
 ## Indexes
 
 - A measured index fix needs no separate approval; keep it in the query's PR with before/after plans.
+- Prefix autocomplete uses a `COLLATE "C"` btree index with `COLLATE "C"` range bounds, `ORDER BY`, and keyset cursor, gated on the index, bounds, and `noSort: true`; `text_pattern_ops` serves neither `ORDER BY` nor `ILIKE`.
 - Recheck an index change's dependent queries with the [EXPLAIN ANALYZE harness](../../../docs/prompts/scheduled/postgresql-explain-analyze.md) and add or update scenarios and plan gates under `backend/scripts/explain-analyze/`.

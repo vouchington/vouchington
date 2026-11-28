@@ -145589,19 +145589,19 @@
       },
       "hasDescendants": false,
       "indexes": {
-        "idx_topic_aliases__alias__text_pattern_ops": {
+        "idx_topic_aliases__alias_c": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_aliases__alias__text_pattern_ops ON public.topic_aliases USING btree (lower(alias) text_pattern_ops)",
+          "definition": "CREATE INDEX idx_topic_aliases__alias_c ON public.topic_aliases USING btree (alias COLLATE \"C\") INCLUDE (topic_id)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": null,
+              "collation": "pg_catalog.\"C\"",
+              "column": "alias",
               "descending": false,
-              "expression": "lower(alias)",
+              "expression": "alias",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_pattern_ops",
+              "opclass": "pg_catalog.text_ops",
               "orderingSupported": false
             }
           ],
@@ -155073,29 +155073,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_topics__name__text_pattern_ops": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__name__text_pattern_ops ON public.topics USING btree (lower(name) text_pattern_ops)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": null,
-              "descending": false,
-              "expression": "lower(name)",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_pattern_ops",
-              "orderingSupported": false
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_topics__name_trgm": {
           "accessMethod": "gist",
           "constraintBacked": false,
@@ -155204,29 +155181,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_topics__slug__text_pattern_ops": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__slug__text_pattern_ops ON public.topics USING btree (slug text_pattern_ops)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "slug",
-              "descending": false,
-              "expression": "slug",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_pattern_ops",
-              "orderingSupported": false
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_topics__slug_trgm": {

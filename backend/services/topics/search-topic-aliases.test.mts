@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { searchTopicAliases } from './search-topic-aliases.mts'
 import { createTestUser, createTestTopic } from '@voucha/test-helpers'
+import { getPostgresLowerForTest } from '@voucha/test-helpers/topic-aliases'
 import { createTopicAliases } from './aliases.mts'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from './get.mts'
@@ -41,6 +42,132 @@ describe('searchTopicAliases - merged topic filter', () => {
       prefixQuery: `${key}${symbol}`,
     })
     expect(results.map(result => result.alias)).toEqual([literal])
+
+    const { results: withoutTopicId } = await searchTopicAliases({
+      prefixQuery: `${key}${symbol}`,
+    })
+    expect(withoutTopicId.map(result => result.alias)).toEqual([literal])
+  })
+
+  it('matches mixed-case prefix queries in ascending alias order with cursor pagination', async () => {
+    const topic = await createTestTopic()
+    const key = `mixcase-${crypto.randomUUID()}`
+    const expected = [`${key}-a`, `${key}-b`, `${key}-c`]
+    await createTopicAliases(topic.id, [...expected, `other-${key}`])
+
+    const mixedPrefix = `  MiXcAsE-${key.slice('mixcase-'.length).toUpperCase()}-  `
+    const all = await searchTopicAliases({ prefixQuery: mixedPrefix, limit: 10 })
+    expect(all.results.map(result => result.alias)).toEqual(expected)
+    expect(all.hasNextPage).toBe(false)
+
+    const page1 = await searchTopicAliases({ prefixQuery: mixedPrefix, limit: 2 })
+    expect(page1.results.map(result => result.alias)).toEqual(expected.slice(0, 2))
+    expect(page1.hasNextPage).toBe(true)
+    expect(page1.endAlias).toBe(expected[1])
+
+    const page2 = await searchTopicAliases({
+      prefixQuery: mixedPrefix,
+      limit: 2,
+      after: page1.endAlias!,
+    })
+    expect(page2.results.map(result => result.alias)).toEqual(expected.slice(2))
+    expect(page2.hasNextPage).toBe(false)
+  })
+
+  it('combines mixed case with literal % wildcard characters', async () => {
+    const topic = await createTestTopic()
+    const id = crypto.randomUUID()
+    const literal = `mixpct-${id}-a%b-match`
+    const wildcardDecoy = `mixpct-${id}-axb-match`
+    await createTopicAliases(topic.id, [literal, wildcardDecoy])
+
+    const { results } = await searchTopicAliases({
+      prefixQuery: `  MiXpCt-${id.toUpperCase()}-A%B  `,
+    })
+    expect(results.map(result => result.alias)).toEqual([literal])
+  })
+
+  it('folds uppercase non-ASCII prefixes in PostgreSQL LOWER()', async () => {
+    const topic = await createTestTopic()
+    const id = crypto.randomUUID()
+    const pgLoweredDottedI = await getPostgresLowerForTest('İ')
+    const accented = `éclair-${id}`
+    const dottedI = `${pgLoweredDottedI}stanbul-${id}`
+    await createTopicAliases(topic.id, [accented, dottedI, `eclair-${id}`])
+
+    const { results: accentedResults } = await searchTopicAliases({
+      prefixQuery: `ÉCLAIR-${id.toUpperCase()}`,
+    })
+    expect(accentedResults.map(result => result.alias)).toEqual([accented])
+
+    const { results: dottedIResults } = await searchTopicAliases({
+      prefixQuery: `İSTANBUL-${id.toUpperCase()}`,
+    })
+    expect(dottedIResults.map(result => result.alias)).toEqual([dottedI])
+  })
+
+  it('handles upper-bound edge prefixes (non-ASCII, U+D7FF, trailing U+10FFFF, all U+10FFFF)', async () => {
+    const topic = await createTestTopic()
+    const id = crypto.randomUUID()
+    const nonAsciiPrefix = `edge-${id}-é`
+    const nonAsciiMatch = `${nonAsciiPrefix}clair`
+    const nonAsciiNeighbour = `edge-${id}-êclair`
+
+    const d7ffPrefix = `edge-${id}-\uD7FF`
+    const d7ffMatch = `${d7ffPrefix}match`
+    const d7ffNeighbour = `edge-${id}-\uE000match`
+
+    const trailingMaxPrefix = `edge-${id}-a\u{10FFFF}`
+    const trailingMaxMatch = `${trailingMaxPrefix}match`
+    const trailingMaxPrev = `edge-${id}-a\u{10FFFE}match`
+    const trailingMaxNext = `edge-${id}-bmatch`
+
+    const allMaxPrefix = '\u{10FFFF}\u{10FFFF}'
+    const allMaxMatch = `${allMaxPrefix}${id}`
+    const allMaxNeighbour = `\u{10FFFF}${id}`
+
+    await createTopicAliases(topic.id, [
+      nonAsciiMatch,
+      nonAsciiNeighbour,
+      d7ffMatch,
+      d7ffNeighbour,
+      trailingMaxMatch,
+      trailingMaxPrev,
+      trailingMaxNext,
+      allMaxMatch,
+      allMaxNeighbour,
+    ])
+
+    const nonAscii = await searchTopicAliases({ prefixQuery: nonAsciiPrefix })
+    expect(nonAscii.results.map(r => r.alias)).toEqual([nonAsciiMatch])
+
+    const d7ff = await searchTopicAliases({ prefixQuery: d7ffPrefix })
+    expect(d7ff.results.map(r => r.alias)).toEqual([d7ffMatch])
+
+    const trailingMax = await searchTopicAliases({ prefixQuery: trailingMaxPrefix })
+    expect(trailingMax.results.map(r => r.alias)).toEqual([trailingMaxMatch])
+
+    const allMax = await searchTopicAliases({ topicId: topic.id, prefixQuery: allMaxPrefix })
+    expect(allMax.results.map(r => r.alias)).toEqual([allMaxMatch])
+  })
+
+  it('orders prefix matches by code point (COLLATE "C") across hyphens and accented letters', async () => {
+    const topic = await createTestTopic()
+    const key = `byteord-${crypto.randomUUID()}`
+    const expected = [`${key}-a-b`, `${key}-ab`, `${key}-z`, `${key}-é`]
+    await createTopicAliases(topic.id, expected.toReversed())
+
+    const page1 = await searchTopicAliases({ prefixQuery: key, limit: 2 })
+    expect(page1.results.map(result => result.alias)).toEqual(expected.slice(0, 2))
+    expect(page1.hasNextPage).toBe(true)
+
+    const page2 = await searchTopicAliases({
+      prefixQuery: key,
+      limit: 2,
+      after: page1.endAlias!,
+    })
+    expect(page2.results.map(result => result.alias)).toEqual(expected.slice(2))
+    expect(page2.hasNextPage).toBe(false)
   })
 
   it('returns aliases for active topics', async () => {

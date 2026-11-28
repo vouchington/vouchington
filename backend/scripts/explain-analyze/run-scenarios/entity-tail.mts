@@ -17,16 +17,16 @@ import { runViewDrivenHostnameScenarios } from './view-driven-hostnames.mts'
 import { runTopicDataPointInsightsScenario } from './topic-data-point-insights.mts'
 
 export async function runTopicAliasSearchScenarios(): Promise<void> {
-  // The alias keyset owns the order; topics are looked up by alias target id before limiting.
+  // Byte-ordered idx_topic_aliases__alias_c serves prefix range, keyset cursor, and ORDER BY
+  // in both custom and generic plans with no Sort, stopping after one page.
   registerScenarioContract('search-topic-aliases', {
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['topic_aliases_alias_key', 'topics_pkey'],
+        indexes: ['idx_topic_aliases__alias_c', 'topics_pkey'],
         noSort: true,
       },
-      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
-      { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
+      { kind: 'custom', name: 'topicAliasPrefixCandidates' },
     ],
   })
   const firstAliasPage = await searchTopicAliases({ prefixQuery: 'seed', limit: 25 })
@@ -38,25 +38,42 @@ export async function runTopicAliasSearchScenarios(): Promise<void> {
       expectations: [
         {
           kind: 'usesIndexes',
-          indexes: ['topic_aliases_alias_key', 'topics_pkey'],
+          indexes: ['idx_topic_aliases__alias_c', 'topics_pkey'],
           noSort: true,
         },
-        { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
-        { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
+        { kind: 'custom', name: 'topicAliasPrefixCandidates' },
       ],
     })
     await runAndCapture('search-topic-aliases-cursor', () =>
       searchTopicAliases({ prefixQuery: 'seed', limit: 25, after: firstAliasPage.endAlias! }),
     )
   }
+  registerScenarioContract('search-topic-aliases-selective-prefix', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_topic_aliases__alias_c', 'topics_pkey'],
+        noSort: true,
+      },
+      { kind: 'custom', name: 'topicAliasPrefixCandidates' },
+    ],
+  })
+  await runAndCapture('search-topic-aliases-selective-prefix', async () => {
+    const page = await searchTopicAliases({ prefixQuery: 'seed-alias-199', limit: 25 })
+    if (page.results.length !== 11 || page.hasNextPage) {
+      throw new Error(
+        `Expected 11 selective alias matches for seed-alias-199, got ${page.results.length}`,
+      )
+    }
+  })
   registerScenarioContract('search-topic-aliases-unfiltered', {
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['topic_aliases_alias_key', 'topics_pkey'],
+        indexes: ['idx_topic_aliases__alias_c', 'topics_pkey'],
         noSort: true,
       },
-      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
+      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 120 },
       { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
     ],
   })

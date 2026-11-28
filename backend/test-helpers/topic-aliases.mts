@@ -13,3 +13,11 @@ export async function getTopicAliasUnlinkOwnerForTest(aliasId: string) {
   )
   return rows[0]
 }
+
+export async function getPostgresLowerForTest(value: string): Promise<string> {
+  const { rows } = await read<{ lowered: string }>(
+    `/* getPostgresLowerForTest */ SELECT LOWER($1::text) AS lowered`,
+    [value],
+  )
+  return rows[0]!.lowered
+}

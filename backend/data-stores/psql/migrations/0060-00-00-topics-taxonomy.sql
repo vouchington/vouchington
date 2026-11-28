@@ -271,17 +271,9 @@ COMMENT ON COLUMN topic_merge_metric_users.topic_vote_score_is_semantic IS 'Whet
 COMMENT ON COLUMN topic_merge_metric_users.cursor_review_post_id IS 'Ordering marker for the latest eligible review seen on a page.';
 COMMENT ON COLUMN topic_merge_metric_users.review_rating IS 'Rating from the latest eligible review.';
 
--- search topics by name
-CREATE INDEX IF NOT EXISTS idx_topics__name__text_pattern_ops
-ON topics (LOWER(name) text_pattern_ops);
-
 -- unique index on slug
 CREATE UNIQUE INDEX IF NOT EXISTS idx_topics__slug
 ON topics (slug);
-
--- search topics by slug
-CREATE INDEX IF NOT EXISTS idx_topics__slug__text_pattern_ops
-ON topics (slug text_pattern_ops);
 
 -- unique index on name
 CREATE UNIQUE INDEX IF NOT EXISTS idx_topics__name
@@ -742,9 +734,10 @@ CREATE INDEX IF NOT EXISTS idx_topic_aliases__topic_id
 ON topic_aliases (topic_id, alias)
 WHERE topic_id IS NOT NULL;
 
--- search by prefix for searching aliases
-CREATE INDEX IF NOT EXISTS idx_topic_aliases__alias__text_pattern_ops
-ON topic_aliases (LOWER(alias) text_pattern_ops);
+-- prefix range, ordering, and keyset cursor for alias autocomplete in byte order
+-- (CHECK (alias = LOWER(alias)) keeps alias lowercase; topic_aliases_alias_key enforces uniqueness)
+CREATE INDEX IF NOT EXISTS idx_topic_aliases__alias_c
+ON topic_aliases (alias COLLATE "C") INCLUDE (topic_id);
 
 -- full text search for aliases
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__search_vector

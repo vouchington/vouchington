@@ -4,6 +4,7 @@ export const ELIGIBLE_LIST_SCENARIO_IDS = [
   'landing-page-candidate-source-referral-owner-update',
   'deleted-parent-followed-feeds-cursor',
   'search-topic-aliases-cursor',
+  'search-topic-aliases-selective-prefix',
   'search-topic-aliases-unfiltered',
   'sitemap-landing-pages-deep-page',
   'community-members-deleted-prefix-first',
