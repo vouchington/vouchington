@@ -108,6 +108,20 @@ export async function readTestRepeatInfringerOpenReviewIds(accountId: string): P
   return rows.map(row => row.id)
 }
 
+export async function readTestRepeatInfringerReviewIdentityIds(
+  accountId: string,
+): Promise<string[]> {
+  const { rows } = await read<{ id: string }>(
+    sql`/* readTestRepeatInfringerReviewIdentityIds */
+    SELECT id
+    FROM copyright_repeat_infringer_review_identities
+    WHERE account_user_id = ${accountId}
+    ORDER BY id
+  `,
+  )
+  return rows.map(row => row.id)
+}
+
 export async function readTestRepeatInfringerAccountState(accountId: string) {
   const { rows } = await read<{
     is_termination_in_effect: boolean
