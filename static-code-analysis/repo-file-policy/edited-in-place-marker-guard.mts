@@ -5,7 +5,7 @@ import {
   PRE_LAUNCH_IN_PLACE_EDITS,
 } from './postgres-schema-guardrail-allowlist.mts'
 
-// Kept in sync with the marker text backend/data-stores/psql/AGENTS.md#migration-rules mandates.
+// Kept in sync with the marker text backend/data-stores/psql/AGENTS.md#prelaunch-storage mandates.
 const CURRENT_EDITED_IN_PLACE_MARKER =
   '-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)'
 // Retired wording. Only files listed in LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS may still use it.
@@ -29,7 +29,7 @@ export function checkEditedInPlaceMarkerWording(
       errors.push(
         `::error file=${file},line=${lineNum}::the pre-launch in-place-edit convention has been ` +
           'retired (PRE_LAUNCH_IN_PLACE_EDITS.permitted is false); remove this marker and treat the ' +
-          'file as a normal deployed migration (see backend/data-stores/psql/AGENTS.md#migration-rules)',
+          'file as a normal deployed migration (see backend/data-stores/psql/AGENTS.md#prelaunch-storage)',
       )
       continue
     }
@@ -42,13 +42,13 @@ export function checkEditedInPlaceMarkerWording(
       errors.push(
         `::error file=${file},line=${lineNum}::edited-in-place marker uses the retired wording ` +
           `"never deployed to production"; use "${CURRENT_EDITED_IN_PLACE_MARKER}" (see ` +
-          'backend/data-stores/psql/AGENTS.md#migration-rules)',
+          'backend/data-stores/psql/AGENTS.md#prelaunch-storage)',
       )
       continue
     }
     errors.push(
       `::error file=${file},line=${lineNum}::edited-in-place marker must read exactly ` +
-        `"${CURRENT_EDITED_IN_PLACE_MARKER}" (see backend/data-stores/psql/AGENTS.md#migration-rules)`,
+        `"${CURRENT_EDITED_IN_PLACE_MARKER}" (see backend/data-stores/psql/AGENTS.md#prelaunch-storage)`,
     )
   }
 }

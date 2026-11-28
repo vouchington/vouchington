@@ -16,7 +16,7 @@
       # Each capped retention page locks, deletes, and checkpoints in one transaction.
       # A per-page PostgreSQL effect is required; the loop is bounded by maxBatches.
       - { file: backend/services/data-retention/cleanup-auth-sessions.mts, callee: 'cleanupPage' }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: persistFacebookFriendPage chunks one provider page (at most the asserted provider page size) by friend_mutation_batch_size, one set-based INSERT...UNNEST transaction per chunk.
+      # persistFacebookFriendPage chunks one provider page (at most the asserted provider page size) by friend_mutation_batch_size, one set-based INSERT...UNNEST transaction per chunk.
       - {
           file: backend/services/oauth-facebook/friends-persistence.mts,
           callee: 'persistFacebookFriendBatch',
@@ -36,7 +36,7 @@
         }
       # The provider page loop is counted by max_provider_pages_per_run (DynamicConfig hard max 100); each page is one external fetch plus one persisted page, and the run returns a continuation job at the cap.
       - { file: backend/services/oauth-facebook/friends.mts, callee: 'persistFacebookFriendPage' }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: persistGithubFriendPage chunks one provider page (at most the asserted provider page size) by friend_mutation_batch_size, one set-based INSERT...UNNEST transaction per chunk.
+      # persistGithubFriendPage chunks one provider page (at most the asserted provider page size) by friend_mutation_batch_size, one set-based INSERT...UNNEST transaction per chunk.
       - {
           file: backend/services/oauth-github/friends-persistence.mts,
           callee: 'persistGithubFriendBatch',
@@ -56,7 +56,7 @@
         }
       # The provider page loop is counted by max_provider_pages_per_run (DynamicConfig hard max 100); each page is one external fetch plus one persisted page, and the run returns a continuation job at the cap.
       - { file: backend/services/oauth-github/friends.mts, callee: 'persistGithubFriendPage' }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: persistXFriendPage chunks one provider page (at most the asserted provider page size) by friend_mutation_batch_size, one set-based INSERT...UNNEST transaction per chunk.
+      # persistXFriendPage chunks one provider page (at most the asserted provider page size) by friend_mutation_batch_size, one set-based INSERT...UNNEST transaction per chunk.
       - { file: backend/services/oauth-x/friend-pages.mts, callee: 'persistXFriendBatch' }
       # Each finalize pass is a counted loop of at most max_finalize_batches_per_run (DynamicConfig hard max 100) batches in backend/services/oauth-x/work-limits.mts; the run then returns a continuation job instead of looping on.
       - { file: backend/services/oauth-x/friend-pages.mts, callee: 'getStaleXFriendIds' }
@@ -109,26 +109,26 @@
           file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
           callee: 'createRssHashtagItem',
         }
-      # Native-MV trending contract inserts one follow relation per feed of the literal [trendingId, hiddenId, secondaryId] list (trending-http.mts:88); no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Native-MV trending contract inserts one follow relation per feed of the literal [trendingId, hiddenId, secondaryId] list (trending-http.mts:88).
       - {
           file: backend/scripts/native-mv-contracts/trending-http.mts,
           callee: 'insertEntityRelation',
         }
-      # Dev-only login helper: loops the requested extraRoles, a short fixed persona role list, for one locally minted user (login-as/run.mts:96). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Dev-only login helper: loops the requested extraRoles, a short fixed persona role list, for one locally minted user (login-as/run.mts:96).
       - { file: backend/scripts/login-as/run.mts, callee: 'addUserRole' }
-      # Dev-only login helper: mints one deep link per persona of the closed ALL_PERSONAS list (login-as/run.mts:121). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Dev-only login helper: mints one deep link per persona of the closed ALL_PERSONAS list (login-as/run.mts:121).
       - { file: backend/scripts/login-as/run.mts, callee: 'mintDeepLink' }
-      # Closed set: one export cursor per user bookmark relation of the static entityRelationMetadatum list (stream-bookmarks.mts:18); each cursor streams its own table. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: one export cursor per user bookmark relation of the static entityRelationMetadatum list (stream-bookmarks.mts:18); each cursor streams its own table.
       - {
           file: backend/services/account-data-requests/stream-bookmarks.mts,
           callee: 'createAsyncGeneratorFromCursor',
         }
-      # Closed set: one export cursor per non-bookmark relation of the static entityRelationMetadatum list (stream-entity-relations.mts:18); each cursor streams its own table. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: one export cursor per non-bookmark relation of the static entityRelationMetadatum list (stream-entity-relations.mts:18); each cursor streams its own table.
       - {
           file: backend/services/account-data-requests/stream-entity-relations.mts,
           callee: 'createAsyncGeneratorFromCursor',
         }
-      # Promise.all over the extension names of one admin topic row, each branch a different callee (process-topic-row-relations.mts:15-20); no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed.
+      # Promise.all over the extension names of one admin topic row, each branch a different callee (process-topic-row-relations.mts:15-20).
       - {
           file: backend/services/admin-imports/process-topic-row-relations.mts,
           callee: 'replaceSpendingCategoryAttributes',
@@ -143,7 +143,7 @@
       - { file: backend/services/articles/sync-process.mts, callee: 'createPost' }
       - { file: backend/services/articles/sync-process.mts, callee: 'tagPostWithTopics' }
       - { file: backend/services/articles/sync-process.mts, callee: 'updatePost' }
-      # Chunk loop: advances batchSize markdown files per iteration (sync.mts:50), one prepared batch per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Chunk loop: advances batchSize markdown files per iteration (sync.mts:50), one prepared batch per chunk.
       - { file: backend/services/articles/sync.mts, callee: 'processPreparedArticles' }
       # Per stale batch (stale-cleanup.mts:26): the Bedrock provider stop and lock cleanup differ per batch and run serially so one quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in bedrock-embeddings-batch/orchestrator/find-stale.mts:13.
       - {
@@ -154,20 +154,20 @@
           file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
           callee: 'processBatch',
         }
-      # Closed set: allRelations is the static user is_bookmark subset of entityRelationMetadatum (bloom-filter.mts:80); each relation has its own table, streamed in BOOKMARK_BLOOM_BATCH_SIZE batches. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: allRelations is the static user is_bookmark subset of entityRelationMetadatum (bloom-filter.mts:80); each relation has its own table, streamed in BOOKMARK_BLOOM_BATCH_SIZE batches.
       - { file: backend/services/bookmarks/bloom-filter.mts, callee: 'bookmarkBloomBatchesFromDb' }
       - {
           file: backend/services/bookmarks/bloom-filter.mts,
           callee: 'getUserBookmarkRelationCount',
         }
-      # Closed set: one query per narrowed bookmark relation plan of the static entityRelationMetadatum list (get.mts:77); each plan reads its own table with a bounded object id list. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: one query per narrowed bookmark relation plan of the static entityRelationMetadatum list (get.mts:77); each plan reads its own table with a bounded object id list.
       - { file: backend/services/bookmarks/get.mts, callee: 'queryBookmarksForRelation' }
-      # Chunk loop: advances EMBEDDED_FIRST_COMMUNITY_POSTS_CHUNK_SIZE post ids per iteration (ban-evasion-embedding-enqueues.mts:25), one enqueue per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Chunk loop: advances EMBEDDED_FIRST_COMMUNITY_POSTS_CHUNK_SIZE post ids per iteration (ban-evasion-embedding-enqueues.mts:25), one enqueue per chunk.
       - {
           file: backend/services/posts/ban-evasion-embedding-enqueues.mts,
           callee: 'enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk',
         }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: closed surface-kind set, at most the two references built in prepublishChangedCommunitySurfaces (community-profile-image, community-banner-image) in communities/update-transaction.mts.
+      # Closed surface-kind set: at most the two references built in prepublishChangedCommunitySurfaces (community-profile-image, community-banner-image) in communities/update-transaction.mts.
       - {
           file: backend/services/communities/update-transaction.mts,
           callee: 'syncImageSurfacePlacement',
@@ -207,7 +207,7 @@
           file: backend/services/copyright-notices/territorial-redress.mts,
           callee: 'createCopyrightRestoreIntentForReversalInTransaction',
         }
-      # Capped page loop: `while (count + probes < maxRows)` (dispatch-crawl-hostnames.mts:25), one dispatch page per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Capped page loop: `while (count + probes < maxRows)` (dispatch-crawl-hostnames.mts:25), one dispatch page per iteration.
       - {
           file: backend/services/crawls/dispatch-crawl-hostnames.mts,
           callee: 'dispatchHostnamePage',
@@ -217,32 +217,32 @@
           file: backend/services/data-retention/cleanup-batches.mts,
           callee: 'cleanupSoftDeletedUser',
         }
-      # Closed set: one cursor transaction per key of the ROOT_FAMILIES constant (cleanup-retained-identities.mts:23); page size is validated to 1..1000. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: one cursor transaction per key of the ROOT_FAMILIES constant (cleanup-retained-identities.mts:23); page size is validated to 1..1000.
       - {
           file: backend/services/data-retention/cleanup-retained-identities.mts,
           callee: 'cleanupRetainedIdentityFamily',
         }
-      # Closed set: one cursor transaction per elected relation table of the static relation metadata (cleanup-retained-relation-identities.mts:61); page size is validated to 1..1000. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: one cursor transaction per elected relation table of the static relation metadata (cleanup-retained-relation-identities.mts:61); page size is validated to 1..1000.
       - {
           file: backend/services/data-retention/cleanup-retained-relation-identities.mts,
           callee: 'cleanupRelationFamily',
         }
-      # Capped page loop: `while (batchesRun < maxBatches)` (cleanup-orphaned-oauth-accounts.mts:35), one DELETE batch per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Capped page loop: `while (batchesRun < maxBatches)` (cleanup-orphaned-oauth-accounts.mts:35), one DELETE batch per iteration.
       - {
           file: backend/services/data-retention/cleanup-orphaned-oauth-accounts.mts,
           callee: 'deleteOrphanedOAuthAccountBatch',
         }
-      # Capped page loop: `for (batch < maxBatches)` (cleanup-soft-deleted-users.mts:16), one batch per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Capped page loop: `for (batch < maxBatches)` (cleanup-soft-deleted-users.mts:16), one batch per iteration.
       - {
           file: backend/services/data-retention/cleanup-soft-deleted-users.mts,
           callee: 'cleanupSoftDeletedUserBatch',
         }
-      # Chunk loop over the id chunks of one vote-stats refresh (vote-stats-batch.mts:41), one refresh statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Chunk loop over the id chunks of one vote-stats refresh (vote-stats-batch.mts:41), one refresh statement per chunk.
       - {
           file: backend/services/elections-votes/entity-relation/vote-stats-batch.mts,
           callee: 'refreshChunkAndCapture',
         }
-      # Storage-provider cleanup per staged upload: slices of STAGED_SOURCE_CLEANUP_CONCURRENCY from a page capped at cleanup_batch_size (getImagesWorkLimit); each takes its own advisory-lock session so it cannot be one statement. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed for the slice loop.
+      # Storage-provider cleanup per staged upload: slices of STAGED_SOURCE_CLEANUP_CONCURRENCY from a page capped at cleanup_batch_size (getImagesWorkLimit); each takes its own advisory-lock session so it cannot be one statement.
       - {
           file: backend/services/images/cleanup-abandoned-uploads.mts,
           callee: 'cleanupStagedUploadSource',
@@ -252,7 +252,7 @@
           file: backend/services/media-delivery-safety/delivery-registry-recovery.mts,
           callee: 'processMediaDeliveryRegistryRecord',
         }
-      # Dependent chain: each token alias is ensured after its linked predecessor in order (lineage.mts:150), and the root lookup depth is capped by MAX_LINKED_TOKEN_DEPTH (lineage.mts:38); no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed.
+      # Dependent chain: each token alias is ensured after its linked predecessor in order (lineage.mts:150), and the root lookup depth is capped by MAX_LINKED_TOKEN_DEPTH (lineage.mts:38).
       - {
           file: backend/services/memberships/google/lineage.mts,
           callee: 'ensureGooglePlayTokenAlias',
@@ -262,22 +262,22 @@
           file: backend/services/memberships/grants/expire-elapsed-batch.mts,
           callee: 'expireElapsedMembershipsForUserInTransaction',
         }
-      # Closed set: one publish per descriptor of the CATALOG constant (stripe-catalog.mts:88). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: one publish per descriptor of the CATALOG constant (stripe-catalog.mts:88).
       - {
           file: backend/services/memberships/stripe-catalog.mts,
           callee: 'publishStripeCatalogMapping',
         }
-      # Loop is closed by the recipient temp table, which is created with LIMIT pageSize (reconcile-batches.mts:73), so at most pageSize/batchSize iterations; each iteration mutates session temp tables before the cursor advances. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Loop is closed by the recipient temp table, which is created with LIMIT pageSize (reconcile-batches.mts:73), so at most pageSize/batchSize iterations; each iteration mutates session temp tables before the cursor advances.
       - {
           file: backend/services/notifications/reconcile-batches.mts,
           callee: 'createNextRecipientNotificationBatch',
         }
-      # Loop is closed by the created-notification temp table filled from one pageSize recipient page, so at most pageSize/batchSize iterations; each callback applies backpressure before the keyset cursor advances. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Loop is closed by the created-notification temp table filled from one pageSize recipient page, so at most pageSize/batchSize iterations; each callback applies backpressure before the keyset cursor advances.
       - {
           file: backend/services/notifications/reconcile-temp-tables.mts,
           callee: 'dispatchNextCreatedNotificationBatch',
         }
-      # Closed set: one DELETE per retention table inside a loop capped by `remaining > 0 && deleted < budget` (retention.mts:60). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: one DELETE per retention table inside a loop capped by `remaining > 0 && deleted < budget` (retention.mts:60).
       - {
           file: backend/services/oauth-authorization-server/retention.mts,
           callee: 'deleteExpiredRows',
@@ -287,7 +287,7 @@
           file: backend/services/openai-moderation/delete-flagged.mts,
           callee: 'deleteFlaggedImage',
         }
-      # Chunk loops over orderedCategoryChunks (categories-chunks.mts:41,115), one statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Chunk loops over orderedCategoryChunks (categories-chunks.mts:41,115), one statement per chunk.
       - {
           file: backend/services/rss-feed-items/categories-chunks.mts,
           callee: 'insertMissingCategoriesChunk',
@@ -296,7 +296,7 @@
           file: backend/services/rss-feed-items/categories-chunks.mts,
           callee: 'updateMatchedCategoriesChunk',
         }
-      # Chunk loops over categorySqlBatches (categories.mts:66,149), one SELECT per batch. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Chunk loops over categorySqlBatches (categories.mts:66,149), one SELECT per batch.
       - { file: backend/services/rss-feed-items/categories.mts, callee: 'readCategoryDataChunk' }
       # KEEP (pg-schema ruling): no lock is held across rows. Each row is isolated on purpose: its own
       # poison-snapshot isolation (one bad snapshot must not fail the page) and its own change_id enqueue,
@@ -311,21 +311,21 @@
           file: backend/services/rss-feed-items/category-snapshot-reconciliations.mts,
           callee: 'upsertRssFeedItemCategories',
         }
-      # Closed set: the literal ['topic', 'topic_alias'] kinds (reconcile-category-votes.mts:65). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: the literal ['topic', 'topic_alias'] kinds (reconcile-category-votes.mts:65).
       - {
           file: backend/services/rss-feed-items/reconcile-category-votes.mts,
           callee: 'retractUnsupportedCategorizerVotesForKind',
         }
-      # Chunk loop over urlChunks (upsert-prepare.mts:46), one addUrls call per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Chunk loop over urlChunks (upsert-prepare.mts:46), one addUrls call per chunk.
       - { file: backend/services/rss-feed-items/upsert-prepare.mts, callee: 'addUrls' }
-      # Chunk loop of RSS_FEED_ITEM_SQL_BATCH_SIZE items (upsert-write-locks.mts:48), one statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Chunk loop of RSS_FEED_ITEM_SQL_BATCH_SIZE items (upsert-write-locks.mts:48), one statement per chunk.
       - {
           file: backend/services/rss-feed-items/upsert-write-locks.mts,
           callee: 'upsertRssFeedItemIdentities',
         }
-      # Chunk loop of RSS_FEED_ITEM_SQL_BATCH_SIZE items (upsert.mts:120), one statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Chunk loop of RSS_FEED_ITEM_SQL_BATCH_SIZE items (upsert.mts:120), one statement per chunk.
       - { file: backend/services/rss-feed-items/upsert.mts, callee: 'upsertRssFeedItemContent' }
-      # Chunk loop of RSS_FEED_CATEGORY_SQL_BATCH_SIZE categories (categories.mts:38), one statement per chunk. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Chunk loop of RSS_FEED_CATEGORY_SQL_BATCH_SIZE categories (categories.mts:38), one statement per chunk.
       - { file: backend/services/rss-feeds/categories.mts, callee: 'upsertRssFeedCategoriesChunk' }
       # Best-effort lease per refund operation recorded for this one event; the operation ids derive from the same single refund page as recordMembershipRefundEvent (event-charge-handlers.mts:79).
       - {
@@ -337,7 +337,7 @@
           file: backend/services/stripe/event-charge-handlers.mts,
           callee: 'recordMembershipRefundEvent',
         }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: closed surface-kind set, at most the two references built in topics/update.mts (topic-logo-image, topic-hero-image).
+      # Closed surface-kind set: at most the two references built in topics/update.mts (topic-logo-image, topic-hero-image).
       - { file: backend/services/topics/update.mts, callee: 'syncImageSurfacePlacement' }
       # Each pending request is a different follower user with their own relation limits and authorization, so it cannot share one batch; requests are one LIMIT batchSize page (auto-follow-on-approval.mts:38) followed with chunked concurrency.
       - {
@@ -349,25 +349,25 @@
           file: backend/services/user-import-export/import-topics.mts,
           callee: 'admitImportedTopicRecommendation',
         }
-      # Closed set: one call per relation table with changes, sorted (delete-entity-relation-votes.mts:160). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: one call per relation table with changes, sorted (delete-entity-relation-votes.mts:160).
       - {
           file: backend/services/users/delete-entity-relation-votes.mts,
           callee: 'recordPostTopicRelationPublicationChanges',
         }
-      # Closed set: deleteOwnedRows loops the VOTE_SCHEMA_CONFIGS constant (delete-phases.mts:77) and deleteUserSubjectRelationRows loops userRelationTables (delete-phases.mts:107), both bounded per page. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: deleteOwnedRows loops the VOTE_SCHEMA_CONFIGS constant (delete-phases.mts:77) and deleteUserSubjectRelationRows loops userRelationTables (delete-phases.mts:107), both bounded per page.
       - { file: backend/services/users/delete-phases.mts, callee: 'deleteOwnedRows' }
       - { file: backend/services/users/delete-phases.mts, callee: 'deleteUserSubjectRelationRows' }
-      # Closed set: one call per relation table, sorted (record-deleted-relation-impacts.mts:34). no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Closed set: one call per relation table, sorted (record-deleted-relation-impacts.mts:34).
       - {
           file: backend/services/users/record-deleted-relation-impacts.mts,
           callee: 'recordRelationTableImpacts',
         }
-      # Capped page loop: `for (batch < maxBatches)` (api-key-expiry.mts:22), one keyset page per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Capped page loop: `for (batch < maxBatches)` (api-key-expiry.mts:22), one keyset page per iteration.
       - {
           file: backend/workers/email-digests/processors/api-key-expiry.mts,
           callee: 'getApiKeysDueForExpiryReminder',
         }
-      # Capped page loop: `for (batch < maxBatches)` (renewal-notification-check.mts:16), one keyset page per iteration. no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed.
+      # Capped page loop: `for (batch < maxBatches)` (renewal-notification-check.mts:16), one keyset page per iteration.
       - {
           file: backend/workers/memberships/processors/renewal-notification-check.mts,
           callee: 'getUsersApproachingRenewalWithPriceIncrease',
@@ -399,30 +399,11 @@
           callee: 'query',
           line: 77,
         }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: the loop advances chunks of insert_chunk_size (getAdminImportsWorkLimit) rows, one INSERT per chunk.
+      # Chunk loop: advances chunks of insert_chunk_size (getAdminImportsWorkLimit) rows, one INSERT per chunk.
       - { file: backend/services/admin-imports/create-batch.mts, callee: 'write', line: 57 }
-      # no-mistakes FP jonathanong/no-mistakes#3110; remove when fixed: Promise.all over claim-token groups of one claim call; each group completes its whole id batch with one UPDATE.
-      - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query', line: 90 }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loop advances chunks of story_lifecycle_lock_batch_size (getPostPublicationWorkLimit), one unnest ORDER BY statement per chunk.
-      - {
-          file: backend/services/post-publication/story-lifecycle-lock.mts,
-          callee: 'query',
-          line: 17,
-        }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: Promise.all over chunkArray chunks of sql_batch_size (getRssFeedItemsWorkLimit) guids, one SELECT per chunk.
+      # Chunk loop: Promise.all over chunkArray chunks of sql_batch_size (getRssFeedItemsWorkLimit) guids, one SELECT per chunk.
       - { file: backend/services/rss-feed-items/upsert-existing.mts, callee: 'read', line: 16 }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: ordered lock loops advance chunks of sql_batch_size (getRssFeedItemsWorkLimit), one ANY($ids) statement per chunk.
-      - {
-          file: backend/services/rss-feed-items/upsert-write-locks.mts,
-          callee: 'txQuery',
-          line: 84,
-        }
-      - {
-          file: backend/services/rss-feed-items/upsert-write-locks.mts,
-          callee: 'txQuery',
-          line: 109,
-        }
-      # no-mistakes FP jonathanong/no-mistakes#3109; remove when fixed: loops the fixed literal statements array of processUserDeletionCredentialsBatch; each statement deletes at most batchSize rows and the first non-empty one ends the page.
+      # Closed set: loops the fixed literal statements array of processUserDeletionCredentialsBatch; each statement deletes at most batchSize rows and the first non-empty one ends the page.
       - { file: backend/services/users/delete-phase-credentials.mts, callee: 'query', line: 63 }
       # Real exception: one UPDATE per stale batch after that batch provider stop and lock cleanup, serial by design so one Bedrock quota failure cannot fan out; the page is capped by the getBatchListingPageSize() LIMIT in bedrock-embeddings-batch/orchestrator/find-stale.mts:13.
       - {
@@ -2536,7 +2517,6 @@
 - name: locks are taken only on written rows
   rule: postgres-lock-written-rows-only
   scope: repository
-  severity: advisory
   options:
     unanalyzableSql: ignore
     importSpecifier: '@data-stores/psql'
@@ -2545,6 +2525,10 @@
     schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
     include: ['backend/**/*.{ts,mts,js}']
     exclude: ['**/*.test.*', '**/__tests__/**', '**/test-helpers/**', 'backend/scripts/**']
+    checks:
+      # Established checks stay advisory by default; share-lock-then-write fails CI directly.
+      share-lock-then-write: fail
+      redundant-prelock: advise
 
 - name: counter columns have nonnegative checks
   rule: postgres-column-check-constraints
@@ -3698,6 +3682,8 @@
   options:
     sqlInclude:
       - backend/data-stores/psql/migrations/**/*.sql
+      - backend/data-stores/psql/config-driven/**/*.sql
+      - backend/data-stores/psql/views/**/*.sql
     allowDirective: redundant-index-guard-allow
 
 - name: enforce PostgreSQL column names and foreign-key semantics
@@ -4587,6 +4573,19 @@
       - '**/*.test.*'
       - '**/__tests__/**'
       - '**/test-helpers/**'
+
+- name: exported SQL fragments do not escape across modules
+  rule: postgres-sql-fragment-escape
+  scope: repository
+  severity: error
+  exclude:
+    - '**/*.test.*'
+    - '**/__tests__/**'
+    - '**/test-helpers/**'
+  options:
+    trustedSqlTags:
+      - module: sql-template-strings
+        name: default
 
 - name: server route folders hold no client code
   rule: server-route-client-boundary
