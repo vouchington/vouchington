@@ -93,8 +93,8 @@ export async function runRecommendedRssFeedsScenarios(): Promise<void> {
   }
 
   const heavyViewerId = seedUuid(RECOMMENDED_RSS_FEEDS_HEAVY_VIEWER_INDEX, '01')
-  await seedRecommendedRssFeedsHeavyFriendsAndTopics()
   try {
+    await seedRecommendedRssFeedsHeavyFriendsAndTopics()
     let firstPageCursor: string | undefined
     registerScenarioContract(
       'recommended-rss-feeds-heavy-friends-topics',
