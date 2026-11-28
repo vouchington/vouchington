@@ -69,12 +69,12 @@ async function capturePage(
         captureIndex: 1,
         max: 375,
       },
-      // The gate counts both primary-key reads and the UPDATE output.
+      // The gate counts the indexed target read and the UPDATE output.
       {
         kind: 'maxProcessedRows',
         relation: 'copyright_notice_email_intake_receipts',
         captureIndex: 2,
-        max: 3 * pageSize,
+        max: 2 * pageSize,
       },
       // This limits calls, not the work inside each call. See #6568.
       {
@@ -158,6 +158,10 @@ export async function runCopyrightReceiptReviewRetirementCapacity(): Promise<voi
       retired: pageSize / 2,
       hasMore: true,
     })
+    // Exercise the post-autovacuum visibility-map and stats state directly (#6778).
+    await write(
+      '/* vacuumAnalyzeCopyrightReceiptReviewContinuation */ VACUUM (ANALYZE) copyright_notice_email_intake_receipts',
+    )
     await capturePage(
       'copyright-receipt-review-retirement-continuation',
       continuation,
