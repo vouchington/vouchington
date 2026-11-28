@@ -83,13 +83,14 @@ describe('no-sql-in-backend-tests shrinking ignores list', () => {
   const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)))
   const rulePath = join(repoRoot, 'ast-grep-rules', 'no-sql-in-backend-tests.yml')
   // 2 helper globs + 6 package self-tests + 23 SQL-running psql schema tests.
-  const MAX_TOTAL_IGNORES = 31
+  // Exact count so removing an entry requires lowering this number in the same PR.
+  const EXPECTED_TOTAL_IGNORES = 31
 
-  it('caps total ignores at 31 and rejects duplicates or stale file paths', () => {
+  it('locks total ignores to 31 and rejects duplicates or stale file paths', () => {
     const parsed = parse(readFileSync(rulePath, 'utf8')) as { ignores?: string[] }
     const ignores = parsed.ignores ?? []
 
-    expect(ignores.length).toBeLessThanOrEqual(MAX_TOTAL_IGNORES)
+    expect(ignores.length).toBe(EXPECTED_TOTAL_IGNORES)
     expect(new Set(ignores).size).toBe(ignores.length)
     const missing = ignores
       .filter(entry => !entry.includes('*'))

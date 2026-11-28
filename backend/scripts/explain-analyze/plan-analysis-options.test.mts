@@ -5,6 +5,7 @@ import { PLAN_ANALYSIS_OPTIONS } from './plan-analysis-options.mts'
 function seqScan(relationName: string): ExplainResult {
   return {
     name: 'test',
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for plan-analysis unit test
     query_text: 'SELECT 1',
     plan: {
       Plan: { 'Node Type': 'Seq Scan', 'Relation Name': relationName, 'Actual Rows': 10 },

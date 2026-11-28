@@ -26,8 +26,8 @@ ignores:
   # Directly tests beginBoundedTransaction and registerPostCommitAction against ./setup.mts (no SQL).
   - 'backend/data-stores/psql/post-commit-actions.test.mts'
   # Shrinking allowlist of SQL-running psql schema tests — this list may only shrink.
-  # Total ignores capped at 31 (2 helper globs + 6 self-tests + 23 schema tests) by
-  # static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts.
+  # Total ignores locked at 31 (2 helper globs + 6 self-tests + 23 schema tests) by
+  # static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts (lower the expected count in the same PR when removing entries).
   # Tracked for migration into backend/test-helpers in https://github.com/vouchington/vouchington/issues/6740.
   - 'backend/data-stores/psql/__tests__/index.extension-table-schema.generated.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-classifiers.test.mts'
@@ -124,6 +124,31 @@ rule:
                   regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
                 - kind: template_string
                   regex: '^`\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
+    # Raw SQL statement (uppercase SQL keywords) written in an initializer, assignment, property value, or return statement
+    - all:
+        - any:
+            - kind: string
+              regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
+            - kind: template_string
+              regex: '^`\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
+        - inside:
+            any:
+              - kind: variable_declarator
+              - kind: assignment_expression
+              - kind: pair
+              - kind: return_statement
+              - kind: arrow_function
+        - not:
+            inside:
+              stopBy:
+                any:
+                  - kind: statement_block
+                  - kind: arrow_function
+                  - kind: function_declaration
+              kind: call_expression
+              any:
+                - regex: '^(?:expect|assert|it|test|describe|console|vi|findFirst\w*Violation|parsePostgresSql|beforePostgresTransactionQueryForTest|captureTransactionQuery|executeCapturedStatement)\b'
+                - regex: '^(?:[\w$]+\.)*(?:toContain|toEqual|toBe|toMatch|toThrow|rejects|resolves|includes|startsWith|endsWith|match|replace|replaceAll|split|indexOf|exec|test|push|log|warn|error|info|debug|executeCapturedStatement)\s*\('
 examples:
   - code: "import { read } from '@data-stores/psql'"
     isValid: false
@@ -251,6 +276,15 @@ examples:
   - code: "await holder('DELETE FROM t')"
     isValid: false
     file: 'backend/services/auth/auth.test.mts'
+  - code: "const sql = 'SELECT id FROM users'; await client.query(sql)"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "const opts = { text: 'SELECT id FROM users' }"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "function buildQuery() { return 'DELETE FROM users WHERE id = $1' }"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
   - code: "await Promise.all([q('INSERT INTO users (id) VALUES ($1)', [id])])"
     isValid: false
     file: 'backend/services/auth/auth.test.mts'
@@ -326,6 +360,12 @@ examples:
   - code: "x.fill('Set up to date')"
     isValid: true
     file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "const label = 'Select all from the list'"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "expect(entry).toEqual({ sql: 'SELECT id FROM users' })"
+    isValid: true
+    file: 'backend/services/auth/auth.test.mts'
   - code: "await findFirstGeneratedDdlViolation('CREATE TABLE vote_edges (id UUID);')"
     isValid: true
     file: 'backend/data-stores/psql/config-driven/__tests__/generated-ddl-guard-regressions.test.mts'

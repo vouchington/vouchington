@@ -16,6 +16,7 @@ describe('explain analyze summary helpers', () => {
       scenario_id: 'hydration',
       capture_index: 0,
       plan_cache_mode: mode,
+      // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for analyze unit test
       query_text: 'SELECT 1',
       plan: {
         Plan: {
@@ -105,6 +106,7 @@ describe('explain analyze summary helpers', () => {
     expect(() =>
       assertNoNewSeqScans(
         results,
+        // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for analyze unit test
         [results[0], { ...results[1], query_text: 'SELECT 2' }],
         baseline,
       ),

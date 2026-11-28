@@ -165,6 +165,7 @@ describe('0000-00-01b-entity-relation-indexes', () => {
 
   it('rejects a previous and current index with an equivalent shape but different names', async () => {
     // A renamed duplicate in current generator output must fail structurally.
+    // ast-grep-ignore: no-sql-in-backend-tests -- DDL parser input fixture for extractIndexShapes unit test
     const sql = `
       CREATE INDEX IF NOT EXISTS idx_relation__post__category__topic__subject__best_old ON "relation__post__category__topic" (subject_id) WHERE deleted_at IS NULL;
       CREATE INDEX IF NOT EXISTS idx_relation__post__category__topic__subject__best ON "relation__post__category__topic" (subject_id) WHERE deleted_at IS NULL;

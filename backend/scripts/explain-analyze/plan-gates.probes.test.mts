@@ -12,6 +12,7 @@ function result(scenarioId: string, node: Record<string, unknown>): ExplainResul
   return {
     name: 'capturedQuery',
     scenario_id: scenarioId,
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for plan-gates unit test
     query_text: 'SELECT id FROM posts',
     plan: { Plan: { 'Node Type': 'Result', 'Actual Rows': 1, 'Actual Loops': 1, Plans: [node] } },
     execution_time_ms: 1,

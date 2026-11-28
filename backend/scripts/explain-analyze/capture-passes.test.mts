@@ -6,6 +6,7 @@ import { registerScenarioContract } from './plan-expectations.mts'
 function captureInput(scenarioId: string) {
   return {
     name: 'serial-function-count-test',
+    // ast-grep-ignore: no-sql-in-backend-tests -- probe SQL input for EXPLAIN function-call capture self-test
     text: `/* serialFunctionCountTest */
     SELECT fn_text_to_timestamptz('2026-01-0' || value::text || 'T00:00:00Z')
     FROM generate_series(1, 3) AS value

@@ -5,6 +5,7 @@ import { assertStoryProjectionClaimCandidates } from './story-projection-claim.m
 function capturedSort(type: 'Sort' | 'Incremental Sort', rows: number, loops = 1): ExplainResult {
   return {
     name: 'claimStoryPostRelatedUrlProjectionWork',
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for custom plan-gate unit test
     query_text: 'SELECT 1',
     plan: {
       Plan: {

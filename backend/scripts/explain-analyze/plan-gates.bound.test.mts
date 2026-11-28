@@ -48,6 +48,7 @@ describe('media replay read budgets', () => {
       'Actual Rows': 1,
       'Actual Loops': 1000,
     }
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult SQL text for plan-gate unit test
     const boundQuery = `/* replayFailedMediaDeliveryRegistryRecords */
       WITH inserted AS (
       INSERT INTO media_delivery_registry_changes
@@ -75,6 +76,7 @@ describe('media replay read budgets', () => {
     )
     expect(() => assertRequiredPlanShape(captured)).not.toThrow()
     captured.query_text =
+      // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult SQL text for plan-gate unit test
       '/* replayFailedMediaDeliveryRegistryRecords */ SELECT id FROM media_delivery_registry_records'
     expect(() => assertRequiredPlanShape(captured)).toThrow('replay change insert')
     captured.query_text = boundQuery.replace('LIMIT 1', '')
@@ -137,6 +139,7 @@ describe('no sequential scan expectation', () => {
 
   it('rejects a scan that reads rows and ignores a different query', async () => {
     const { registerScenarioContract, assertRequiredPlanShape } = await loadGates()
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult SQL text for plan-gate unit test
     const query = 'WITH requested_posts AS (SELECT id) SELECT id FROM requested_posts'
     registerScenarioContract('post-metrics-batch', {
       expectations: [
