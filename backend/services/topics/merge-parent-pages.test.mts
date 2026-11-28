@@ -109,13 +109,10 @@ describe('topic merge parent preflight pages', () => {
 
   it('counts tombstones toward the raw page, advances past them, and reserves only live ancestors', async () => {
     const user = await createTestUser({ administrator: true })
-    const [source, destination, ...parents] = await Promise.all(
-      Array.from({ length: 5 }, () => createTestTopic({ user })),
-    )
-    const [firstTopic, secondTopic, thirdTopic] = parents
+    const created = await Promise.all(Array.from({ length: 5 }, () => createTestTopic({ user })))
+    const [ownerId, peerId, firstTopic, secondTopic, thirdTopic] = created
       .map(topic => topic.id)
       .toSorted(compareUuid)
-    const [ownerId, peerId] = [source!.id, destination!.id].toSorted(compareUuid)
     await seedTopicMergeParentEdges([
       [ownerId!, firstTopic!],
       [ownerId!, secondTopic!],
@@ -123,16 +120,12 @@ describe('topic merge parent preflight pages', () => {
     ])
     await mutateTopicMergeParentTestEdge(ownerId!, firstTopic!, 'tombstone')
     await mutateTopicMergeParentTestEdge(ownerId!, secondTopic!, 'tombstone')
-    const operationId = await createTopicMergeParentTestOperation(
-      source!.id,
-      destination!.id,
-      user.id,
-    )
+    const operationId = await createTopicMergeParentTestOperation(ownerId!, peerId!, user.id)
     try {
       // First page of size 2 inspects both tombstones, reserves neither, and records the second tombstone as cursor.
-      await expect(
-        runTopicMergeParentTestPage(operationId, source!.id, destination!.id, 2),
-      ).resolves.toEqual({ hasMore: true, errorCode: null })
+      await expect(runTopicMergeParentTestPage(operationId, ownerId!, peerId!, 2)).resolves.toEqual(
+        { hasMore: true, errorCode: null },
+      )
       const afterFirst = await getTopicMergeParentTestWork(operationId)
       expect(
         afterFirst.map(item => [
@@ -147,17 +140,10 @@ describe('topic merge parent preflight pages', () => {
       ])
 
       // Continuation seeks past secondTopic, finds thirdTopic, reserves it at depth 1, and completes ownerId.
-      await expect(
-        runTopicMergeParentTestPage(operationId, source!.id, destination!.id, 2),
-      ).resolves.toEqual({ hasMore: true, errorCode: null })
+      await expect(runTopicMergeParentTestPage(operationId, ownerId!, peerId!, 2)).resolves.toEqual(
+        { hasMore: true, errorCode: null },
+      )
       const afterSecond = await getTopicMergeParentTestWork(operationId)
-      const expectedAfterSecond: [string, number, string | null, boolean][] = (
-        [
-          [ownerId!, 0, thirdTopic!, true],
-          [peerId!, 0, null, false],
-          [thirdTopic!, 1, null, false],
-        ] as [string, number, string | null, boolean][]
-      ).toSorted((left, right) => compareUuid(left[0], right[0]))
       expect(
         afterSecond.map(item => [
           item.topic_id,
@@ -165,7 +151,11 @@ describe('topic merge parent preflight pages', () => {
           item.cursor_object_id,
           item.completed_at !== null,
         ]),
-      ).toEqual(expectedAfterSecond)
+      ).toEqual([
+        [ownerId!, 0, thirdTopic!, true],
+        [peerId!, 0, null, false],
+        [thirdTopic!, 1, null, false],
+      ])
     } finally {
       await deleteTopicMergeParentTestOperation(operationId)
     }
@@ -173,11 +163,10 @@ describe('topic merge parent preflight pages', () => {
 
   it('walks three pages of parents in PostgreSQL uuid order without skipping or repeating any parent', async () => {
     const user = await createTestUser({ administrator: true })
-    const [source, destination, ...parentTopics] = await Promise.all(
-      Array.from({ length: 7 }, () => createTestTopic({ user })),
-    )
-    const [ownerId, peerId] = [source!.id, destination!.id].toSorted(compareUuid)
-    const orderedParents = parentTopics.map(topic => topic.id).toSorted(compareUuid)
+    const created = await Promise.all(Array.from({ length: 7 }, () => createTestTopic({ user })))
+    const [ownerId, peerId, ...orderedParents] = created
+      .map(topic => topic.id)
+      .toSorted(compareUuid)
     // Insert edges out of UUID order so the database index supplies the page order.
     await seedTopicMergeParentEdges(
       [
@@ -188,11 +177,7 @@ describe('topic merge parent preflight pages', () => {
         orderedParents[2]!,
       ].map(parentId => [ownerId!, parentId]),
     )
-    const operationId = await createTopicMergeParentTestOperation(
-      source!.id,
-      destination!.id,
-      user.id,
-    )
+    const operationId = await createTopicMergeParentTestOperation(ownerId!, peerId!, user.id)
     try {
       const observedParents: string[] = []
       const observedCursors: (string | null)[] = []
@@ -200,7 +185,7 @@ describe('topic merge parent preflight pages', () => {
 
       for (let page = 0; page < 3; page++) {
         await expect(
-          runTopicMergeParentTestPage(operationId, source!.id, destination!.id, 2),
+          runTopicMergeParentTestPage(operationId, ownerId!, peerId!, 2),
         ).resolves.toEqual({ hasMore: true, errorCode: null })
         const work = await getTopicMergeParentTestWork(operationId)
         const ownerWork = work.find(item => item.topic_id === ownerId)

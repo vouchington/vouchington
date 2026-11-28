@@ -33,7 +33,7 @@ describe('user-subject entity relation tables', () => {
       1,
     )
     expect(sql).toMatch(
-      /CREATE TABLE IF NOT EXISTS "relation__topic__parent__topic"[\s\S]*?PRIMARY KEY \(subject_id, object_id\) INCLUDE \(deleted_at\)/,
+      /CREATE TABLE IF NOT EXISTS "relation__topic__parent__topic"[^;]*PRIMARY KEY \(subject_id, object_id\) INCLUDE \(deleted_at\)/,
     )
   })
 

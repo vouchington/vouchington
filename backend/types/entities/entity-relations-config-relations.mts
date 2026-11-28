@@ -1,6 +1,12 @@
 import type { EntityRelationEntityType } from './entity-relations-config-types.mts'
 import type { EntityRelationPredicateType } from './entity-relations-config-predicates.mts'
 
+export type EntityRelationPrimaryKeyIncludeColumn =
+  | 'created_by_id'
+  | 'created_at'
+  | 'deleted_at'
+  | 'deleted_by_id'
+
 type EntityRelationOptions = {
   /**
    * Additional SQL index statements to emit after the standard indexes for this relation table.
@@ -13,7 +19,7 @@ type EntityRelationOptions = {
    * Non-key columns to append via `INCLUDE (...)` on the generated `(subject_id, object_id)`
    * primary key index so ordered keyset walks can stay index-only without adding another index.
    */
-  primary_key_include_columns?: readonly string[]
+  primary_key_include_columns?: readonly EntityRelationPrimaryKeyIncludeColumn[]
 }
 
 type EntityRelations = Partial<
