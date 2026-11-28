@@ -45,30 +45,27 @@ export const getRssFeedsByIdBatch = async (
     }
   }
 
-  const positions = ids.map((_, index) => index)
+  const uniqueIds = [...new Set(ids)]
 
-  const { rows } = await read<ViewRssFeed & { input_order: number }>(
+  const { rows } = await read<ViewRssFeed>(
     `/* getRssFeedsByIdBatch */
-    WITH input_data AS (
-      SELECT unnest($1::uuid[]) AS input_value,
-             unnest($2::int[]) AS input_order
-    )
-    SELECT vrf.*, input_data.input_order
-    FROM view_rss_feeds vrf
-    JOIN input_data ON vrf.id = input_data.input_value
-    ORDER BY input_data.input_order
+    SELECT vrf.*
+    FROM unnest($1::uuid[]) AS requested(id)
+    JOIN LATERAL (
+      SELECT vrf.*
+      FROM view_rss_feeds vrf
+      WHERE vrf.id = requested.id
+      LIMIT 1
+    ) vrf ON true
   `,
-    [ids, positions],
+    [uniqueIds],
     options,
   )
 
-  // Build result array with nulls for missing entries
-  const results: Array<ViewRssFeed | null | undefined> = new Array(ids.length).fill(null)
-
+  const rowMap = new Map<string, ViewRssFeed>()
   for (const row of rows) {
-    const { input_order, ...feedData } = row
-    results[input_order] = feedData
+    rowMap.set(row.id, row)
   }
 
-  return results
+  return ids.map(id => rowMap.get(id) ?? null)
 }
