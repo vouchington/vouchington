@@ -59,3 +59,75 @@ export async function getIndexRows(tableNames: string[]): Promise<IndexRow[]> {
   )
   return rows
 }
+
+export type UserVouchAggregateColumnRow = {
+  column_name: string
+  data_type: string
+  generation_expression: string | null
+}
+
+export async function getUserVouchAggregateColumns(
+  columnNames: string[],
+): Promise<UserVouchAggregateColumnRow[]> {
+  const { rows } = await read<UserVouchAggregateColumnRow>(
+    `/* getUserVouchAggregateColumns */
+      SELECT column_name, data_type, generation_expression
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'users'
+        AND column_name = ANY($1)
+      ORDER BY column_name`,
+    [columnNames],
+  )
+  return rows
+}
+
+export type ElectionUuidV7ColumnRow = {
+  table_name: string
+  column_name: string
+  data_type: string
+  column_default: string | null
+  generation_expression: string | null
+}
+
+export async function getElectionUuidV7Columns(params: {
+  idTables: string[]
+  configuredVoteTables: string[]
+  entityIdColumns: string[]
+  allVoteTables: string[]
+  relationVoteTables: string[]
+}): Promise<ElectionUuidV7ColumnRow[]> {
+  const { rows } = await read<ElectionUuidV7ColumnRow>(
+    `/* getElectionUuidV7Columns */
+      SELECT table_name, column_name, data_type, column_default, generation_expression
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND ((table_name = ANY($1) AND column_name = 'id')
+          OR (table_name = ANY($2) AND column_name = ANY($3))
+          OR (table_name = ANY($5) AND column_name = 'entity_relation_id')
+          OR (table_name = ANY($4) AND column_name = 'created_at'))
+      ORDER BY table_name, column_name`,
+    [
+      params.idTables,
+      params.configuredVoteTables,
+      params.entityIdColumns,
+      params.allVoteTables,
+      params.relationVoteTables,
+    ],
+  )
+  return rows
+}
+
+export type UuidV7TargetTimestampEvidence = {
+  target_id: string
+  target_timestamp: Date
+}
+
+export async function getUuidV7TargetTimestampEvidence(): Promise<UuidV7TargetTimestampEvidence[]> {
+  const { rows } = await read<UuidV7TargetTimestampEvidence>(
+    `/* getUuidV7TargetTimestampEvidence */
+      WITH sample AS (SELECT uuidv7() AS target_id)
+      SELECT target_id, uuid_extract_timestamp(target_id) AS target_timestamp FROM sample`,
+  )
+  return rows
+}

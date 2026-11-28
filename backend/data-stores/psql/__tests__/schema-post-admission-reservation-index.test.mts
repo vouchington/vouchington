@@ -1,18 +1,14 @@
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
-import { onGracefulShutdown, read } from '../index.mts'
+import { readPublicIndexDefinition } from '../../../test-helpers/data-stores/psql/schema-catalog.mts'
 
 describe('post admission reservation indexes', () => {
-  afterAll(onGracefulShutdown)
+  afterAll(() => onGracefulShutdown('SIGTERM'))
 
   it('indexes committed admission replay records by their retained post ID', async () => {
-    const { rows } = await read<{ indexdef: string }>(
-      `/* getCommittedAdmissionPostIndex */
-        SELECT indexdef
-        FROM pg_indexes
-        WHERE schemaname = 'public'
-          AND tablename = 'post_admission_reservations'
-          AND indexname = 'idx_post_admission_reservations__committed_post_retention'
-        LIMIT 1`,
+    const rows = await readPublicIndexDefinition(
+      'post_admission_reservations',
+      'idx_post_admission_reservations__committed_post_retention',
     )
 
     expect(rows).toEqual([

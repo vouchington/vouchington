@@ -1,18 +1,19 @@
 import { randomUUID } from 'node:crypto'
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
   insertMembershipRowReferencingUser,
   membershipRetainedUserReferences,
   readMembershipRetainedUserForeignKeys,
 } from '../../../test-helpers/data-stores/psql/membership-retained-user-references.mts'
+import { readPostgresUuidv7 } from '../../../test-helpers/data-stores/psql/schema-catalog.mts'
 import {
   hasTestRetainedIdentityRoot,
   insertTestRetainedIdentityRoot,
 } from '../../../test-helpers/entities/retained-identities.mts'
-import { onGracefulShutdown, read } from '../index.mts'
 
 describe('membership lineage retained user references', () => {
-  afterAll(onGracefulShutdown)
+  afterAll(() => onGracefulShutdown('SIGTERM'))
 
   it('restricts every user and actor column to the retained root with an FK-usable index', async () => {
     const foreignKeys = await readMembershipRetainedUserForeignKeys()
@@ -34,10 +35,10 @@ describe('membership lineage retained user references', () => {
       ([table, column]) => table !== 'membership_changes' || column !== 'changed_by_id',
     ),
   )('rejects %s.%s when the id has no retained identity', async (table, column) => {
-    const { rows } = await read<{ id: string }>('/* readUnretainedUserId */ SELECT uuidv7() AS id')
+    const unretainedUserId = await readPostgresUuidv7()
 
     await expect(
-      insertMembershipRowReferencingUser([table, column], rows[0]!.id),
+      insertMembershipRowReferencingUser([table, column], unretainedUserId),
     ).rejects.toMatchObject({
       code: '23503',
       detail: expect.stringContaining('"retained_user_identities"'),

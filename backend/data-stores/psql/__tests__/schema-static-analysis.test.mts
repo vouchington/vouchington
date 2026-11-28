@@ -1,8 +1,10 @@
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
-import { read, onGracefulShutdown } from '../index.mts'
+import { readPublicIndexDefinition } from '../../../test-helpers/data-stores/psql/schema-catalog.mts'
 import { formatTypeViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/name-helpers.mts'
 import {
   getModerationRssTargetForeignKeys,
+  getSerialStyleColumns,
   getTypeViolations,
 } from '../../../test-helpers/data-stores/psql/schema-static-analysis/queries.mts'
 import { getUuidConventionViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/uuid-query.mts'
@@ -14,16 +16,9 @@ import {
   isAllowedUuidConventionViolation,
 } from '../../../test-helpers/data-stores/psql/schema-static-analysis/conventions.mts'
 
-type SerialViolation = {
-  table_name: string
-  column_name: string
-  column_default: string | null
-  identity_generation: string | null
-}
-
 describe('PostgreSQL schema static analysis', () => {
   afterAll(async () => {
-    await onGracefulShutdown()
+    await onGracefulShutdown('SIGTERM')
   })
 
   it.each([
@@ -53,15 +48,7 @@ describe('PostgreSQL schema static analysis', () => {
   })
 
   it('uses identity columns instead of serial-style nextval defaults', async () => {
-    const { rows } = await read<SerialViolation>(
-      `/* getSerialStyleColumns */
-        SELECT table_name, column_name, column_default, identity_generation
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND column_default LIKE 'nextval(%'
-          AND identity_generation IS NULL
-        ORDER BY table_name, column_name`,
-    )
+    const rows = await getSerialStyleColumns()
 
     expect(
       rows.map(
@@ -95,29 +82,19 @@ describe('PostgreSQL schema static analysis', () => {
   })
 
   it('indexes pending moderation report pagination by UUIDv7 id', async () => {
-    const { rows } = await read<{ indexdef: string }>(
-      `/* getModerationReportPaginationIndex */
-        SELECT indexdef
-        FROM pg_indexes
-        WHERE schemaname = 'public'
-          AND tablename = 'moderation_reports'
-          AND indexname = 'idx_moderation_reports__pending_id'
-        LIMIT 1`,
+    const rows = await readPublicIndexDefinition(
+      'moderation_reports',
+      'idx_moderation_reports__pending_id',
     )
 
     expect(rows[0]).toBeDefined()
-    expect(rows[0].indexdef).toContain('USING btree (id DESC) WHERE (reviewed_at IS NULL)')
+    expect(rows[0]!.indexdef).toContain('USING btree (id DESC) WHERE (reviewed_at IS NULL)')
   })
 
   it('indexes OAuth authorization expiry cleanup across every terminal status', async () => {
-    const { rows } = await read<{ indexdef: string }>(
-      `/* getOAuthAuthorizationExpiryIndex */
-        SELECT indexdef
-        FROM pg_indexes
-        WHERE schemaname = 'public'
-          AND tablename = 'oauth_authorizations'
-          AND indexname = 'idx_oauth_authorizations__expiry'
-        LIMIT 1`,
+    const rows = await readPublicIndexDefinition(
+      'oauth_authorizations',
+      'idx_oauth_authorizations__expiry',
     )
 
     expect(rows).toEqual([
@@ -140,44 +117,21 @@ describe('PostgreSQL schema static analysis', () => {
   })
 
   it('indexes active post locks by post_id', async () => {
-    const { rows } = await read<{ indexdef: string }>(
-      `/* getPostLocksIndex */
-        SELECT indexdef
-        FROM pg_indexes
-        WHERE schemaname = 'public'
-          AND tablename = 'post_locks'
-          AND indexname = 'idx_post_locks__post'
-        LIMIT 1`,
-    )
+    const rows = await readPublicIndexDefinition('post_locks', 'idx_post_locks__post')
 
     expect(rows[0]).toBeDefined()
-    expect(rows[0].indexdef).toContain('USING btree (post_id) WHERE (lifted_at IS NULL)')
+    expect(rows[0]!.indexdef).toContain('USING btree (post_id) WHERE (lifted_at IS NULL)')
   })
 
   it('indexes active user bans by owner and descending pagination id', async () => {
-    const { rows } = await read<{ indexdef: string }>(
-      `/* getUserCommunityBansPaginationIndex */
-        SELECT indexdef FROM pg_indexes
-        WHERE schemaname = 'public'
-          AND tablename = 'community_bans'
-          AND indexname = 'idx_community_bans__user'
-        LIMIT 1`,
-    )
+    const rows = await readPublicIndexDefinition('community_bans', 'idx_community_bans__user')
 
     expect(rows[0]).toBeDefined()
     expect(rows[0]!.indexdef).toContain('USING btree (user_id, id DESC) WHERE (lifted_at IS NULL)')
   })
 
   it('indexes notification community foreign keys on the partitioned parent', async () => {
-    const { rows } = await read<{ indexdef: string }>(
-      `/* getNotificationCommunityForeignKeyIndex */
-        SELECT indexdef
-        FROM pg_indexes
-        WHERE schemaname = 'public'
-          AND tablename = 'notifications'
-          AND indexname = 'idx_notifications__community_id'
-        LIMIT 1`,
-    )
+    const rows = await readPublicIndexDefinition('notifications', 'idx_notifications__community_id')
 
     expect(rows[0]).toBeDefined()
     expect(rows[0]!.indexdef).toContain(

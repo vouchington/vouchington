@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { read } from '../index.mts'
-import { allowUnannotatedQuery } from '@vouchington/postgres'
-
-type TableColumn = {
-  column_name: string
-  is_generated: string
-  column_default: string | null
-}
+import {
+  readExtensionTableColumns,
+  type ExtensionTableColumn,
+} from '../../../test-helpers/data-stores/psql/schema-catalog.mts'
 
 const topicExtensionTables = [
   'card_topics',
@@ -18,7 +14,7 @@ const topicExtensionTables = [
 
 describe('extension table key columns', () => {
   it('post_review_topic_ratings uses post_id and created_at defaults to row creation time', async () => {
-    const columns = await getTableColumns('post_review_topic_ratings')
+    const columns = await readExtensionTableColumns('post_review_topic_ratings')
     const columnMap = toColumnMap(columns)
 
     expect(columnMap.post_id).toBeDefined()
@@ -33,7 +29,7 @@ describe('extension table key columns', () => {
   it.each(topicExtensionTables)(
     '%s uses topic_id and created_at defaults to row creation time',
     async tableName => {
-      const columns = await getTableColumns(tableName)
+      const columns = await readExtensionTableColumns(tableName)
       const columnMap = toColumnMap(columns)
 
       expect(columnMap.topic_id).toBeDefined()
@@ -47,7 +43,7 @@ describe('extension table key columns', () => {
   )
 
   it('topic_metrics uses topic_id and created_at defaults to row creation time', async () => {
-    const columns = await getTableColumns('topic_metrics')
+    const columns = await readExtensionTableColumns('topic_metrics')
     const columnMap = toColumnMap(columns)
 
     expect(columnMap.topic_id).toBeDefined()
@@ -60,7 +56,7 @@ describe('extension table key columns', () => {
   })
 
   it('post_topic_recommendations uses post_id and created_at defaults to row creation time', async () => {
-    const columns = await getTableColumns('post_topic_recommendations')
+    const columns = await readExtensionTableColumns('post_topic_recommendations')
     const columnMap = toColumnMap(columns)
 
     expect(columnMap.post_id).toBeDefined()
@@ -74,25 +70,8 @@ describe('extension table key columns', () => {
   })
 })
 
-async function getTableColumns(tableName: string): Promise<TableColumn[]> {
-  const { rows } = await read<TableColumn>(
-    allowUnannotatedQuery(`
-      SELECT
-        column_name,
-        is_generated,
-        column_default
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = $1
-        AND column_name = ANY($2::TEXT[])
-    `),
-    [tableName, ['id', 'post_id', 'topic_id', 'created_at', 'status']],
-  )
-  return rows
-}
-
-function toColumnMap(columns: TableColumn[]): Record<string, TableColumn> {
-  const map: Record<string, TableColumn> = {}
+function toColumnMap(columns: ExtensionTableColumn[]): Record<string, ExtensionTableColumn> {
+  const map: Record<string, ExtensionTableColumn> = {}
   for (const column of columns) {
     map[column.column_name] = column
   }

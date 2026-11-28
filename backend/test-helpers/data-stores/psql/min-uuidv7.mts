@@ -9,3 +9,14 @@ export async function readMinimumUuidv7(at: Date): Promise<string> {
   if (!id) throw new Error('Minimum UUIDv7 query returned no row')
   return id
 }
+
+export async function readMinChildUuidv7Bounds(parents: string[]): Promise<string[]> {
+  const { rows } = await read<{ bound: string }>(
+    `/* fnMinChildUuidv7Parity */
+      SELECT fn_min_child_uuidv7(parent.id) AS bound
+      FROM UNNEST($1::uuid[]) WITH ORDINALITY AS parent(id, position)
+      ORDER BY parent.position`,
+    [parents],
+  )
+  return rows.map(row => row.bound)
+}

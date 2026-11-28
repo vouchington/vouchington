@@ -55,4 +55,24 @@ export async function getModerationRssTargetForeignKeys(): Promise<
   return rows
 }
 
+export type SerialViolation = {
+  table_name: string
+  column_name: string
+  column_default: string | null
+  identity_generation: string | null
+}
+
+export async function getSerialStyleColumns(): Promise<SerialViolation[]> {
+  const { rows } = await read<SerialViolation>(
+    `/* getSerialStyleColumns */
+      SELECT table_name, column_name, column_default, identity_generation
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND column_default LIKE 'nextval(%'
+        AND identity_generation IS NULL
+      ORDER BY table_name, column_name`,
+  )
+  return rows
+}
+
 /* v8 ignore stop */

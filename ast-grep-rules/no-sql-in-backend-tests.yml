@@ -25,33 +25,8 @@ ignores:
   - 'backend/data-stores/psql/index.exports.test.mts'
   # Directly tests beginBoundedTransaction and registerPostCommitAction against ./setup.mts (no SQL).
   - 'backend/data-stores/psql/post-commit-actions.test.mts'
-  # Shrinking allowlist of SQL-running psql schema tests — this list may only shrink.
-  # Total ignores locked at 31 (2 helper globs + 6 self-tests + 23 schema tests) by
-  # static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts (lower the expected count in the same PR when removing entries).
-  # Tracked for migration into backend/test-helpers in https://github.com/vouchington/vouchington/issues/6740.
-  - 'backend/data-stores/psql/__tests__/index.extension-table-schema.generated.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-classifiers.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-community-application-answers.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-copyright-legal-clock.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-election-partitioning.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-election-vote-stats-snapshot.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-finite-enums.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-growth-registry.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-ingestion-relations.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-membership-entitlement-effects.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-membership-refund-indexes.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-membership-retained-user-references.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-min-child-uuidv7.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-owner-foreign-keys.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-post-admission-reservation-index.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-post-creation-source-url.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-retained-identities.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-retained-media-behavior.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-retained-media-identities.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-retained-user-audit-foreign-keys.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-static-analysis.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-story-projection-relation-fence.test.mts'
-  - 'backend/data-stores/psql/__tests__/schema-user-deletion-relation-impacts.test.mts'
+  # Total ignores locked at 8 (2 helper globs + 6 package self-tests) by
+  # static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts.
 utils:
   query-call-sql-literal:
     all:
