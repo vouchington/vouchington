@@ -34,7 +34,7 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_moderator_workload_daily_totals__actor_user_id`: `CREATE INDEX idx_moderator_workload_daily_totals__actor_user_id ON public.moderator_workload_daily_totals USING btree (actor_user_id, day)`
-- `idx_moderator_workload_daily_totals__community_id_day`: `CREATE INDEX idx_moderator_workload_daily_totals__community_id_day ON public.moderator_workload_daily_totals USING btree (community_id, day, actor_user_id, action_type)`
+- `idx_moderator_workload_daily_totals__community_id_day`: `CREATE INDEX idx_moderator_workload_daily_totals__community_id_day ON public.moderator_workload_daily_totals USING btree (community_id, day)`
 - `idx_moderator_workload_daily_totals__day_id`: `CREATE INDEX idx_moderator_workload_daily_totals__day_id ON public.moderator_workload_daily_totals USING btree (day, id)`
 - `moderator_workload_daily_totals_cohort`: `CREATE UNIQUE INDEX moderator_workload_daily_totals_cohort ON public.moderator_workload_daily_totals USING btree (day, community_id, actor_user_id, action_type) NULLS NOT DISTINCT`
 - `moderator_workload_daily_totals_pkey`: `CREATE UNIQUE INDEX moderator_workload_daily_totals_pkey ON public.moderator_workload_daily_totals USING btree (id)`

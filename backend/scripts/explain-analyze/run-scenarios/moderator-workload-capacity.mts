@@ -11,6 +11,7 @@ import { seedUuidAtTimestamp } from '../seed-data/common.mts'
 
 const LEADERBOARD_SIZE = 10
 const ACTORS = 60
+const COMPLETED_DAYS = 7
 const OTHER_COMMUNITIES = 10
 const LIVE_INSTANT = new Date('2024-05-22T08:00:00.000Z')
 const NOW = new Date('2024-05-22T12:00:00.000Z')
@@ -26,22 +27,28 @@ export async function runModeratorWorkloadCapacity(): Promise<void> {
       ANALYZE moderator_actions, moderator_workload_daily_totals, users`)
     const scenario = 'community-moderator-workload-leaderboard-at-cap'
     const queryName = 'getModerationModeratorWorkload'
-    const { rows } = await write<{ rollups: number; actions: number }>(`
+    const { rows } = await write<{ rollups: number }>(`
       /* countModeratorWorkloadCorpus */
-      SELECT (SELECT count(*)::int FROM moderator_workload_daily_totals) AS rollups,
-             (SELECT count(*)::int FROM moderator_actions) AS actions
+      SELECT count(*)::int AS rollups FROM moderator_workload_daily_totals
     `)
     const corpus = rows[0]!
     registerScenarioContract(scenario, {
       seededRows: { moderator_workload_daily_totals: corpus.rollups },
-      // Main scans the rollup corpus in both modes. Tighten after #6600.
+      forbidSequentialScans: ['moderator_workload_daily_totals', 'moderator_actions'],
       expectations: [
         {
           kind: 'maxProcessedRows',
           relation: 'moderator_workload_daily_totals',
-          max: corpus.rollups,
+          max: ACTORS * COMPLETED_DAYS,
         },
-        { kind: 'maxProcessedRows', relation: 'moderator_actions', max: corpus.actions },
+        { kind: 'maxProcessedRows', relation: 'moderator_actions', max: ACTORS },
+        {
+          kind: 'usesIndexes',
+          indexes: [
+            'idx_moderator_workload_daily_totals__community_id_day',
+            'idx_moderator_actions__community__id',
+          ],
+        },
       ],
     })
     await runAndCapture(
