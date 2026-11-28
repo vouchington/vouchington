@@ -138068,8 +138068,23 @@
       "uniqueConstraints": {}
     },
     "rss_feed_fetch_states": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "rss_feed_fetch_states_crawl_tier_check": {
+          "definition": "CHECK (((crawl_tier >= 1) AND (crawl_tier <= 5)))",
+          "validated": true
+        }
+      },
       "columns": {
+        "crawl_tier": {
+          "comment": "Projected crawl tier (1-5) from mv_rss_feed_crawl_tiers; defaults to 5 for new feeds and syncs on materialized view refresh.",
+          "dataType": "smallint",
+          "defaultExpression": "5",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
         "last_fetch_failed_at": {
           "comment": "When the feed last failed on its final fetch attempt or was skipped by crawl policy (not crawlable, Web Risk 400, robots disallow).",
           "dataType": "timestamp with time zone",
@@ -138078,7 +138093,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "last_fetch_succeeded_at": {
           "comment": "When the feed last returned content (including HTTP 304); exposed as last_fetched_at in view_rss_feeds.",
@@ -138088,7 +138103,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 2
+          "ordinalPosition": 3
         },
         "rss_feed_id": {
           "comment": "Live enabled RSS feed owning this state; also the stable tie breaker for dispatch cursors.",
@@ -138101,7 +138116,7 @@
           "ordinalPosition": 1
         }
       },
-      "comment": "Current fetch timing for live enabled RSS feeds. Row presence means the feed is eligible for dispatch; disabling or soft-deleting removes the row.",
+      "comment": "Current fetch timing and crawl tier for live enabled RSS feeds. Row presence means the feed is eligible for dispatch; disabling or soft-deleting removes the row.",
       "foreignKeys": {
         "rss_feed_fetch_states_rss_feed_id_fkey": {
           "columns": ["rss_feed_id"],
@@ -138118,7 +138133,7 @@
         "idx_rss_feed_fetch_states__failing_fetch_due": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_fetch_states__failing_fetch_due ON public.rss_feed_fetch_states USING btree (last_fetch_failed_at, rss_feed_id) INCLUDE (last_fetch_succeeded_at) WHERE ((last_fetch_failed_at IS NOT NULL) AND ((last_fetch_succeeded_at IS NULL) OR (last_fetch_failed_at >= last_fetch_succeeded_at)))",
+          "definition": "CREATE INDEX idx_rss_feed_fetch_states__failing_fetch_due ON public.rss_feed_fetch_states USING btree (last_fetch_failed_at, rss_feed_id) INCLUDE (last_fetch_succeeded_at, crawl_tier) WHERE ((last_fetch_failed_at IS NOT NULL) AND ((last_fetch_succeeded_at IS NULL) OR (last_fetch_failed_at >= last_fetch_succeeded_at)))",
           "immediate": true,
           "keys": [
             {
@@ -138150,9 +138165,18 @@
         "idx_rss_feed_fetch_states__healthy_fetch_due": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_fetch_states__healthy_fetch_due ON public.rss_feed_fetch_states USING btree (COALESCE(last_fetch_succeeded_at, '-infinity'::timestamp with time zone), rss_feed_id) INCLUDE (last_fetch_succeeded_at, last_fetch_failed_at) WHERE ((last_fetch_failed_at IS NULL) OR (last_fetch_failed_at < last_fetch_succeeded_at))",
+          "definition": "CREATE INDEX idx_rss_feed_fetch_states__healthy_fetch_due ON public.rss_feed_fetch_states USING btree (crawl_tier, COALESCE(last_fetch_succeeded_at, '-infinity'::timestamp with time zone), rss_feed_id) INCLUDE (last_fetch_succeeded_at, last_fetch_failed_at) WHERE ((last_fetch_failed_at IS NULL) OR (last_fetch_failed_at < last_fetch_succeeded_at))",
           "immediate": true,
           "keys": [
+            {
+              "collation": null,
+              "column": "crawl_tier",
+              "descending": false,
+              "expression": "crawl_tier",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int2_ops",
+              "orderingSupported": true
+            },
             {
               "collation": null,
               "column": null,

@@ -128587,8 +128587,21 @@
       "uniqueConstraints": {}
     },
     "rss_feed_fetch_states": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "rss_feed_fetch_states_crawl_tier_check": "CHECK (((crawl_tier >= 1) AND (crawl_tier <= 5)))"
+      },
       "columns": {
+        "crawl_tier": {
+          "collation": null,
+          "comment": "Projected crawl tier (1-5) from mv_rss_feed_crawl_tiers; defaults to 5 for new feeds and syncs on materialized view refresh.",
+          "defaultExpression": "5",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "smallint"
+        },
         "last_fetch_failed_at": {
           "collation": null,
           "comment": "When the feed last failed on its final fetch attempt or was skipped by crawl policy (not crawlable, Web Risk 400, robots disallow).",
@@ -128597,7 +128610,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "last_fetch_succeeded_at": {
@@ -128608,7 +128621,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
         "rss_feed_id": {
@@ -128623,7 +128636,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Current fetch timing for live enabled RSS feeds. Row presence means the feed is eligible for dispatch; disabling or soft-deleting removes the row.",
+      "comment": "Current fetch timing and crawl tier for live enabled RSS feeds. Row presence means the feed is eligible for dispatch; disabling or soft-deleting removes the row.",
       "foreignKeys": {
         "rss_feed_fetch_states_rss_feed_id_fkey": {
           "columns": ["rss_feed_id"],
@@ -128640,8 +128653,8 @@
         "idx_rss_feed_fetch_states__failing_fetch_due": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_fetch_states__failing_fetch_due ON public.rss_feed_fetch_states USING btree (last_fetch_failed_at, rss_feed_id) INCLUDE (last_fetch_succeeded_at) WHERE ((last_fetch_failed_at IS NOT NULL) AND ((last_fetch_succeeded_at IS NULL) OR (last_fetch_failed_at >= last_fetch_succeeded_at)))",
-          "includedColumns": ["last_fetch_succeeded_at"],
+          "definition": "CREATE INDEX idx_rss_feed_fetch_states__failing_fetch_due ON public.rss_feed_fetch_states USING btree (last_fetch_failed_at, rss_feed_id) INCLUDE (last_fetch_succeeded_at, crawl_tier) WHERE ((last_fetch_failed_at IS NOT NULL) AND ((last_fetch_succeeded_at IS NULL) OR (last_fetch_failed_at >= last_fetch_succeeded_at)))",
+          "includedColumns": ["last_fetch_succeeded_at", "crawl_tier"],
           "keys": [
             {
               "column": "last_fetch_failed_at",
@@ -128667,9 +128680,16 @@
         "idx_rss_feed_fetch_states__healthy_fetch_due": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_fetch_states__healthy_fetch_due ON public.rss_feed_fetch_states USING btree (COALESCE(last_fetch_succeeded_at, '-infinity'::timestamp with time zone), rss_feed_id) INCLUDE (last_fetch_succeeded_at, last_fetch_failed_at) WHERE ((last_fetch_failed_at IS NULL) OR (last_fetch_failed_at < last_fetch_succeeded_at))",
+          "definition": "CREATE INDEX idx_rss_feed_fetch_states__healthy_fetch_due ON public.rss_feed_fetch_states USING btree (crawl_tier, COALESCE(last_fetch_succeeded_at, '-infinity'::timestamp with time zone), rss_feed_id) INCLUDE (last_fetch_succeeded_at, last_fetch_failed_at) WHERE ((last_fetch_failed_at IS NULL) OR (last_fetch_failed_at < last_fetch_succeeded_at))",
           "includedColumns": ["last_fetch_succeeded_at", "last_fetch_failed_at"],
           "keys": [
+            {
+              "column": "crawl_tier",
+              "descending": false,
+              "expression": "crawl_tier",
+              "nullsFirst": false,
+              "opclass": "int2_ops"
+            },
             {
               "column": null,
               "descending": false,
