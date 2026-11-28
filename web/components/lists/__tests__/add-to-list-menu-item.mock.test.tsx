@@ -188,7 +188,9 @@ describe('AddToListMenuItem', () => {
       />,
     )
     fireEvent.click(screen.getByTestId('dropdown-menu-item'))
-    expect(screen.getByText('Choose which of your lists include this feed item.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Choose which of your lists include this feed item.'),
+    ).toBeInTheDocument()
   })
 
   it('shows list names with checkboxes after loading', async () => {
