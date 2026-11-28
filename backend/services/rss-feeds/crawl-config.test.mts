@@ -2,6 +2,8 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   getCrawlCapacityBudget,
+  getCrawlPageRawReadMultiplier,
+  getCrawlRawReadBudget,
   getFetchRetryIntervalMs,
   getTierSlaMs,
   isRobotsTxtIgnoredForFeeds,
@@ -114,6 +116,50 @@ describe('crawl-config', () => {
       })
       try {
         expect(getFetchRetryIntervalMs()).toBe(60 * 60_000)
+      } finally {
+        restoreHigh()
+      }
+    })
+  })
+
+  describe('getCrawlRawReadBudget', () => {
+    it('returns 1000 by default and respects valid overrides within hard max', () => {
+      expect(getCrawlRawReadBudget()).toBe(1_000)
+      const restoreValid = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        raw_read_budget: 2_500,
+      })
+      try {
+        expect(getCrawlRawReadBudget()).toBe(2_500)
+      } finally {
+        restoreValid()
+      }
+      const restoreHigh = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        raw_read_budget: 10_001,
+      })
+      try {
+        expect(getCrawlRawReadBudget()).toBe(1_000)
+      } finally {
+        restoreHigh()
+      }
+    })
+  })
+
+  describe('getCrawlPageRawReadMultiplier', () => {
+    it('returns 4 by default and respects valid overrides within hard max', () => {
+      expect(getCrawlPageRawReadMultiplier()).toBe(4)
+      const restoreValid = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        page_raw_read_multiplier: 8,
+      })
+      try {
+        expect(getCrawlPageRawReadMultiplier()).toBe(8)
+      } finally {
+        restoreValid()
+      }
+      const restoreHigh = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        page_raw_read_multiplier: 101,
+      })
+      try {
+        expect(getCrawlPageRawReadMultiplier()).toBe(4)
       } finally {
         restoreHigh()
       }

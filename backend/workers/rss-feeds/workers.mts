@@ -10,7 +10,9 @@ import { RSS_FEEDS_ORDERING } from '@queues/rss-feeds/config'
 import {
   FAILING_DISPATCH_LANE,
   getCrawlCapacityBudget,
+  getCrawlPageRawReadMultiplier,
   getCrawlRawReadBudget,
+  RSS_FEED_CRAWL_MAX_VALUES,
 } from '@services/rss-feeds'
 import { processFetchRssFeed, processRssFeedsDispatcher } from './processors.mts'
 
@@ -48,7 +50,11 @@ export const rssFeedsHandlers = [
       targetName: 'background',
       readAndDispatch: async pageSize => {
         const limit = Math.min(pageSize, remainingBudget, getCrawlCapacityBudget())
-        const pageRawBudget = Math.min(Math.max(pageSize * 4, limit + 1), remainingRawBudget)
+        const pageRawBudget = Math.min(
+          Math.max(pageSize * getCrawlPageRawReadMultiplier(), limit + 1),
+          remainingRawBudget,
+          RSS_FEED_CRAWL_MAX_VALUES.raw_read_budget,
+        )
         const result = await processRssFeedsDispatcher({
           cursor: job.data.cursor,
           asOf: asOfDate,

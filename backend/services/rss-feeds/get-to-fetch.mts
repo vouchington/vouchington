@@ -11,16 +11,6 @@ export type {
   RssFeedToFetch,
 } from './get-to-fetch-types.mts'
 
-const DEFAULT_RAW_READ_MULTIPLIER = 10
-const MAX_RAW_READ_BUDGET = 10_000
-
-export function getCrawlRawReadBudget(): number {
-  return Math.min(
-    crawlConfig.getCrawlCapacityBudget() * DEFAULT_RAW_READ_MULTIPLIER,
-    MAX_RAW_READ_BUDGET,
-  )
-}
-
 type GetRssFeedsToFetchOptions = {
   limit?: number
   rawBudget?: number
@@ -69,8 +59,11 @@ export function getRssFeedsToFetch({
   const budget = Math.min(limit ?? capacityBudget, capacityBudget)
   const asOfMs = asOf.getTime()
   if (!Number.isFinite(asOfMs)) throw new RangeError('Invalid RSS tier scheduling time')
-  const defaultRawBudget = getCrawlRawReadBudget()
-  const physicalBudget = Math.min(rawBudget ?? defaultRawBudget, MAX_RAW_READ_BUDGET)
+  const defaultRawBudget = crawlConfig.getCrawlRawReadBudget()
+  const physicalBudget = Math.min(
+    rawBudget ?? defaultRawBudget,
+    crawlConfig.RSS_FEED_CRAWL_MAX_VALUES.raw_read_budget,
+  )
   if (!Number.isSafeInteger(physicalBudget) || physicalBudget < 1)
     throw new RangeError('RSS raw budget must be a positive safe integer')
   return getRssFeedsTiered(

@@ -106,6 +106,14 @@ export const operationalDynamicConfigRegistryEntries = [
         'Maximum RSS feeds dispatched per scheduler run.',
         'capacity_budget',
       ),
+      raw_read_budget: rssFeedCrawlField(
+        'Maximum raw RSS feed state rows scanned per scheduler sweep.',
+        'raw_read_budget',
+      ),
+      page_raw_read_multiplier: rssFeedCrawlField(
+        'Multiplier applied to page size to bound raw RSS feed state rows scanned per page.',
+        'page_raw_read_multiplier',
+      ),
     },
     validate: validateRssFeedCrawlConfig,
   }),

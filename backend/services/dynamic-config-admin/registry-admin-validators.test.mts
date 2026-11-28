@@ -17,6 +17,8 @@ const VALID_RSS_FEED_CRAWL_FIELDS = {
   tier5_sla_ms: 5,
   retry_interval_ms: 60_000,
   capacity_budget: 100,
+  raw_read_budget: 1_000,
+  page_raw_read_multiplier: 4,
 }
 
 describe('dynamic-config-admin registry validators', () => {
@@ -170,6 +172,14 @@ describe('dynamic-config-admin registry validators', () => {
     expect(() =>
       validateRssFeedCrawl({ capacity_budget: RSS_FEED_CRAWL_MAX_VALUES.capacity_budget + 1 }),
     ).toThrow('Field capacity_budget must be less than or equal to 10000')
+    expect(() =>
+      validateRssFeedCrawl({ raw_read_budget: RSS_FEED_CRAWL_MAX_VALUES.raw_read_budget + 1 }),
+    ).toThrow('Field raw_read_budget must be less than or equal to 10000')
+    expect(() =>
+      validateRssFeedCrawl({
+        page_raw_read_multiplier: RSS_FEED_CRAWL_MAX_VALUES.page_raw_read_multiplier + 1,
+      }),
+    ).toThrow('Field page_raw_read_multiplier must be less than or equal to 100')
   })
 
   it('rejects non-number RSS feed crawl numeric fields', () => {
