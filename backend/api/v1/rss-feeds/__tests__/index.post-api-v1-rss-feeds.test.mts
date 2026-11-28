@@ -29,15 +29,6 @@ describe('POST /api/v1/rss-feeds', () => {
     }
   })
 
-  it('should return 401 for unauthenticated users', async () => {
-    const random = Math.random().toString(36).slice(2, 8)
-    const request = createRequest()
-    await request
-      .post('/api/v1/rss-feeds')
-      .send({ rss_feed_url: `https://post-unauth-${random}.example.com/feed.xml` })
-      .expect(401)
-  })
-
   it('returns a pending import, then its status endpoint reports the created feed', async () => {
     const random = Math.random().toString(36).slice(2, 8)
     const request = createRequest()

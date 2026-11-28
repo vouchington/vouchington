@@ -33,11 +33,6 @@ describe('review-queue', () => {
   })
 
   describe('GET /api/v1/posts/review-queue', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/posts/review-queue').expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)

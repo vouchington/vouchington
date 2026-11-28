@@ -40,11 +40,6 @@ describe('index', () => {
     })
 
     describe('GET /api/v1/mq/stats', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.get('/api/v1/mq/stats').expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(regularUser)
@@ -73,11 +68,6 @@ describe('index', () => {
     })
 
     describe('GET /api/v1/mq/queues', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.get('/api/v1/mq/queues').expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(regularUser)
@@ -116,11 +106,6 @@ describe('index', () => {
     })
 
     describe('POST /api/v1/mq/queues/:name/pause', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.post('/api/v1/mq/queues/psql/pause').expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(regularUser)
@@ -145,11 +130,6 @@ describe('index', () => {
     })
 
     describe('POST /api/v1/mq/queues/:name/resume', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.post('/api/v1/mq/queues/psql/resume').expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(regularUser)

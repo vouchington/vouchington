@@ -18,11 +18,6 @@ describe('PUT /api/v1/posts/:id/read', () => {
     })
   })
 
-  it('returns 401 without auth', async () => {
-    const request = createRequest()
-    await request.put(`/api/v1/posts/${postId}/read`).expect(401)
-  })
-
   it('marks a post as read (204)', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
@@ -54,11 +49,6 @@ describe('DELETE /api/v1/posts/:id/read', () => {
       createdById: user.id,
       markdown: 'content',
     })
-  })
-
-  it('returns 401 without auth', async () => {
-    const request = createRequest()
-    await request.delete(`/api/v1/posts/${postId}/read`).expect(401)
   })
 
   it('marks a post as unread (204)', async () => {

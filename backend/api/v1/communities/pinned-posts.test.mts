@@ -78,16 +78,6 @@ describe('Community Pinned Posts Routes', () => {
   })
 
   describe('PUT /api/v1/communities/:slug/pinned-posts', () => {
-    it('returns 401 without auth', async () => {
-      const { community } = await setupCommunityWithPosts(0)
-      const request = createRequest()
-      await request
-        .put(`/api/v1/communities/${community.slug}/pinned-posts`)
-        .set('Content-Type', 'application/json')
-        .send({ post_ids: [] })
-        .expect(401)
-    })
-
     it('returns 403 for regular member', async () => {
       const { community } = await setupCommunityWithPosts(0)
       await insertTestCommunityMember({

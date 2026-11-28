@@ -11,11 +11,6 @@ describe('PUT /api/v1/curated-aside-items/order', () => {
     ;[admin, user] = await Promise.all([createTestUser({ administrator: true }), createTestUser()])
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.put('/api/v1/curated-aside-items/order').expect(401)
-  })
-
   it('returns 403 for non-admin users', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

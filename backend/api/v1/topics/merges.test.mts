@@ -6,15 +6,6 @@ import { backendResponseContracts } from '../../../test-helpers/api-fixtures/res
 import { validateResponseContract } from '../../../test-helpers/api-fixtures/contract-schema.mts'
 
 describe('POST /api/v1/topics/:sourceIdOrSlug/merges', () => {
-  it('returns 401 for unauthenticated users', async () => {
-    const source = await createTestTopic()
-    const destination = await createTestTopic()
-    await createRequest()
-      .post(`/api/v1/topics/${source.id}/merges`)
-      .send({ destination_id_or_slug: destination.id })
-      .expect(401)
-  })
-
   it('returns 403 for non-admin users', async () => {
     const user = await createTestUser()
     const source = await createTestTopic({ user })

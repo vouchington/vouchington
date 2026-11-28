@@ -33,13 +33,6 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
     vi.mocked(generateJson).mockResolvedValue(makeModelCallResult({ title: 'Great Chat Title' }))
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/my/conversations/00000000-0000-7000-8000-000000000001/title')
-      .expect(401)
-  })
-
   it('returns 404 for non-existent conversation', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

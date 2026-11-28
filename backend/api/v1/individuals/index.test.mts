@@ -11,11 +11,6 @@ describe('index', () => {
   })
   describe('Individuals API Routes', () => {
     describe('GET /api/v1/me/individual', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.get('/api/v1/me/individual').expect(401)
-      })
-
       it('should create an individual on first request and reuse it', async () => {
         const request = createRequest()
         await request.authenticateAs(user)

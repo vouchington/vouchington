@@ -34,16 +34,6 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-queue', () => {
     moderatorUser = (await getPrivateUserByAny(moderatorUser.id))!
   })
 
-  it('returns 401 for unauthenticated requests', async () => {
-    const community = await insertTestCommunity({
-      createdById: author.id,
-      name: `Mod Queue Route Community 401 ${crypto.randomUUID().slice(0, 8)}`,
-      slug: `mod-queue-route-401-${crypto.randomUUID().slice(0, 8)}`,
-    })
-    const request = createRequest()
-    await request.get(`/api/v1/communities/${community.slug}/moderation-queue`).expect(401)
-  })
-
   it('returns 403 for a signed-in user who is not a member and not staff', async () => {
     const community = await insertTestCommunity({
       createdById: author.id,

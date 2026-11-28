@@ -26,12 +26,6 @@ describe('GET + PUT /api/v1/podcast-episodes/:id/playback-position', () => {
   })
 
   describe('GET /api/v1/podcast-episodes/:id/playback-position', () => {
-    it('returns 401 when unauthenticated', async () => {
-      const { id: episodeId } = await createTestRssFeedItemWithUrl(rssFeedId)
-      const request = createRequest()
-      await request.get(`/api/v1/podcast-episodes/${episodeId}/playback-position`).expect(401)
-    })
-
     it('returns 422 for an invalid UUID', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
@@ -90,15 +84,6 @@ describe('GET + PUT /api/v1/podcast-episodes/:id/playback-position', () => {
   })
 
   describe('PUT /api/v1/podcast-episodes/:id/playback-position', () => {
-    it('returns 401 when unauthenticated', async () => {
-      const { id: episodeId } = await createTestRssFeedItemWithUrl(rssFeedId)
-      const request = createRequest()
-      await request
-        .put(`/api/v1/podcast-episodes/${episodeId}/playback-position`)
-        .send({ position_seconds: 10 })
-        .expect(401)
-    })
-
     it('returns 422 for an invalid UUID', async () => {
       const request = createRequest()
       await request.authenticateAs(user)

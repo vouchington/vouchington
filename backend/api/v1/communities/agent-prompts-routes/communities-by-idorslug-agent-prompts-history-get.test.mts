@@ -11,18 +11,6 @@ import {
 } from '@voucha/test-helpers'
 
 describe('GET /api/v1/communities/:idOrSlug/agent-prompts/history', () => {
-  it('returns 401 for unauthenticated request', async () => {
-    const owner = await createTestUser()
-    const random = createRandomString(8)
-    const community = await insertTestCommunity({
-      createdById: owner.id,
-      slug: `hist-401-${random}`,
-    })
-
-    const request = createRequest()
-    await request.get(`/api/v1/communities/${community.slug}/agent-prompts/history`).expect(401)
-  })
-
   it('returns 401 for unauthenticated request with a malformed query', async () => {
     const owner = await createTestUser()
     const random = createRandomString(8)

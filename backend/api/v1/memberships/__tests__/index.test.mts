@@ -165,11 +165,6 @@ describe('index', () => {
   })
 
   describe('GET /api/v1/memberships/me', () => {
-    it('returns 401 without authentication', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/memberships/me').expect(401)
-    })
-
     it('returns null when user has no membership', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)

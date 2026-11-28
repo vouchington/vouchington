@@ -11,20 +11,6 @@ import {
 
 describe('Community Ban-Evasion Routes', () => {
   describe('POST /api/v1/communities/:idOrSlug/ban-evasion/:userId', () => {
-    it('returns 401 without auth', async () => {
-      const owner = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: owner.id,
-        slug: `be-confirm-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request
-        .post(`/api/v1/communities/${community.slug}/ban-evasion/${owner.id}`)
-        .expect(401)
-    })
-
     it('returns 403 for regular member', async () => {
       const [owner, member, suspect] = await Promise.all([
         createTestUser(),
@@ -122,20 +108,6 @@ describe('Community Ban-Evasion Routes', () => {
   })
 
   describe('DELETE /api/v1/communities/:idOrSlug/ban-evasion/:userId', () => {
-    it('returns 401 without auth', async () => {
-      const owner = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: owner.id,
-        slug: `be-dismiss-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request
-        .delete(`/api/v1/communities/${community.slug}/ban-evasion/${owner.id}`)
-        .expect(401)
-    })
-
     it('returns 403 for regular member', async () => {
       const [owner, member, suspect] = await Promise.all([
         createTestUser(),

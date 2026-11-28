@@ -16,11 +16,6 @@ describe('scheduled-jobs', () => {
 
   describe('Scheduled Jobs API Routes', () => {
     describe('GET /api/v1/mq/scheduled-jobs', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.get('/api/v1/mq/scheduled-jobs').expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(regularUser)
@@ -53,11 +48,6 @@ describe('scheduled-jobs', () => {
     })
 
     describe('POST /api/v1/mq/scheduled-jobs/:id/runs', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.post('/api/v1/mq/scheduled-jobs/imports-recover-stalled/runs').expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(regularUser)

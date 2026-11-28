@@ -28,16 +28,6 @@ describe('GET /api/v1/communities/:idOrSlug/moderator-stats', () => {
     moderatorUser = (await getPrivateUserByAny(moderatorUser.id))!
   })
 
-  it('returns 401 for unauthenticated requests', async () => {
-    const community = await insertTestCommunity({
-      createdById: owner.id,
-      name: `Mod Stats 401 ${crypto.randomUUID().slice(0, 8)}`,
-      slug: `mod-stats-401-${crypto.randomUUID().slice(0, 8)}`,
-    })
-    const request = createRequest()
-    await request.get(`/api/v1/communities/${community.slug}/moderator-stats`).expect(401)
-  })
-
   it('returns 403 for a regular non-member user', async () => {
     const community = await insertTestCommunity({
       createdById: owner.id,

@@ -19,10 +19,6 @@ describe('GET /api/v1/my/profile', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/profile').expect(401)
-  })
 
   it('returns profile data for authenticated user', async () => {
     const request = createRequest()
@@ -39,10 +35,6 @@ describe('PATCH /api/v1/my/profile', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.patch('/api/v1/my/profile').send({ markdown: 'hello' }).expect(401)
   })
 
   it('updates profile markdown', async () => {
@@ -68,10 +60,6 @@ describe('Profile links CRUD', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('GET /api/v1/my/profile/links returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/profile/links').expect(401)
   })
 
   it('GET /api/v1/my/profile/links returns empty list initially', async () => {

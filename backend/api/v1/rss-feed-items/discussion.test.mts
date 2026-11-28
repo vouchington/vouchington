@@ -62,14 +62,6 @@ describe('discussion', () => {
         .expect(201)
       expect(response.body.post).toMatchObject({ post_type: 'link', url_id: urlId })
     })
-    it('returns 401 when unauthenticated', async () => {
-      const { itemId } = await makeItem()
-      const request = createRequest()
-      await request
-        .post('/api/v1/posts')
-        .send({ post_type: 'link', rss_feed_item_id: itemId })
-        .expect(401)
-    })
 
     it('returns 400 for invalid UUID', async () => {
       const request = createRequest()

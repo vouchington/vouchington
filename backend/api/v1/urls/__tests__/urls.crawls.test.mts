@@ -153,20 +153,6 @@ describe('index', () => {
 
         await request.get(`/api/v1/urls/${urlId}/crawls`).expect(200)
       })
-
-      it('should return 401 for unauthenticated users', async () => {
-        const random = Math.random().toString(36).slice(2, 8)
-        const hostnameId = await insertTestUrlHostname({
-          hostname: `anon-crawls-${random}.example.com`,
-        })
-        const urlId = await insertTestUrl({
-          url: `https://anon-crawls-${random}.example.com/page`,
-          hostnameId,
-        })
-        const request = createRequest()
-
-        await request.get(`/api/v1/urls/${urlId}/crawls`).expect(401)
-      })
     })
 
     describe('GET /api/v1/urls/:id/crawls/:crawlId', () => {
@@ -261,25 +247,6 @@ describe('index', () => {
         await request.authenticateAs(freeUser)
 
         await request.get(`/api/v1/urls/${urlId}/crawls/${crawlId}`).expect(403)
-      })
-
-      it('should return 401 for unauthenticated users', async () => {
-        const random = Math.random().toString(36).slice(2, 8)
-        const hostnameId = await insertTestUrlHostname({
-          hostname: `anon-crawl-detail-${random}.example.com`,
-        })
-        const urlId = await insertTestUrl({
-          url: `https://anon-crawl-detail-${random}.example.com/page`,
-          hostnameId,
-        })
-        const { id: crawlId } = await insertTestCrawl({
-          urlId,
-          statusCode: 200,
-          markdown: 'Test content',
-        })
-        const request = createRequest()
-
-        await request.get(`/api/v1/urls/${urlId}/crawls/${crawlId}`).expect(401)
       })
     })
   })

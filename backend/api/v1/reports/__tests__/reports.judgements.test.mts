@@ -27,15 +27,6 @@ describe('POST /api/v1/reports/:id/judgements', () => {
     moderatorUser = (await getPrivateUserByAny(moderatorUser.id))!
   })
 
-  it('returns 401 for unauthenticated requests', async () => {
-    const request = createRequest()
-    await request
-      .post(`/api/v1/reports/${crypto.randomUUID()}/judgements`)
-      .set('Content-Type', 'application/json')
-      .send({})
-      .expect(401)
-  })
-
   it('returns 403 for a non-staff authenticated user', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser)

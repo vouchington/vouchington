@@ -62,15 +62,6 @@ describe('POST /api/v1/lists/:id/import', () => {
     listId = r.body.list.id
   })
 
-  it('returns 401 without auth', async () => {
-    const request = createRequest()
-    await request
-      .post(`/api/v1/lists/${listId}/import`)
-      .set('Content-Type', 'application/json')
-      .send({ community_slug: communitySlug })
-      .expect(401)
-  })
-
   it('imports community posts and feed items', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

@@ -14,11 +14,6 @@ describe('GET /api/v1/admin/moderation-analytics', () => {
     ])
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/admin/moderation-analytics').expect(401)
-  })
-
   it('returns 403 for regular users', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser)

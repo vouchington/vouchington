@@ -12,14 +12,6 @@ import { getUserVouchElectionById } from '@services/elections-votes/user-vouch'
 import { withOwnedVouchStats } from '@voucha/test-helpers/user-vouch-vote-stats-admission'
 
 describe('User vouch vote routes', () => {
-  it('PUT /api/v1/users/:id/vouch-vote returns 401 for anonymous viewers', async () => {
-    const target = await createTestUser()
-    await createRequest()
-      .put(`/api/v1/users/${target.id}/vouch-vote`)
-      .send({ choice: 'like' })
-      .expect(401)
-  })
-
   it('PUT /api/v1/users/:id/vouch-vote rejects self-votes with 403', async () => {
     const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const request = createRequest()

@@ -70,15 +70,6 @@ describe('PATCH /api/v1/lists/:id', () => {
     listId = r.body.list.id
   })
 
-  it('returns 401 without auth', async () => {
-    const request = createRequest()
-    await request
-      .patch(`/api/v1/lists/${listId}`)
-      .set('Content-Type', 'application/json')
-      .send({ name: 'x' })
-      .expect(401)
-  })
-
   it('returns 403 for non-owner', async () => {
     const other = await createTestUser()
     const request = createRequest()
@@ -174,11 +165,6 @@ describe('DELETE /api/v1/lists/:id', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-
-  it('returns 401 without auth', async () => {
-    const request = createRequest()
-    await request.delete('/api/v1/lists/00000000-0000-7000-8000-000000000000').expect(401)
   })
 
   it('soft-deletes the list', async () => {

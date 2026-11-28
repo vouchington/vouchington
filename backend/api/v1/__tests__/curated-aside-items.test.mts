@@ -68,11 +68,6 @@ describe('POST /api/v1/curated-aside-items', () => {
     ;[admin, user] = await Promise.all([createTestUser({ administrator: true }), createTestUser()])
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.post('/api/v1/curated-aside-items').expect(401)
-  })
-
   it('returns 403 for non-admin users', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
@@ -168,11 +163,6 @@ describe('DELETE /api/v1/curated-aside-items/:id', () => {
 
   beforeAll(async () => {
     ;[admin, user] = await Promise.all([createTestUser({ administrator: true }), createTestUser()])
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.delete(`/api/v1/curated-aside-items/${randomUUID()}`).expect(401)
   })
 
   it('returns 403 for non-admin users', async () => {

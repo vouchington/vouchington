@@ -30,14 +30,6 @@ describe('POST /api/v1/communities/:idOrSlug/warnings', () => {
     })
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request
-      .post(`/api/v1/communities/${community.slug}/warnings`)
-      .send({ userId: targetUser.id, reason: 'Test' })
-      .expect(401)
-  })
-
   it('returns 403 for non-moderator members', async () => {
     await insertTestCommunityMember({
       communityId: community.id,

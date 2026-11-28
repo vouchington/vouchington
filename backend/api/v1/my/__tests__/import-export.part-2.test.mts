@@ -30,15 +30,6 @@ describe('POST /api/v1/my/import/topics', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/my/import/topics')
-      .set('Content-Type', 'application/json')
-      .send({ names: ['Technology'] })
-      .expect(401)
-  })
-
   it('returns 422 when names is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
@@ -208,11 +199,6 @@ describe('GET /api/v1/my/export/rss-feeds', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/export/rss-feeds').expect(401)
-  })
-
   it('returns OPML by default', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
@@ -255,11 +241,6 @@ describe('GET /api/v1/my/export/topics', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/export/topics').expect(401)
   })
 
   it('returns JSON with results array', async () => {

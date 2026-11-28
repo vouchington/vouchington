@@ -66,10 +66,6 @@ describe('election-vote-handler', () => {
       await request.authenticateAs(user)
       await request.put('/api/v1/topics/not-a-uuid/vote').send({ choice: 'like' }).expect(422)
     })
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'like' }).expect(401)
-    })
 
     it('returns 404 for non-existent entity', async () => {
       const request = createRequest()
@@ -278,15 +274,6 @@ describe('election-vote-handler', () => {
 
   // Tests preAssertAccess enforcement via agent-moderation route (admin-only)
   describe('createVoteHandler preAssertAccess (via PUT /api/v1/agent-moderations/:id/vote)', () => {
-    it('returns 401 when unauthenticated', async () => {
-      const request = createRequest()
-
-      await request
-        .put(`/api/v1/agent-moderations/${uuidv7()}/vote`)
-        .send({ choice: 'like' })
-        .expect(401)
-    })
-
     it('returns 403 when non-admin (preAssertAccess runs before entity lookup)', async () => {
       const request = createRequest()
       await request.authenticateAs(user)

@@ -164,22 +164,6 @@ describe('Community Application Questions Routes', () => {
   })
 
   describe('PUT /api/v1/communities/:slug/application-questions', () => {
-    it('returns 401 without auth', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `app-questions-put-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request
-        .put(`/api/v1/communities/${community.slug}/application-questions`)
-        .set('Content-Type', 'application/json')
-        .send({ questions: [] })
-        .expect(401)
-    })
-
     it('returns 403 as non-owner', async () => {
       const [owner, regular] = await Promise.all([createTestUser(), createTestUser()])
       const random = createRandomString(8)

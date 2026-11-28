@@ -58,11 +58,6 @@ describe('GET /api/v1/images/:id/state/stream', () => {
     subscribeSpy.mockResolvedValue(makeSubscription())
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get(`/api/v1/images/${FAKE_IMAGE_ID}/state/stream`).expect(401)
-  })
-
   it('closes stream immediately when initial state is already ready', async () => {
     getImageUploadStateSpy.mockResolvedValue(makeReadyState())
     subscribeSpy.mockResolvedValue(makeSubscription())

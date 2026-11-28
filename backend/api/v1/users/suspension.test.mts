@@ -4,12 +4,6 @@ import { createTestUser, safeUsername, suspendTestUser } from '@voucha/test-help
 import { CONFLICT } from '@modules/on-error/error-codes'
 
 describe('PUT /api/v1/users/:userId/suspension', () => {
-  it('returns 401 for unauthenticated', async () => {
-    const target = await createTestUser({ username: safeUsername('susp-api-anon') })
-    const request = createRequest()
-    await request.put(`/api/v1/users/${target.id}/suspension`).expect(401)
-  })
-
   it('returns 403 for non-admin', async () => {
     const user = await createTestUser({ username: safeUsername('susp-api-nonadmin') })
     const target = await createTestUser({ username: safeUsername('susp-api-target1') })

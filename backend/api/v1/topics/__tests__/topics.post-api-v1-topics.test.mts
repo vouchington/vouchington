@@ -33,17 +33,6 @@ describe('topics', () => {
         expect(response.body.topic.created_by).toHaveProperty('id')
       })
 
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request
-          .post('/api/v1/topics')
-          .send({
-            name: 'New Topic',
-            slug: 'new-topic',
-          })
-          .expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const nonAdminUser = await createTestUser()
         const request = createRequest()

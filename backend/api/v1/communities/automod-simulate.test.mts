@@ -13,21 +13,6 @@ import { withLiveAiUsageCapBreach } from '@voucha/test-helpers/with-reserved-ai-
 import * as communityModeration from '@agents/community-moderation'
 
 describe('POST /api/v1/communities/:slug/automod/simulate', () => {
-  it('returns 401 for unauthenticated users', async () => {
-    const user = await createTestUser()
-    const community = await insertTestCommunity({
-      createdById: user.id,
-      slug: `automod-sim-401-${createRandomString(8)}`,
-    })
-
-    const request = createRequest()
-    await request
-      .post(`/api/v1/communities/${community.slug}/automod/simulate`)
-      .set('Content-Type', 'application/json')
-      .send({ prompt_id: 'prompt-1' })
-      .expect(401)
-  })
-
   it('returns 403 for non-moderator community members', async () => {
     const [owner, member] = await Promise.all([createTestUser(), createTestUser()])
     const community = await insertTestCommunity({

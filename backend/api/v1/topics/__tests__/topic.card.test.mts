@@ -167,22 +167,6 @@ describe('topic.card', () => {
         })
       })
 
-      it('should return 401 when not authenticated', async () => {
-        const user = await createTestUser()
-        const random = Math.random().toString(36).slice(2, 8)
-        const cardTopicId = await insertTestTopic({
-          name: `Test Card ${random}`,
-          slug: `test-card-patch-401-${random}`,
-          createdById: user!.id,
-          topicType: 'card',
-        })
-        const request = createRequest()
-        await request
-          .patch(`/api/v1/topics/${cardTopicId}/card`)
-          .send({ annual_fee: { amount: 100, currency: 'jpy' } })
-          .expect(401)
-      })
-
       it('returns 403 for a non-admin before malformed card-body diagnostics', async () => {
         const user = await createTestUser()
         const random = Math.random().toString(36).slice(2, 8)

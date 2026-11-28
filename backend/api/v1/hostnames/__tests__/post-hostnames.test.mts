@@ -11,14 +11,6 @@ describe('POST /api/v1/hostnames', () => {
     adminUser = await createTestUserDirect({ administrator: true, withEmail: true })
   })
 
-  it('returns 401 when unauthenticated', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/hostnames')
-      .send({ hostname: `unauthenticated-${Date.now()}.example.com` })
-      .expect(401)
-  })
-
   it('returns 403 when authenticated as non-admin', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser!)

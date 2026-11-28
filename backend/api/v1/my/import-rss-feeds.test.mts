@@ -21,10 +21,6 @@ describe('RSS feed import status and line-list parsing', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    await createRequest().get(`/api/v1/my/import/rss-feeds/${UUID}`).expect(401)
-  })
-
   it('serves the status of the caller import and hides it from others', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

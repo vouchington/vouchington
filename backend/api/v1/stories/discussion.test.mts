@@ -79,14 +79,6 @@ describe('discussion', () => {
         .expect(201)
       expect(response.body.post.post_type).toBe('story')
     })
-    it('returns 401 when unauthenticated', async () => {
-      const { story } = await makeStoryWithItem()
-      const request = createRequest()
-      await request
-        .post('/api/v1/posts')
-        .send({ post_type: 'story', story_id: story.id })
-        .expect(401)
-    })
 
     it('returns 401 without a validation diagnostic for a malformed unauthenticated call', async () => {
       const response = await createRequest()

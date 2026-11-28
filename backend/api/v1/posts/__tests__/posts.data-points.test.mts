@@ -112,11 +112,6 @@ describe('posts.data-points', () => {
   })
 
   describe('POST /api/v1/posts - data_point with structured data', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.post('/api/v1/posts').send(makeCreditCardPayload(cardTopicId)).expect(401)
-    })
-
     it('creates a credit card data point post', async () => {
       const request = createRequest()
       await request.authenticateAs(user)

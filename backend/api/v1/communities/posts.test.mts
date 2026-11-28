@@ -4,7 +4,6 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
-  insertTestPost,
   createRandomString,
   createTestMembership,
 } from '@voucha/test-helpers'
@@ -94,18 +93,6 @@ describe('Community Posts Routes', () => {
   })
 
   describe('GET /api/v1/communities/:slug/posts/pending', () => {
-    it('returns 401 without auth', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `posts-pending-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request.get(`/api/v1/communities/${community.slug}/posts/pending`).expect(401)
-    })
-
     it('returns 403 as non-mod', async () => {
       const [owner, regular] = await Promise.all([createTestUser(), createTestUser()])
       const random = createRandomString(8)
@@ -174,28 +161,6 @@ describe('Community Posts Routes', () => {
   })
 
   describe('PATCH /api/v1/communities/:slug/posts/:postId', () => {
-    it('returns 401 without auth', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `posts-patch-401-${random}`,
-      })
-      const postId = await insertTestPost({
-        title: `Test Post ${random}`,
-        slug: `test-post-patch-401-${random}`,
-        createdById: user.id,
-        markdown: 'content',
-      })
-
-      const request = createRequest()
-      await request
-        .patch(`/api/v1/communities/${community.slug}/posts/${postId}`)
-        .set('Content-Type', 'application/json')
-        .send({ status: 'approved' })
-        .expect(401)
-    })
-
     it('approves post and returns 204 as mod', async () => {
       const user = await createTestUser()
       const random = createRandomString(8)

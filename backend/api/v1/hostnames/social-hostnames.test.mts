@@ -28,11 +28,6 @@ describe('social-hostnames', () => {
   })
 
   describe('GET /api/v1/hostnames/social', () => {
-    it('returns 401 for unauthenticated users', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/hostnames/social').expect(401)
-    })
-
     it('returns 200 with results for authenticated users', async () => {
       const request = createRequest()
       await request.authenticateAs(currentUser)

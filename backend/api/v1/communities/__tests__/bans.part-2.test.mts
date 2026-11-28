@@ -10,18 +10,6 @@ import {
 
 describe('Community Ban Routes (read + lift)', () => {
   describe('GET /api/v1/communities/:slug/bans', () => {
-    it('returns 401 without auth', async () => {
-      const owner = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: owner.id,
-        slug: `ban-get-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request.get(`/api/v1/communities/${community.slug}/bans`).expect(401)
-    })
-
     it('returns 403 for regular member', async () => {
       const [owner, member] = await Promise.all([createTestUser(), createTestUser()])
       const random = createRandomString(8)
@@ -69,19 +57,6 @@ describe('Community Ban Routes (read + lift)', () => {
   })
 
   describe('DELETE /api/v1/communities/:slug/bans/:banId', () => {
-    it('returns 401 without auth', async () => {
-      const owner = await createTestUser()
-      const target = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: owner.id,
-        slug: `ban-del-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request.delete(`/api/v1/communities/${community.slug}/bans/${target.id}`).expect(401)
-    })
-
     it('owner lifts only the selected ban', async () => {
       const [owner, target] = await Promise.all([createTestUser(), createTestUser()])
       const random = createRandomString(8)

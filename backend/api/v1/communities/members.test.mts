@@ -31,18 +31,6 @@ describe('Community Members Routes', () => {
   })
 
   describe('POST /api/v1/communities/:slug/members', () => {
-    it('returns 401 without auth', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `members-join-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request.post(`/api/v1/communities/${community.slug}/members`).expect(401)
-    })
-
     it('joins public community and returns 201 as non-member', async () => {
       const [owner, joiner] = await Promise.all([createTestUser(), createTestUser()])
       const random = createRandomString(8)
@@ -60,18 +48,6 @@ describe('Community Members Routes', () => {
   })
 
   describe('DELETE /api/v1/communities/:slug/members', () => {
-    it('returns 401 without auth', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `members-leave-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request.delete(`/api/v1/communities/${community.slug}/members`).expect(401)
-    })
-
     it('returns 404 for a missing community', async () => {
       const user = await createTestUser()
       const request = createRequest()

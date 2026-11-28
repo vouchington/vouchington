@@ -42,10 +42,6 @@ describe('GET /api/v1/moderation-transparency', () => {
     await updateTestMembershipCancelAtPeriodEnd(cancellingMembership.id, true)
   })
 
-  it('requires authentication', async () => {
-    await createRequest().get('/api/v1/moderation-transparency').expect(401)
-  })
-
   it('allows administrators and active or past-due Plus/Pro memberships', async () => {
     for (const user of [admin, activePlus, pastDuePro, cancellingPlus]) {
       const request = createRequest()

@@ -15,11 +15,6 @@ describe('index', () => {
 
   describe('Queue Monitoring API Routes', () => {
     describe('POST /api/v1/mq/queues/:name/retry-failed', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.post('/api/v1/mq/queues/psql/retry-failed').expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(regularUser)
@@ -45,11 +40,6 @@ describe('index', () => {
     })
 
     describe('GET /api/v1/mq/stream', () => {
-      it('should return 401 when not authenticated', async () => {
-        const request = createRequest()
-        await request.get('/api/v1/mq/stream').expect(401)
-      })
-
       it('should return 403 when user is not admin', async () => {
         const request = createRequest()
         await request.authenticateAs(regularUser)

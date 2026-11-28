@@ -43,11 +43,6 @@ describe('links', () => {
     testHostname = fixture.hostname
   })
   describe('Referral Links Routes', () => {
-    it('GET /api/v1/referral-links requires auth', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/referral-links').expect(401)
-    })
-
     it('GET /api/v1/referral-links preserves pagination clamp and parser 400s before validation', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser!)

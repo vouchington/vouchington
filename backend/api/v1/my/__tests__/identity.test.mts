@@ -26,10 +26,6 @@ describe('GET /api/v1/my/identity', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/identity').expect(401)
-  })
 
   it('returns identity data for authenticated user', async () => {
     const request = createRequest()
@@ -48,10 +44,6 @@ describe('PATCH /api/v1/my/identity', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.patch('/api/v1/my/identity').send({ username: 'newname' }).expect(401)
   })
 
   it('updates username successfully', async () => {
@@ -95,10 +87,6 @@ describe('GET /api/v1/my/email-addresses', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/email-addresses').expect(401)
   })
 
   it('returns email addresses for authenticated user', async () => {

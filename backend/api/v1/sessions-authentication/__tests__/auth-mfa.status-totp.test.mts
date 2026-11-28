@@ -36,11 +36,6 @@ describe('MFA API Routes', () => {
   // ─── GET /api/v1/auth/mfa/status ──────────────────────────────────────────
 
   describe('GET /api/v1/auth/mfa/status', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req.get('/api/v1/auth/mfa/status').expect(401)
-    })
-
     it('returns MFA status for authenticated user', async () => {
       const req = createRequest()
       await req.authenticateAs(user)

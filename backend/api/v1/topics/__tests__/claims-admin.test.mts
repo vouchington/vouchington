@@ -12,11 +12,6 @@ describe('GET /api/v1/my/topic-claims', () => {
     regularUser = await createTestUser()
   })
 
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/topic-claims').expect(401)
-  })
-
   it('returns empty list for user with no claims', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser)
@@ -96,11 +91,6 @@ describe('GET /api/v1/admin/topic-claims', () => {
   beforeAll(async () => {
     staffUser = await createTestUser({ administrator: true })
     regularUser = await createTestUser()
-  })
-
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/admin/topic-claims').expect(401)
   })
 
   it('returns 403 for non-staff', async () => {

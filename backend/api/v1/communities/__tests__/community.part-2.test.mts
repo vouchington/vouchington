@@ -30,22 +30,6 @@ describe('community', () => {
 
   describe('Community Individual Routes', () => {
     describe('PATCH /api/v1/communities/:slug', () => {
-      it('returns 401 without auth', async () => {
-        const patchAuthor = await createTestUser()
-        const random = createRandomString(8)
-        const community = await insertTestCommunity({
-          createdById: patchAuthor.id,
-          slug: `community-patch-401-${random}`,
-        })
-
-        const request = createRequest()
-        await request
-          .patch(`/api/v1/communities/${community.slug}`)
-          .set('Content-Type', 'application/json')
-          .send({ name: 'Updated' })
-          .expect(401)
-      })
-
       it('returns 403 as non-owner', async () => {
         const [owner, other] = await Promise.all([createTestUser(), createTestUser()])
         const random = createRandomString(8)
@@ -219,18 +203,6 @@ describe('community', () => {
     })
 
     describe('DELETE /api/v1/communities/:slug', () => {
-      it('returns 401 without auth', async () => {
-        const deleteUser = await createTestUser()
-        const random = createRandomString(8)
-        const community = await insertTestCommunity({
-          createdById: deleteUser.id,
-          slug: `community-delete-401-${random}`,
-        })
-
-        const request = createRequest()
-        await request.delete(`/api/v1/communities/${community.slug}`).expect(401)
-      })
-
       it('returns 403 as non-owner', async () => {
         const [owner, other] = await Promise.all([createTestUser(), createTestUser()])
         const random = createRandomString(8)

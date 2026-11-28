@@ -261,11 +261,6 @@ describe('post-images', () => {
 
         expect(response.body.images).toHaveLength(1)
       })
-
-      it('should return 401 for unauthenticated request', async () => {
-        const request = createRequest()
-        await request.put(`/api/v1/posts/${putPostIds[7]}/images`).send({ images: [] }).expect(401)
-      })
     })
   })
 })

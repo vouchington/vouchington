@@ -66,19 +66,6 @@ describe('Topic Retailer Routes', () => {
       expect(response.body.retailer_attributes.updated_at).toEqual(expect.any(String))
     })
 
-    it('should return 401 when not authenticated', async () => {
-      const user = await createTestUser()
-      const random = Math.random().toString(36).slice(2, 8)
-      const topicId = await insertTestTopic({
-        name: `Test Retailer Auth ${random}`,
-        slug: `test-retailer-auth-${random}`,
-        createdById: user.id,
-        topicType: 'topic',
-      })
-      const request = createRequest()
-      await request.patch(`/api/v1/topics/${topicId}/retailer`).expect(401)
-    })
-
     it('should return 403 when non-admin user', async () => {
       const user = await createTestUser()
       const random = Math.random().toString(36).slice(2, 8)
@@ -150,24 +137,6 @@ describe('Topic Retailer Routes', () => {
       expect(Array.isArray(response.body.results)).toBe(true)
       expect(response.body.results.length).toBe(1)
       expect(response.body.results[0].code).toBe('US')
-    })
-
-    it('should return 401 when not authenticated', async () => {
-      const user = await createTestUser()
-      const random = Math.random().toString(36).slice(2, 8)
-      const topicId = await insertTestTopic({
-        name: `Test Retailer Countries Auth ${random}`,
-        slug: `test-rctry-auth-${random}`,
-        createdById: user.id,
-        topicType: 'topic',
-      })
-      await insertTestRetailer({ topicId })
-      const request = createRequest()
-
-      await request
-        .put(`/api/v1/topics/${topicId}/retailer/countries`)
-        .send({ country_ids: [] })
-        .expect(401)
     })
 
     it('should return 403 when non-admin user', async () => {

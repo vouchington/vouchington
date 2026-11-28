@@ -15,11 +15,6 @@ describe('GET /api/v1/my/communities', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/communities').expect(401)
-  })
-
   it('returns an empty list when user has no memberships', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

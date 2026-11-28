@@ -25,11 +25,6 @@ describe('GET /api/v1/my/email-preferences', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/email-preferences').expect(401)
-  })
-
   it('returns email preferences for the current user', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

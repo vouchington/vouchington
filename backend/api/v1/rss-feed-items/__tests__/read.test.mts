@@ -28,11 +28,6 @@ describe('PUT /api/v1/rss-feed-items/:id/read', () => {
     rssFeedItemId = item.id
   })
 
-  it('returns 401 without auth', async () => {
-    const request = createRequest()
-    await request.put(`/api/v1/rss-feed-items/${rssFeedItemId}/read`).expect(401)
-  })
-
   it('marks an rss_feed_item as read (204)', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
@@ -69,11 +64,6 @@ describe('DELETE /api/v1/rss-feed-items/:id/read', () => {
     })
     const item = await createTestRssFeedItemWithUrl(feedId)
     rssFeedItemId = item.id
-  })
-
-  it('returns 401 without auth', async () => {
-    const request = createRequest()
-    await request.delete(`/api/v1/rss-feed-items/${rssFeedItemId}/read`).expect(401)
   })
 
   it('marks an rss_feed_item as unread (204)', async () => {

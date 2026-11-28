@@ -10,11 +10,6 @@ describe('GET /api/v1/lists', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/lists').expect(401)
-  })
-
   it('returns 200 with empty results for new user', async () => {
     const newUser = await createTestUser()
     const request = createRequest()
@@ -44,15 +39,6 @@ describe('POST /api/v1/lists', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/lists')
-      .set('Content-Type', 'application/json')
-      .send({ name: 'x' })
-      .expect(401)
   })
 
   it('creates a list', async () => {

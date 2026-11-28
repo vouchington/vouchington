@@ -1,6 +1,7 @@
 import { resolveAiUsageDdlMaxWorkers } from './environment.mts'
 import type { TestProjectConfiguration } from 'vitest/config'
 import { backendNoDataUnitTestFiles } from './backend-no-data-unit-tests.mts'
+import { backendDataStoresSetupFiles } from './backend-data-stores-setup-files.mts'
 
 export const backendDataStoreTestDefaults = {
   pool: 'forks' as const,
@@ -31,9 +32,7 @@ export const backendDataStoreTestDefaults = {
   hookTimeout: 5_000,
 }
 
-// These tests use the backend-mocks Sentry setup and data-store bootstrap, but they
-// stub with vi.fn/vi.spyOn rather than vi.mock. The mock-test filename rule forbids
-// a .mock.test suffix, so they are listed explicitly.
+// These use the backend-mocks Sentry setup with vi.fn/vi.spyOn, not vi.mock, so no .mock.test suffix.
 const backendSentrySetupTestFiles = [
   'backend/services/entity-relations/post-related-url-display-config.test.mts',
   'backend/services/mcp-tools/call-tool.test.mts',
@@ -88,6 +87,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
     test: {
       ...backendDataStoreTestDefaults,
       name: 'backend-data-stores',
+      setupFiles: backendDataStoresSetupFiles(backendDataStoreTestDefaults.setupFiles),
       runner: './test-helpers/vitest.runner.backend-data-guards.mts',
       include: [
         'backend/{agents,api,data-stores,entrypoints,md,queues,rss,scripts,service-registrations,services,sitemaps,mcp,worker-runtime,workers}/**/*.test.mts',

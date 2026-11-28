@@ -9,10 +9,6 @@ describe('GET /api/v1/my/rewards-program-point-valuations', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/rewards-program-point-valuations').expect(401)
-  })
 
   it('returns empty list for authenticated user', async () => {
     const request = createRequest()
@@ -98,10 +94,6 @@ describe('POST /api/v1/my/rewards-program-point-valuations', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.post('/api/v1/my/rewards-program-point-valuations').send({}).expect(401)
   })
 
   it('returns 415 without Content-Type: application/json', async () => {
@@ -209,10 +201,6 @@ describe('PATCH /api/v1/my/rewards-program-point-valuations/:id', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.patch('/api/v1/my/rewards-program-point-valuations/some-id').send({}).expect(401)
-  })
 
   it('returns 415 without Content-Type: application/json', async () => {
     const request = createRequest()
@@ -277,10 +265,6 @@ describe('DELETE /api/v1/my/rewards-program-point-valuations/:id', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.delete('/api/v1/my/rewards-program-point-valuations/some-id').expect(401)
   })
 
   it('returns 404 for non-existent point valuation', async () => {

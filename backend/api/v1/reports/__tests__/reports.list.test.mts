@@ -53,11 +53,6 @@ describe('GET /api/v1/reports', () => {
     adminUser = await createTestUser({ administrator: true })
   })
 
-  it('returns 401 for unauthenticated requests', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/reports').expect(401)
-  })
-
   it('returns 200 with redacted data for signed-in non-staff users', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

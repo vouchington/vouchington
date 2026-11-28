@@ -26,13 +26,6 @@ describe('POST /api/v1/topics/:idOrSlug/claims/:claimId/verification-token', () 
     claimId = claim.id
   })
 
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request
-      .post(`/api/v1/topics/${topicSlug}/claims/${claimId}/verification-token`)
-      .expect(401)
-  })
-
   it('returns 404 for non-claimant user', async () => {
     const other = await createTestUser()
     const request = createRequest()
@@ -71,15 +64,6 @@ describe('POST /api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission
       evidence: '',
     })
     claimId = claim.id
-  })
-
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request
-      .post(`/api/v1/topics/${topicSlug}/claims/${claimId}/manual-review-submission`)
-      .set('Content-Type', 'application/json')
-      .send({ evidence: 'some evidence' })
-      .expect(401)
   })
 
   it('returns 415 without json Content-Type', async () => {

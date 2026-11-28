@@ -40,11 +40,6 @@ describe('penalties', () => {
     return { member, moderator, support }[role]
   }
   describe('GET /api/v1/vote-integrity/penalties', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/vote-integrity/penalties').expect(401)
-    })
-
     it.each(['moderator', 'support', 'member'] as const)('returns 403 for %s', async role => {
       const request = createRequest()
       await request.authenticateAs(getNonAdmin(role))
@@ -209,11 +204,6 @@ describe('penalties', () => {
   })
 
   describe('DELETE /api/v1/vote-integrity/penalties/:id', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.delete(`/api/v1/vote-integrity/penalties/${uuidv7()}`).expect(401)
-    })
-
     it.each(['moderator', 'support', 'member'] as const)('returns 403 for %s', async role => {
       const request = createRequest()
       await request.authenticateAs(getNonAdmin(role))

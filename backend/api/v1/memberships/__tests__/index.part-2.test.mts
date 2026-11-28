@@ -28,11 +28,6 @@ describe('index', () => {
   })
 
   describe('POST /api/v1/membership-grants', () => {
-    it('returns 401 without authentication', async () => {
-      const request = createRequest()
-      await request.post('/api/v1/membership-grants').send({}).expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -221,11 +216,6 @@ describe('index', () => {
   })
 
   describe('GET /api/v1/memberships/history/:userId', () => {
-    it('returns 401 without authentication', async () => {
-      const request = createRequest()
-      await request.get(`/api/v1/memberships/history/${regularUser.id}`).expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)

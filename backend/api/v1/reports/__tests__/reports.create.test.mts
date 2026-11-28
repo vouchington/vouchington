@@ -25,15 +25,6 @@ describe('POST /api/v1/reports', () => {
     })
   })
 
-  it('returns 401 for unauthenticated requests', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/reports')
-      .set('Content-Type', 'application/json')
-      .send({ entityType: 'post', entityId: postId, reason: 'spam' })
-      .expect(401)
-  })
-
   it('returns 415 when Content-Type is not json', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

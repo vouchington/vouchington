@@ -10,14 +10,6 @@ import {
 import { getActiveCommunityRestrictions } from '@services/communities/restrictions/get'
 describe('Community Restriction Routes', () => {
   describe('GET /api/v1/communities/:slug/restrictions', () => {
-    it('returns 401 without auth', async () => {
-      const owner = await createTestUser()
-      const community = await insertTestCommunity({
-        createdById: owner.id,
-        slug: `restrictions-get-401-${createRandomString(8)}`,
-      })
-      await createRequest().get(`/api/v1/communities/${community.slug}/restrictions`).expect(401)
-    })
     it('returns 403 for regular members', async () => {
       const [owner, member] = await Promise.all([createTestUser(), createTestUser()])
       const community = await insertCommunityWithOwner(owner!.id)

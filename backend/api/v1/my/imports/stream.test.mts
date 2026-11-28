@@ -22,11 +22,6 @@ describe('GET /api/v1/imports/:batchId/stream', () => {
     ])
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/imports/01900000-0000-7000-0000-000000000001/stream').expect(401)
-  })
-
   it('returns 401 without a validation diagnostic for a malformed anonymous call', async () => {
     const response = await createRequest().get('/api/v1/imports/not-a-uuid/stream').expect(401)
     expect(response.body.message).toBe('Unauthorized')

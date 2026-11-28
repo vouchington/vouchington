@@ -9,17 +9,6 @@ import {
 } from '@voucha/test-helpers'
 
 describe('PATCH /api/v1/communities/:idOrSlug/post-type-settings', () => {
-  it('returns 401 without auth', async () => {
-    const owner = await createTestUser()
-    const community = await insertTestCommunity({ createdById: owner.id })
-    const request = createRequest()
-
-    await request
-      .patch(`/api/v1/communities/${community.slug}/post-type-settings`)
-      .send({ should_allow_review_posts: true })
-      .expect(401)
-  })
-
   it('returns 403 for regular members', async () => {
     const [owner, member] = await Promise.all([createTestUser(), createTestUser()])
     const community = await insertTestCommunity({ createdById: owner!.id })

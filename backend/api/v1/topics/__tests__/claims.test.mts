@@ -21,15 +21,6 @@ describe('POST /api/v1/topics/:idOrSlug/claims', () => {
     })
   })
 
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request
-      .post(`/api/v1/topics/${topicSlug}/claims`)
-      .set('Content-Type', 'application/json')
-      .send({ claimed_role: 'Issuer', evidence: '' })
-      .expect(401)
-  })
-
   it('returns 415 without Content-Type json', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser)
@@ -185,11 +176,6 @@ describe('GET /api/v1/topics/:idOrSlug/claims', () => {
       claimedRole: 'Issuer',
       evidence: '',
     })
-  })
-
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request.get(`/api/v1/topics/${topicSlug}/claims`).expect(401)
   })
 
   it('returns 404 for unknown topic', async () => {

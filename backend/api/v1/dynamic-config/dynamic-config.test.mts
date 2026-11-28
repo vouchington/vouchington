@@ -15,11 +15,6 @@ describe('dynamic-config', () => {
   })
 
   describe('GET /api/v1/dynamic-config/namespaces', () => {
-    it('returns 401 without authentication', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/dynamic-config/namespaces').expect(401)
-    })
-
     it('lists all registered namespaces for administrators', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)

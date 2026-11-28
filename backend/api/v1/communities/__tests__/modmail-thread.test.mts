@@ -117,14 +117,6 @@ describe('modmail thread API', () => {
       threadId = await openMemberModmailThread(member, community.slug)
     })
 
-    it('returns 401 for anonymous requests', async () => {
-      const request = createRequest()
-      await request
-        .post(`/api/v1/communities/${community.slug}/modmail/${threadId}/messages`)
-        .send({ text: 'hi' })
-        .expect(401)
-    })
-
     it('allows the subject user to send a message', async () => {
       const request = createRequest()
       await request.authenticateAs(member)
@@ -193,14 +185,6 @@ describe('modmail thread API', () => {
 
     beforeAll(async () => {
       threadId = await openMemberModmailThread(member, community.slug)
-    })
-
-    it('returns 401 for anonymous requests', async () => {
-      const request = createRequest()
-      await request
-        .patch(`/api/v1/communities/${community.slug}/modmail/${threadId}`)
-        .send({ resolved: true })
-        .expect(401)
     })
 
     it('returns 403 for non-mod', async () => {

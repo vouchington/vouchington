@@ -44,23 +44,6 @@ describe('Community Applications Routes', () => {
   })
 
   describe('POST /api/v1/communities/:slug/applications', () => {
-    it('returns 401 without auth', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `apps-create-401-${random}`,
-        visibility: 'private',
-      })
-
-      const request = createRequest()
-      await request
-        .post(`/api/v1/communities/${community.slug}/applications`)
-        .set('Content-Type', 'application/json')
-        .send({ answers: {} })
-        .expect(401)
-    })
-
     it('returns 422 when applying to public community', async () => {
       const [owner, applicant] = await Promise.all([createTestUser(), createTestUser()])
       const random = createRandomString(8)

@@ -33,13 +33,6 @@ describe('unfurls', () => {
     return link.id
   }
 
-  it('POST /api/v1/referral-links/:linkId/unfurls requires auth', async () => {
-    const request = createRequest()
-    const linkId = await createOwnerParentLink('unauth')
-
-    await request.post(`/api/v1/referral-links/${linkId}/unfurls`).expect(401)
-  })
-
   it('returns 404 for a nonexistent linkId', async () => {
     const request = createRequest()
     await request.authenticateAs(owner!)

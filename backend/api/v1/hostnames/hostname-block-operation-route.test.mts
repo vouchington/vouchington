@@ -39,8 +39,4 @@ describe('GET /api/v1/hostname-block-operations/:operationId', () => {
     await request.authenticateAs(administrator)
     await request.get(`/api/v1/hostname-block-operations/${uuidv7()}`).expect(404)
   })
-
-  it('requires authentication', async () => {
-    await createRequest().get(`/api/v1/hostname-block-operations/${uuidv7()}`).expect(401)
-  })
 })

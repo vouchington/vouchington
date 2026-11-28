@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import picomatch from 'picomatch'
 import type { TestProjectInlineConfiguration } from 'vitest/config'
-import { backendDataProjects } from '../test-helpers/vitest-config/backend-data-projects.mts'
+import {
+  backendDataProjects,
+  backendDataStoreTestDefaults,
+} from '../test-helpers/vitest-config/backend-data-projects.mts'
 
 describe('platform-stats cache project', () => {
   it('owns only the platform-stats route test with private cache setup before runtime imports', () => {
@@ -28,7 +31,8 @@ describe('platform-stats cache project', () => {
       exclude: ['**/node_modules/**', '**/.git/**'],
     })
     expect(project?.globalSetup).toEqual(ordinary!.globalSetup)
-    expect(project?.setupFiles).toEqual(ordinary!.setupFiles)
+    // The production-route snapshot belongs to backend-data-stores alone, which runs the route sweep.
+    expect(project?.setupFiles).toEqual(backendDataStoreTestDefaults.setupFiles)
     expect(project).not.toHaveProperty('maxWorkers')
     expect(project).not.toHaveProperty('fileParallelism')
   })

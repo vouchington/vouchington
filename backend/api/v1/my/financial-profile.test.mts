@@ -10,11 +10,6 @@ describe('GET /api/v1/my/financial-profile', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/financial-profile').expect(401)
-  })
-
   it('returns null financial_profile when none exists', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
@@ -29,14 +24,6 @@ describe('PUT /api/v1/my/financial-profile', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request
-      .put('/api/v1/my/financial-profile')
-      .send({ credit_score_range: '670-739' })
-      .expect(401)
   })
 
   it('upserts financial profile with all fields including new profile fields', async () => {

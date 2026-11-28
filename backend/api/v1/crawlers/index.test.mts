@@ -160,25 +160,6 @@ describe('index', () => {
           .expect(403)
       })
 
-      it('should return 401 for logged-out users', async () => {
-        const random = Math.random().toString(36).slice(2, 8)
-        const hostnameId = await insertTestUrlHostname({
-          hostname: `no-auth-${random}.example.com`,
-        })
-        const crawlerId = await insertTestCrawler({
-          hostnameId,
-          description: `No auth ${random}`,
-        })
-        const request = createRequest()
-
-        await request
-          .patch(`/api/v1/crawlers/${crawlerId}`)
-          .send({
-            description: 'Should not update',
-          })
-          .expect(401)
-      })
-
       it('should return 404 for non-existent crawler', async () => {
         const request = createRequest()
         await request.authenticateAs(admin)

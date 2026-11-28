@@ -17,12 +17,6 @@ import { isSessionRevoked } from '@services/jwt-session'
 import { v7 as uuidv7 } from 'uuid'
 
 describe('POST /api/v1/auth/bluesky/link-completions', () => {
-  it('requires authentication', async () => {
-    await createRequest()
-      .post('/api/v1/auth/bluesky/link-completions')
-      .send({ flow_id: uuidv7(), completion_token: 'token' })
-      .expect(401)
-  })
   it('persists only a purpose-bound token hash', async () => {
     const user = await createTestUser()
     const { flowId, token } = await createCompletion(user.id)

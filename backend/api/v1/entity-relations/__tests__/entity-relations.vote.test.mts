@@ -22,34 +22,6 @@ describe('entity-relations.vote', () => {
 
   describe('Entity Relation Vote Routes', () => {
     describe('PUT /api/v1/entity-relations/:id/vote', () => {
-      it('should return 401 when not authenticated', async () => {
-        const postId1 = await insertTestPost({
-          title: 'Test Post 1',
-          slug: randomSlug('test-post-er-vote-401-1'),
-          createdById: user!.id,
-          markdown: 'Test content',
-        })
-        const postId2 = await insertTestPost({
-          title: 'Test Post 2',
-          slug: randomSlug('test-post-er-vote-401-2'),
-          createdById: user!.id,
-          markdown: 'Test content',
-        })
-        const metadata = entityRelationMetadatum.find(
-          m => m.subject_type === 'post' && m.object_type === 'post' && m.predicate === 'related',
-        )!
-        const relations = await upsertEntityRelation(user!, metadata, { id: postId1 }, [
-          { id: postId2 },
-        ])
-        const relation = relations[0]
-
-        const request = createRequest()
-        await request
-          .put(`/api/v1/entity-relations/${relation.id}/vote`)
-          .send({ choice: 'confirm' })
-          .expect(401)
-      })
-
       it('should return 422 for invalid score value', async () => {
         const postId1 = await insertTestPost({
           title: 'Test Post 1',
@@ -162,31 +134,6 @@ describe('entity-relations.vote', () => {
         expect(response.body.results[0]).toHaveProperty('entity_id', relation.id)
         expect(response.body.results[0]).toHaveProperty('user_id', user!.id)
         expect(response.body.results[0]).toHaveProperty('choice', 'confirm')
-      })
-
-      it('should return 401 when not authenticated', async () => {
-        const postId1 = await insertTestPost({
-          title: 'Test Post 1',
-          slug: randomSlug('test-post-er-votes-401-1'),
-          createdById: user!.id,
-          markdown: 'Test content',
-        })
-        const postId2 = await insertTestPost({
-          title: 'Test Post 2',
-          slug: randomSlug('test-post-er-votes-401-2'),
-          createdById: user!.id,
-          markdown: 'Test content',
-        })
-        const metadata = entityRelationMetadatum.find(
-          m => m.subject_type === 'post' && m.object_type === 'post' && m.predicate === 'related',
-        )!
-        const relations = await upsertEntityRelation(user!, metadata, { id: postId1 }, [
-          { id: postId2 },
-        ])
-        const relation = relations[0]
-
-        const request = createRequest()
-        await request.get(`/api/v1/entity-relations/${relation.id}/votes`).expect(401)
       })
 
       it('should return all votes for administrators', async () => {

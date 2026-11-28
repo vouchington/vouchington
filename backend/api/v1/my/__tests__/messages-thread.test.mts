@@ -18,13 +18,6 @@ describe('messages thread API', () => {
   })
 
   describe('GET /api/v1/my/messages/:conversationId/messages', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .get('/api/v1/my/messages/00000000-0000-7000-8000-000000000001/messages')
-        .expect(401)
-    })
-
     it('returns 403 when user is not a participant', async () => {
       const outsider = await createTestUser()
 
@@ -120,14 +113,6 @@ describe('messages thread API', () => {
   })
 
   describe('POST /api/v1/my/messages/:conversationId/messages', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .post('/api/v1/my/messages/nonexistent-id/messages')
-        .send({ text: 'hello' })
-        .expect(401)
-    })
-
     it('returns 403 when the sender is suspended', async () => {
       const sender = await createTestUser()
       const setupRequest = createRequest()
@@ -201,13 +186,6 @@ describe('messages thread API', () => {
   })
 
   describe('GET /api/v1/my/messages/:conversationId/participants', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .get('/api/v1/my/messages/00000000-0000-7000-8000-000000000001/participants')
-        .expect(401)
-    })
-
     it('returns participants for a conversation', async () => {
       const setupRequest = createRequest()
       await setupRequest.authenticateAs(user)

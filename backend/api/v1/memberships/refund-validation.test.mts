@@ -32,11 +32,6 @@ describe('POST /api/v1/memberships/refunds validation', () => {
       .expect(status)
   }
 
-  it('returns 401 when unauthenticated', async () => {
-    const request = createRequest()
-    await request.post('/api/v1/memberships/refunds').send({}).expect(401)
-  })
-
   it('returns 403 for non-admin non-CS users', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser)

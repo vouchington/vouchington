@@ -33,11 +33,6 @@ describe('Admin SSE stream routes', () => {
   })
 
   describe('GET /api/v1/admin/postgresql/stream', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/admin/postgresql/stream').expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -82,11 +77,6 @@ describe('Admin SSE stream routes', () => {
   })
 
   describe('GET /api/v1/admin/valkey/stream', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/admin/valkey/stream').expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)

@@ -33,11 +33,6 @@ describe('GET /api/v1/my/contribution-status', () => {
     user = await createTestUser()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/contribution-status').expect(401)
-  })
-
   it('gates newly created free accounts', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

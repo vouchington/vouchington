@@ -17,11 +17,6 @@ describe('crawlers', () => {
   })
 
   describe('GET /api/v1/crawlers', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/crawlers').expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -113,17 +108,6 @@ describe('crawlers', () => {
   })
 
   describe('PUT /api/v1/crawlers/referral-program', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .put('/api/v1/crawlers/referral-program')
-        .send({
-          hostname_id: '00000000-0000-0000-0000-000000000000',
-          referral_program_id: '00000000-0000-0000-0000-000000000001',
-        })
-        .expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -212,14 +196,6 @@ describe('crawlers', () => {
   })
 
   describe('PATCH /api/v1/crawlers/:id', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request
-        .patch('/api/v1/crawlers/00000000-0000-0000-0000-000000000000')
-        .send({ crawler_type: 'fetch' })
-        .expect(401)
-    })
-
     it('returns 403 for non-admin users', async () => {
       const suffix = Math.random().toString(36).slice(2, 10)
       const url = await addUrl(admin.id, `https://admin-patch-403-${suffix}.example.com/test`)

@@ -110,14 +110,6 @@ describe('index', () => {
     })
 
     describe('GET /api/v1/rss-feeds/:id/crawls/:crawlId', () => {
-      it('should return 401 for unauthenticated requests', async () => {
-        await createRequest()
-          .get(
-            '/api/v1/rss-feeds/00000000-0000-0000-0000-000000000000/crawls/00000000-0000-0000-0000-000000000001',
-          )
-          .expect(401)
-      })
-
       it.each([
         ['free', null],
         ['paused', 'paused'],

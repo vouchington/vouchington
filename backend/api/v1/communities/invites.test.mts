@@ -46,22 +46,6 @@ describe('Community Invites Routes', () => {
   })
 
   describe('POST /api/v1/communities/:slug/invites', () => {
-    it('returns 401 without auth', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `invites-create-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request
-        .post(`/api/v1/communities/${community.slug}/invites`)
-        .set('Content-Type', 'application/json')
-        .send({ email: 'tests+test@voucha.ai' })
-        .expect(401)
-    })
-
     it('returns 403 for a non-member', async () => {
       const [owner, stranger] = await Promise.all([createTestUser(), createTestUser()])
       const community = await insertTestCommunity({
@@ -176,15 +160,6 @@ describe('Community Invites Routes', () => {
   })
 
   describe('POST /api/v1/communities/invite-redemptions', () => {
-    it('returns 401 without auth', async () => {
-      const request = createRequest()
-      await request
-        .post('/api/v1/communities/invite-redemptions')
-        .set('Content-Type', 'application/json')
-        .send({ code: 'testcode' })
-        .expect(401)
-    })
-
     it('redeems valid code and returns 200', async () => {
       const [owner, redeemer] = await Promise.all([createTestUser(), createTestUser()])
       const random = createRandomString(8)

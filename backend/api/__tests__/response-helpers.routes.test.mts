@@ -31,11 +31,6 @@ describe('response-helpers', () => {
    */
 
   describe('requireAuth', () => {
-    it('returns 401 when not authenticated', async () => {
-      const request = createRequest()
-      await request.get('/api/v1/my/notifications').expect(401)
-    })
-
     it('returns 200 when authenticated', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)

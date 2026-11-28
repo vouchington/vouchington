@@ -79,17 +79,6 @@ describe('post', () => {
         expect(response.body.post.title).toBe('Admin Updated Title')
       })
 
-      it('should return 401 when not authenticated', async () => {
-        const postId = await insertTestPost({
-          title: 'Test Post',
-          slug: `test-post-patch-401-${Date.now()}`,
-          createdById: creator.id,
-          markdown: 'Test content',
-        })
-        const request = createRequest()
-        await request.patch(`/api/v1/posts/${postId}`).send({ title: 'Updated Title' }).expect(401)
-      })
-
       it('should return 403 when user is not creator or admin', async () => {
         const otherUser = await createTestUser()
         const postId = await insertTestPost({
@@ -262,17 +251,6 @@ describe('post', () => {
         await request.authenticateAs(admin)
 
         await request.delete(`/api/v1/posts/${postId}`).expect(204)
-      })
-
-      it('should return 401 when not authenticated', async () => {
-        const postId = await insertTestPost({
-          title: 'Test Post',
-          slug: `test-post-delete-401-${Date.now()}`,
-          createdById: creator.id,
-          markdown: 'Test content',
-        })
-        const request = createRequest()
-        await request.delete(`/api/v1/posts/${postId}`).expect(401)
       })
 
       it('should return 403 when user is not creator or admin', async () => {

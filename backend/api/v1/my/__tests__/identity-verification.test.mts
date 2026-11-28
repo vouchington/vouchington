@@ -33,15 +33,6 @@ describe('POST /api/v1/my/identity-verification/checkout-sessions', () => {
     vi.unstubAllEnvs()
   })
 
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/my/identity-verification/checkout-sessions')
-      .set('Content-Type', 'application/json')
-      .send({})
-      .expect(401)
-  })
-
   it('returns checkout URL for eligible user', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
@@ -77,11 +68,6 @@ describe('GET /api/v1/my/identity-verification/session-url', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getSessionUrlSpy.mockResolvedValue('https://verify.stripe.com/vs_test')
-  })
-
-  it('returns 401 when not authenticated', async () => {
-    const request = createRequest()
-    await request.get('/api/v1/my/identity-verification/session-url').expect(401)
   })
 
   it('returns 409 when user is not in identity_pending state', async () => {

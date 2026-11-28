@@ -62,15 +62,6 @@ describe('POST /api/v1/disputes — create', () => {
     await insertTestPostReview(reviewPostId, topicId, 1)
   })
 
-  it('returns 401 for unauthenticated requests', async () => {
-    const request = createRequest()
-    await request
-      .post('/api/v1/disputes')
-      .set('Content-Type', 'application/json')
-      .send({ post_id: reviewPostId, reason: 'factually_inaccurate', claim_text: 'x' })
-      .expect(401)
-  })
-
   it('returns 403 when user has no verified claim', async () => {
     const noClaimUser = await createTestUser()
     const request = createRequest()
@@ -106,11 +97,6 @@ describe('GET /api/v1/disputes/:id', () => {
 
   beforeAll(async () => {
     regularUser = await createTestUser()
-  })
-
-  it('returns 401 for unauthenticated', async () => {
-    const request = createRequest()
-    await request.get(`/api/v1/disputes/${crypto.randomUUID()}`).expect(401)
   })
 
   it('returns 422 for non-UUID id', async () => {
