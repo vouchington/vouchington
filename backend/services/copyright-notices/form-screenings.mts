@@ -60,31 +60,30 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     return
   }
   const locked = await lockCopyrightActionGenerationForWrite(intake.notice_id, transaction)
-  const { rows: existingAssessments } = await transaction<{
-    id: string
-  }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:existingAssessment */
-    SELECT current_assessment_identity_id AS id FROM copyright_notice_submissions
-    WHERE id = ${submissionId}
-      AND current_assessed_by_id IS NULL
-      AND current_assessment_is_substantially_compliant
-      AND current_assessment_form_screening_id = ${intake.screening_id}
-      AND current_assessment_identity_id IS NOT NULL
-  `)
   const { rows: currentAssessments } = await transaction<{
     id: string
+    assessed_by_id: string | null
     copyright_notice_form_screening_id: string | null
     is_substantially_compliant: boolean
   }>(
     sql`/* applyNonSpamSignedInCopyrightFormScreening:currentAssessment */
       SELECT current_assessment_identity_id AS id,
+        current_assessed_by_id AS assessed_by_id,
         current_assessment_form_screening_id AS copyright_notice_form_screening_id,
         current_assessment_is_substantially_compliant AS is_substantially_compliant
       FROM copyright_notice_submissions
       WHERE id = ${submissionId} AND current_assessment_identity_id IS NOT NULL`,
   )
   const currentAssessment = currentAssessments[0]
+  const existingAssessment =
+    currentAssessment &&
+    currentAssessment.assessed_by_id === null &&
+    currentAssessment.is_substantially_compliant &&
+    currentAssessment.copyright_notice_form_screening_id === intake.screening_id
+      ? currentAssessment
+      : undefined
   if (
-    !existingAssessments[0] &&
+    !existingAssessment &&
     currentAssessment &&
     (currentAssessment.copyright_notice_form_screening_id === null ||
       !currentAssessment.is_substantially_compliant)
@@ -96,14 +95,14 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     submissionId,
     noticeId: intake.notice_id,
     eligibility,
-    hasAutomatedAssessment: existingAssessments.length > 0,
+    hasAutomatedAssessment: existingAssessment !== undefined,
   })
   if (refused) {
     await transaction.commit()
     return
   }
   const assessment =
-    existingAssessments[0] ??
+    existingAssessment ??
     (await appendCopyrightSubmissionAssessmentInTransaction(
       {
         submissionId,
