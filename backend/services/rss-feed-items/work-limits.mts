@@ -1,7 +1,11 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
+export const SEMANTIC_RSS_ITEM_CANDIDATE_LIMIT = 200
+export const SEMANTIC_RSS_ITEM_CANDIDATE_MAX = 1000
+
 const defaultFields = {
+  semantic_rss_item_candidate_limit: SEMANTIC_RSS_ITEM_CANDIDATE_LIMIT,
   source_publication_backfill_max_batch_size: 1000,
   category_backfill_batch_size: 500,
   backfill_invalidation_chunk_size: 100,
@@ -17,6 +21,7 @@ const defaultFields = {
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const rssFeedItemsWorkMaxValues = {
+  semantic_rss_item_candidate_limit: SEMANTIC_RSS_ITEM_CANDIDATE_MAX,
   source_publication_backfill_max_batch_size: 10000,
   category_backfill_batch_size: 5000,
   backfill_invalidation_chunk_size: 1000,
@@ -33,6 +38,7 @@ export const rssFeedItemsWorkMaxValues = {
 export const rssFeedItemsWorkConfig = new DynamicConfig({
   key: 'rss-feed-items-work-config',
   fieldTypes: {
+    semantic_rss_item_candidate_limit: 'number',
     source_publication_backfill_max_batch_size: 'number',
     category_backfill_batch_size: 'number',
     backfill_invalidation_chunk_size: 'number',
