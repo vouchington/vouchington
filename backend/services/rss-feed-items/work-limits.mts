@@ -2,7 +2,7 @@ import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export const SEMANTIC_RSS_ITEM_CANDIDATE_LIMIT = 200
-export const SEMANTIC_RSS_ITEM_CANDIDATE_MAX = 1000
+const SEMANTIC_RSS_ITEM_CANDIDATE_MAX = 1000
 
 const defaultFields = {
   semantic_rss_item_candidate_limit: SEMANTIC_RSS_ITEM_CANDIDATE_LIMIT,

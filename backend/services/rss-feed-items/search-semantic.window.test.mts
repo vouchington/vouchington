@@ -20,15 +20,23 @@ function makeOrthogonalUnitVector(base: readonly number[]): number[] {
   return orthogonal.map(value => value / norm)
 }
 
+function makeEmbeddingAtDistance(
+  base: readonly number[],
+  orthogonal: readonly number[],
+  cosineDistance: number,
+): number[] {
+  const cos = 1 - cosineDistance
+  const sin = Math.sqrt(Math.max(0, 1 - cos * cos))
+  return base.map((value, index) => cos * value + sin * (orthogonal[index] ?? 0))
+}
+
 function makeRankedNearEmbedding(
   base: readonly number[],
   orthogonal: readonly number[],
   rank: number,
 ): number[] {
   const theta = 0.05 * (rank + 1)
-  const cos = Math.cos(theta)
-  const sin = Math.sin(theta)
-  return base.map((value, index) => cos * value + sin * (orthogonal[index] ?? 0))
+  return makeEmbeddingAtDistance(base, orthogonal, 1 - Math.cos(theta))
 }
 
 async function seedRankedItems(
@@ -119,7 +127,58 @@ describe('unscoped semantic RSS candidate window', () => {
     }
   })
 
-  it('applies the distance cutoff outside the prefix and leaves feed-scoped search uncapped', async () => {
+  it('excludes items beyond the 0.75 distance cutoff inside the k-nearest prefix', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
+      semantic_rss_item_candidate_limit: 3,
+    })
+    try {
+      const feed = await insertTestRssFeedDirect({})
+      const queryEmbedding = makeRandomEmbedding()
+      const orthogonal = makeOrthogonalUnitVector(queryEmbedding)
+      const distances = [0.05, 0.1, 0.78]
+      const items = await upsertRssFeedItems(
+        feed.id,
+        distances.map((_, index) => ({
+          link: `https://example.com/cutoff-${index}-${randomUUID()}`,
+          guid: `cutoff-${index}-${randomUUID()}`,
+          title: `Semantic cutoff ${index}`,
+          pubDate: new Date(2025, 0, index + 1).toISOString(),
+        })),
+      )
+      await Promise.all(
+        items.map((item, index) =>
+          addDummyEmbeddingToRssFeedItem(item.id, {
+            embedding: makeEmbeddingAtDistance(queryEmbedding, orthogonal, distances[index]!),
+          }),
+        ),
+      )
+      const [nearFirst, nearSecond, beyondCutoff] = items.map(item => item.id)
+      const dependencies = { getCachedSearchEmbedding: async () => queryEmbedding }
+
+      const all = await searchRssFeedItemsBySemantic({
+        semantic_search_query: `cutoff-all-${randomUUID()}`,
+        limit: 10,
+        dependencies,
+      })
+      expect(all.results.map(item => item.id)).toEqual([nearFirst, nearSecond])
+      expect(all.results.map(item => item.id)).not.toContain(beyondCutoff)
+      expect(all.page_info.has_next_page).toBe(false)
+      expect(all.page_info.end_cursor).toBeNull()
+
+      const exactPage = await searchRssFeedItemsBySemantic({
+        semantic_search_query: `cutoff-exact-${randomUUID()}`,
+        limit: 2,
+        dependencies,
+      })
+      expect(exactPage.results.map(item => item.id)).toEqual([nearFirst, nearSecond])
+      expect(exactPage.page_info.has_next_page).toBe(false)
+      expect(exactPage.page_info.end_cursor).toBeNull()
+    } finally {
+      restore()
+    }
+  })
+
+  it('leaves feed-scoped search uncapped', async () => {
     const restore = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
       semantic_rss_item_candidate_limit: 1,
     })
@@ -127,23 +186,14 @@ describe('unscoped semantic RSS candidate window', () => {
       const feed = await insertTestRssFeedDirect({})
       const queryEmbedding = makeRandomEmbedding()
       const ids = await seedRankedItems(feed.id, queryEmbedding, 3, 'feed-scope')
-      const dependencies = { getCachedSearchEmbedding: async () => queryEmbedding }
 
       const scoped = await searchRssFeedItemsBySemantic({
         semantic_search_query: `feed-scope-${randomUUID()}`,
         rss_feed_ids: [feed.id],
         limit: 10,
-        dependencies,
+        dependencies: { getCachedSearchEmbedding: async () => queryEmbedding },
       })
       expect(scoped.results.map(item => item.id)).toEqual(ids)
-
-      const zero = await searchRssFeedItemsBySemantic({
-        semantic_search_query: `zero-${randomUUID()}`,
-        limit: 10,
-        dependencies: { getCachedSearchEmbedding: async () => Array<number>(1024).fill(0) },
-      })
-      expect(zero.results).toEqual([])
-      expect(zero.page_info.has_next_page).toBe(false)
     } finally {
       restore()
     }

@@ -20,13 +20,7 @@ import {
   getSemanticRssFeedItemCursor,
   getSemanticRssFeedItemCursorScope,
 } from './search-semantic-cursor.mts'
-import {
-  buildSemanticRssSearchQuery,
-  executeSemanticRssQuery,
-  SEMANTIC_RSS_ITEM_SEARCH_SETTINGS,
-} from './search-semantic-query.mts'
-
-export { SEMANTIC_RSS_ITEM_SEARCH_SETTINGS }
+import { buildSemanticRssSearchQuery, executeSemanticRssQuery } from './search-semantic-query.mts'
 
 // Semantic search ignores text_search_query; `after` is a scoped relevance cursor.
 export type SearchRssFeedItemsBySemanticOptions = Omit<

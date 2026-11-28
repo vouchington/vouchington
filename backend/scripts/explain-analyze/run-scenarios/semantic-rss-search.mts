@@ -1,4 +1,4 @@
-import { SEMANTIC_RSS_ITEM_SEARCH_SETTINGS } from '@services/rss-feed-items/search-semantic'
+import { SEMANTIC_RSS_ITEM_SEARCH_SETTINGS } from '@services/rss-feed-items/search-semantic-query'
 import { runAndCapture } from '../run-support.mts'
 import { searchRssFeedItems } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'

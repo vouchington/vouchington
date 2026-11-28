@@ -5,11 +5,15 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import { appendWhereClauses } from './search-filters.mts'
 import type { SemanticRssFeedItemCursor } from './search-semantic-cursor.mts'
 import { buildRssFeedItemRelevanceScoreExpression } from './tools/search-relevance-score.mts'
-import { getRssFeedItemsWorkLimit, SEMANTIC_RSS_ITEM_CANDIDATE_MAX } from './work-limits.mts'
+import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 
 /**
  * `relaxed_order` avoids silently dropping nearer rows on resumed HNSW scans (#1751); the outer
  * query re-sorts the bounded prefix by `(ranking_score DESC, published_at DESC, id DESC)`.
+ * `hnsw.ef_search` stays at `40` (rather than posts' `100`): with `iterative_scan = relaxed_order`
+ * and `max_scan_tuples = 20000`, pgvector resumes graph traversal past the initial 40-entry list
+ * to fill the `LIMIT k` prefix, while keeping pgvector's HNSW cost estimate below a parallel
+ * sequential scan on 25k-row corpora (at `100`, the planner can flip to Gather Merge + Seq Scan).
  */
 export const SEMANTIC_RSS_ITEM_SEARCH_SETTINGS = {
   'hnsw.iterative_scan': 'relaxed_order',
@@ -26,12 +30,11 @@ export type SemanticRssFeedItemRow = {
 }
 
 function getUnscopedCandidateLimit(): number {
-  const configured = getRssFeedItemsWorkLimit('semantic_rss_item_candidate_limit')
-  const clamped = Math.min(configured, SEMANTIC_RSS_ITEM_CANDIDATE_MAX)
-  if (!Number.isSafeInteger(clamped) || clamped < 1 || clamped > SEMANTIC_RSS_ITEM_CANDIDATE_MAX) {
+  const candidateLimit = getRssFeedItemsWorkLimit('semantic_rss_item_candidate_limit')
+  if (!Number.isSafeInteger(candidateLimit) || candidateLimit < 1) {
     throw new Error('Invalid semantic RSS item candidate limit')
   }
-  return clamped
+  return candidateLimit
 }
 
 function appendUnscopedCandidates(query: SQLStatement, baseFilters: SQLStatement[]): void {
