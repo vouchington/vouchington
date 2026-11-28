@@ -107,6 +107,8 @@ export async function runViewDrivenHostnameScenarios(): Promise<void> {
         anyOf: true,
       },
       { kind: 'noSeqScan', relation: 'url_hostnames' },
+      // Custom walks hostname_key (~63 rows on full seed); generic scans hostname_trgm once (~3,767 rows on full seed, vs ~7,500 before).
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 5_000 },
     ],
   })
   await runAndCapture('url-hostname-search-text-low-selectivity', async () => {
