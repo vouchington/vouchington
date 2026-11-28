@@ -1,8 +1,8 @@
+import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
-import { collectKeysetPages } from './bounded-reads.mts'
 import { parseCopyrightFormGuidance } from './form-screening-guidance.mts'
 import { groupByNotice } from './read-models-staff-group.mts'
 import type { CopyrightStaffCase } from './read-models-staff-types.mts'
@@ -10,39 +10,34 @@ import { getCopyrightSweepLimits } from './work-limits.mts'
 
 export async function selectStaffTargets(noticeIds: readonly string[], query: TransactionQuery) {
   type StaffTargetRow = CopyrightStaffCase['targets'][number] & { copyright_notice_id: string }
-  const rows = await collectKeysetPages<StaffTargetRow, string>(
-    getCopyrightSweepLimits().batchSize,
-    async (afterId, limit) => {
-      const { rows: page } = await query<StaffTargetRow>(
-        sql`/* getPendingCopyrightStaffCase:targets */
-          SELECT target.copyright_notice_id, target.id,
-            concat('image-placement:', target.placement_id) AS placement_key,
-            target.placement_revision, image.image_id, target.hosted_use_url,
-            COALESCE(surface.surface_kind::text, 'post-image') AS surface,
-            CASE WHEN activation.placement_id IS NULL THEN NULL ELSE jsonb_build_object(
-              'set_by_id', activation.bound_by_id,
-              'set_by_administrator', activation.is_bound_by_administrator,
-              'uploaded_by_id', activation.uploaded_by_id
-            ) END AS provenance
-          FROM copyright_notice_targets target JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id
-          LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
-          LEFT JOIN LATERAL (
-            SELECT recorded.placement_id, recorded.bound_by_id, recorded.is_bound_by_administrator,
-              recorded.uploaded_by_id
-            FROM image_surface_placement_activations recorded
-            WHERE recorded.placement_id = target.placement_id
-              AND recorded.placement_revision = target.surface_activation_revision
-          ) activation ON true
-          WHERE target.copyright_notice_id = ANY(${noticeIds}::uuid[])
-            AND (${afterId}::uuid IS NULL OR target.id > ${afterId}::uuid)
-          ORDER BY target.id ASC
-          LIMIT ${limit}
-        `,
-      )
-      return page
-    },
-    row => row.id,
-  )
+  const rows: StaffTargetRow[] = []
+  for await (const row of createAsyncGeneratorFromCursor<StaffTargetRow>(
+    sql`/* getPendingCopyrightStaffCase:targets */
+      SELECT target.copyright_notice_id, target.id,
+        concat('image-placement:', target.placement_id) AS placement_key,
+        target.placement_revision, image.image_id, target.hosted_use_url,
+        COALESCE(surface.surface_kind::text, 'post-image') AS surface,
+        CASE WHEN activation.placement_id IS NULL THEN NULL ELSE jsonb_build_object(
+          'set_by_id', activation.bound_by_id,
+          'set_by_administrator', activation.is_bound_by_administrator,
+          'uploaded_by_id', activation.uploaded_by_id
+        ) END AS provenance
+      FROM copyright_notice_targets target JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id
+      LEFT JOIN image_surface_placements surface ON surface.placement_id = target.placement_id
+      LEFT JOIN LATERAL (
+        SELECT recorded.placement_id, recorded.bound_by_id, recorded.is_bound_by_administrator,
+          recorded.uploaded_by_id
+        FROM image_surface_placement_activations recorded
+        WHERE recorded.placement_id = target.placement_id
+          AND recorded.placement_revision = target.surface_activation_revision
+      ) activation ON true
+      WHERE target.copyright_notice_id = ANY(${noticeIds}::uuid[])
+      ORDER BY target.id ASC
+    `,
+    { client: query.client, batchSize: getCopyrightSweepLimits().batchSize },
+  )) {
+    rows.push(row)
+  }
   return groupByNotice(rows)
 }
 
@@ -55,24 +50,20 @@ export async function selectStaffEvidence(noticeIds: readonly string[], query: T
     byte_size: number
     sha256: Buffer
   }
-  const rows = await collectKeysetPages<EvidenceRow, string>(
-    getCopyrightSweepLimits().batchSize,
-    async (afterId, limit) => {
-      const { rows: page } =
-        await query<EvidenceRow>(sql`/* getPendingCopyrightStaffCase:evidence */
-        SELECT artifact.copyright_notice_id, artifact.id, artifact.copyright_notice_submission_id AS submission_id,
-          (SELECT mime_type FROM media_types WHERE id = artifact.media_type_id) AS mime_type,
-          artifact.byte_size, artifact.sha256
-        FROM copyright_notice_evidence_artifacts artifact
-        WHERE artifact.copyright_notice_id = ANY(${noticeIds}::uuid[])
-          AND (${afterId}::uuid IS NULL OR artifact.id > ${afterId}::uuid)
-        ORDER BY artifact.id ASC
-        LIMIT ${limit}
-      `)
-      return page
-    },
-    row => row.id,
-  )
+  const rows: EvidenceRow[] = []
+  for await (const row of createAsyncGeneratorFromCursor<EvidenceRow>(
+    sql`/* getPendingCopyrightStaffCase:evidence */
+      SELECT artifact.copyright_notice_id, artifact.id, artifact.copyright_notice_submission_id AS submission_id,
+        (SELECT mime_type FROM media_types WHERE id = artifact.media_type_id) AS mime_type,
+        artifact.byte_size, artifact.sha256
+      FROM copyright_notice_evidence_artifacts artifact
+      WHERE artifact.copyright_notice_id = ANY(${noticeIds}::uuid[])
+      ORDER BY artifact.id ASC
+    `,
+    { client: query.client, batchSize: getCopyrightSweepLimits().batchSize },
+  )) {
+    rows.push(row)
+  }
   return groupByNotice(rows.map(row => ({ ...row, sha256: row.sha256.toString('hex') })))
 }
 

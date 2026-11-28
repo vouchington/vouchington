@@ -1,8 +1,8 @@
+import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { toCopyrightAiRun, type CopyrightAiRun } from './ai-run-types.mts'
-import { collectKeysetPages } from './bounded-reads.mts'
 import { groupByNotice } from './read-models-staff-group.mts'
 import { parseStoredCopyrightSubmissionGuidance } from './read-models-staff-guidance.mts'
 import { parseStatement } from './read-models-staff-submissions.mts'
@@ -38,63 +38,46 @@ export async function selectStaffLegalHolds(
   query: TransactionQuery,
 ): Promise<Map<string, CopyrightStaffCase['legal_holds']>> {
   const { batchSize } = getCopyrightSweepLimits()
-  const submissions = await collectKeysetPages<
-    LegalHoldSubmissionRow,
-    { receivedAt: Date; id: string }
-  >(
-    batchSize,
-    async (cursor, limit) => {
-      const { rows } = await query<LegalHoldSubmissionRow>(
-        sql`/* getPendingCopyrightStaffCase:legalHolds */
-          SELECT submission.copyright_notice_id, submission.id AS submission_id,
-            submission.received_at, submission.body_ciphertext,
-            guidance.guidance_ciphertext, run.id AS run_id, run.status AS run_status
-          FROM copyright_notice_submissions submission
-          LEFT JOIN LATERAL (
-            SELECT guidance_ciphertext FROM copyright_notice_submission_guidance
-            WHERE copyright_notice_submission_id = submission.id ORDER BY id DESC LIMIT 1
-          ) guidance ON true
-          LEFT JOIN LATERAL (SELECT id, status FROM copyright_notice_submission_guidance_runs WHERE copyright_notice_submission_id = submission.id ORDER BY id DESC LIMIT 1) run ON true
-          WHERE submission.copyright_notice_id = ANY(${noticeIds}::uuid[])
-            AND submission.kind = 'court_or_ccb_hold'
-            AND (
-              ${cursor?.id ?? null}::uuid IS NULL
-              OR (submission.received_at, submission.id)
-                > (${cursor?.receivedAt ?? null}::timestamptz, ${cursor?.id ?? null}::uuid)
-            )
-          ORDER BY submission.received_at ASC, submission.id ASC
-          LIMIT ${limit}
-        `,
-      )
-      return rows
-    },
-    row => ({ receivedAt: row.received_at, id: row.submission_id }),
-  )
+  const submissions: LegalHoldSubmissionRow[] = []
+  for await (const row of createAsyncGeneratorFromCursor<LegalHoldSubmissionRow>(
+    sql`/* getPendingCopyrightStaffCase:legalHolds */
+      SELECT submission.copyright_notice_id, submission.id AS submission_id,
+        submission.received_at, submission.body_ciphertext,
+        guidance.guidance_ciphertext, run.id AS run_id, run.status AS run_status
+      FROM copyright_notice_submissions submission
+      LEFT JOIN LATERAL (
+        SELECT guidance_ciphertext FROM copyright_notice_submission_guidance
+        WHERE copyright_notice_submission_id = submission.id ORDER BY id DESC LIMIT 1
+      ) guidance ON true
+      LEFT JOIN LATERAL (SELECT id, status FROM copyright_notice_submission_guidance_runs WHERE copyright_notice_submission_id = submission.id ORDER BY id DESC LIMIT 1) run ON true
+      WHERE submission.copyright_notice_id = ANY(${noticeIds}::uuid[])
+        AND submission.kind = 'court_or_ccb_hold'
+      ORDER BY submission.received_at ASC, submission.id ASC
+    `,
+    { client: query.client, batchSize },
+  )) {
+    submissions.push(row)
+  }
   if (submissions.length === 0) return new Map()
   const submissionIds = submissions.map(row => row.submission_id)
-  const assessments = await collectKeysetPages<LegalHoldAssessmentRow, string>(
-    batchSize,
-    async (afterId, limit) => {
-      const { rows } = await query<LegalHoldAssessmentRow>(
-        sql`/* getPendingCopyrightStaffCase:legalHoldAssessments */
-          SELECT assessment.copyright_notice_submission_id, assessment.id AS assessment_id,
-            assessment.assessed_at, assessment.is_from_original_claimant,
-            assessment.proceeding_kind, assessment.ccb_claim_kind, assessment.commenced_at,
-            assessment.received_by_designated_agent_at, assessment.is_same_material,
-            resolution.id AS resolution_id
-          FROM copyright_notice_legal_hold_assessments assessment
-          LEFT JOIN copyright_notice_legal_hold_resolutions resolution
-            ON resolution.copyright_notice_legal_hold_assessment_id = assessment.id
-          WHERE assessment.copyright_notice_submission_id = ANY(${submissionIds}::uuid[])
-            AND (${afterId}::uuid IS NULL OR assessment.id > ${afterId}::uuid)
-          ORDER BY assessment.id ASC
-          LIMIT ${limit}
-        `,
-      )
-      return rows
-    },
-    row => row.assessment_id,
-  )
+  const assessments: LegalHoldAssessmentRow[] = []
+  for await (const row of createAsyncGeneratorFromCursor<LegalHoldAssessmentRow>(
+    sql`/* getPendingCopyrightStaffCase:legalHoldAssessments */
+      SELECT assessment.copyright_notice_submission_id, assessment.id AS assessment_id,
+        assessment.assessed_at, assessment.is_from_original_claimant,
+        assessment.proceeding_kind, assessment.ccb_claim_kind, assessment.commenced_at,
+        assessment.received_by_designated_agent_at, assessment.is_same_material,
+        resolution.id AS resolution_id
+      FROM copyright_notice_legal_hold_assessments assessment
+      LEFT JOIN copyright_notice_legal_hold_resolutions resolution
+        ON resolution.copyright_notice_legal_hold_assessment_id = assessment.id
+      WHERE assessment.copyright_notice_submission_id = ANY(${submissionIds}::uuid[])
+      ORDER BY assessment.id ASC
+    `,
+    { client: query.client, batchSize },
+  )) {
+    assessments.push(row)
+  }
   const targetIdsByAssessment = await selectLegalHoldAssessmentTargetIds(
     query,
     assessments.map(row => row.assessment_id),
@@ -162,35 +145,18 @@ async function selectLegalHoldAssessmentTargetIds(
 ): Promise<Map<string, string[]>> {
   const byAssessment = new Map<string, string[]>()
   if (assessmentIds.length === 0) return byAssessment
-  const rows = await collectKeysetPages<
-    { copyright_notice_legal_hold_assessment_id: string; copyright_notice_target_id: string },
-    { assessmentId: string; targetId: string }
-  >(
-    batchSize,
-    async (cursor, limit) => {
-      const { rows: page } = await query<{
-        copyright_notice_legal_hold_assessment_id: string
-        copyright_notice_target_id: string
-      }>(sql`/* getPendingCopyrightStaffCase:legalHoldTargets */
-        SELECT copyright_notice_legal_hold_assessment_id, copyright_notice_target_id
-        FROM copyright_notice_legal_hold_assessment_targets
-        WHERE copyright_notice_legal_hold_assessment_id = ANY(${assessmentIds}::uuid[])
-          AND (
-            ${cursor?.assessmentId ?? null}::uuid IS NULL
-            OR (copyright_notice_legal_hold_assessment_id, copyright_notice_target_id)
-              > (${cursor?.assessmentId ?? null}::uuid, ${cursor?.targetId ?? null}::uuid)
-          )
-        ORDER BY copyright_notice_legal_hold_assessment_id ASC, copyright_notice_target_id ASC
-        LIMIT ${limit}
-      `)
-      return page
-    },
-    row => ({
-      assessmentId: row.copyright_notice_legal_hold_assessment_id,
-      targetId: row.copyright_notice_target_id,
-    }),
-  )
-  for (const row of rows) {
+  for await (const row of createAsyncGeneratorFromCursor<{
+    copyright_notice_legal_hold_assessment_id: string
+    copyright_notice_target_id: string
+  }>(
+    sql`/* getPendingCopyrightStaffCase:legalHoldTargets */
+      SELECT copyright_notice_legal_hold_assessment_id, copyright_notice_target_id
+      FROM copyright_notice_legal_hold_assessment_targets
+      WHERE copyright_notice_legal_hold_assessment_id = ANY(${assessmentIds}::uuid[])
+      ORDER BY copyright_notice_legal_hold_assessment_id ASC, copyright_notice_target_id ASC
+    `,
+    { client: query.client, batchSize },
+  )) {
     const list = byAssessment.get(row.copyright_notice_legal_hold_assessment_id) ?? []
     list.push(row.copyright_notice_target_id)
     byAssessment.set(row.copyright_notice_legal_hold_assessment_id, list)

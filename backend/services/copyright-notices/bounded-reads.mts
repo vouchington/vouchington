@@ -1,3 +1,4 @@
+import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
@@ -73,35 +74,18 @@ export async function selectSubmissionTargetIdsBySubmission(
 ): Promise<Map<string, string[]>> {
   const bySubmission = new Map<string, string[]>()
   if (submissionIds.length === 0) return bySubmission
-  const rows = await collectKeysetPages<
-    { copyright_notice_submission_id: string; copyright_notice_target_id: string },
-    { submissionId: string; targetId: string }
-  >(
-    getCopyrightSweepLimits().batchSize,
-    async (cursor, limit) => {
-      const { rows: page } = await query<{
-        copyright_notice_submission_id: string
-        copyright_notice_target_id: string
-      }>(sql`/* selectCopyrightSubmissionTargetsBySubmission */
-        SELECT copyright_notice_submission_id, copyright_notice_target_id
-        FROM copyright_notice_submission_targets
-        WHERE copyright_notice_submission_id = ANY(${submissionIds}::uuid[])
-          AND (
-            ${cursor?.submissionId ?? null}::uuid IS NULL
-            OR (copyright_notice_submission_id, copyright_notice_target_id)
-              > (${cursor?.submissionId ?? null}::uuid, ${cursor?.targetId ?? null}::uuid)
-          )
-        ORDER BY copyright_notice_submission_id ASC, copyright_notice_target_id ASC
-        LIMIT ${limit}
-      `)
-      return page
-    },
-    row => ({
-      submissionId: row.copyright_notice_submission_id,
-      targetId: row.copyright_notice_target_id,
-    }),
-  )
-  for (const row of rows) {
+  for await (const row of createAsyncGeneratorFromCursor<{
+    copyright_notice_submission_id: string
+    copyright_notice_target_id: string
+  }>(
+    sql`/* selectCopyrightSubmissionTargetsBySubmission */
+      SELECT copyright_notice_submission_id, copyright_notice_target_id
+      FROM copyright_notice_submission_targets
+      WHERE copyright_notice_submission_id = ANY(${submissionIds}::uuid[])
+      ORDER BY copyright_notice_submission_id ASC, copyright_notice_target_id ASC
+    `,
+    { client: query.client, batchSize: getCopyrightSweepLimits().batchSize },
+  )) {
     const list = bySubmission.get(row.copyright_notice_submission_id) ?? []
     list.push(row.copyright_notice_target_id)
     bySubmission.set(row.copyright_notice_submission_id, list)

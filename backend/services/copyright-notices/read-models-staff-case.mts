@@ -8,9 +8,8 @@ import { selectStaffTerritorialCases } from './read-models-staff-territorial.mts
 import { territorialLabels } from './territorial-labels.mts'
 import { selectStaffLegalHolds } from './read-models-staff-legal-holds.mts'
 import {
-  selectStaffAppeals,
-  selectStaffCounterNotices,
   selectStaffRestrictions,
+  selectStaffSubmissions,
 } from './read-models-staff-submissions.mts'
 import {
   selectStaffActionIntents,
@@ -74,38 +73,24 @@ export async function getPendingCopyrightStaffCases(
   const territorialIds = listed.flatMap(({ notice }) =>
     notice.jurisdiction === 'us_dmca' ? [] : [notice.id],
   )
-  const [
-    targets,
-    evidence,
-    formReview,
-    restrictions,
-    appeals,
-    counterNotices,
-    legalHolds,
-    actionIntents,
-    deliveryIntents,
-    emailCorrespondence,
-    staydownMatches,
-    misuse,
-    territorial,
-  ] = await Promise.all([
-    selectStaffTargets(ids, query),
-    selectStaffEvidence(ids, query),
-    selectStaffFormReview(ids, query),
-    selectStaffRestrictions(ids, query),
-    selectStaffAppeals(ids, query),
-    selectStaffCounterNotices(ids, query),
-    selectStaffLegalHolds(ids, query),
-    selectStaffActionIntents(ids, query),
-    selectStaffDeliveryIntents(ids, query),
-    selectStaffEmailCorrespondence(ids, query),
-    selectStaffStaydownMatches(ids, query),
-    readClaimantMisuseSummaries(claimantIds, query),
-    selectStaffTerritorialCases(territorialIds, query),
-  ])
+  // Cursors share query.client's single PostgreSQL connection and cannot open unnamed portals concurrently.
+  const sections = {
+    targets: await selectStaffTargets(ids, query),
+    evidence: await selectStaffEvidence(ids, query),
+    formReview: await selectStaffFormReview(ids, query),
+    restrictions: await selectStaffRestrictions(ids, query),
+    submissions: await selectStaffSubmissions(ids, query),
+    legalHolds: await selectStaffLegalHolds(ids, query),
+    actionIntents: await selectStaffActionIntents(ids, query),
+    deliveryIntents: await selectStaffDeliveryIntents(ids, query),
+    emailCorrespondence: await selectStaffEmailCorrespondence(ids, query),
+    staydownMatches: await selectStaffStaydownMatches(ids, query),
+    misuse: await readClaimantMisuseSummaries(claimantIds, query),
+    territorial: await selectStaffTerritorialCases(territorialIds, query),
+  }
   return new Map(
     listed.map(({ notice, contactPurpose }): [string, CopyrightStaffCase] => {
-      const territorialCase = territorial.get(notice.id)
+      const territorialCase = sections.territorial.get(notice.id)
       return [
         notice.id,
         {
@@ -116,22 +101,22 @@ export async function getPendingCopyrightStaffCases(
             user_id: notice.claimant_user_id,
             display_name: notice.claimant_display_name,
             contact: decryptSecret(notice.claimant_contact_ciphertext, contactPurpose),
-            misuse: notice.claimant_user_id ? misuse.get(notice.claimant_user_id)! : null,
+            misuse: notice.claimant_user_id ? sections.misuse.get(notice.claimant_user_id)! : null,
           },
           work_description: notice.work_description,
           ...(territorialCase ? { territorial: territorialCase } : {}),
-          targets: targets.get(notice.id) ?? [],
-          evidence: evidence.get(notice.id) ?? [],
-          form_review: formReview.get(notice.id) ?? null,
-          restrictions: restrictions.get(notice.id) ?? [],
-          appeals: appeals.get(notice.id) ?? [],
-          counter_notices: counterNotices.get(notice.id) ?? [],
-          legal_holds: legalHolds.get(notice.id) ?? [],
-          action_intents: actionIntents.get(notice.id) ?? [],
-          delivery_intents: deliveryIntents.get(notice.id) ?? [],
-          staydown_matches: staydownMatches.get(notice.id)?.matches ?? [],
-          staydown_matches_has_more: staydownMatches.get(notice.id)?.hasMore ?? false,
-          email_correspondence: emailCorrespondence.get(notice.id) ?? [],
+          targets: sections.targets.get(notice.id) ?? [],
+          evidence: sections.evidence.get(notice.id) ?? [],
+          form_review: sections.formReview.get(notice.id) ?? null,
+          restrictions: sections.restrictions.get(notice.id) ?? [],
+          appeals: sections.submissions.appeals.get(notice.id) ?? [],
+          counter_notices: sections.submissions.counterNotices.get(notice.id) ?? [],
+          legal_holds: sections.legalHolds.get(notice.id) ?? [],
+          action_intents: sections.actionIntents.get(notice.id) ?? [],
+          delivery_intents: sections.deliveryIntents.get(notice.id) ?? [],
+          staydown_matches: sections.staydownMatches.get(notice.id)?.matches ?? [],
+          staydown_matches_has_more: sections.staydownMatches.get(notice.id)?.hasMore ?? false,
+          email_correspondence: sections.emailCorrespondence.get(notice.id) ?? [],
         },
       ]
     }),
