@@ -57,7 +57,10 @@ export function LoginEmailStep({
     if (active) emailInputRef.current?.focus()
   }, [active])
   return (
-    <div className={active ? 'space-y-4' : 'hidden'}>
+    <div
+      className='space-y-4'
+      hidden={!active}
+    >
       {hasOAuthProviders && (
         <>
           <div className='flex flex-col gap-2'>

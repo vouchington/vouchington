@@ -165,12 +165,13 @@ describe('LoginForm', () => {
     )
 
     expect(screen.getByLabelText(/verification code/i)).toBeInTheDocument()
-    // The email step is CSS-hidden (not unmounted) when starting on the code step,
+    // The email step is hidden (not unmounted) when starting on the code step,
     // so the Facebook button is still in the DOM.
-    await screen.findByRole('button', {
+    const facebookButton = await screen.findByRole('button', {
       name: /continue with facebook/i,
       hidden: true,
     })
+    expect(facebookButton).not.toBeVisible()
     expect(mockLoginWithEmailAddress).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: /log in/i }))
 
