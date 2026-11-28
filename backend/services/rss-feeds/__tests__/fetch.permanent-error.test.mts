@@ -20,9 +20,11 @@ import { maybeSoftDeletePermanentFetchErrorForFetch } from '../fetch-failures.mt
 import {
   createTestTopic,
   getRssFeedDeletedAt,
+  getTestRssFeedFetchTimestamps,
   updateUrlHostnameUnreliableStatusCodes,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { getTestHostnameRateLimitedUntil } from '@voucha/test-helpers/entities/url-hostname-network-backoff'
 
 const VALID_CONTENT_TYPES = ['application/rss+xml', 'application/atom+xml']
 
@@ -65,15 +67,20 @@ describe('fetch.permanent-error', () => {
     return feed!.rss_feed_url.hostname.id as string
   }
 
-  it('fetchRssFeed defers without calling CrawlerRss when the hostname has an active domain rate-limit lock', async () => {
+  it('fetchRssFeed ends cleanly and records rate_limit_ends_at when the hostname has an active domain rate-limit lock', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const feed = await createEnabledFeed(random)
     const hostnameId = await getFeedHostnameId(feed.id)
 
     await setDomainRateLimited(hostnameId, 10_000)
 
-    await expect(fetchRssFeedForTest(feed.id, 0)).rejects.toThrow(CrawlerRateLimitError)
+    await expect(fetchRssFeedForTest(feed.id, 0)).resolves.toEqual([])
     expect(mockCrawlerRss).not.toHaveBeenCalled()
+    expect(await getTestHostnameRateLimitedUntil(hostnameId)).toBeInstanceOf(Date)
+    expect(await getTestRssFeedFetchTimestamps(feed.id)).toEqual({
+      last_fetch_succeeded_at: null,
+      last_fetch_failed_at: null,
+    })
   })
 
   it('assertRssFetchHostnameNotRateLimited falls back to the raw feed URL for malformed analytics labels', async () => {
@@ -86,7 +93,7 @@ describe('fetch.permanent-error', () => {
     )
   })
 
-  it('fetchRssFeed records a domain rate-limit lock when CrawlerRss returns a rate-limit error', async () => {
+  it('fetchRssFeed records Valkey and SQL rate limits and ends cleanly when CrawlerRss returns 429', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const feed = await createEnabledFeed(random)
     const hostnameId = await getFeedHostnameId(feed.id)
@@ -95,10 +102,15 @@ describe('fetch.permanent-error', () => {
       new CrawlerRateLimitError(`https://perm-err-${random}.example.com/feed.xml`, 429, 50, 0),
     )
 
-    await expect(fetchRssFeedForTest(feed.id, 0)).rejects.toThrow(CrawlerRateLimitError)
+    await expect(fetchRssFeedForTest(feed.id, 0)).resolves.toEqual([])
 
     const remainingMs = await getDomainRateLimitRemainingMs(hostnameId)
     expect(remainingMs).toBeGreaterThan(0)
+    expect(await getTestHostnameRateLimitedUntil(hostnameId)).toBeInstanceOf(Date)
+    expect(await getTestRssFeedFetchTimestamps(feed.id)).toEqual({
+      last_fetch_succeeded_at: null,
+      last_fetch_failed_at: null,
+    })
   })
 
   it('fetchRssFeed soft-deletes the feed when parseFeed throws (invalid XML)', async () => {
@@ -252,7 +264,7 @@ describe('fetch.permanent-error', () => {
       new CrawlerRateLimitError(`https://perm-err-${random}.example.com/feed.xml`, 429, 50),
     )
 
-    await expect(fetchRssFeedForTest(feed.id, 0)).rejects.toThrow(Error)
+    await expect(fetchRssFeedForTest(feed.id, 0)).resolves.toEqual([])
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).toBeNull()

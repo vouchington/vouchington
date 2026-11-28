@@ -98,9 +98,21 @@ export const operationalDynamicConfigRegistryEntries = [
       tier3_sla_ms: rssFeedCrawlField('Tier 3 fetch SLA in milliseconds.', 'tier3_sla_ms'),
       tier4_sla_ms: rssFeedCrawlField('Tier 4 fetch SLA in milliseconds.', 'tier4_sla_ms'),
       tier5_sla_ms: rssFeedCrawlField('Tier 5 fetch SLA in milliseconds.', 'tier5_sla_ms'),
+      retry_interval_ms: rssFeedCrawlField(
+        'Wait time in milliseconds before retrying a failed or skipped RSS feed.',
+        'retry_interval_ms',
+      ),
       capacity_budget: rssFeedCrawlField(
         'Maximum RSS feeds dispatched per scheduler run.',
         'capacity_budget',
+      ),
+      raw_read_budget: rssFeedCrawlField(
+        'Maximum raw RSS feed state rows scanned per scheduler sweep.',
+        'raw_read_budget',
+      ),
+      page_raw_read_multiplier: rssFeedCrawlField(
+        'Multiplier applied to page size to bound raw RSS feed state rows scanned per page.',
+        'page_raw_read_multiplier',
       ),
     },
     validate: validateRssFeedCrawlConfig,

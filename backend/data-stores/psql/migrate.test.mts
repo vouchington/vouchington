@@ -10,6 +10,10 @@ import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { createMigrationPlatformFixture } from '@voucha/test-helpers/migration-platform'
 
 import { read, readPool, write } from './index.mts'
+import {
+  CRAWL_TIERS_VIEW_CREATE_MARKER,
+  SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL,
+} from './migration-runner/sync-rss-feed-fetch-state-tiers.mts'
 import type { QueryExecutor, QueryInput } from './types.mts'
 import { applyAllMigrations, runAllMigrations, runViews } from './migrate.mts'
 
@@ -170,6 +174,35 @@ describe('applyAllMigrations', () => {
     } finally {
       await rm(root, { force: true, recursive: true })
     }
+  })
+
+  it('syncs crawl_tier inside the supplied view transaction for the default views folder', async () => {
+    const transactions: string[][] = []
+    const outerStatements: string[] = []
+    const logger = { error: vi.fn<() => void>(), log: vi.fn<() => void>() }
+
+    await runViews({
+      logger,
+      writer: makeMigrationWriter(outerStatements),
+      withTransaction: async handler => {
+        const statements: string[] = []
+        transactions.push(statements)
+        return handler(makeMigrationWriter(statements))
+      },
+    })
+
+    expect(outerStatements).toEqual([])
+    const crawlTierTx = transactions.filter(statements =>
+      statements.some(sql => sql.includes(CRAWL_TIERS_VIEW_CREATE_MARKER)),
+    )
+    expect(crawlTierTx).toHaveLength(1)
+    expect(crawlTierTx[0]!.at(-1)).toBe(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL)
+    const otherTxSyncs = transactions.filter(
+      statements =>
+        !statements.some(sql => sql.includes(CRAWL_TIERS_VIEW_CREATE_MARKER)) &&
+        statements.includes(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL),
+    )
+    expect(otherTxSyncs).toEqual([])
   })
 
   it('awaits fixed migrations and forwards one owned client through generated and view phases', async () => {

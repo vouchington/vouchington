@@ -62,18 +62,30 @@ visibility, vacation eligibility and participant creation within write transacti
 Notification eligibility also rechecks current moderator or site-staff authority, so a former
 moderator's old conversation participation does not retain access to modmail notifications.
 
-Ingestion services page from immutable source IDs before applying changing eligibility. This keeps
-scheduled reads bounded when most feeds are not due, social accounts were recently synced, or
-Bedrock batches are still fresh. Workers retain the raw position through queue continuations so
-ineligible rows cannot hide later work.
+Social-account and Bedrock ingestion services page from immutable source IDs before applying
+changing eligibility, keeping scheduled reads bounded when social accounts were recently synced or
+Bedrock batches are still fresh. The RSS feed dispatcher instead walks forward-only timestamp
+keysets with a fixed sweep cutoff (`asOf`) across all 10 lanes over covering partial indexes on
+`rss_feed_fetch_states` (`(crawl_tier, COALESCE(last_fetch_succeeded_at, '-infinity'), rss_feed_id)`
+for healthy due and backfill lanes, and `(last_fetch_failed_at, rss_feed_id)` for the cross-tier
+failing retry lane), applying hostname backoff and rate-limit filters inside the bounded walk and
+capping both admissions and raw rows read per sweep. Workers retain the cursor position through
+queue continuations so ineligible rows cannot hide later work.
 
-Crawler refresh selection uses current facts in `url_crawl_states` rather than aggregating retained
-crawl history. State rows are created with every URL and cascade with its hostname and deletion,
-while crawl progress leaves URL revisions untouched so reconciliation does not replay URL creation.
-Success and attempt timestamps are separate so failures cannot make a URL appear fresh,
-while pending work still observes a retry cooldown. Both timestamps settle atomically with the
-crawl write; selection reads the writer so replica lag cannot immediately select the same attempt.
-Browser crawls reserve their attempt before fetching, including direct automation jobs.
+Crawler refresh selection uses narrow current-state tables (`url_crawl_states` for URLs and
+`rss_feed_fetch_states` for RSS feeds) rather than aggregating retained crawl history or churning
+wide entity tables and their search/trigram GIN indexes. `url_crawl_states` rows are created with
+every URL and cascade with its hostname and deletion, while crawl progress leaves URL revisions
+untouched so reconciliation does not replay URL creation. `rss_feed_fetch_states` holds one row per
+live enabled feed (maintained by trigger on `rss_feeds`; disabling or soft-deleting removes the row
+and re-enabling starts with NULL timestamps), so fetch timestamp writes leave `rss_feeds` untouched
+unless `etag`, `last_modified_at`, or metadata actually change. Success and failure timestamps are
+separate so failures cannot make a URL or RSS feed appear fresh, while failing rows retry on a
+bounded interval instead of starving healthy work. Both crawlers share one fetch-outcome classifier
+and `url_hostnames.rate_limit_ends_at` so rate-limited hostnames skip dispatch without burning job
+retries. For URL crawls, both timestamps settle atomically with the crawl write; selection reads the
+writer so replica lag cannot immediately select the same attempt. Browser crawls reserve their
+attempt before fetching, including direct automation jobs.
 
 Deleting an image immediately denies delivery and retires its placements. Posts sharing the image
 are reset in independent bounded transactions, so popular images cannot hold every post lock in

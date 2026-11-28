@@ -1,5 +1,7 @@
 import { it, expect, beforeAll, describe } from 'vitest'
 import { createRssFeed } from '../create.mts'
+import { persistRssFeedCrawlAndMetadata } from '../crawls.mts'
+import { stampRssFeedFetchFailedAt } from '../fetch-state.mts'
 import { updateRssFeedById } from '../update.mts'
 import { updateRssFeedWithStateAsCurrentUser } from '../update-current-user.mts'
 import { getRssFeedById } from '../get.mts'
@@ -175,13 +177,12 @@ describe('update.generated (fields)', () => {
     expect(updated!.last_modified_at).toBeInstanceOf(Date)
   })
 
-  it('updateRssFeedById updates last_fetched_at with true', async () => {
+  it('fetch state exposes last_fetch_succeeded_at as last_fetched_at and resets on disable/re-enable', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
       user: sharedUser,
       hostname: `fetched-${random}.example.com`,
     })
-
     const feed = await createRssFeed({
       provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
@@ -189,19 +190,26 @@ describe('update.generated (fields)', () => {
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { last_fetched_at: true })
-
-    const updated = await getRssFeedById(feed.id)
-    expect(updated!.last_fetched_at).toBeInstanceOf(Date)
+    await updateRssFeedById(feed.id, { is_enabled: true })
+    await stampRssFeedFetchFailedAt(feed.id)
+    expect((await getRssFeedById(feed.id))!.last_fetched_at).toBeNull()
+    await persistRssFeedCrawlAndMetadata({
+      rssFeedId: feed.id,
+      responseCode: 304,
+      headers: { etag: null, lastModified: null },
+    })
+    expect((await getRssFeedById(feed.id))!.last_fetched_at).toBeInstanceOf(Date)
+    await updateRssFeedById(feed.id, { is_enabled: false })
+    expect((await getRssFeedById(feed.id))!.last_fetched_at).toBeNull()
+    await updateRssFeedById(feed.id, { is_enabled: true })
+    expect((await getRssFeedById(feed.id))!.last_fetched_at).toBeNull()
   })
-
   it('updateRssFeedById ignores declared_language when it is undefined', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
       user: sharedUser,
       hostname: `declared-language-undefined-${random}.example.com`,
     })
-
     const feed = await createRssFeed({
       provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
@@ -210,9 +218,7 @@ describe('update.generated (fields)', () => {
       title: `Test Feed ${random}`,
     })
     await setRssFeedDeclaredLanguageForTest(feed.id, 'fr')
-
     const result = await updateRssFeedById(feed.id, { declared_language: undefined })
-
     expect(result).toBeNull()
     expect(await getRssFeedDeclaredLanguageForTest(feed.id)).toBe('fr')
   })

@@ -64,16 +64,57 @@ export async function ensureTestRssFeedEnabled(feedId: string): Promise<void> {
 }
 
 /**
- * Update RSS feed enabled and last fetched timestamps
+ * Update RSS feed enabled and last successful fetch timestamps (healthy state).
  */
-export async function updateRssFeedTiming(feedId: string, lastFetchedAt: Date): Promise<void> {
-  await write(sql`/* updateRssFeedTiming */
-    UPDATE rss_feeds
-    SET last_fetched_at = ${lastFetchedAt}
-    WHERE id = ${feedId}
-  `)
+export async function updateRssFeedTiming(
+  feedId: string,
+  lastFetchSucceededAt: Date,
+): Promise<void> {
   await write(sql`/* updateRssFeedTiming */
     INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     VALUES ('enablement', ${feedId}, TRUE, 'test helper timing update')
   `)
+  await write(sql`/* updateRssFeedTiming */
+    UPDATE rss_feed_fetch_states
+    SET last_fetch_succeeded_at = ${lastFetchSucceededAt},
+        last_fetch_failed_at = NULL
+    WHERE rss_feed_id = ${feedId}
+  `)
+}
+
+/**
+ * Update RSS feed enabled and last failed fetch timestamps (failing state).
+ */
+export async function updateRssFeedFailedTiming(
+  feedId: string,
+  lastFetchFailedAt: Date,
+  options: { lastFetchSucceededAt?: Date | null } = {},
+): Promise<void> {
+  const lastFetchSucceededAt =
+    options.lastFetchSucceededAt === undefined ? null : options.lastFetchSucceededAt
+  await write(sql`/* updateRssFeedFailedTiming */
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
+    VALUES ('enablement', ${feedId}, TRUE, 'test helper failed timing update')
+  `)
+  await write(sql`/* updateRssFeedFailedTiming */
+    UPDATE rss_feed_fetch_states
+    SET last_fetch_failed_at = ${lastFetchFailedAt},
+        last_fetch_succeeded_at = ${lastFetchSucceededAt}
+    WHERE rss_feed_id = ${feedId}
+  `)
+}
+
+export async function getTestRssFeedFetchTimestamps(
+  feedId: string,
+): Promise<{ last_fetch_succeeded_at: Date | null; last_fetch_failed_at: Date | null } | null> {
+  const { rows } = await read<{
+    last_fetch_succeeded_at: Date | null
+    last_fetch_failed_at: Date | null
+  }>(sql`/* getTestRssFeedFetchTimestamps */
+    SELECT last_fetch_succeeded_at, last_fetch_failed_at
+    FROM rss_feed_fetch_states
+    WHERE rss_feed_id = ${feedId}
+    LIMIT 1
+  `)
+  return rows[0] ?? null
 }

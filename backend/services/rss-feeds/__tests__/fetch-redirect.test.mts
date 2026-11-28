@@ -138,4 +138,39 @@ describe('fetchRssFeed redirect persistence failures', () => {
     expect(unchanged?.canonical_rss_feed_id).toBeNull()
     agent.assertNoPendingInterceptors()
   })
+
+  it('stamps a failed fetch when a redirect location cannot be resolved', async () => {
+    const source = await makeFeed()
+    agent
+      .get(new URL(source.feedUrl).origin)
+      .intercept({ path: '/feed.xml', method: 'GET' })
+      .reply(301, '', { headers: { location: 'http://[::1' } })
+
+    const items = await withMockAgentDefaultFetchForTest(agent, () => fetchRssFeed(source.id, 0))
+
+    expect(items).toEqual([])
+    const updated = await getRssFeedById(source.id)
+    expect(updated?.last_fetched_at).toBeNull()
+    agent.assertNoPendingInterceptors()
+  })
+
+  it('stamps a failed fetch when redirect hop limit is exceeded', async () => {
+    const source = await makeFeed()
+    agent
+      .get(new URL(source.feedUrl).origin)
+      .intercept({ path: '/feed.xml', method: 'GET' })
+      .reply(302, '', {
+        headers: { location: `https://next-${randomUUID()}.example.com/feed.xml` },
+      })
+
+    const items = await withMockAgentDefaultFetchForTest(agent, () =>
+      fetchRssFeed(source.id, 0, null, 5),
+    )
+
+    expect(items).toEqual([])
+    const updated = await getRssFeedById(source.id)
+    expect(updated?.last_fetched_at).toBeNull()
+    expect(sentryCaptureExceptionMock).toHaveBeenCalled()
+    agent.assertNoPendingInterceptors()
+  })
 })

@@ -534,6 +534,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_retire_notification_push_intent()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_rss_feed_fetch_state`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_rss_feed_fetch_state()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_story_post_related_url_relation_mutation`
 
 ```sql

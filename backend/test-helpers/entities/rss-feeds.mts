@@ -20,6 +20,8 @@ export {
   ensureTestRssFeedEnabled,
   getLatestTestRssFeedStateChange,
   getRssFeedDeletedAt,
+  getTestRssFeedFetchTimestamps,
+  updateRssFeedFailedTiming,
   updateRssFeedTiming,
 } from './rss-feeds-state.mts'
 

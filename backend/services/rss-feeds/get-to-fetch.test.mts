@@ -1,6 +1,17 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { getRssFeedByIdToFetch, getRssFeedsToFetch } from './get-to-fetch.mts'
+import { afterAll, beforeAll, describe, expect, it, onTestFinished } from 'vitest'
+import {
+  FAILING_DISPATCH_LANE,
+  getRssFeedByIdToFetch,
+  getRssFeedsToFetch,
+} from './get-to-fetch.mts'
 import { updateUrlHostnameUnreliableStatusCodes, updateRssFeedTiming } from '@voucha/test-helpers'
+import {
+  deleteRssFeedsByIds,
+  insertTestRssFeedDirect,
+} from '@voucha/test-helpers/entities/rss-feeds'
+import { updateRssFeedFailedTiming } from '@voucha/test-helpers/entities/rss-feeds-state'
+import { setTestHostnameRateLimitedUntil } from '@voucha/test-helpers/entities/url-hostname-network-backoff'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { readTestRssFeedAtTtlOffset } from '@voucha/test-helpers/rss-feed-ttl-boundary'
 import { getRssFeedById } from './get.mts'
@@ -82,6 +93,27 @@ describe('get-to-fetch', () => {
     ).rejects.toThrow('Invalid RSS dispatch lane')
   })
 
+  it('rejects an invalid dispatch cursor timestamp before querying', async () => {
+    await expect(
+      getRssFeedsToFetch({
+        cursor: {
+          lane: 5,
+          afterId: '00000000-0000-0000-0000-000000000000',
+          afterLastSucceededAt: 'not-a-timestamp',
+        },
+      }),
+    ).rejects.toThrow('Invalid RSS dispatch cursor timestamp')
+    await expect(
+      getRssFeedsToFetch({
+        cursor: {
+          lane: 6,
+          afterId: '00000000-0000-0000-0000-000000000000',
+          afterLastFailedAt: 'not-a-timestamp',
+        },
+      }),
+    ).rejects.toThrow('Invalid RSS dispatch cursor timestamp')
+  })
+
   it.each([0, Number.NaN, 1.5])('rejects invalid physical page budget %s', rawBudget => {
     expect(() => getRssFeedsToFetch({ rawBudget })).toThrow(
       'RSS raw budget must be a positive safe integer',
@@ -131,4 +163,129 @@ describe('get-to-fetch', () => {
       await updateUrlHostnameUnreliableStatusCodes(hostnameId, null)
     }
   })
+
+  it.each([
+    { lane: 5, label: 'healthy' },
+    { lane: FAILING_DISPATCH_LANE, label: 'failing' },
+  ] as const)(
+    'advances cursor past a blocked prefix longer than rawBudget in $label lane',
+    async ({ lane }) => {
+      const feeds = await Promise.all(Array.from({ length: 5 }, () => insertTestRssFeedDirect({})))
+      const ids = feeds.map(feed => feed.id).toSorted()
+      onTestFinished(() => deleteRssFeedsByIds(ids))
+      const asOf = new Date('2012-06-01T00:00:00.000Z')
+      const baseMs = asOf.getTime() - 48 * 60 * 60_000
+      const stamp = lane === 5 ? updateRssFeedTiming : updateRssFeedFailedTiming
+      await Promise.all(ids.map((id, i) => stamp(id, new Date(baseMs + i * 1000))))
+      const blocked = ids.slice(0, 4)
+      const eligibleId = ids[4]!
+      const blockedRows = await Promise.all(
+        blocked.map(id => getRssFeedByIdToFetch(id, { ttl: 0 })),
+      )
+      await Promise.all(
+        blockedRows.map(row =>
+          setTestHostnameRateLimitedUntil(row!.url_hostname_id, new Date(Date.now() + 60_000)),
+        ),
+      )
+
+      const startTs = new Date(baseMs - 1000).toISOString()
+      const startCursor =
+        lane === 5
+          ? {
+              lane,
+              afterLastSucceededAt: startTs,
+              afterId: uuidBefore(ids[0]!),
+              throughId: eligibleId,
+            }
+          : {
+              lane,
+              afterLastFailedAt: startTs,
+              afterId: uuidBefore(ids[0]!),
+              throughId: eligibleId,
+            }
+
+      const page1 = await getRssFeedsToFetch({ limit: 2, rawBudget: 2, asOf, cursor: startCursor })
+      expect(page1.feeds).toEqual([])
+      expect(page1.rawRowsRead).toBe(2)
+      expect(page1.nextCursor?.lane).toBe(lane)
+      expect(page1.nextCursor?.afterId).toBe(blocked[1])
+
+      const page2 = await getRssFeedsToFetch({
+        limit: 2,
+        rawBudget: 2,
+        asOf,
+        cursor: page1.nextCursor,
+      })
+      expect(page2.feeds).toEqual([])
+      expect(page2.rawRowsRead).toBe(2)
+      expect(page2.nextCursor?.lane).toBe(lane)
+      expect(page2.nextCursor?.afterId).toBe(blocked[3])
+
+      const page3 = await getRssFeedsToFetch({
+        limit: 2,
+        rawBudget: 2,
+        asOf,
+        cursor: page2.nextCursor,
+      })
+      expect(page3.feeds.map(row => row.id)).toEqual([eligibleId])
+      expect(page3.rawRowsRead).toBe(1)
+    },
+  )
+
+  it.each([
+    { lane: 5, label: 'healthy' },
+    { lane: FAILING_DISPATCH_LANE, label: 'failing' },
+  ] as const)(
+    'counts trailing blocked rows in rawRowsRead and resumes past them on short $label pages',
+    async ({ lane }) => {
+      const feeds = await Promise.all(Array.from({ length: 5 }, () => insertTestRssFeedDirect({})))
+      const ids = feeds.map(feed => feed.id).toSorted()
+      onTestFinished(() => deleteRssFeedsByIds(ids))
+      const asOf = new Date('2012-06-02T00:00:00.000Z')
+      const baseMs = asOf.getTime() - 48 * 60 * 60_000
+      const stamp = lane === 5 ? updateRssFeedTiming : updateRssFeedFailedTiming
+      await Promise.all(ids.map((id, i) => stamp(id, new Date(baseMs + i * 1000))))
+      const blocked = ids.slice(1, 4)
+      const blockedRows = await Promise.all(
+        blocked.map(id => getRssFeedByIdToFetch(id, { ttl: 0 })),
+      )
+      await Promise.all(
+        blockedRows.map(row =>
+          setTestHostnameRateLimitedUntil(row!.url_hostname_id, new Date(Date.now() + 60_000)),
+        ),
+      )
+
+      const startTs = new Date(baseMs - 1000).toISOString()
+      const startCursor =
+        lane === 5
+          ? {
+              lane,
+              afterLastSucceededAt: startTs,
+              afterId: uuidBefore(ids[0]!),
+              throughId: ids[4]!,
+            }
+          : {
+              lane,
+              afterLastFailedAt: startTs,
+              afterId: uuidBefore(ids[0]!),
+              throughId: ids[4]!,
+            }
+
+      const page1 = await getRssFeedsToFetch({ limit: 5, rawBudget: 4, asOf, cursor: startCursor })
+      expect(page1.feeds.map(row => row.id)).toEqual([ids[0]])
+      expect(page1.rawRowsRead).toBe(4)
+      expect(page1.nextCursor?.lane).toBe(lane)
+      expect(page1.nextCursor?.afterId).toBe(blocked[2])
+
+      const page2 = await getRssFeedsToFetch({
+        limit: 5,
+        rawBudget: 4,
+        asOf,
+        cursor: page1.nextCursor,
+      })
+      expect(page2.feeds.map(row => row.id)).toEqual([ids[4]])
+      expect(page2.rawRowsRead).toBe(1)
+      expect(page2.nextCursor?.lane).toBe(lane + 1)
+    },
+  )
 })

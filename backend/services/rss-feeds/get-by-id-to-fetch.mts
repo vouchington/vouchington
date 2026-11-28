@@ -11,7 +11,8 @@ export async function getRssFeedByIdToFetch(
   const params: unknown[] = [rssFeedId]
   const ttlFilter =
     ttl > 0
-      ? `AND (rss_feeds.last_fetched_at IS NULL OR rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - ($2 * INTERVAL '1 millisecond'))`
+      ? `AND (GREATEST(fetch_state.last_fetch_succeeded_at, fetch_state.last_fetch_failed_at) IS NULL
+          OR GREATEST(fetch_state.last_fetch_succeeded_at, fetch_state.last_fetch_failed_at) <= CURRENT_TIMESTAMP - ($2 * INTERVAL '1 millisecond'))`
       : ''
   if (ttl > 0) params.push(ttl)
 

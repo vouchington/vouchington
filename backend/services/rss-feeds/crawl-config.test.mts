@@ -2,6 +2,9 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   getCrawlCapacityBudget,
+  getCrawlPageRawReadMultiplier,
+  getCrawlRawReadBudget,
+  getFetchRetryIntervalMs,
   getTierSlaMs,
   isRobotsTxtIgnoredForFeeds,
   rssFeedCrawlConfig,
@@ -80,6 +83,86 @@ describe('crawl-config', () => {
       })
       expect(getCrawlCapacityBudget()).toBe(100)
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 100 })
+    })
+  })
+
+  describe('getFetchRetryIntervalMs', () => {
+    it('returns 1 hour by default', () => {
+      expect(getFetchRetryIntervalMs()).toBe(60 * 60_000)
+    })
+
+    it('returns overridden value when valid', () => {
+      const restore = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        retry_interval_ms: 15 * 60_000,
+      })
+      try {
+        expect(getFetchRetryIntervalMs()).toBe(15 * 60_000)
+      } finally {
+        restore()
+      }
+    })
+
+    it('falls back to default when retry_interval_ms is invalid or above max', () => {
+      const restoreLow = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        retry_interval_ms: 0,
+      })
+      try {
+        expect(getFetchRetryIntervalMs()).toBe(60 * 60_000)
+      } finally {
+        restoreLow()
+      }
+      const restoreHigh = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        retry_interval_ms: 604_800_001,
+      })
+      try {
+        expect(getFetchRetryIntervalMs()).toBe(60 * 60_000)
+      } finally {
+        restoreHigh()
+      }
+    })
+  })
+
+  describe('getCrawlRawReadBudget', () => {
+    it('returns 1000 by default and respects valid overrides within hard max', () => {
+      expect(getCrawlRawReadBudget()).toBe(1_000)
+      const restoreValid = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        raw_read_budget: 2_500,
+      })
+      try {
+        expect(getCrawlRawReadBudget()).toBe(2_500)
+      } finally {
+        restoreValid()
+      }
+      const restoreHigh = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        raw_read_budget: 10_001,
+      })
+      try {
+        expect(getCrawlRawReadBudget()).toBe(1_000)
+      } finally {
+        restoreHigh()
+      }
+    })
+  })
+
+  describe('getCrawlPageRawReadMultiplier', () => {
+    it('returns 4 by default and respects valid overrides within hard max', () => {
+      expect(getCrawlPageRawReadMultiplier()).toBe(4)
+      const restoreValid = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        page_raw_read_multiplier: 8,
+      })
+      try {
+        expect(getCrawlPageRawReadMultiplier()).toBe(8)
+      } finally {
+        restoreValid()
+      }
+      const restoreHigh = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        page_raw_read_multiplier: 101,
+      })
+      try {
+        expect(getCrawlPageRawReadMultiplier()).toBe(4)
+      } finally {
+        restoreHigh()
+      }
     })
   })
 })

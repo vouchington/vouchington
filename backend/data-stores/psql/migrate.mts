@@ -20,9 +20,11 @@ import {
   type RunConfigDrivenOptions,
 } from './migration-runner/migrations.mts'
 import { refreshMaterializedView } from './migration-runner/refresh-materialized-view.mts'
+import { createCrawlTiersSyncTransactionRunner } from './migration-runner/sync-rss-feed-fetch-state-tiers.mts'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { verifyLiveSchemaMatchesSnapshot } from './schema-snapshot/verify-live-schema.mts'
-import { psql, write } from './setup.mts'
+import { psql, withTransactionOptions, write } from './setup.mts'
+import type { PoolClient } from './types.mts'
 
 const __dirname = import.meta.dirname
 
@@ -50,10 +52,17 @@ export async function runMigrations(platform: Pick<Psql, 'runMigrations'> = psql
 
 export async function runViews(options: RunViewsOptions = {}) {
   if (options.forced) await initializeMigrationSql()
-  const folder = options.folder ?? path.resolve(__dirname, 'views')
+  const defaultFolder = path.resolve(__dirname, 'views')
+  const folder = options.folder ?? defaultFolder
   const writer = options.writer ?? write
   const logger = options.logger ?? console
-  await runPlatformViews({ ...options, folder, writer, logger })
+  const withTransaction =
+    folder === defaultFolder
+      ? createCrawlTiersSyncTransactionRunner(
+          options.withTransaction ?? (handler => withTransactionOptions({}, handler)),
+        )
+      : options.withTransaction
+  await runPlatformViews({ ...options, folder, writer, logger, withTransaction })
 }
 
 export async function runConfigDriven(options: RunConfigDrivenOptions = {}) {
@@ -74,6 +83,28 @@ export async function applyAllMigrations(
   await applyMigrationsInSession(rootDir, forced, logger, platform)
 }
 
+async function applyViewsAndSyncTiers(
+  rootDir: string,
+  forced: boolean | undefined,
+  logger: Pick<Console, 'error' | 'log'>,
+  writer: NonNullable<RunConfigDrivenOptions['writer']>,
+  client: PoolClient,
+): Promise<void> {
+  const withTransaction =
+    rootDir === __dirname
+      ? createCrawlTiersSyncTransactionRunner(handler =>
+          withTransactionOptions({ client }, handler),
+        )
+      : undefined
+  await runPlatformViews({
+    folder: path.resolve(rootDir, 'views'),
+    forced,
+    logger,
+    writer,
+    withTransaction,
+  })
+}
+
 async function applyMigrationsInSession(
   rootDir: string,
   forced: boolean | undefined,
@@ -89,7 +120,7 @@ async function applyMigrationsInSession(
       logger,
     })
     await runConfigDrivenFromFolder(rootDir, { logger, writer })
-    return runPlatformViews({ folder: path.resolve(rootDir, 'views'), forced, logger, writer })
+    return applyViewsAndSyncTiers(rootDir, forced, logger, writer, client)
   })
 }
 

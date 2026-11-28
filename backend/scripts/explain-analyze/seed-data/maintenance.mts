@@ -90,6 +90,7 @@ export const ANALYZE_TARGETS = [
     'moderator_actions',
     'moderation_transparency_released_daily_rollups',
     'rss_feed_items',
+    'rss_feed_fetch_states',
     'api_keys',
     'user_roles',
     'user_role_types',

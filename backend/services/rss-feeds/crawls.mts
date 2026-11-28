@@ -1,7 +1,10 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
+import { invalidate } from '@services/entity-cache/invalidate'
 import sql from 'sql-template-strings'
 import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
+import { resolveFetchOutcomeAction, type FetchOutcome } from '@services/crawls/fetch-outcome'
+import { insertRssFeedCrawlAndStampState } from './fetch-state.mts'
 import { updateRssFeedById, type UpdateRssFeedChanges } from './update.mts'
 
 const MIN_RSS_HEADER_DATE_MS = Date.UTC(1970, 0, 1)
@@ -18,21 +21,6 @@ export type PaidSafeRssFeedCrawl = RssFeedCrawlSummary
 
 export function toPaidSafeRssFeedCrawl(crawl: RssFeedCrawlSummary): PaidSafeRssFeedCrawl {
   return { id: crawl.id, response_code: crawl.response_code, created_at: crawl.created_at }
-}
-
-async function insertRssFeedCrawl(params: {
-  rss_feed_id: string
-  response_code: number
-  feed_data?: Record<string, unknown> | null
-  feed_data_sha256?: Buffer | null
-  redirect_url_id?: string | null
-}): Promise<string> {
-  const { rows } = await write<{ id: string }>(sql`/* insertRssFeedCrawl */
-    INSERT INTO rss_feed_crawls (rss_feed_id, response_code, feed_data, feed_data_sha256, redirect_url_id)
-    VALUES (${params.rss_feed_id}, ${params.response_code}, ${params.feed_data ?? null}, ${params.feed_data_sha256 ?? null}, ${params.redirect_url_id ?? null})
-    RETURNING id
-  `)
-  return rows[0]!.id
 }
 
 export async function getLatestRssFeedCrawlForFeedWithOptions(
@@ -63,14 +51,19 @@ export async function getLatestRssFeedCrawlForFeedWithOptions(
     : null
 }
 
-function buildRssFeedMetadataChanges(headers: {
-  etag: string | null
-  lastModified: string | null
-}): UpdateRssFeedChanges {
+function buildRssFeedMetadataChanges(
+  headers: { etag: string | null; lastModified: string | null },
+  currentMetadata?: { etag: string | null; lastModifiedAt: Date | null },
+): UpdateRssFeedChanges {
   const changes: UpdateRssFeedChanges = {}
-  if (headers.etag != null) changes.etag = headers.etag
+  if (headers.etag != null && headers.etag !== currentMetadata?.etag) changes.etag = headers.etag
   const lastModifiedAt = parseRssLastModifiedHeader(headers.lastModified)
-  if (lastModifiedAt != null) changes.last_modified_at = lastModifiedAt
+  if (
+    lastModifiedAt != null &&
+    lastModifiedAt.getTime() !== currentMetadata?.lastModifiedAt?.getTime()
+  ) {
+    changes.last_modified_at = lastModifiedAt
+  }
   return changes
 }
 
@@ -95,18 +88,25 @@ export async function persistRssFeedCrawlAndMetadata(params: {
   feedData?: Record<string, unknown> | null
   feedDataSha256?: Buffer | null
   redirectUrlId?: string | null
+  outcome?: FetchOutcome
+  currentMetadata?: { etag: string | null; lastModifiedAt: Date | null }
 }): Promise<void> {
-  await insertRssFeedCrawl({
+  const action = resolveFetchOutcomeAction(params.outcome ?? { kind: 'content' })
+  await insertRssFeedCrawlAndStampState({
     rss_feed_id: params.rssFeedId,
     response_code: params.responseCode,
     feed_data: params.feedData,
     feed_data_sha256: params.feedDataSha256,
     redirect_url_id: params.redirectUrlId,
+    timestampColumn: action.timestampColumn,
   })
-  await updateRssFeedById(params.rssFeedId, {
-    ...buildRssFeedMetadataChanges(params.headers),
-    last_fetched_at: true,
-  })
+  if (action.timestampColumn !== 'last_fetch_succeeded_at') return
+  const metadataChanges = buildRssFeedMetadataChanges(params.headers, params.currentMetadata)
+  if (Object.keys(metadataChanges).length > 0) {
+    await updateRssFeedById(params.rssFeedId, metadataChanges)
+    return
+  }
+  await invalidate.rss_feeds(params.rssFeedId)
 }
 
 export type RssFeedCrawlDetail = {

@@ -107,12 +107,24 @@ retains its age cutoff while committed deletions advance the remaining-work pred
 index excludes successful historical crawls from each page. A continuation keeps work eligible
 without holding a worker through the entire backlog.
 
-RSS dispatch carries its lane, raw feed position, and fixed upper bound in Glide continuations.
-Each job reads a bounded raw page before due, tier, and hostname eligibility, while the sweep's
-remaining capacity counts admitted fetches. An empty eligible page advances the cursor without
-consuming fetch capacity, and lower-priority lanes wait until earlier raw lanes finish.
-Friend-account dispatch and Bedrock stale cleanup also advance by raw source IDs. A full page may
-need one empty continuation to confirm the tail while keeping the physical read bound exact.
+RSS dispatch carries its lane, cursor position, fixed cutoff (`asOf`), fixed upper feed ID,
+remaining admission budget (`remainingBudget`), and remaining raw-row read cap
+(`remainingRawBudget`) in Glide continuations. All 10 lanes walk forward-only timestamp keysets over
+dedicated covering partial indexes on `rss_feed_fetch_states`: healthy due Lanes 1–5 and backfill
+Lanes 7–10 seek `(crawl_tier, COALESCE(last_fetch_succeeded_at, '-infinity'), rss_feed_id)` with
+cursor key `lastFetchSucceededAt,id`, and cross-tier failing retry Lane 6 seeks
+`(last_fetch_failed_at, rss_feed_id)` with cursor key `lastFetchFailedAt,id`, stopping at the first
+row past the dynamic-config tier SLA or retry cutoff. Each page bounds its index walk to a
+per-page `rawBudget` capped by `remainingRawBudget` and applies hostname backoff and rate-limit
+eligibility inside the walk. When blocked hosts fill an entire page's `rawBudget`, the page returns
+the last scanned `(sort key, id)` as `nextCursor` so continuations advance past the blocked prefix
+to reach healthy feeds behind it and subsequent lanes, while decrementing both `remainingBudget`
+(by admissions) and `remainingRawBudget` (by visited state rows, including hostname-filtered rows)
+so the sweep still terminates within its raw-read cap. Healthy due lanes run ahead of the failing
+retry lane, and backfill
+lanes wait until earlier lanes finish. Friend-account dispatch and Bedrock stale cleanup still
+advance by raw source IDs. A full page may need one empty continuation to confirm the tail while
+keeping the physical read bound exact.
 
 Moderation-history retention uses the existing PostgreSQL maintenance queue and a serial ordering
 lane. A scheduled or operator seed starts a bounded sweep; each completed job immediately admits

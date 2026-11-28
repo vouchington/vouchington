@@ -10,7 +10,7 @@ import { getLatestRssFeedCrawlForFeedWithOptions } from '../crawls.mts'
 import { insertTestRssFeedCrawl } from '@voucha/test-helpers/entities/rss-feed-crawls'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import * as contentAnalysisEnqueues from '@queues/content-analysis/enqueues'
-import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
+import { createTestTopic, updateRssFeedTiming, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 const mockCrawlerRss = vi.fn<typeof CrawlerRss>()
 const mockCheckRssFeedCrawlable = vi.fn<typeof checkRssFeedCrawlable>()
@@ -82,8 +82,8 @@ describe('fetch.conditional-get', () => {
       is_enabled: true,
       etag: '"stale-etag"',
       last_modified_at: new Date('2024-01-01T00:00:00.000Z'),
-      last_fetched_at: new Date('2020-01-01T00:00:00.000Z'),
     })
+    await updateRssFeedTiming(feed.id, new Date('2020-01-01T00:00:00.000Z'))
     const [fixtureFeed, fixtureContentSha256] = createMockFeedFixture(`stale-304-${random}`)
     mockCrawlerRss.mockImplementation(async (_url, requestOptions) => {
       if (
@@ -130,8 +130,8 @@ describe('fetch.conditional-get', () => {
     await updateRssFeedById(feed.id, {
       is_enabled: true,
       etag: '"fresh-etag"',
-      last_fetched_at: new Date('2020-01-01T00:00:00.000Z'),
     })
+    await updateRssFeedTiming(feed.id, new Date('2020-01-01T00:00:00.000Z'))
     const [fixtureFeed, fixtureContentSha256] = createMockFeedFixture(`replay-304-${random}`)
     await insertTestRssFeedCrawl({
       rssFeedId: feed.id,

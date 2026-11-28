@@ -31,9 +31,8 @@ export async function runRssCrawlFetchLookupCapacity(): Promise<void> {
       INSERT INTO urls (url, hostname_id, search_params)
       SELECT ${base} || name, ${hostnameId}, '{}'::jsonb FROM owners RETURNING id, url
     )
-    INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, created_via, last_fetched_at)
-    SELECT feed_urls.id, owners.id, owners.name, 'system',
-      CASE WHEN owners.name = ${recent} THEN CURRENT_TIMESTAMP END
+    INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, created_via)
+    SELECT feed_urls.id, owners.id, owners.name, 'system'
     FROM owners JOIN feed_urls ON feed_urls.url = ${base} || owners.name
     RETURNING id, topic_id, rss_feed_url_id, title`)
   const dueFeed = feeds.find(feed => feed.title === due)
@@ -44,12 +43,17 @@ export async function runRssCrawlFetchLookupCapacity(): Promise<void> {
     INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     SELECT 'enablement', id, TRUE, 'EXPLAIN fetch lookup fixture'
     FROM unnest(${[dueFeed.id, recentFeed.id]}::uuid[]) fixture(id)`)
+  await seed(sql`/* stampExplainRecentFetchLookupFeed */
+    UPDATE rss_feed_fetch_states
+    SET last_fetch_succeeded_at = CURRENT_TIMESTAMP
+    WHERE rss_feed_id = ${recentFeed.id}`)
   await seed.commit()
   try {
     registerScenarioContract(scenario, {
       allowEmptyResult: true,
       expectations: [
         { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 1 },
+        { kind: 'maxProcessedRows', relation: 'rss_feed_fetch_states', max: 1 },
         { kind: 'maxProcessedRows', relation: 'urls', max: 1 },
         { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 1 },
       ],

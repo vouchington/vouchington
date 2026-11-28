@@ -18,13 +18,28 @@ export function seedIngestionAccountId(index: number): string {
 /** Large, mostly ineligible keyset cohorts prove that source LIMIT precedes eligibility. */
 export async function seedIngestionRawPages(): Promise<void> {
   await write(
-    `/* seedIngestionRawPages */ UPDATE rss_feeds SET last_fetched_at = $1::timestamptz
-     WHERE id IN (
-       SELECT id FROM rss_feeds
-       WHERE id >= $2::uuid AND id <= $3::uuid
-       ORDER BY id LIMIT 2000
+    `/* seedIngestionRawPages */ UPDATE rss_feed_fetch_states
+     SET last_fetch_succeeded_at = $1::timestamptz,
+         last_fetch_failed_at = NULL
+     WHERE rss_feed_id IN (
+       SELECT rss_feed_id FROM rss_feed_fetch_states
+       WHERE rss_feed_id >= $2::uuid AND rss_feed_id <= $3::uuid
+       ORDER BY rss_feed_id LIMIT 1700
      )`,
-    [new Date(postSeedTimestampMs(0)), seedUuid(0, '08'), seedUuid(1999, '08')],
+    [new Date(postSeedTimestampMs(0)), seedUuid(0, '08'), seedUuid(1699, '08')],
+  )
+  await write(
+    `/* seedIngestionRawPages */ UPDATE rss_feed_fetch_states
+     SET last_fetch_succeeded_at = NULL,
+         last_fetch_failed_at = CASE WHEN rss_feed_id <= $3::uuid THEN $1::timestamptz ELSE $2::timestamptz END
+     WHERE rss_feed_id >= $4::uuid AND rss_feed_id <= $5::uuid`,
+    [
+      new Date(postSeedTimestampMs(0) - 2 * 60 * 60_000),
+      new Date(postSeedTimestampMs(0)),
+      seedUuid(1799, '08'),
+      seedUuid(1700, '08'),
+      seedUuid(1999, '08'),
+    ],
   )
   for (const provider of PROVIDERS) {
     const rows = Array.from({ length: INGESTION_ACCOUNT_ROW_COUNT }, (_, offset) => {

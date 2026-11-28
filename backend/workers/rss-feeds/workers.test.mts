@@ -21,6 +21,14 @@ describe('rssFeedsHandlers', () => {
     ])
   })
 
+  it('rejects a dispatch job with an invalid remainingRawBudget', async () => {
+    await expect(
+      handlerFor(RSS_FEEDS_DISPATCH_JOB.name).handle({
+        data: { remainingBudget: 10, remainingRawBudget: -1 },
+      } as Job<never>),
+    ).rejects.toThrow('RSS dispatcher remaining raw budget must be a nonnegative safe integer')
+  })
+
   it('rejects a fetch job without a feed id', () => {
     expect(() => handlerFor(RSS_FEEDS_FETCH_JOB.name).handle({ data: {} } as Job<never>)).toThrow(
       'RSS feed job .rssFeedId is required',

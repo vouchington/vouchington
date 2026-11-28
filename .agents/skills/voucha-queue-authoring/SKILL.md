@@ -45,7 +45,9 @@ backfills, transition matrix). This skill holds Voucha's package, registry, and 
 
 - Use the [paged-dispatcher helper](../../../backend/data-stores/valkey-glide-mq/paged-dispatcher.mts)
   with DynamicConfig page, queue-depth, and backoff limits; dispatchers retry indefinitely and
-  keep state in job data, not PostgreSQL. The depth threshold is a soft admission limit that
+  keep state in job data, not PostgreSQL. Cursor keys are unique and never move backward; a
+  forward-only timestamp qualifies only when advancing it takes the row out of the reader's filter
+  (the RSS dispatcher's healthy lanes `lastFetchSucceededAt,id` and failing retry lane `lastFetchFailedAt,id` are the one user). The depth threshold is a soft admission limit that
   includes dispatcher jobs; a threshold below an unread control backlog blocks admission until an
   operator raises it. Record ownership of row-admission fences before bulk enqueue and clean them
   in bounded batches after the page receipt is durable. To re-admit a retained terminal row, WATCH
