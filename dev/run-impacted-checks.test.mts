@@ -1,17 +1,22 @@
 import { spawnSync } from 'node:child_process'
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, existsSync } from 'node:fs'
+import { copyFileSync, cpSync, mkdtempSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 const fixtures = resolve(import.meta.dirname, 'run-impacted-checks-fixtures')
 const runner = resolve(import.meta.dirname, 'run-impacted-checks.mts')
 
+let template: string
 let repo: string
 
 function git(...args: string[]) {
-  const result = spawnSync('git', args, { cwd: repo, encoding: 'utf8' })
+  return gitIn(repo, ...args)
+}
+
+function gitIn(cwd: string, ...args: string[]) {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8' })
   expect(result.status).toBe(0)
 }
 
@@ -32,19 +37,37 @@ function run(env: Record<string, string> = {}) {
 }
 
 describe('run-impacted-checks', () => {
+  // Built once: each test copies it, so the per-test hook spawns no processes.
+  beforeAll(() => {
+    template = mkdtempSync(join(tmpdir(), 'voucha-impacted-checks-template-'))
+    gitIn(template, 'init', '-q', '-b', 'work')
+    copyFileSync(join(fixtures, 'removed.mts.fixture'), join(template, 'removed.mts'))
+    gitIn(template, 'add', '.')
+    gitIn(
+      template,
+      '-c',
+      'user.email=tests+impacted-checks@voucha.ai',
+      '-c',
+      'user.name=Test',
+      'commit',
+      '-q',
+      '-m',
+      'base',
+    )
+    gitIn(template, 'update-ref', 'refs/remotes/origin/main', 'HEAD')
+  })
+
   beforeEach(() => {
     repo = mkdtempSync(join(tmpdir(), 'voucha-impacted-checks-'))
-    git('init', '-q', '-b', 'work')
-    git('config', 'user.email', 'tests+impacted-checks@voucha.ai')
-    git('config', 'user.name', 'Test')
-    copyFileSync(join(fixtures, 'removed.mts.fixture'), join(repo, 'removed.mts'))
-    git('add', '.')
-    git('commit', '-q', '-m', 'base')
-    git('update-ref', 'refs/remotes/origin/main', 'HEAD')
+    cpSync(template, repo, { recursive: true })
   })
 
   afterEach(() => {
     rmSync(repo, { recursive: true, force: true })
+  })
+
+  afterAll(() => {
+    rmSync(template, { recursive: true, force: true })
   })
 
   it('runs nothing when nothing changed', () => {
