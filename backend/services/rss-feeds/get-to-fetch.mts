@@ -1,17 +1,20 @@
 import { read } from '@data-stores/psql'
 import { FEED_COLUMNS, FEED_JOINS } from './get-to-fetch-columns.mts'
-import type { RssFeedToFetch } from './get-to-fetch-types.mts'
+import type {
+  RssFeedDispatchCandidate,
+  RssFeedDispatchCursor,
+  RssFeedDispatchPage,
+} from './get-to-fetch-types.mts'
 import * as crawlConfig from './crawl-config.mts'
+import { FAILING_DISPATCH_LANE, getRssFeedsFailing } from './get-to-fetch-failing.mts'
+import { getRssFeedsTier5 } from './get-to-fetch-tier5.mts'
 
-export type { RssFeedToFetch } from './get-to-fetch-types.mts'
-
-export type RssFeedDispatchCursor = { lane: number; afterId: string; throughId?: string }
-type RssFeedDispatchCandidate = RssFeedToFetch & { dispatch_lane: number }
-export type RssFeedDispatchPage = {
-  feeds: RssFeedDispatchCandidate[]
-  rawRowsRead: number
-  nextCursor?: RssFeedDispatchCursor
-}
+export { FAILING_DISPATCH_LANE } from './get-to-fetch-failing.mts'
+export type {
+  RssFeedDispatchCursor,
+  RssFeedDispatchPage,
+  RssFeedToFetch,
+} from './get-to-fetch-types.mts'
 
 type GetRssFeedsToFetchOptions = {
   limit?: number
@@ -26,24 +29,37 @@ async function getRssFeedsTiered(
   asOf: Date,
   cursor?: RssFeedDispatchCursor,
 ): Promise<RssFeedDispatchPage> {
+  const lane = cursor?.lane ?? 1
+  if (!Number.isSafeInteger(lane) || lane < 1 || lane > 10)
+    throw new RangeError('Invalid RSS dispatch lane')
+  if (
+    cursor?.afterLastFetchedAt !== undefined &&
+    cursor.afterLastFetchedAt !== null &&
+    Number.isNaN(Date.parse(cursor.afterLastFetchedAt))
+  ) {
+    throw new RangeError('Invalid RSS dispatch cursor timestamp')
+  }
+  const throughId =
+    cursor?.throughId ??
+    (
+      await read<{ id: string }>(
+        `/* getRssFeedDispatchUpperId */ SELECT rss_feed_id AS id FROM rss_feed_fetch_states ORDER BY rss_feed_id DESC LIMIT 1`,
+      )
+    ).rows[0]?.id
+  if (!throughId) return { feeds: [], rawRowsRead: 0 }
+  if (lane === 5 || lane === 10) {
+    return getRssFeedsTier5(limit, rawBudget, asOf, lane, throughId, cursor)
+  }
+  if (lane === FAILING_DISPATCH_LANE) {
+    return getRssFeedsFailing(limit, rawBudget, asOf, throughId, cursor)
+  }
+
+  const tier = lane <= 5 ? lane : lane - 5
   const tier1_sla_ms = crawlConfig.getTierSlaMs(1)
   const tier2_sla_ms = crawlConfig.getTierSlaMs(2)
   const tier3_sla_ms = crawlConfig.getTierSlaMs(3)
   const tier4_sla_ms = crawlConfig.getTierSlaMs(4)
   const tier5_sla_ms = crawlConfig.getTierSlaMs(5)
-
-  const lane = cursor?.lane ?? 1
-  if (!Number.isSafeInteger(lane) || lane < 1 || lane > 10)
-    throw new RangeError('Invalid RSS dispatch lane')
-  const tier = lane <= 5 ? lane : lane - 5
-  const throughId =
-    cursor?.throughId ??
-    (
-      await read<{ id: string }>(
-        `/* getRssFeedDispatchUpperId */ SELECT id FROM rss_feeds ORDER BY id DESC LIMIT 1`,
-      )
-    ).rows[0]?.id
-  if (!throughId) return { feeds: [], rawRowsRead: 0 }
   const tierExpr = `COALESCE(t.crawl_tier, 5)`
   const scoreExpr = `COALESCE(t.crawl_score, 0)`
 
@@ -56,20 +72,18 @@ async function getRssFeedsTiered(
         ELSE $5::BIGINT
       END * INTERVAL '1 millisecond'`
 
-  const isDueExpr = `(rss_feeds.last_fetched_at IS NULL OR rss_feeds.last_fetched_at <= $6::timestamptz - (${slaCaseExpr}))`
+  const isDueExpr = `(fetch_state.last_fetch_succeeded_at IS NULL OR fetch_state.last_fetch_succeeded_at <= $6::timestamptz - (${slaCaseExpr}))`
 
   const enabledWhere = `rss_feeds.deleted_at IS NULL
       AND rss_feeds.is_enabled = TRUE
+      AND (fetch_state.last_fetch_failed_at IS NULL
+        OR fetch_state.last_fetch_failed_at < fetch_state.last_fetch_succeeded_at)
       AND (url_hostnames.network_backoff_ends_at IS NULL
-        OR url_hostnames.network_backoff_ends_at <= CURRENT_TIMESTAMP)`
+        OR url_hostnames.network_backoff_ends_at <= CURRENT_TIMESTAMP)
+      AND (url_hostnames.rate_limited_until IS NULL
+        OR url_hostnames.rate_limited_until <= CURRENT_TIMESTAMP)`
 
-  const rawSource =
-    tier === 5
-      ? `SELECT id FROM rss_feeds
-       WHERE deleted_at IS NULL AND is_enabled = TRUE
-         AND id > $7::uuid AND id <= $11::uuid
-       ORDER BY id LIMIT $9`
-      : `SELECT rss_feed_id AS id FROM mv_rss_feed_crawl_tiers
+  const rawSource = `SELECT rss_feed_id AS id FROM mv_rss_feed_crawl_tiers
        WHERE crawl_tier = $8::int AND rss_feed_id > $7::uuid
          AND rss_feed_id <= $11::uuid
        ORDER BY rss_feed_id LIMIT $9`
@@ -79,7 +93,8 @@ async function getRssFeedsTiered(
     WITH raw_page AS MATERIALIZED (${rawSource})
     SELECT raw_page.id AS raw_id,
       ranked.id, url, url_hostname_id, crawlable, title,
-      declared_language, last_modified_at, etag, last_fetched_at, feed_type,
+      declared_language, last_modified_at, etag,
+      last_fetch_succeeded_at, last_fetch_failed_at, feed_type,
       feed_ignore_robots_txt, hostname_ignore_robots_txt,
       feed_unreliable_status_codes, hostname_unreliable_status_codes,
       crawl_score, crawl_tier, priority_group, dispatch_lane
@@ -94,7 +109,7 @@ async function getRssFeedsTiered(
       WHERE rss_feeds.id = raw_page.id AND ${enabledWhere}
         AND ${tierExpr} = $8::int
         AND (${isDueExpr}
-          OR rss_feeds.last_fetched_at <= $6::timestamptz - ($1::BIGINT * INTERVAL '1 millisecond'))
+          OR fetch_state.last_fetch_succeeded_at <= $6::timestamptz - ($1::BIGINT * INTERVAL '1 millisecond'))
         AND ${dispatchLaneExpr} = $10::int
       LIMIT 1
     ) ranked ON TRUE

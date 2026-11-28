@@ -1,7 +1,9 @@
 import { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
 import { TIER_PRIORITY } from '@queues/rss-feeds/config'
 import {
+  FAILING_DISPATCH_LANE,
   fetchRssFeed,
+  getFetchRetryIntervalMs,
   getRssFeedsToFetch,
   getTierSlaMs,
   type RssFeedDispatchCursor,
@@ -27,7 +29,12 @@ export async function processRssFeedsDispatcher(page?: {
 
   for (const feed of feeds) {
     const tier = feed.crawl_tier >= 1 && feed.crawl_tier <= 5 ? feed.crawl_tier : 5
-    const ttl = feed.priority_group === 2 ? undefined : getTierSlaMs(tier as RssFeedCrawlTier)
+    const ttl =
+      feed.dispatch_lane === FAILING_DISPATCH_LANE
+        ? getFetchRetryIntervalMs()
+        : feed.priority_group === 2
+          ? undefined
+          : getTierSlaMs(tier as RssFeedCrawlTier)
     const key = `${tier}:${ttl ?? 'none'}`
 
     const group = groups.get(key)
@@ -57,7 +64,8 @@ export async function processRssFeedsDispatcher(page?: {
 export async function processFetchRssFeed(
   rssFeedId: string,
   ttl?: number,
+  options?: { isFinalAttempt?: boolean },
 ): Promise<{ rss_feed_id: string; item_count: number }> {
-  const items = await fetchRssFeed(rssFeedId, ttl)
+  const items = await fetchRssFeed(rssFeedId, ttl, null, 0, {}, options)
   return { rss_feed_id: rssFeedId, item_count: items.length }
 }

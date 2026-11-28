@@ -83,12 +83,7 @@ function buildTitleSets(changes: UpdateRssFeedChanges): Sets {
 }
 
 function buildTimestampSets(changes: UpdateRssFeedChanges): Sets {
-  return [
-    ...('last_modified_at' in changes ? [normalizeLastModifiedAt(changes.last_modified_at)] : []),
-    ...(changes.last_fetched_at === undefined
-      ? []
-      : [normalizeLastFetchedAt(changes.last_fetched_at)]),
-  ]
+  return 'last_modified_at' in changes ? [normalizeLastModifiedAt(changes.last_modified_at)] : []
 }
 
 function normalizeLastModifiedAt(value: UpdateRssFeedChanges['last_modified_at']) {
@@ -96,10 +91,4 @@ function normalizeLastModifiedAt(value: UpdateRssFeedChanges['last_modified_at']
   if (value instanceof Date) return sql`last_modified_at = ${value}`
   if (value === null) return sql`last_modified_at = NULL`
   throw new TypeError('last_modified_at must be a date, true, or null')
-}
-
-function normalizeLastFetchedAt(value: UpdateRssFeedChanges['last_fetched_at']) {
-  if (value === true) return sql`last_fetched_at = CURRENT_TIMESTAMP`
-  if (value instanceof Date) return sql`last_fetched_at = ${value}`
-  throw new TypeError('last_fetched_at must be a date or true')
 }

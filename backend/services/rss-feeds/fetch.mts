@@ -1,5 +1,6 @@
 import { upsertRssFeedItems } from '@services/rss-feed-items'
-import { updateRssFeedById } from './update.mts'
+import { resolveFetchOutcomeAction, type FetchOutcome } from '@services/crawls/fetch-outcome'
+import { stampRssFeedFetchFailedAt } from './fetch-state.mts'
 import { reclassifyRssFeedTypeIfNeeded } from './reclassify-feed-type.mts'
 import {
   persistRssFeedCrawlAndMetadata,
@@ -11,7 +12,8 @@ import { getRssFeedByIdToFetch, type RssFeedToFetch } from './get-to-fetch.mts'
 import * as fetchFailures from './fetch-failures.mts'
 import { checkRssFeedCrawlable } from './fetch-robots-check.mts'
 import {
-  loadRssFetchHostnameNetworkBackoff,
+  handleRssFetchRateLimitError,
+  loadRssFetchPreflightHealth,
   recordRssFetchHostnameFailure,
   recordRssFetchHostnameSuccess,
 } from './fetch-hostname-health.mts'
@@ -19,7 +21,6 @@ import { getFetchHostnameId } from './fetch-hostname.mts'
 import { assertUrlAllowedByWebRisk } from '@services/web-risk/check'
 import { isHttpError } from 'http-errors'
 import { persistFeedMetadataAndReconcileLanguage } from './reconcile-item-language.mts'
-import * as rssRateLimit from './domain-rate-limit.mts'
 import { buildRssFetchOptions } from './fetch-options.mts'
 import { buildTrackedRssFeedItemsFromFeed } from './fetch-items.mts'
 const MAX_REDIRECT_HOPS = 5
@@ -28,38 +29,47 @@ type FetchRssFeedDependencies = {
   crawlerRss: typeof CrawlerRss
   resolveDnsCanary: () => Promise<void>
 }
+type FetchRssFeedOptions = { isFinalAttempt?: boolean }
+
+async function stampFetchOutcome(rssFeedId: string, outcome: FetchOutcome): Promise<void> {
+  if (resolveFetchOutcomeAction(outcome).timestampColumn === 'last_fetch_failed_at') {
+    await stampRssFeedFetchFailedAt(rssFeedId)
+  }
+}
+
 export async function fetchRssFeed(
   rssFeedId: string,
   ttl: number = 60_000,
   overrideUrl: string | null = null,
   hopCount: number = 0,
   dependencies: Partial<FetchRssFeedDependencies> = {},
+  fetchOptions: FetchRssFeedOptions = {},
 ) {
+  const isFinalAttempt = fetchOptions.isFinalAttempt ?? true
   const crawlableCheck = dependencies.checkRssFeedCrawlable ?? checkRssFeedCrawlable
   const fetchCrawlerRss = dependencies.crawlerRss ?? CrawlerRss
   const rssFeed = await getRssFeedByIdToFetch(rssFeedId, { ttl })
   if (!rssFeed) return []
   const feedUrl = overrideUrl ?? rssFeed.url
   if (!rssFeed.crawlable) {
-    await updateRssFeedById(rssFeedId, { last_fetched_at: true })
+    await stampFetchOutcome(rssFeedId, { kind: 'skipped' })
     return []
   }
   const fetchHostnameId = await getFetchHostnameId(rssFeed.url_hostname_id, rssFeed.url, feedUrl)
-  const [, networkBackoff] = await Promise.all([
-    rssRateLimit.assertRssFetchHostnameNotRateLimited(fetchHostnameId, feedUrl),
-    loadRssFetchHostnameNetworkBackoff(fetchHostnameId),
-  ])
-  // Skipped, not fetched: last_fetched_at stays put so the feed is due for the probe on expiry.
-  if (networkBackoff.isOpen) return []
+  const networkBackoff = await loadRssFetchPreflightHealth(fetchHostnameId, feedUrl)
+  if (!networkBackoff || networkBackoff.isOpen) return []
   try {
     await assertUrlAllowedByWebRisk(feedUrl)
   } catch (err) {
-    if (!isHttpError(err) || err.status !== 400) throw err
-    await updateRssFeedById(rssFeedId, { last_fetched_at: true })
-    return []
+    if (isHttpError(err) && err.status === 400) {
+      await stampFetchOutcome(rssFeedId, { kind: 'skipped' })
+      return []
+    }
+    await stampFetchOutcome(rssFeedId, { kind: 'error', isFinalAttempt })
+    throw err
   }
   if (!(await crawlableCheck(feedUrl, rssFeed))) {
-    await updateRssFeedById(rssFeedId, { last_fetched_at: true })
+    await stampFetchOutcome(rssFeedId, { kind: 'skipped' })
     return []
   }
   if (!(await networkBackoff.claimProbe())) return []
@@ -74,19 +84,16 @@ export async function fetchRssFeed(
     data = await fetchCrawlerRss(feedUrl, options)
     await recordRssFetchHostnameSuccess(fetchHostnameId)
   } catch (err) {
-    await recordRssFetchHostnameFailure(
-      err,
-      fetchHostnameId,
-      feedUrl,
-      dependencies.resolveDnsCanary,
-    )
-    await fetchFailures.maybeSoftDeletePermanentFetchErrorForFetch({
+    if (await handleRssFetchRateLimitError(err, fetchHostnameId, feedUrl)) return []
+    await recordRssFetchHostnameFailure(err, fetchHostnameId, dependencies.resolveDnsCanary)
+    const softDeleted = await fetchFailures.maybeSoftDeletePermanentFetchErrorForFetch({
       error: err,
       feedUrl,
       rssFeedId,
       policy: rssFeed,
       fetchHostnameId,
     })
+    if (!softDeleted) await stampFetchOutcome(rssFeedId, { kind: 'error', isFinalAttempt })
     throw err
   }
   const persistFetchResult = (params: {
@@ -95,14 +102,12 @@ export async function fetchRssFeed(
     feedData?: Record<string, unknown> | null
     feedDataSha256?: Buffer | null
     redirectUrlId?: string | null
+    outcome?: FetchOutcome
   }) =>
     persistRssFeedCrawlAndMetadata({
       rssFeedId,
-      responseCode: params.responseCode,
-      headers: params.headers,
-      feedData: params.feedData,
-      feedDataSha256: params.feedDataSha256,
-      redirectUrlId: params.redirectUrlId,
+      currentMetadata: { etag: rssFeed.etag, lastModifiedAt: rssFeed.last_modified_at },
+      ...params,
     })
   if ('redirect' in data && data.redirect) {
     const action = await handleRssFeedRedirect({
@@ -114,7 +119,7 @@ export async function fetchRssFeed(
       persistFetchResult,
     })
     if (action.type === 'follow') {
-      return fetchRssFeed(rssFeedId, 0, action.url, hopCount + 1, dependencies)
+      return fetchRssFeed(rssFeedId, 0, action.url, hopCount + 1, dependencies, fetchOptions)
     }
     return []
   }
@@ -128,10 +133,7 @@ export async function fetchRssFeed(
     data.contentSha256 ??
     (data.responseCode === 304 ? (latestCrawl?.feed_data_sha256 ?? null) : null)
   if (parsedFeed == null || contentSha256 == null) {
-    await persistFetchResult({
-      responseCode: data.responseCode,
-      headers: data.headers,
-    })
+    await persistFetchResult({ responseCode: data.responseCode, headers: data.headers })
     return []
   }
   const feedUnchanged =
@@ -165,7 +167,6 @@ export async function fetchRssFeed(
     })
     return []
   }
-
   const [items] = await Promise.all([
     upsertRssFeedItems(rssFeedId, validItems, { redetectLanguage: languageChanged }),
     reclassifyRssFeedTypeIfNeeded(
@@ -180,6 +181,5 @@ export async function fetchRssFeed(
     feedData: shouldPersistFeedData ? parsedFeed : undefined,
     feedDataSha256: shouldPersistFeedData ? contentSha256 : undefined,
   })
-
   return items
 }

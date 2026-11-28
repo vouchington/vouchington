@@ -22,6 +22,7 @@ import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
 import { processFetchRssFeed, processRssFeedsDispatcher } from '../processors.mts'
 
 const TIER_5_SLA_MS = 3_600_000
+const ISOLATED_AS_OF = new Date('2012-04-01T00:00:00.000Z')
 
 async function ownedFetchJobs(feedIds: readonly string[]) {
   return (await readAllQueueJobs(background)).filter(
@@ -31,14 +32,18 @@ async function ownedFetchJobs(feedIds: readonly string[]) {
   )
 }
 
-async function dispatchOwnedPage(feedIds: string[], cursor: RssFeedDispatchCursor) {
+async function dispatchOwnedPage(
+  feedIds: string[],
+  cursor: RssFeedDispatchCursor,
+  asOf = ISOLATED_AS_OF,
+) {
   onTestFinished(async () => {
     await Promise.all((await ownedFetchJobs(feedIds)).map(job => job.remove()))
     await deleteRssFeedsByIds(feedIds)
   })
   const result = await processRssFeedsDispatcher({
     cursor,
-    asOf: new Date(),
+    asOf,
     limit: 5,
     rawBudget: 5,
   })
@@ -49,17 +54,18 @@ describe('processRssFeedsDispatcher', () => {
   it('returns { count: 0 } and enqueues nothing when no owned feed is due', async () => {
     const { firstId, secondId } = createTestUuidWindow()
     const feed = await insertTestRssFeedDirect({ id: firstId })
-    await updateRssFeedTiming(feed.id, new Date())
+    await updateRssFeedTiming(feed.id, ISOLATED_AS_OF)
 
     const { result, jobs } = await dispatchOwnedPage([feed.id], {
       lane: 5,
+      afterLastFetchedAt: null,
       afterId: uuidBefore(firstId),
       throughId: secondId,
     })
 
     expect(result).toEqual({
       count: 0,
-      rawRowsRead: 1,
+      rawRowsRead: 0,
       nextCursor: { lane: 6, afterId: '00000000-0000-0000-0000-000000000000', throughId: secondId },
     })
     expect(jobs).toEqual([])
@@ -75,6 +81,7 @@ describe('processRssFeedsDispatcher', () => {
 
     const { result, jobs } = await dispatchOwnedPage(feedIds, {
       lane: 5,
+      afterLastFetchedAt: null,
       afterId: uuidBefore(firstId),
       throughId: thirdId,
     })
@@ -96,10 +103,12 @@ describe('processRssFeedsDispatcher', () => {
     )
     const { firstId, secondId } = createTestUuidWindow()
     const feed = await insertTestRssFeedDirect({ id: firstId })
-    await updateRssFeedTiming(feed.id, new Date(Date.now() - 10 * 60_000))
+    const fetchedAt = new Date(ISOLATED_AS_OF.getTime() - 10 * 60_000)
+    await updateRssFeedTiming(feed.id, fetchedAt)
 
     const { result, jobs } = await dispatchOwnedPage([feed.id], {
       lane: 10,
+      afterLastFetchedAt: fetchedAt.toISOString(),
       afterId: uuidBefore(firstId),
       throughId: secondId,
     })
@@ -125,18 +134,18 @@ describe('processFetchRssFeed', () => {
       rss_feed_id: feed.id,
       item_count: 0,
     })
-    expect((await getRssFeedByIdToFetch(feed.id, { ttl: 0 }))!.last_fetched_at).toEqual(
-      lastFetchedAt,
-    )
+    const beforeSkip = await getRssFeedByIdToFetch(feed.id, { ttl: 0 })
+    expect(beforeSkip!.last_fetch_succeeded_at).toEqual(lastFetchedAt)
+    expect(beforeSkip!.last_fetch_failed_at).toBeNull()
 
-    // A one-minute ttl makes the feed due; the uncrawlable hostname stamps it without fetching.
+    // A one-minute ttl makes the feed due; the uncrawlable hostname stamps last_fetch_failed_at without moving last_fetch_succeeded_at.
     await expect(processFetchRssFeed(feed.id, 60_000)).resolves.toEqual({
       rss_feed_id: feed.id,
       item_count: 0,
     })
-    expect(
-      (await getRssFeedByIdToFetch(feed.id, { ttl: 0 }))!.last_fetched_at!.getTime(),
-    ).toBeGreaterThan(lastFetchedAt.getTime())
+    const afterSkip = await getRssFeedByIdToFetch(feed.id, { ttl: 0 })
+    expect(afterSkip!.last_fetch_succeeded_at).toEqual(lastFetchedAt)
+    expect(afterSkip!.last_fetch_failed_at!.getTime()).toBeGreaterThan(lastFetchedAt.getTime())
   })
   it('reports the number of items a real fetch returns', async () => {
     const hostname = `fetch-count-${randomUUID()}.example.com`

@@ -2,6 +2,8 @@ export const INGESTION_PAGE_SCENARIO_IDS = [
   'rss-feeds-to-fetch-tiered',
   'rss-feeds-to-fetch-fallback-page',
   'rss-feeds-to-fetch-fallback-tail',
+  'rss-feeds-to-fetch-fallback-backfill',
+  'rss-feeds-to-fetch-full-dispatch',
   'friend-facebook-sparse-raw-page',
   'friend-facebook-eligible-raw-page',
   'friend-x-sparse-raw-page',

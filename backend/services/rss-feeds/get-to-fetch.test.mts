@@ -82,6 +82,18 @@ describe('get-to-fetch', () => {
     ).rejects.toThrow('Invalid RSS dispatch lane')
   })
 
+  it('rejects an invalid dispatch cursor timestamp before querying', async () => {
+    await expect(
+      getRssFeedsToFetch({
+        cursor: {
+          lane: 5,
+          afterId: '00000000-0000-0000-0000-000000000000',
+          afterLastFetchedAt: 'not-a-timestamp',
+        },
+      }),
+    ).rejects.toThrow('Invalid RSS dispatch cursor timestamp')
+  })
+
   it.each([0, Number.NaN, 1.5])('rejects invalid physical page budget %s', rawBudget => {
     expect(() => getRssFeedsToFetch({ rawBudget })).toThrow(
       'RSS raw budget must be a positive safe integer',

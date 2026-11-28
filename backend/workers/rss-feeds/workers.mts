@@ -7,7 +7,7 @@ import {
   RSS_FEEDS_FETCH_JOB,
 } from '@queues/background/enqueues/rss-feeds-jobs'
 import { RSS_FEEDS_ORDERING } from '@queues/rss-feeds/config'
-import { getCrawlCapacityBudget } from '@services/rss-feeds'
+import { FAILING_DISPATCH_LANE, getCrawlCapacityBudget } from '@services/rss-feeds'
 import { processFetchRssFeed, processRssFeedsDispatcher } from './processors.mts'
 
 const enqueueRssContinuation = createBackgroundEnqueue(RSS_FEEDS_DISPATCH_JOB)
@@ -27,9 +27,13 @@ export const rssFeedsHandlers = [
       await job.updateData({ ...job.data, remainingBudget, asOf })
     }
     if (remainingBudget === 0) return { count: 0, rawRowsRead: 0 }
+    const lane = job.data.cursor?.lane ?? 1
     return processPagedDispatcher(job, {
       dispatcher: 'rss',
-      cursorKey: 'lane,id',
+      cursorKey:
+        lane === 5 || lane === FAILING_DISPATCH_LANE || lane === 10
+          ? 'lastFetchedAt,id'
+          : 'lane,id',
       target: background,
       targetName: 'background',
       readAndDispatch: async pageSize => {
@@ -56,6 +60,9 @@ export const rssFeedsHandlers = [
     const rssFeedId = job.data?.rssFeedId
     if (!rssFeedId) throw new Error('RSS feed job .rssFeedId is required')
     const ttl = job.data?.ttl
-    return processFetchRssFeed(rssFeedId, typeof ttl === 'number' ? ttl : undefined)
+    const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1)
+    return processFetchRssFeed(rssFeedId, typeof ttl === 'number' ? ttl : undefined, {
+      isFinalAttempt,
+    })
   }),
 ]

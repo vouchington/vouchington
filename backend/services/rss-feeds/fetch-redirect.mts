@@ -10,6 +10,7 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { isHttpError } from 'http-errors'
 import onError from '@modules/on-error'
+import type { FetchOutcome } from '@services/crawls/fetch-outcome'
 import type { CrawlerRssRedirect } from '@services/crawler-rss'
 import type { RssFeedToFetch } from './get-to-fetch.mts'
 import { disableAndHideSource } from './disable-and-hide-source.mts'
@@ -34,6 +35,7 @@ export async function handleRssFeedRedirect(params: {
     responseCode: number
     headers: { etag: string | null; lastModified: string | null }
     redirectUrlId?: string | null
+    outcome: FetchOutcome
   }) => Promise<void>
 }): Promise<RedirectHandleResult> {
   const { rssFeedId, rssFeed, data, hopCount, maxHops, persistFetchResult } = params
@@ -42,19 +44,31 @@ export async function handleRssFeedRedirect(params: {
     onError(
       new Error(`RSS feed redirect hop limit exceeded for feed ${rssFeedId} (${rssFeed.url})`),
     )
-    await persistFetchResult({ responseCode: data.responseCode, headers: data.headers })
+    await persistFetchResult({
+      responseCode: data.responseCode,
+      headers: data.headers,
+      outcome: { kind: 'skipped' },
+    })
     return { type: 'done' }
   }
 
   const resolvedUrl = safeResolveUrl(data.redirect.location, rssFeed.url)
   if (!resolvedUrl) {
-    await persistFetchResult({ responseCode: data.responseCode, headers: data.headers })
+    await persistFetchResult({
+      responseCode: data.responseCode,
+      headers: data.headers,
+      outcome: { kind: 'skipped' },
+    })
     return { type: 'done' }
   }
 
   if (resolvedUrl === rssFeed.url) {
     // Self-redirect: record and stop
-    await persistFetchResult({ responseCode: data.responseCode, headers: data.headers })
+    await persistFetchResult({
+      responseCode: data.responseCode,
+      headers: data.headers,
+      outcome: { kind: 'skipped' },
+    })
     return { type: 'done' }
   }
 
@@ -67,15 +81,20 @@ export async function handleRssFeedRedirect(params: {
   )
   if (!targetUrl) {
     // Blocked host: record redirect status without following
-    await persistFetchResult({ responseCode: data.responseCode, headers: data.headers })
+    await persistFetchResult({
+      responseCode: data.responseCode,
+      headers: data.headers,
+      outcome: { kind: 'skipped' },
+    })
     return { type: 'done' }
   }
 
-  // Record the crawl with redirect_url_id
+  // Record the crawl with redirect_url_id without stamping success or failure yet.
   await persistFetchResult({
     responseCode: data.responseCode,
     headers: data.headers,
     redirectUrlId: targetUrl.id,
+    outcome: { kind: 'redirect_hop' },
   })
 
   if (data.redirect.isPermanent) {

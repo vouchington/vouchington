@@ -7,6 +7,7 @@ export type RssFeedCrawlNumberField =
   | 'tier3_sla_ms'
   | 'tier4_sla_ms'
   | 'tier5_sla_ms'
+  | 'retry_interval_ms'
   | 'capacity_budget'
 
 const DEFAULTS = {
@@ -16,6 +17,7 @@ const DEFAULTS = {
   tier3_sla_ms: 60 * 60_000,
   tier4_sla_ms: 2 * 60 * 60_000,
   tier5_sla_ms: 24 * 60 * 60_000,
+  retry_interval_ms: 60 * 60_000,
   capacity_budget: 100,
 }
 
@@ -25,6 +27,7 @@ export const RSS_FEED_CRAWL_MIN_VALUES: Record<RssFeedCrawlNumberField, number> 
   tier3_sla_ms: 1,
   tier4_sla_ms: 1,
   tier5_sla_ms: 1,
+  retry_interval_ms: 1,
   capacity_budget: 1,
 }
 
@@ -34,6 +37,7 @@ export const RSS_FEED_CRAWL_MAX_VALUES: Record<RssFeedCrawlNumberField, number> 
   tier3_sla_ms: 7 * 24 * 60 * 60_000,
   tier4_sla_ms: 7 * 24 * 60 * 60_000,
   tier5_sla_ms: 7 * 24 * 60 * 60_000,
+  retry_interval_ms: 7 * 24 * 60 * 60_000,
   capacity_budget: 10_000,
 }
 
@@ -46,6 +50,7 @@ export const rssFeedCrawlConfig = new DynamicConfig({
     tier3_sla_ms: 'number',
     tier4_sla_ms: 'number',
     tier5_sla_ms: 'number',
+    retry_interval_ms: 'number',
     capacity_budget: 'number',
   },
   defaultFields: DEFAULTS,
@@ -62,6 +67,11 @@ export function getTierSlaMs(tier: RssFeedCrawlTier): number {
   const v = fields[key]
   const defaultVal = DEFAULTS[key] as number
   return isValidNumberField(key, v) ? v : defaultVal
+}
+
+export function getFetchRetryIntervalMs(): number {
+  const v = rssFeedCrawlConfig.getFields().retry_interval_ms
+  return isValidNumberField('retry_interval_ms', v) ? v : DEFAULTS.retry_interval_ms
 }
 
 export function getCrawlCapacityBudget(): number {

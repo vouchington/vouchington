@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS rss_feeds (
   -- for pulling the feed
   last_modified_at TIMESTAMPTZ,
   etag TEXT,
-  last_fetched_at TIMESTAMPTZ,
 
   -- canonical redirect chain: set when this feed is a 301/308 redirect to another feed
   canonical_rss_feed_id UUID REFERENCES rss_feeds ON DELETE SET NULL,
@@ -146,7 +145,6 @@ COMMENT ON COLUMN rss_feeds.topic_id IS 'The topic that owns this feed.';
 COMMENT ON COLUMN rss_feeds.title IS 'Display title of the feed.';
 COMMENT ON COLUMN rss_feeds.last_modified_at IS 'HTTP Last-Modified header from the last successful fetch.';
 COMMENT ON COLUMN rss_feeds.etag IS 'HTTP ETag header from the last successful fetch.';
-COMMENT ON COLUMN rss_feeds.last_fetched_at IS 'When the feed was last fetched (successful or not).';
 COMMENT ON COLUMN rss_feeds.feed_type IS 'Content type of the feed: article, podcast, video, or mixed.';
 COMMENT ON COLUMN rss_feeds.is_enabled IS 'Whether this feed is enabled for fetching. Denormalized from rss_feed_setting_changes for query performance; kept in sync by trigger_project_rss_feed_enablement.';
 COMMENT ON COLUMN rss_feeds.is_discoverable IS 'Whether this feed is publicly discoverable. Denormalized from rss_feed_setting_changes for query performance; kept in sync by trigger_project_rss_feed_discoverability.';
@@ -154,6 +152,56 @@ COMMENT ON COLUMN rss_feeds.canonical_rss_feed_id IS 'The canonical feed this fe
 COMMENT ON COLUMN rss_feeds.should_ignore_robots_txt IS 'Whether robots.txt allow/disallow rules are ignored for fetching this RSS feed. NULL = inherit from hostname then global DynamicConfig. TRUE = always ignore. FALSE = always enforce.';
 COMMENT ON COLUMN rss_feeds.unreliable_status_codes IS 'RSS feed fetch HTTP status codes that should retry instead of soft-deleting this feed. NULL = inherit from hostname. Empty array = no unreliable statuses, overriding hostname defaults.';
 COMMENT ON COLUMN rss_feeds.declared_language IS 'Feed-declared language from <language> or xml:lang element';
+
+-- Current fetch timing is isolated from rss_feeds so fetch timestamp writes never churn
+-- rss_feeds's GIN search/trigram indexes, B-tree indexes, or update triggers.
+-- Row presence means the feed is live and enabled; re-enabling starts with NULL timestamps.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS rss_feed_fetch_states (
+  rss_feed_id UUID PRIMARY KEY REFERENCES rss_feeds (id) ON DELETE CASCADE,
+  last_fetch_succeeded_at TIMESTAMPTZ,
+  last_fetch_failed_at TIMESTAMPTZ
+) WITH (fillfactor = 90);
+COMMENT ON TABLE rss_feed_fetch_states IS 'Current fetch timing for live enabled RSS feeds. Row presence means the feed is eligible for dispatch; disabling or soft-deleting removes the row.';
+COMMENT ON COLUMN rss_feed_fetch_states.rss_feed_id IS 'Live enabled RSS feed owning this state; also the stable tie breaker for dispatch cursors.';
+COMMENT ON COLUMN rss_feed_fetch_states.last_fetch_succeeded_at IS 'When the feed last returned content (including HTTP 304); exposed as last_fetched_at in view_rss_feeds.';
+COMMENT ON COLUMN rss_feed_fetch_states.last_fetch_failed_at IS 'When the feed last failed on its final fetch attempt or was skipped by crawl policy (not crawlable, Web Risk 400, robots disallow).';
+
+-- Seek live enabled healthy feeds oldest-fetched first for due and backfill walks.
+-- INCLUDE enables Index Only Scans on the narrow state table in both custom and generic plans.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_rss_feed_fetch_states__healthy_fetch_due
+ON rss_feed_fetch_states (COALESCE(last_fetch_succeeded_at, '-infinity'::timestamptz) ASC, rss_feed_id ASC)
+INCLUDE (last_fetch_succeeded_at, last_fetch_failed_at)
+WHERE last_fetch_failed_at IS NULL OR last_fetch_failed_at < last_fetch_succeeded_at;
+
+-- Seek live enabled failing feeds oldest-failed first for retry walks.
+-- INCLUDE enables Index Only Scans on the narrow state table so custom plans never fall back to Bitmap + Sort.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_rss_feed_fetch_states__failing_fetch_due
+ON rss_feed_fetch_states (last_fetch_failed_at ASC, rss_feed_id ASC)
+INCLUDE (last_fetch_succeeded_at)
+WHERE last_fetch_failed_at IS NOT NULL
+  AND (last_fetch_succeeded_at IS NULL OR last_fetch_failed_at >= last_fetch_succeeded_at);
+
+CREATE OR REPLACE FUNCTION fn_sync_rss_feed_fetch_state()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.is_enabled = TRUE AND NEW.deleted_at IS NULL THEN
+    INSERT INTO rss_feed_fetch_states (rss_feed_id)
+    VALUES (NEW.id)
+    ON CONFLICT (rss_feed_id) DO NOTHING;
+  ELSIF TG_OP = 'UPDATE' THEN
+    DELETE FROM rss_feed_fetch_states
+    WHERE rss_feed_id = NEW.id;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+COMMENT ON FUNCTION fn_sync_rss_feed_fetch_state() IS 'Keeps rss_feed_fetch_states row presence synchronized with live enabled RSS feeds; disabling or soft-deleting removes the row and re-enabling starts with NULL timestamps.';
+CREATE TRIGGER trigger_sync_rss_feed_fetch_state
+AFTER INSERT OR UPDATE OF is_enabled, deleted_at ON rss_feeds
+FOR EACH ROW EXECUTE FUNCTION fn_sync_rss_feed_fetch_state();
 
 -- The feed projection on urls is updated for direct feed writes as well as
 -- enablement changes projected from rss_feed_setting_changes.

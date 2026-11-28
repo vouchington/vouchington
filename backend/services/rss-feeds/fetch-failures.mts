@@ -47,8 +47,8 @@ export async function maybeSoftDeletePermanentFetchErrorForFetch({
   rssFeedId: string
   policy: RssFeedFetchFailurePolicy | null | undefined
   fetchHostnameId: string
-}): Promise<void> {
-  await maybeSoftDeletePermanentFetchError({
+}): Promise<boolean> {
+  return maybeSoftDeletePermanentFetchError({
     error,
     feedUrl,
     rssFeedId,
@@ -66,10 +66,10 @@ async function maybeSoftDeletePermanentFetchError({
   feedUrl: string
   rssFeedId: string
   unreliableStatusCodes?: readonly number[]
-}): Promise<void> {
-  if (!isPermanentRssFetchError(error, { unreliableStatusCodes })) return
+}): Promise<boolean> {
+  if (!isPermanentRssFetchError(error, { unreliableStatusCodes })) return false
   const softDeleted = await softDeleteRssFeedById(rssFeedId)
-  if (!softDeleted) return
+  if (!softDeleted) return false
   const cause = error instanceof Error ? error : new Error(String(error))
   const reportError = new Error(`RSS feed permanently broken and soft-deleted: ${feedUrl}`, {
     cause,
@@ -79,4 +79,5 @@ async function maybeSoftDeletePermanentFetchError({
     tags: { operation: 'fetchRssFeed.permanentError' },
   })
   onError(reportError)
+  return true
 }

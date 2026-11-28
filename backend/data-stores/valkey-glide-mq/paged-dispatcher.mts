@@ -7,9 +7,19 @@ import type { Job, JobOptions, Queue } from 'glide-mq'
 import { processRetainedSweep } from './retained-sweep.mts'
 import { getPagedDispatchLimit, type PagedDispatcher } from './paged-dispatcher-config.mts'
 
-/** Reviewed immutable unique keysets; a timestamp alone or updated_at is never a cursor. */
-type DispatchCursorKey = 'id' | 'lane,id' | 'remoteActorId' | 'userId'
-const CURSOR_KEYS: readonly string[] = ['id', 'lane,id', 'remoteActorId', 'userId']
+/**
+ * Reviewed cursor keys: cursor keys are unique and never move backward. A forward-only timestamp
+ * qualifies only when advancing it takes the row out of the reader's filter; the RSS dispatcher's
+ * healthy Tier 5 and failing retry lanes (`lastFetchedAt,id`) are the one user.
+ */
+type DispatchCursorKey = 'id' | 'lane,id' | 'lastFetchedAt,id' | 'remoteActorId' | 'userId'
+const CURSOR_KEYS: readonly string[] = [
+  'id',
+  'lane,id',
+  'lastFetchedAt,id',
+  'remoteActorId',
+  'userId',
+]
 
 export const PAGED_DISPATCH_OPTIONS = {
   attempts: 2_147_483_647,

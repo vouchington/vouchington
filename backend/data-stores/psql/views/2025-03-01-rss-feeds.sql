@@ -10,7 +10,7 @@ CREATE OR REPLACE VIEW view_rss_feeds AS
       current_state.is_discoverable,
       rss_feeds.etag,
       rss_feeds.last_modified_at,
-      rss_feeds.last_fetched_at,
+      fetch_state.last_fetch_succeeded_at AS last_fetched_at,
       rss_feeds.feed_type,
       rss_feeds.canonical_rss_feed_id,
       json_build_object(
@@ -90,6 +90,8 @@ CREATE OR REPLACE VIEW view_rss_feeds AS
       ON topic_hostname.id = view_embedded_topics.hostname_id
     JOIN view_rss_feed_current_states current_state
       ON current_state.rss_feed_id = rss_feeds.id
+    LEFT JOIN rss_feed_fetch_states AS fetch_state
+      ON fetch_state.rss_feed_id = rss_feeds.id
     LEFT JOIN LATERAL (
       SELECT topics.id, topics.slug, topics.name, topics.topic_type
       FROM relation__topic__publisher_type__topic relation

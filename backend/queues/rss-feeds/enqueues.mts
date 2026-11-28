@@ -31,9 +31,9 @@ const enqueueBulkFetchRssFeedJobs = createBackgroundBulkEnqueue(
       // `simple` dedup skips a feed while its fetch job is waiting, active, or retrying and admits
       // it again once that job completes or fails, so a backlogged feed is queued once, not once
       // per dispatch tick. The SLA flows to the worker as job.data.ttl and is enforced separately
-      // by the worker's last_fetched_at staleness check (getRssFeedByIdToFetch with job.data.ttl).
-      // A failed due crawl never updates last_fetched_at, so the next dispatch tick re-adds it
-      // once its job has failed. A requested fetch keeps its own key so a low-priority backlog job
+      // by the worker's staleness check (getRssFeedByIdToFetch with job.data.ttl).
+      // A failed due crawl stamps last_fetch_failed_at on its final attempt so the failing lane
+      // retries it on retry_interval_ms. A requested fetch keeps its own key so a low-priority backlog job
       // never swallows it; repeated requests still collapse while one is queued.
       ...(data.skipDeduplication
         ? {}

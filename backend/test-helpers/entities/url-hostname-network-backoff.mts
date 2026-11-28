@@ -43,6 +43,29 @@ export async function expireTestHostnameNetworkBackoff(hostnameId: string): Prom
   `)
 }
 
+export async function getTestHostnameRateLimitedUntil(hostnameId: string): Promise<Date | null> {
+  const { rows } = await write<{
+    rate_limited_until: Date | null
+  }>(sql`/* getTestHostnameRateLimitedUntil */
+    SELECT rate_limited_until
+    FROM url_hostnames
+    WHERE id = ${hostnameId}
+    LIMIT 1
+  `)
+  return rows[0]?.rate_limited_until ?? null
+}
+
+export async function setTestHostnameRateLimitedUntil(
+  hostnameId: string,
+  rateLimitedUntil: Date | null,
+): Promise<void> {
+  await write(sql`/* setTestHostnameRateLimitedUntil */
+    UPDATE url_hostnames
+    SET rate_limited_until = ${rateLimitedUntil}
+    WHERE id = ${hostnameId}
+  `)
+}
+
 /** Opens or advances a backoff in a competing session before the reset can commit. */
 export function changeTestBackoffDuringReset(
   hostnameId: string,

@@ -7,6 +7,7 @@ import { updateRssFeedById } from '../update.mts'
 import {
   createTestTopic,
   getRssFeedDeletedAt,
+  getTestRssFeedFetchTimestamps,
   updateRssFeedTiming,
   updateUrlHostnameBlocked,
   WEB_PROVENANCE,
@@ -66,7 +67,7 @@ describe('fetch.generated', () => {
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { is_enabled: true, last_fetched_at: true })
+    await updateRssFeedTiming(feed.id, new Date())
 
     // Should skip fetching before attempting to reach the network
     await expect(fetchRssFeed(feed.id)).resolves.toEqual([])
@@ -90,7 +91,10 @@ describe('fetch.generated', () => {
 
     await expect(fetchRssFeed(feed.id, 0)).resolves.toEqual([])
     const updatedFeed = await getRssFeedById(feed.id)
-    expect(updatedFeed.last_fetched_at).not.toBeNull()
+    expect(updatedFeed.last_fetched_at).toBeNull()
+    const timestamps = await getTestRssFeedFetchTimestamps(feed.id)
+    expect(timestamps?.last_fetch_succeeded_at).toBeNull()
+    expect(timestamps?.last_fetch_failed_at).toBeInstanceOf(Date)
   })
 
   it('fetchRssFeed returns empty array when lastFetchedAt is in the future (clock skew edge case)', async () => {
@@ -122,7 +126,7 @@ describe('fetch.generated', () => {
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
-    await updateRssFeedById(feed.id, { is_enabled: true, last_fetched_at: true })
+    await updateRssFeedTiming(feed.id, new Date())
 
     // The live robots retry budget and the feed client timeout both outlast this project's
     // test deadline. Inject those edges and assert the forced fetch still requests this URL.

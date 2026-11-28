@@ -8,7 +8,6 @@ export type UpdateRssFeedChanges = {
   discoverable?: boolean
   etag?: string | null
   last_modified_at?: Date | true | null
-  last_fetched_at?: Date | true
   feed_type?: 'article' | 'podcast' | 'video' | 'mixed'
   declared_language?: string | null
   should_ignore_robots_txt?: boolean | null

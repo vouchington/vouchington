@@ -22,9 +22,9 @@ import { rssFeedsHandlers } from '../workers.mts'
 type RssFeedsDispatchData = NonNullable<typeof RSS_FEEDS_DISPATCH_JOB.data>
 
 describe('rss feed sparse lane', () => {
-  // no-mistakes-timeout-reason: four real queue admissions each wait on the glide event deadline, after three owned feeds and their timing rows are written
+  // no-mistakes-timeout-reason: two real queue admissions each wait on the glide event deadline, after three owned feeds and their timing rows are written
   it(
-    'retains the crawl budget across empty pages and continues to the next lane',
+    'skips fresh tier-5 feeds directly and continues to backfill when exhausted',
     { timeout: 25_000 },
     async () => {
       const { firstId, secondId, thirdId } = createTestUuidWindow()
@@ -38,12 +38,13 @@ describe('rss feed sparse lane', () => {
         )
         ownedFeedIds.push(...feeds.map(feed => feed.id))
         const ids = ownedFeedIds.toSorted()
-        const asOf = new Date()
+        const asOf = new Date('2012-05-01T00:00:00.000Z')
         const asOfIso = asOf.toISOString()
+        const dueAt = new Date(asOf.getTime() - 25 * 60 * 60_000)
         await Promise.all([
           updateRssFeedTiming(ids[0]!, asOf),
           updateRssFeedTiming(ids[1]!, asOf),
-          updateRssFeedTiming(ids[2]!, new Date(asOf.getTime() - 25 * 60 * 60_000)),
+          updateRssFeedTiming(ids[2]!, dueAt),
         ])
         restorePage = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
           rss_page_size: 1,
@@ -64,6 +65,7 @@ describe('rss feed sparse lane', () => {
           {
             cursor: {
               lane: 5,
+              afterLastFetchedAt: null,
               afterId: uuidBefore(ids[0]!),
               throughId: ids[2],
             },
@@ -75,49 +77,31 @@ describe('rss feed sparse lane', () => {
         if (!first) throw new Error('RSS dispatcher job admission')
         jobs.push(first)
 
-        const capturePage = (pageJob: Job<never>, matches: (row: Job) => boolean) =>
-          captureRssJobs(
-            () => dispatcher.handle(pageJob),
-            1,
-            matches,
-            row => jobs.push(row),
-          )
-        const expectFreshPage = async (pageJob: Job<never>, expectedAfterId: string) => {
-          const admission = await capturePage(
-            pageJob,
-            row =>
-              row.name === RSS_FEEDS_DISPATCH_JOB.name &&
-              (row.data as RssFeedsDispatchData).asOf === asOfIso &&
-              (row.data as RssFeedsDispatchData).cursor?.afterId === expectedAfterId,
-          )
-          const next = admission.jobs[0]
-          if (!next) throw new Error('fresh raw page must admit no feed')
-          expect((admission.result as { count: number }).count).toBe(0)
-          expect(next.name).toBe(RSS_FEEDS_DISPATCH_JOB.name)
-          expect((next.data as RssFeedsDispatchData).remainingBudget).toBe(1)
-          expect((next.data as RssFeedsDispatchData).cursor?.lane).toBe(5)
-          expect((next.data as RssFeedsDispatchData).cursor?.afterId).toBe(expectedAfterId)
-          return next
-        }
-
-        const secondPage = await expectFreshPage(first as Job<never>, ids[0]!)
-        const duePageJob = await expectFreshPage(secondPage as Job<never>, ids[1]!)
-        const dueAdmission = await capturePage(
-          duePageJob as Job<never>,
+        // Fresh feeds ids[0] and ids[1] are skipped by the index; page 1 dispatches ids[2] directly.
+        const dueAdmission = await captureRssJobs(
+          () => dispatcher.handle(first as Job<never>),
+          1,
           row =>
             row.name === RSS_FEEDS_FETCH_JOB.name &&
             ids.includes((row.data as { rssFeedId: string }).rssFeedId),
+          row => jobs.push(row),
         )
         const dueJob = dueAdmission.jobs[0]
         if (!dueJob) throw new Error('due feed admission')
-        expect((dueAdmission.result as { count: number }).count).toBe(1)
+        expect((dueAdmission.result as { count: number; rawRowsRead: number }).count).toBe(1)
+        expect((dueAdmission.result as { count: number; rawRowsRead: number }).rawRowsRead).toBe(1)
         expect(dueJob.name).toBe(RSS_FEEDS_FETCH_JOB.name)
         expect((dueJob.data as { rssFeedId: string }).rssFeedId).toBe(ids[2])
 
         const emptyTail = await background.add(
           RSS_FEEDS_DISPATCH_JOB.name,
           {
-            cursor: { lane: 5, afterId: ids[2]!, throughId: ids[2] },
+            cursor: {
+              lane: 5,
+              afterLastFetchedAt: dueAt.toISOString(),
+              afterId: ids[2]!,
+              throughId: ids[2],
+            },
             asOf: asOfIso,
             remainingBudget: 1,
           },
@@ -137,7 +121,7 @@ describe('rss feed sparse lane', () => {
         expect((tail.result as { count: number }).count).toBe(0)
         const laneSix = tail.jobs[0]
         if (!laneSix) {
-          throw new Error('exhausted lane must continue to backfill with capacity retained')
+          throw new Error('exhausted lane 5 must continue to failing lane 6 with capacity retained')
         }
         expect(laneSix.name).toBe(RSS_FEEDS_DISPATCH_JOB.name)
         expect((laneSix.data as RssFeedsDispatchData).cursor?.lane).toBe(6)

@@ -55,6 +55,32 @@ describe('paged dispatcher', () => {
     }
   })
 
+  it('accepts the reviewed lastFetchedAt,id cursor key for RSS Tier 5', async () => {
+    const prefix = `${workerQueuePrefix}:cursor-ok:${randomUUID()}`
+    const queue = new Queue<Record<string, never>>(`cursor-ok-${randomUUID()}`, {
+      connection: workerQueueConnection,
+      prefix,
+    })
+    try {
+      const job = await queue.add('page', {})
+      if (!job) throw new Error('Expected dispatcher admission')
+      await expect(
+        processPagedDispatcher(job, {
+          dispatcher: 'rss',
+          cursorKey: 'lastFetchedAt,id',
+          target: queue,
+          targetName: 'background',
+          targetPrefix: prefix,
+          readAndDispatch: async () => ({ result: 1 }),
+          enqueueNext: (data, opts) => queue.add('page', data, opts),
+        }),
+      ).resolves.toBe(1)
+    } finally {
+      await queue.obliterate({ force: true })
+      await queue.close()
+    }
+  })
+
   it.each(['updated_at', 'created_at'])(
     'rejects a non-unique or mutable %s cursor before dispatch',
     async cursorKey => {

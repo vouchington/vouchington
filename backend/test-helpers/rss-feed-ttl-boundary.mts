@@ -10,10 +10,11 @@ export async function readTestRssFeedAtTtlOffset(
 ): Promise<RssFeedToFetch | null> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* readTestRssFeedAtTtlOffset */
-    UPDATE rss_feeds
-    SET last_fetched_at = CURRENT_TIMESTAMP -
-      (${ttlMs}::bigint - ${offsetMs}::bigint) * INTERVAL '1 millisecond'
-    WHERE id = ${feedId}
+    UPDATE rss_feed_fetch_states
+    SET last_fetch_succeeded_at = CURRENT_TIMESTAMP -
+      (${ttlMs}::bigint - ${offsetMs}::bigint) * INTERVAL '1 millisecond',
+      last_fetch_failed_at = NULL
+    WHERE rss_feed_id = ${feedId}
   `)
   return await getRssFeedByIdToFetch(feedId, { ttl: ttlMs, query: transaction })
 }

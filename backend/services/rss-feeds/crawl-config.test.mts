@@ -2,6 +2,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   getCrawlCapacityBudget,
+  getFetchRetryIntervalMs,
   getTierSlaMs,
   isRobotsTxtIgnoredForFeeds,
   rssFeedCrawlConfig,
@@ -80,6 +81,42 @@ describe('crawl-config', () => {
       })
       expect(getCrawlCapacityBudget()).toBe(100)
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 100 })
+    })
+  })
+
+  describe('getFetchRetryIntervalMs', () => {
+    it('returns 1 hour by default', () => {
+      expect(getFetchRetryIntervalMs()).toBe(60 * 60_000)
+    })
+
+    it('returns overridden value when valid', () => {
+      const restore = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        retry_interval_ms: 15 * 60_000,
+      })
+      try {
+        expect(getFetchRetryIntervalMs()).toBe(15 * 60_000)
+      } finally {
+        restore()
+      }
+    })
+
+    it('falls back to default when retry_interval_ms is invalid or above max', () => {
+      const restoreLow = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        retry_interval_ms: 0,
+      })
+      try {
+        expect(getFetchRetryIntervalMs()).toBe(60 * 60_000)
+      } finally {
+        restoreLow()
+      }
+      const restoreHigh = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+        retry_interval_ms: 604_800_001,
+      })
+      try {
+        expect(getFetchRetryIntervalMs()).toBe(60 * 60_000)
+      } finally {
+        restoreHigh()
+      }
     })
   })
 })
