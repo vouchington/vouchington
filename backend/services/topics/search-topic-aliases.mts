@@ -26,7 +26,7 @@ export const searchTopicAliases = async ({
 
   if (prefixQuery) {
     filters.push(
-      `LOWER(topic_aliases.alias) ILIKE $${values.push(`${escapeLikePattern(prefixQuery.trim().toLowerCase())}%`)} ESCAPE '\\'`,
+      `topic_aliases.alias LIKE $${values.push(`${escapeLikePattern(prefixQuery.trim().toLowerCase())}%`)} ESCAPE '\\'`,
     )
   }
   if (textQuery) {

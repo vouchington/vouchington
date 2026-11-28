@@ -41,6 +41,36 @@ describe('searchTopicAliases - merged topic filter', () => {
       prefixQuery: `${key}${symbol}`,
     })
     expect(results.map(result => result.alias)).toEqual([literal])
+
+    const { results: withoutTopicId } = await searchTopicAliases({
+      prefixQuery: `${key}${symbol}`,
+    })
+    expect(withoutTopicId.map(result => result.alias)).toEqual([literal])
+  })
+
+  it('matches mixed-case prefix queries in ascending alias order with cursor pagination', async () => {
+    const topic = await createTestTopic()
+    const key = `mixcase-${crypto.randomUUID()}`
+    const expected = [`${key}-a`, `${key}-b`, `${key}-c`]
+    await createTopicAliases(topic.id, [...expected, `other-${key}`])
+
+    const mixedPrefix = `  MiXcAsE-${key.slice('mixcase-'.length).toUpperCase()}-  `
+    const all = await searchTopicAliases({ prefixQuery: mixedPrefix, limit: 10 })
+    expect(all.results.map(result => result.alias)).toEqual(expected)
+    expect(all.hasNextPage).toBe(false)
+
+    const page1 = await searchTopicAliases({ prefixQuery: mixedPrefix, limit: 2 })
+    expect(page1.results.map(result => result.alias)).toEqual(expected.slice(0, 2))
+    expect(page1.hasNextPage).toBe(true)
+    expect(page1.endAlias).toBe(expected[1])
+
+    const page2 = await searchTopicAliases({
+      prefixQuery: mixedPrefix,
+      limit: 2,
+      after: page1.endAlias!,
+    })
+    expect(page2.results.map(result => result.alias)).toEqual(expected.slice(2))
+    expect(page2.hasNextPage).toBe(false)
   })
 
   it('returns aliases for active topics', async () => {

@@ -49,6 +49,27 @@ export async function runTopicAliasSearchScenarios(): Promise<void> {
       searchTopicAliases({ prefixQuery: 'seed', limit: 25, after: firstAliasPage.endAlias! }),
     )
   }
+  registerScenarioContract('search-topic-aliases-selective-prefix', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_topic_aliases__alias__text_pattern_ops', 'topic_aliases_alias_key'],
+        anyOf: true,
+      },
+      { kind: 'usesIndexes', indexes: ['topics_pkey'] },
+      { kind: 'noSeqScan', relation: 'topic_aliases' },
+      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
+      { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
+    ],
+  })
+  await runAndCapture('search-topic-aliases-selective-prefix', async () => {
+    const page = await searchTopicAliases({ prefixQuery: 'seed-alias-199', limit: 25 })
+    if (page.results.length !== 11 || page.hasNextPage) {
+      throw new Error(
+        `Expected 11 selective alias matches for seed-alias-199, got ${page.results.length}`,
+      )
+    }
+  })
   registerScenarioContract('search-topic-aliases-unfiltered', {
     expectations: [
       {

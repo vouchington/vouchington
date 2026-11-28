@@ -135691,13 +135691,13 @@
         "idx_topic_aliases__alias__text_pattern_ops": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_aliases__alias__text_pattern_ops ON public.topic_aliases USING btree (lower(alias) text_pattern_ops)",
+          "definition": "CREATE INDEX idx_topic_aliases__alias__text_pattern_ops ON public.topic_aliases USING btree (alias text_pattern_ops)",
           "includedColumns": [],
           "keys": [
             {
-              "column": null,
+              "column": "alias",
               "descending": false,
-              "expression": "lower(alias)",
+              "expression": "alias",
               "nullsFirst": false,
               "opclass": "text_pattern_ops"
             }
@@ -144662,26 +144662,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_topics__name__text_pattern_ops": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__name__text_pattern_ops ON public.topics USING btree (lower(name) text_pattern_ops)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": null,
-              "descending": false,
-              "expression": "lower(name)",
-              "nullsFirst": false,
-              "opclass": "text_pattern_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_topics__name_trgm": {
           "accessMethod": "gist",
           "constraintBacked": false,
@@ -144774,26 +144754,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_topics__slug__text_pattern_ops": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__slug__text_pattern_ops ON public.topics USING btree (slug text_pattern_ops)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "slug",
-              "descending": false,
-              "expression": "slug",
-              "nullsFirst": false,
-              "opclass": "text_pattern_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_topics__slug_trgm": {
