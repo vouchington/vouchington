@@ -1,7 +1,6 @@
-import { setTimeout as delay } from 'node:timers/promises'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { afterPostgresTransactionQueryForTest } from './injected-postgres-transactions.mts'
+import { withTestOwnedPostgresWait } from './postgres-client-lock-observer.mts'
+import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
 /**
  * Hold the first transaction open immediately after `openReview` runs until a second connection
@@ -12,7 +11,9 @@ export async function raceConcurrentRepeatInfringerOpenReviewsForTest<Result>(
   first: () => Promise<Result>,
   second: () => Promise<Result>,
 ): Promise<{ first: Result; second: Result }> {
-  let contender: Promise<Result> | undefined
+  const firstReady = Promise.withResolvers<number>()
+  const releaseFirst = Promise.withResolvers<void>()
+  const pending: Promise<unknown>[] = []
   let restore: (() => void) | undefined
   restore = afterPostgresTransactionQueryForTest(
     '/* syncCopyrightRepeatInfringerIncidents:openReview */',
@@ -20,49 +21,49 @@ export async function raceConcurrentRepeatInfringerOpenReviewsForTest<Result>(
     async transaction => {
       restore?.()
       restore = undefined
-      const { rows: pidRows } = await transaction<{ pid: number }>(sql`
-        /* raceConcurrentRepeatInfringerOpenReviewsForTest:pid */
-        SELECT pg_backend_pid() AS pid
-      `)
-      const firstPid = pidRows[0]?.pid
-      if (firstPid === undefined) throw new Error('Expected backend pid for first openReview')
-      let secondOutcome: PromiseSettledResult<Result> | undefined
-      contender = second()
-      void contender
-        .then(value => {
-          secondOutcome = { status: 'fulfilled', value }
-        })
-        .catch((err: unknown) => {
-          secondOutcome = { status: 'rejected', reason: err }
-        })
-      const deadline = performance.now() + 2_000
-      while (performance.now() < deadline) {
-        if (secondOutcome) {
-          if (secondOutcome.status === 'rejected') throw secondOutcome.reason
-          throw new Error('Second sync completed without blocking on first openReview')
-        }
-        // Query the primary pool: pg_stat_activity on a read replica does not show primary write locks.
-        const { rows } = await write<{ pid: number }>(sql`
-          /* raceConcurrentRepeatInfringerOpenReviewsForTest:waitBlocked */
-          SELECT waiting.pid
-          FROM pg_stat_activity waiting
-          WHERE waiting.wait_event_type = 'Lock'
-            AND waiting.query LIKE '%syncCopyrightRepeatInfringerIncidents:openReview%'
-            AND ${firstPid} = ANY(pg_blocking_pids(waiting.pid))
-          LIMIT 1
-        `)
-        if (rows.length > 0) return
-        await delay(10)
-      }
-      throw new Error('Timed out waiting for second sync to block on openReview')
+      firstReady.resolve(await getTestPostgresBackendProcessId(transaction))
+      await releaseFirst.promise
     },
   )
   try {
-    const firstResult = await first()
-    if (!contender) throw new Error('First sync did not execute openReview')
-    return { first: firstResult, second: await contender }
+    const firstPromise = first()
+    pending.push(firstPromise)
+    const firstSettled = Promise.allSettled([firstPromise])
+    const holderProcessId = await Promise.race([
+      firstReady.promise,
+      firstSettled.then(([result]) => {
+        if (result?.status === 'rejected') throw result.reason
+        throw new Error('First sync did not execute openReview')
+      }),
+    ])
+    const secondResult = await withTestOwnedPostgresWait(
+      {
+        holderProcessId,
+        pool: 'write',
+        lock: { kind: 'transaction' },
+        queryMarker: 'syncCopyrightRepeatInfringerIncidents:openReview',
+        releaseHolder: async () => {
+          releaseFirst.resolve()
+          await firstSettled
+        },
+      },
+      async waitForLock => {
+        const secondPromise = second()
+        pending.push(secondPromise)
+        const secondSettled = Promise.allSettled([secondPromise])
+        await waitForLock(secondPromise)
+        releaseFirst.resolve()
+        const [outcome] = await secondSettled
+        if (outcome.status === 'rejected') throw outcome.reason
+        return outcome.value
+      },
+    )
+    const [firstOutcome] = await firstSettled
+    if (firstOutcome.status === 'rejected') throw firstOutcome.reason
+    return { first: firstOutcome.value, second: secondResult }
   } finally {
+    releaseFirst.resolve()
     restore?.()
-    await contender?.catch(() => undefined)
+    await Promise.allSettled(pending)
   }
 }
