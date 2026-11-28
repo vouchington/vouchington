@@ -45,6 +45,9 @@ export async function runPostCreatedRecoveryCapacity(): Promise<void> {
     await cleanup(sql`/* cleanupPostCreatedRecoveryHostname */
       DELETE FROM url_hostnames WHERE id = ${fixture.hostnameId}`)
     await cleanup.commit()
+    await write(
+      '/* analyzePostCreatedRecoveryCapacityCleanup */ ANALYZE relation__post__related__url',
+    )
   }
 }
 

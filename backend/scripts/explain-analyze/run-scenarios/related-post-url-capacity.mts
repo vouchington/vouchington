@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import { paginationMaxima } from '@services/pagination/config'
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
@@ -84,6 +84,9 @@ export async function runRelatedPostUrlCapacityScenario(): Promise<void> {
     max_posts_per_url: POSTS_PER_URL,
   })
   try {
+    // Refresh positive-vote selectivity so Postgres does not treat the 2 base-seeded positive
+    // links as a 1-row outer loop over the 400-URL lookup.
+    await write('/* analyzeRelatedPostUrlCapacity */ ANALYZE relation__post__related__url')
     const hotUrlId = urlIds[0]!
     const candidatesByUrl = Map.groupBy(posts, post => post.url_id ?? hotUrlId)
     const expected = Object.fromEntries(
@@ -125,5 +128,6 @@ export async function runRelatedPostUrlCapacityScenario(): Promise<void> {
   } finally {
     restore()
     await deleteFixture(urlIds, posts)
+    await write('/* analyzeRelatedPostUrlCapacityCleanup */ ANALYZE relation__post__related__url')
   }
 }
