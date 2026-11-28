@@ -1,5 +1,4 @@
 import { execFile } from 'node:child_process'
-import { existsSync } from 'node:fs'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
@@ -7,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { loadCurrentWorktreeEnv } from './tooling-test-env.mts'
 import { workerRuntimeTestingInline } from '../test-helpers/vitest-config/aliases.mts'
+import { isAbnormalExit, nestedVitestExitError } from './vitest-fork-leak-preflight-exit.mts'
 import { waitForFileMarker } from '../test-helpers/vitest-file-marker.mts'
 
 const execFileAsync = promisify(execFile)
@@ -25,9 +25,15 @@ async function runPostResetWorkFixture(withForkLeakHook: boolean): Promise<Fixtu
   const releasePath = join(dir, 'release-worker')
   const settlingPath = join(dir, 'current-queue-settling')
   const checkpointPath = join(dir, 'next-test-checkpoint')
+  // Phase markers (diagnostic for #6643): no `setup-complete` means a stall in startup or a setup
+  // import; then `test-started`, `worker-started` and `current-queue-settling` name later phases.
+  const setupCompletePath = join(dir, 'setup-complete')
+  const testStartedPath = join(dir, 'test-started')
+  const workerStartedPath = join(dir, 'worker-started')
   let childResult: Promise<FixtureResult> | undefined
   try {
     const workerSetupPath = join(dir, 'worker-setup.mts')
+    const phaseSetupPath = join(dir, 'phase-setup.mts')
     const workerRuntimeWrapperPath = join(dir, 'worker-runtime-wrapper.mts')
     const fixtureWrites = [
       writeFile(
@@ -51,6 +57,12 @@ new Worker(getOrCreateQueue('background'), async () => undefined)
 `,
       ),
       writeFile(
+        phaseSetupPath,
+        `import { writeFileSync } from 'node:fs'
+writeFileSync(${JSON.stringify(setupCompletePath)}, 'setup-complete')
+`,
+      ),
+      writeFile(
         join(dir, 'vitest.config.mts'),
         `export default {
   resolve: { alias: [
@@ -60,7 +72,7 @@ new Worker(getOrCreateQueue('background'), async () => undefined)
   test: {
     server: { deps: { inline: ${JSON.stringify(workerRuntimeTestingInline)} } },
     pool: 'forks', maxForks: 1, minForks: 1, isolate: false,
-    setupFiles: [${JSON.stringify(workerSetupPath)}${withForkLeakHook ? `, ${JSON.stringify(forkLeakSetupPath)}` : ''}],
+    setupFiles: [${JSON.stringify(workerSetupPath)}${withForkLeakHook ? `, ${JSON.stringify(forkLeakSetupPath)}` : ''}, ${JSON.stringify(phaseSetupPath)}],
     testTimeout: 5_000, hookTimeout: 5_000,
   },
 }
@@ -68,7 +80,7 @@ new Worker(getOrCreateQueue('background'), async () => undefined)
       ),
       writeFile(
         join(dir, 'post-reset.test.mts'),
-        `import { watch } from 'node:fs'
+        `import { watch, writeFileSync } from 'node:fs'
 import { access, writeFile } from 'node:fs/promises'
 import { basename, dirname } from 'node:path'
 import { afterAll, expect, it, vi } from 'vitest'
@@ -91,11 +103,13 @@ function waitForRelease(path) {
 }
 afterAll(async () => { await worker?.close() })
 it('starts work on the reloaded background queue', async () => {
+  writeFileSync(${JSON.stringify(testStartedPath)}, 'started')
   vi.resetModules()
   const { Worker, getOrCreateQueue } = await import(${JSON.stringify(runtimeTestingPath)})
   const queue = getOrCreateQueue('background')
   globalThis[targetQueueKey] = queue
   worker = new Worker(queue, async () => {
+    writeFileSync(${JSON.stringify(workerStartedPath)}, 'started')
     startWorker()
     await waitForRelease(${JSON.stringify(releasePath)})
     completed = true
@@ -127,24 +141,16 @@ it('sees runnable work settled before the next test', async () => {
       })
         .then(({ stdout, stderr }) => ({ exitCode: 0, output: `${stdout}\n${stderr}` }))
         .catch((err: unknown) => {
-          const failed = err as { code?: number; stdout?: string; stderr?: string }
-          if (
-            typeof failed.code !== 'number' ||
-            (err as { killed?: boolean }).killed ||
-            (err as { signal?: NodeJS.Signals | null }).signal
-          ) {
-            const output = `${failed.stdout ?? ''}\n${failed.stderr ?? ''}`
-            // Which fixture markers exist tells a child that never reached the settle hook (no
-            // marker) from one parked on the release (marker and release both present).
-            const markers = [settlingPath, checkpointPath, releasePath]
-              .map(path => `${basename(path)}=${existsSync(path)}`)
-              .join(' ')
-            throw new Error(
-              `Nested Vitest did not exit normally (killed=${String((err as { killed?: boolean }).killed)} signal=${String((err as { signal?: string | null }).signal)} markers: ${markers}):\n${output.slice(-4_000)}`,
-              {
-                cause: err,
-              },
-            )
+          const failed = err as { code: number; stdout?: string; stderr?: string }
+          if (isAbnormalExit(err)) {
+            throw nestedVitestExitError(err, [
+              setupCompletePath,
+              testStartedPath,
+              workerStartedPath,
+              settlingPath,
+              checkpointPath,
+              releasePath,
+            ])
           }
           return { exitCode: failed.code, output: `${failed.stdout ?? ''}\n${failed.stderr ?? ''}` }
         })
