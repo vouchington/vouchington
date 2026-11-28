@@ -213,4 +213,53 @@ describe('tiered RSS feed selection', () => {
       }
     },
   )
+
+  it('skips collapsed backfill lanes and preserves sub-millisecond backfill cursors', async () => {
+    const feed = await insertTestRssFeedDirect({})
+    onTestFinished(() => deleteRssFeedsByIds([feed.id]))
+    const dueCutoff = new Date(AS_OF.getTime() - TIER_FIVE_SLA_MS)
+    const subMsCursor = dueCutoff.toISOString().replace('Z', '500Z')
+    await updateRssFeedTiming(feed.id, new Date(dueCutoff.getTime() + 5000))
+
+    const restoreCollapsed = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+      tier1_sla_ms: 60_000,
+      tier2_sla_ms: 60_000,
+    })
+    try {
+      const emptyBackfill = await getRssFeedsToFetch({
+        asOf: AS_OF,
+        cursor: { lane: 7, afterId: uuidBefore(feed.id), throughId: feed.id },
+      })
+      expect(emptyBackfill).toEqual({
+        feeds: [],
+        rawRowsRead: 0,
+        nextCursor: {
+          lane: 8,
+          afterId: '00000000-0000-0000-0000-000000000000',
+          throughId: feed.id,
+        },
+      })
+    } finally {
+      restoreCollapsed()
+    }
+
+    const restoreNormal = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+      tier1_sla_ms: 60_000,
+      tier5_sla_ms: TIER_FIVE_SLA_MS,
+    })
+    try {
+      const page = await getRssFeedsToFetch({
+        asOf: AS_OF,
+        cursor: {
+          lane: 10,
+          afterLastSucceededAt: subMsCursor,
+          afterId: uuidBefore(feed.id),
+          throughId: feed.id,
+        },
+      })
+      expect(page.feeds.map(row => row.id)).toEqual([feed.id])
+    } finally {
+      restoreNormal()
+    }
+  })
 })
