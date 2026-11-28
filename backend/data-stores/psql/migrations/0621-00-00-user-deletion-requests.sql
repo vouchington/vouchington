@@ -244,6 +244,10 @@ BEGIN
       AND status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached')
   ) THEN RETURN TRUE; END IF;
   IF EXISTS (
+    SELECT 1 FROM bluesky_follow_records
+    WHERE follower_user_id = target_user_id OR followee_user_id = target_user_id
+  ) THEN RETURN TRUE; END IF;
+  IF EXISTS (
     SELECT 1 FROM user_data_requests
     WHERE user_id = target_user_id
       AND (
@@ -251,12 +255,36 @@ BEGIN
         OR (completed_at IS NOT NULL AND failed_at IS NULL AND s3_key IS NOT NULL)
       )
   ) THEN RETURN TRUE; END IF;
+  IF EXISTS (
+    SELECT 1 FROM oauth_clients
+    WHERE owner_user_id = target_user_id AND revoked_at IS NULL
+  ) THEN RETURN TRUE; END IF;
+  IF EXISTS (
+    SELECT 1 FROM oauth_grants
+    WHERE user_id = target_user_id AND revoked_at IS NULL
+  ) THEN RETURN TRUE; END IF;
+  IF EXISTS (
+    SELECT 1 FROM oauth_refresh_token_families family
+    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id
+    WHERE oauth_grant.user_id = target_user_id AND family.revoked_at IS NULL
+  ) THEN RETURN TRUE; END IF;
+  IF EXISTS (
+    SELECT 1 FROM oauth_access_tokens access
+    JOIN oauth_grants oauth_grant ON oauth_grant.id = access.grant_id
+    WHERE oauth_grant.user_id = target_user_id AND access.revoked_at IS NULL
+  ) THEN RETURN TRUE; END IF;
+  IF EXISTS (
+    SELECT 1 FROM oauth_refresh_tokens refresh
+    JOIN oauth_refresh_token_families family ON family.id = refresh.family_id
+    JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id
+    WHERE oauth_grant.user_id = target_user_id AND refresh.revoked_at IS NULL
+  ) THEN RETURN TRUE; END IF;
   RETURN FALSE;
 END;
 $$;
 
 COMMENT ON FUNCTION fn_user_deletion_has_remaining_owned_data(UUID) IS
-  'Final fenced proof that no deletion-owned database rows remain before lifecycle completion.';
+  'Final fenced proof that no deletion-owned rows or active OAuth credentials remain before lifecycle completion.';
 
 COMMENT ON TABLE user_deletion_requests IS 'Durable user-deletion lifecycle with timestamp-derived progress and fenced worker attempts.';
 COMMENT ON COLUMN user_deletion_requests.user_id IS 'Deleted account identifier retained without a foreign key so the durable lifecycle survives hard deletion.';

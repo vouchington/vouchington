@@ -832,18 +832,6 @@
 - `followed_user_import_requests`
 - `pending_user_import_requests`
 
-## `http_request_methods`
-
-- `GET`
-- `HEAD`
-- `POST`
-- `PUT`
-- `DELETE`
-- `CONNECT`
-- `OPTIONS`
-- `TRACE`
-- `PATCH`
-
 ## `identity_verification_attempt_sources`
 
 - `self_paid`

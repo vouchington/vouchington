@@ -827,11 +827,6 @@ COMMENT ON COLUMN url_hostnames.topic_id IS
 -- 0370-00-00-rss-feed-open-source-creation.sql
 -- ============================================================================
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_topics__hostname_id
-ON topics (hostname_id)
-WHERE hostname_id IS NOT NULL;
-
 COMMENT ON COLUMN topics.hostname_id IS 'Primary hostname for this topic. For rss_feed topics, multiple topics may share the same hostname (e.g. a news feed and podcast from the same domain).';
 
 COMMENT ON COLUMN rss_feeds.created_by_id IS 'User who created this RSS feed, used for auto-follow and auto-vote side effects.';
