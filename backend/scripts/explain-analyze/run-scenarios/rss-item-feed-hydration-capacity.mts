@@ -46,8 +46,12 @@ export async function runRssItemFeedHydrationCapacityScenario(): Promise<void> {
     crossPartition: { rss_feed_items: 'Feed hydration IDs can be spread across item partitions.' },
     expectations: [
       { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: inputCount },
-      // The hosted custom plan scans the whole GUID table. https://github.com/vouchington/vouchington/issues/6615
-      { kind: 'maxProcessedRows', relation: 'rss_feed_item_guids', max: corpus.guids },
+      // Keyed to the batch in both plan modes (399 measured lookups for 399 existing IDs + ~20% headroom).
+      {
+        kind: 'maxProcessedRows',
+        relation: 'rss_feed_item_guids',
+        max: Math.ceil(inputCount * 1.2),
+      },
     ],
   })
   await runAndCapture(

@@ -44,13 +44,20 @@ export const getRssFeedItemsByIdBatch = async (
     }
   }
 
+  const uniqueIds = [...new Set(ids)]
+
   const { rows } = await read<ViewRssFeedItem>(
     `/* getRssFeedItemsByIdBatch */
     SELECT vrfi.*
-    FROM view_rss_feed_items vrfi
-    WHERE vrfi.id = ANY($1::uuid[])
+    FROM unnest($1::uuid[]) AS requested(id)
+    JOIN LATERAL (
+      SELECT vrfi.*
+      FROM view_rss_feed_items vrfi
+      WHERE vrfi.id = requested.id
+      LIMIT 1
+    ) vrfi ON true
   `,
-    [ids],
+    [uniqueIds],
     options,
   )
 

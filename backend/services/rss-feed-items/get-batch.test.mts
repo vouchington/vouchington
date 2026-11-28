@@ -6,6 +6,7 @@ import {
   createTestTopic,
   setRssFeedItemMediaType,
 } from '@voucha/test-helpers'
+import { getRssFeedItemById } from './get.mts'
 import { filterRssFeedItemIdsByMediaType, getRssFeedItemsByIdBatch } from './get-batch.mts'
 
 describe('get-batch', () => {
@@ -20,6 +21,28 @@ describe('get-batch', () => {
     expect(results).toHaveLength(2)
     expect(results[0]).toBeNull()
     expect(results[1]).toBeNull()
+  })
+
+  it('getRssFeedItemsByIdBatch preserves full projections, input order, duplicates, and null slots', async () => {
+    const topic = await createTestTopic({
+      name: `RSS batch hydration ${randomUUID()}`,
+      slug: `rss-batch-hydration-${randomUUID()}`,
+    })
+    const feedId = await createTestRssFeedWithTiming(topic.id)
+    const first = await createTestRssFeedItemWithUrl(feedId)
+    const second = await createTestRssFeedItemWithUrl(feedId)
+    const missingId = randomUUID()
+
+    const [expectedFirst, expectedSecond] = await Promise.all([
+      getRssFeedItemById(first.id),
+      getRssFeedItemById(second.id),
+    ])
+    expect(expectedFirst).not.toBeNull()
+    expect(expectedSecond).not.toBeNull()
+
+    const results = await getRssFeedItemsByIdBatch([second.id, missingId, first.id, second.id])
+
+    expect(results).toEqual([expectedSecond, null, expectedFirst, expectedSecond])
   })
 
   it('getRssFeedItemsByIdBatch throws for invalid IDs', async () => {
