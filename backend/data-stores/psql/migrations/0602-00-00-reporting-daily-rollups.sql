@@ -58,7 +58,7 @@ CREATE TABLE moderator_workload_daily_totals (
     UNIQUE NULLS NOT DISTINCT (day, community_id, actor_user_id, action_type)
 );
 CREATE INDEX idx_moderator_workload_daily_totals__community_id_day
-  ON moderator_workload_daily_totals(community_id, day, actor_user_id, action_type);
+  ON moderator_workload_daily_totals(community_id, day);
 CREATE INDEX idx_moderator_workload_daily_totals__actor_user_id
   ON moderator_workload_daily_totals(actor_user_id, day);
 COMMENT ON TABLE moderator_workload_daily_totals IS 'Daily moderator-action reporting cohorts; NULL-community global cohorts survive community purge, scoped cohorts cascade, and bounded cleanup retires days outside the analytics window.';

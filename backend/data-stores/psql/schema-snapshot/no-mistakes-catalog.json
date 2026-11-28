@@ -86676,7 +86676,7 @@
         "idx_moderator_workload_daily_totals__community_id_day": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_moderator_workload_daily_totals__community_id_day ON public.moderator_workload_daily_totals USING btree (community_id, day, actor_user_id, action_type)",
+          "definition": "CREATE INDEX idx_moderator_workload_daily_totals__community_id_day ON public.moderator_workload_daily_totals USING btree (community_id, day)",
           "immediate": true,
           "keys": [
             {
@@ -86695,24 +86695,6 @@
               "expression": "day",
               "nullsFirst": false,
               "opclass": "pg_catalog.date_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "actor_user_id",
-              "descending": false,
-              "expression": "actor_user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "action_type",
-              "descending": false,
-              "expression": "action_type",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],

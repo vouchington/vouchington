@@ -19,29 +19,47 @@ export async function getModeratorWorkload(
 ): Promise<ModeratorWorkloadMetrics> {
   const communityId = getCommunityId(scope)
   const windows = getReportingWindows(periodStart, now)
-  const partialStart = getMinUuidv7ForDate(windows.firstPartial?.start ?? windows.today.start)
-  const partialEnd = getMinUuidv7ForDate(windows.firstPartial?.end ?? windows.today.start)
   const todayStart = getMinUuidv7ForDate(windows.today.start)
-  const { rows } = await read(sql`/* getModerationModeratorWorkload */
+  const liveWindowClause = windows.firstPartial
+    ? sql`((ma.id >= ${getMinUuidv7ForDate(windows.firstPartial.start)}::uuid AND ma.id < ${getMinUuidv7ForDate(windows.firstPartial.end)}::uuid) OR ma.id >= ${todayStart}::uuid)`
+    : sql`ma.id >= ${todayStart}::uuid`
+  const query = sql`/* getModerationModeratorWorkload */
     WITH facts AS (
       SELECT ma.actor_user_id, ma.action_type::TEXT AS action_type,
         (ma.created_at AT TIME ZONE 'UTC')::DATE AS day,
         COUNT(*) AS count
       FROM moderator_actions ma
       JOIN users u ON u.id = ma.actor_user_id
-      WHERE ((ma.id >= ${partialStart}::uuid AND ma.id < ${partialEnd}::uuid)
-        OR ma.id >= ${todayStart}::uuid)
+      WHERE `
+    .append(liveWindowClause)
+    .append(
+      sql`
         AND ma.action_type = ANY(${MODERATION_ANALYTICS_ACTION_TYPES}::moderator_action_types[])
-        AND (u.username IS NULL OR u.username NOT IN (${MODERATION_SYSTEM_USERNAME}, ${BAN_EVASION_SYSTEM_USERNAME}, ${RSS_FEED_AUTO_UPDATER_USERNAME}))
-        AND (${communityId}::uuid IS NULL OR ma.community_id = ${communityId}::uuid)
+        AND (u.username IS NULL OR u.username NOT IN (${MODERATION_SYSTEM_USERNAME}, ${BAN_EVASION_SYSTEM_USERNAME}, ${RSS_FEED_AUTO_UPDATER_USERNAME}))`,
+    )
+  if (communityId !== null) {
+    query.append(sql`
+        AND ma.community_id = ${communityId}::uuid`)
+  }
+  query.append(
+    sql`
       GROUP BY ma.actor_user_id, ma.action_type, day
       UNION ALL
       SELECT totals.actor_user_id, totals.action_type::TEXT, totals.day, totals.count
       FROM moderator_workload_daily_totals totals
       JOIN users u ON u.id = totals.actor_user_id
       WHERE totals.day >= ${windows.completed.start.toISOString().slice(0, 10)}::date
-        AND totals.day < ${windows.completed.end.toISOString().slice(0, 10)}::date
-        AND totals.community_id IS NOT DISTINCT FROM ${communityId}::uuid
+        AND totals.day < ${windows.completed.end.toISOString().slice(0, 10)}::date`,
+  )
+  if (communityId !== null) {
+    query.append(sql`
+        AND totals.community_id = ${communityId}::uuid`)
+  } else {
+    query.append(sql`
+        AND totals.community_id IS NULL`)
+  }
+  query.append(
+    sql`
         AND totals.action_type = ANY(${MODERATION_ANALYTICS_ACTION_TYPES}::moderator_action_types[])
         AND (u.username IS NULL OR u.username NOT IN (${MODERATION_SYSTEM_USERNAME}, ${BAN_EVASION_SYSTEM_USERNAME}, ${RSS_FEED_AUTO_UPDATER_USERNAME}))
     ), actor_totals AS (
@@ -78,7 +96,9 @@ export async function getModeratorWorkload(
     FROM actor_totals totals
     JOIN actor_counts counts USING (actor_user_id)
     JOIN weekly_json weekly USING (actor_user_id)
-  `)
+  `,
+  )
+  const { rows } = await read(query)
   return {
     moderators: (rows[0]!.moderators as ModeratorWorkloadMetrics['moderators']) ?? [],
     users: {},
