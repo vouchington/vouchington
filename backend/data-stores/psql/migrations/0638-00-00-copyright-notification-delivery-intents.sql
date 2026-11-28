@@ -108,7 +108,6 @@ COMMENT ON COLUMN copyright_notice_delivery_attempt_results.abandoned_at IS 'Dat
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_copyright_delivery_work() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());
   IF TG_OP = 'UPDATE' AND (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;
   IF NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.leased_at IS NULL THEN
     NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;
@@ -227,7 +226,7 @@ BEGIN
   IF OLD.state = 'failed' AND next_state IS DISTINCT FROM OLD.state
     AND NOT (
       next_state = 'pending' AND NEW.leased_at IS NULL AND NEW.failed_at IS NULL
-      AND NEW.available_at IS NOT NULL AND NEW.attempt_count = 0
+      AND NEW.attempt_count = 0
     ) THEN
     RAISE EXCEPTION 'failed copyright delivery intents may only be explicitly replayed'
       USING ERRCODE = 'check_violation';
@@ -267,7 +266,7 @@ COMMENT ON COLUMN copyright_notice_delivery_work_items.leased_at IS 'Time a tran
 COMMENT ON COLUMN copyright_notice_delivery_work_items.delivery_attempted_at IS 'Time the terminal transport attempt began.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.sent_at IS 'Time the provider accepted the delivery.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.failed_at IS 'Time the most recent retryable transport attempt failed.';
-COMMENT ON COLUMN copyright_notice_delivery_work_items.available_at IS 'Earliest retry time after a retryable transport failure; NULL for terminal states.';
+COMMENT ON COLUMN copyright_notice_delivery_work_items.available_at IS 'Earliest retry time after a retryable transport failure.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.bounced_at IS 'Time SES reported a bounce or complaint for an accepted email.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.amazon_ses_message_id IS 'SES provider identifier used to correlate delivery feedback.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.failure_ciphertext IS 'Encrypted bounded transport failure visible to staff; retries retain the failure history through lifecycle events.';

@@ -720,7 +720,6 @@ COMMENT ON COLUMN copyright_notice_action_attempt_results.abandoned_at IS 'Datab
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_copyright_action_work() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());
   IF TG_OP = 'UPDATE' AND (OLD.completed_at_reason IN ('blocked', 'failed') AND NEW.completed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;
   IF NEW.completed_at IS NOT NULL OR NEW.leased_at IS NULL THEN
     NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;

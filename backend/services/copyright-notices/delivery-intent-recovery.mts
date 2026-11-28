@@ -24,7 +24,7 @@ export function searchRecoverableCopyrightDeliveryIntentIds(
       FROM copyright_notice_delivery_work_items
       WHERE channel = ${options.channel}
         AND (
-          (state = 'pending' AND (available_at IS NULL OR available_at <= CURRENT_TIMESTAMP))
+          (state = 'pending' AND available_at <= CURRENT_TIMESTAMP)
           OR (state = 'claimed' AND lease_expires_at <= clock_timestamp())
         )`,
     statement => read(statement),

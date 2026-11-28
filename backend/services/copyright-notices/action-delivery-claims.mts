@@ -25,8 +25,7 @@ export async function claimCopyrightActionIntent(
     /* claimCopyrightActionIntent:eligible */
     SELECT copyright_notice_id FROM copyright_notice_action_work_items
     WHERE id = ${intentId} AND (
-      (state = 'pending' AND attempt_count < ${MAX_ATTEMPTS}
-        AND (available_at IS NULL OR available_at <= ${now}))
+      (state = 'pending' AND attempt_count < ${MAX_ATTEMPTS} AND available_at <= ${now})
       OR (state = 'claimed' AND lease_expires_at <= ${now})
     )
   `)
@@ -55,7 +54,7 @@ export async function claimCopyrightActionIntent(
     JOIN copyright_notice_target_images target_image ON target_image.copyright_notice_target_id = target.id
     WHERE intent.id = ${intentId} AND intent.copyright_restriction_id = restriction.id
       AND intent.attempt_count < ${MAX_ATTEMPTS} AND (
-        (intent.state = 'pending' AND (intent.available_at IS NULL OR intent.available_at <= ${now}))
+        (intent.state = 'pending' AND intent.available_at <= ${now})
         OR (intent.state = 'claimed' AND intent.lease_expires_at <= ${now})
       )
     RETURNING intent.id, intent.lease_token, intent.action, intent.expected_placement_revision,

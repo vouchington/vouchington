@@ -20,7 +20,7 @@ export async function preemptCopyrightRestorations(
   const { rows } = await query<{ id: string }>(sql`/* preemptCopyrightRestorations */
     UPDATE copyright_notice_action_work_items work
     SET completed_at = clock_timestamp(), completed_at_reason = 'blocked',
-      failure_message = ${PREEMPTED_MESSAGE}, available_at = NULL
+      failure_message = ${PREEMPTED_MESSAGE}
     WHERE work.action = 'restore' AND work.state IN ('pending', 'claimed')
       AND work.id IN (
       SELECT candidate.id

@@ -38,11 +38,8 @@ export async function failCopyrightActionIntent(input: {
       completed_at_reason = ${failed ? 'failed' : null},
       failure_message = ${input.failureMessage.slice(0, 4096)},
       leased_at = CASE WHEN ${failed} THEN leased_at ELSE NULL END,
-      available_at = ${
-        failed
-          ? null
-          : new Date(input.failedAt.getTime() + RETRY_BASE_MS * 2 ** (intent.attempt_count - 1))
-      }
+      available_at = CASE WHEN ${failed} THEN available_at
+        ELSE ${new Date(input.failedAt.getTime() + RETRY_BASE_MS * 2 ** (intent.attempt_count - 1))} END
     WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
     RETURNING id
   `)
