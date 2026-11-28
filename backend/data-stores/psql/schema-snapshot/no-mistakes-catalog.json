@@ -2207,6 +2207,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ORDER BY placement.id, placement.revision, surface.image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE\n  SET desired_state = 'withheld',\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  -- lock-reason: prevents: projecting delivery authority for a concurrently retired placement revision; writer: syncImageSurfacePlacement retires media_placements.\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE\n      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING;\n\nEND;\n$function$\n",
       "returnsSet": false
     },
+    "fn_sync_rss_feed_fetch_state()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_fetch_state()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.is_enabled = TRUE AND NEW.deleted_at IS NULL THEN\n    INSERT INTO rss_feed_fetch_states (rss_feed_id)\n    VALUES (NEW.id)\n    ON CONFLICT (rss_feed_id) DO NOTHING;\n  ELSIF TG_OP = 'UPDATE' THEN\n    DELETE FROM rss_feed_fetch_states\n    WHERE rss_feed_id = NEW.id;\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n",
+      "returnsSet": false
+    },
     "fn_text_to_timestamptz(text_value text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)\n RETURNS timestamp with time zone\n LANGUAGE plpgsql\n IMMUTABLE\nAS $function$\nDECLARE\n  normalized TEXT;\nBEGIN\n  normalized := TRIM(BOTH E'\\t\\n\\r\\f ' FROM text_value);\n  IF normalized IS NULL OR normalized = '' OR LOWER(normalized) = 'null' THEN\n    RETURN NULL;\n  END IF;\n\n  -- Strip a known RFC 822 weekday prefix (\"Mon, \" … \"Sun, \").\n  -- Anchored to standard abbreviations; non-standard tokens fall through to the exception handler.\n  normalized := regexp_replace(normalized, '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\\s*', '', 'i');\n  -- Collapse a named-zone prefix glued to a numeric offset: \"GMT-0700\" -> \"-0700\",\n  -- \"UTC+05:30\" -> \"+05:30\". PostgreSQL rejects the glued form but accepts the bare offset.\n  normalized := regexp_replace(normalized, '(?:GMT|UTC)\\s*([+-]\\d{1,2}:?\\d{2})', '\\1', 'i');\n\n  IF normalized ~ '[Zz]$' OR\n     normalized ~ '[\\+\\-]\\d{1,2}:?\\d{2}$' OR\n     normalized ~ ' [A-Z]{3,}$' THEN\n    RETURN normalized::timestamptz;\n  END IF;\n  RETURN timezone('UTC', normalized::timestamp);\nEXCEPTION\n  -- Best-effort parser over untrusted feed input: any value PostgreSQL still can't parse\n  -- degrades to NULL so the generated column falls back to uuid_extract_timestamp(id),\n  -- rather than aborting the INSERT and the whole fetchRssFeed job. Three distinct SQLSTATE\n  -- codes (22023, 22007, 22009) have already appeared from real feeds; a narrow catch would leak.\n  WHEN OTHERS THEN\n    RAISE WARNING 'fn_text_to_timestamptz: unparseable date \"%\" (SQLSTATE: %)', text_value, SQLSTATE;\n    RETURN NULL;\nEND;\n$function$\n",
       "returnsSet": false
@@ -138063,6 +138067,150 @@
       },
       "uniqueConstraints": {}
     },
+    "rss_feed_fetch_states": {
+      "checkConstraints": {},
+      "columns": {
+        "last_fetch_failed_at": {
+          "comment": "When the feed last failed on its final fetch attempt or was skipped by crawl policy (not crawlable, Web Risk 400, robots disallow).",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "last_fetch_succeeded_at": {
+          "comment": "When the feed last returned content (including HTTP 304); exposed as last_fetched_at in view_rss_feeds.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "rss_feed_id": {
+          "comment": "Live enabled RSS feed owning this state; also the stable tie breaker for dispatch cursors.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Current fetch timing for live enabled RSS feeds. Row presence means the feed is eligible for dispatch; disabling or soft-deleting removes the row.",
+      "foreignKeys": {
+        "rss_feed_fetch_states_rss_feed_id_fkey": {
+          "columns": ["rss_feed_id"],
+          "deferrable": false,
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feeds",
+          "validated": true
+        }
+      },
+      "hasDescendants": false,
+      "indexes": {
+        "idx_rss_feed_fetch_states__failing_fetch_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_fetch_states__failing_fetch_due ON public.rss_feed_fetch_states USING btree (last_fetch_failed_at, rss_feed_id) INCLUDE (last_fetch_succeeded_at) WHERE ((last_fetch_failed_at IS NOT NULL) AND ((last_fetch_succeeded_at IS NULL) OR (last_fetch_failed_at >= last_fetch_succeeded_at)))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "last_fetch_failed_at",
+              "descending": false,
+              "expression": "last_fetch_failed_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "rss_feed_id",
+              "descending": false,
+              "expression": "rss_feed_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((last_fetch_failed_at IS NOT NULL) AND ((last_fetch_succeeded_at IS NULL) OR (last_fetch_failed_at >= last_fetch_succeeded_at)))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_fetch_states__healthy_fetch_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_fetch_states__healthy_fetch_due ON public.rss_feed_fetch_states USING btree (COALESCE(last_fetch_succeeded_at, '-infinity'::timestamp with time zone), rss_feed_id) INCLUDE (last_fetch_succeeded_at, last_fetch_failed_at) WHERE ((last_fetch_failed_at IS NULL) OR (last_fetch_failed_at < last_fetch_succeeded_at))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(last_fetch_succeeded_at, '-infinity'::timestamp with time zone)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "rss_feed_id",
+              "descending": false,
+              "expression": "rss_feed_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((last_fetch_failed_at IS NULL) OR (last_fetch_failed_at < last_fetch_succeeded_at))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "rss_feed_fetch_states_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX rss_feed_fetch_states_pkey ON public.rss_feed_fetch_states USING btree (rss_feed_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "rss_feed_id",
+              "descending": false,
+              "expression": "rss_feed_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["rss_feed_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "rss_feed_item_categories": {
       "checkConstraints": {},
       "columns": {
@@ -141386,7 +141534,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 9
         },
         "created_at": {
           "comment": null,
@@ -141396,7 +141544,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 12
         },
         "created_by_id": {
           "comment": "User who created this RSS feed, used for auto-follow and auto-vote side effects.",
@@ -141406,7 +141554,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 11
         },
         "created_via": {
           "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
@@ -141436,7 +141584,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 19
         },
         "deleted_at": {
           "comment": null,
@@ -141446,7 +141594,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 13
         },
         "etag": {
           "comment": "HTTP ETag header from the last successful fetch.",
@@ -141466,7 +141614,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17
+          "ordinalPosition": 16
         },
         "hard_delete_requested_at": {
           "comment": "Accepted asynchronous hard deletion marker; workers drain bounded child pages and recover unfinished feeds.",
@@ -141476,7 +141624,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 14
         },
         "id": {
           "comment": null,
@@ -141496,7 +141644,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19
+          "ordinalPosition": 18
         },
         "is_enabled": {
           "comment": "Whether this feed is enabled for fetching. Denormalized from rss_feed_setting_changes for query performance; kept in sync by trigger_project_rss_feed_enablement.",
@@ -141506,17 +141654,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18
-        },
-        "last_fetched_at": {
-          "comment": "When the feed was last fetched (successful or not).",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 17
         },
         "last_modified_at": {
           "comment": "HTTP Last-Modified header from the last successful fetch.",
@@ -141546,7 +141684,7 @@
           "generatedExpression": "setweight(to_tsvector('voucha_english'::regconfig, COALESCE(title, ''::text)), 'A'::\"char\")",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 10
         },
         "should_ignore_robots_txt": {
           "comment": "Whether robots.txt allow/disallow rules are ignored for fetching this RSS feed. NULL = inherit from hostname then global DynamicConfig. TRUE = always ignore. FALSE = always enforce.",
@@ -141556,7 +141694,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 20
         },
         "title": {
           "comment": "Display title of the feed.",
@@ -141586,7 +141724,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 21
         },
         "updated_at": {
           "comment": null,
@@ -141596,7 +141734,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 15
         }
       },
       "comment": "RSS/Atom feeds associated with topics. Each topic has at most one active feed.",
@@ -142018,6 +142156,9 @@
         },
         "trigger_rss_feeds_updated_at": {
           "definition": "CREATE TRIGGER trigger_rss_feeds_updated_at BEFORE UPDATE ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_sync_rss_feed_fetch_state": {
+          "definition": "CREATE TRIGGER trigger_sync_rss_feed_fetch_state AFTER INSERT OR UPDATE OF is_enabled, deleted_at ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_sync_rss_feed_fetch_state()"
         },
         "trigger_sync_url_feed_rank": {
           "definition": "CREATE TRIGGER trigger_sync_url_feed_rank AFTER INSERT OR DELETE OR UPDATE OF rss_feed_url_id, is_enabled, deleted_at ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_update_url_feed_rank()"
@@ -156866,7 +157007,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39
+          "ordinalPosition": 40
         },
         "created_by_id": {
           "comment": null,
@@ -156876,7 +157017,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38
+          "ordinalPosition": 39
         },
         "dns_disabled_at": {
           "comment": "When this hostname was automatically disabled due to repeated DNS failures. NULL if not auto-disabled. Clearing this (and resetting crawlable) is an admin-only action.",
@@ -156988,6 +157129,16 @@
           "nullable": true,
           "ordinalPosition": 3
         },
+        "rate_limited_until": {
+          "comment": "Crawls and feed fetches of this hostname are skipped in dispatch until this time after a 429 or Valkey rate-limit lock. NULL when not rate-limited.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 23
+        },
         "requests_per_second_limit": {
           "comment": "Max crawl requests per second for this hostname.",
           "dataType": "smallint",
@@ -157036,7 +157187,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "topic_id": {
           "comment": "The topic that owns this hostname (primary or additional domain). Many hostnames may share the same topic_id; the primary is identified by topics.hostname_id.",
@@ -157046,7 +157197,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "unreliable_status_codes": {
           "comment": "RSS feed fetch HTTP status codes that should retry instead of soft-deleting feeds for this hostname. NULL = no hostname override. Example: ARRAY[404] for unreliable YouTube feeds.",
@@ -157066,7 +157217,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 40
+          "ordinalPosition": 41
         },
         "votes_count_down": {
           "comment": null,
@@ -157076,7 +157227,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 34
+          "ordinalPosition": 35
         },
         "votes_count_none": {
           "comment": null,
@@ -157086,7 +157237,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 33
+          "ordinalPosition": 34
         },
         "votes_count_up": {
           "comment": null,
@@ -157096,7 +157247,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 32
+          "ordinalPosition": 33
         },
         "votes_score_down": {
           "comment": null,
@@ -157106,7 +157257,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "votes_score_net": {
           "comment": null,
@@ -157116,7 +157267,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36
+          "ordinalPosition": 37
         },
         "votes_score_none": {
           "comment": null,
@@ -157126,7 +157277,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "votes_score_sort": {
           "comment": null,
@@ -157136,7 +157287,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35
+          "ordinalPosition": 36
         },
         "votes_score_up": {
           "comment": null,
@@ -157146,7 +157297,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "votes_snapshot_xip_count": {
           "comment": "Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.",
@@ -157156,7 +157307,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37
+          "ordinalPosition": 38
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -157166,7 +157317,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         },
         "web_risk_checked_url": {
           "comment": "URL that produced the Google Web Risk positive verdict for this hostname.",
@@ -157176,7 +157327,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "web_risk_expire_at": {
           "comment": "Google Web Risk expireTime for the positive verdict.",
@@ -157186,7 +157337,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "web_risk_threat_types": {
           "comment": "Google Web Risk threat types returned for the checked URL.",
@@ -157196,7 +157347,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         }
       },
       "comment": "Registered hostnames with crawl and moderation policies.",
@@ -176715,7 +176866,7 @@
     },
     "view_rss_feeds": {
       "comment": "RSS feed response projection with current discoverability and topic references.",
-      "definition": " SELECT 'rss_feed'::text AS __entity_type,\n    rss_feeds.id,\n    rss_feeds.title,\n    current_state.is_enabled,\n    current_state.is_discoverable,\n    rss_feeds.etag,\n    rss_feeds.last_modified_at,\n    rss_feeds.last_fetched_at,\n    rss_feeds.feed_type,\n    rss_feeds.canonical_rss_feed_id,\n    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'is_blocked', feed_hostname.is_blocked, 'is_crawlable', feed_hostname.is_crawlable, 'should_follow_link_rel', feed_hostname.should_follow_link_rel)) AS rss_feed_url,\n        CASE\n            WHEN topic_hostname.hostname IS NULL THEN NULL::json\n            ELSE json_build_object('url', concat('https://', topic_hostname.hostname, '/'))\n        END AS home_page_url,\n    row_to_json(view_embedded_topics.*) AS topic,\n        CASE\n            WHEN publisher_type_topic.id IS NULL THEN NULL::json\n            ELSE json_build_object('id', publisher_type_topic.id, 'slug', publisher_type_topic.slug, 'topic_type', publisher_type_topic.topic_type, 'name', publisher_type_topic.name)\n        END AS publisher_type,\n        CASE\n            WHEN topic_hostname.id IS NULL THEN NULL::json\n            ELSE json_build_object('__entity_type', topic_hostname.__entity_type, 'id', topic_hostname.id, 'hostname', topic_hostname.hostname, 'topic_id', topic_hostname.topic_id)\n        END AS hostname,\n        CASE\n            WHEN podcast_show.rss_feed_id IS NULL THEN NULL::json\n            ELSE json_build_object('itunes_author', podcast_show.itunes_author, 'itunes_owner_name', podcast_show.itunes_owner_name, 'cover_art_url', podcast_show.cover_art_url, 'is_explicit', podcast_show.is_explicit, 'itunes_type', podcast_show.itunes_type, 'description', podcast_show.description)\n        END AS podcast_show,\n    COALESCE(( SELECT json_agg(json_build_object('category_text', category_identity.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY category_identity.category_text) AS json_agg\n           FROM rss_feed_categories c\n             JOIN rss_category_identities category_identity ON category_identity.id = c.category_identity_id\n             LEFT JOIN topics t ON t.id = c.topic_id AND t.deleted_at IS NULL\n          WHERE c.rss_feed_id = rss_feeds.id), '[]'::json) AS categories\n   FROM rss_feeds\n     JOIN urls feed_url ON feed_url.id = rss_feeds.rss_feed_url_id\n     JOIN url_hostnames feed_hostname ON feed_hostname.id = feed_url.hostname_id\n     JOIN view_embedded_topics ON view_embedded_topics.id = rss_feeds.topic_id\n     LEFT JOIN view_url_hostnames topic_hostname ON topic_hostname.id = view_embedded_topics.hostname_id\n     JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = rss_feeds.id\n     LEFT JOIN LATERAL ( SELECT topics.id,\n            topics.slug,\n            topics.name,\n            topics.topic_type\n           FROM relation__topic__publisher_type__topic relation\n             JOIN topics ON topics.id = relation.object_id\n          WHERE relation.subject_id = rss_feeds.topic_id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision AND topics.deleted_at IS NULL\n          ORDER BY relation.votes_score_sort DESC, relation.created_at DESC, relation.object_id DESC\n         LIMIT 1) publisher_type_topic ON true\n     LEFT JOIN podcast_shows podcast_show ON podcast_show.rss_feed_id = rss_feeds.id;",
+      "definition": " SELECT 'rss_feed'::text AS __entity_type,\n    rss_feeds.id,\n    rss_feeds.title,\n    current_state.is_enabled,\n    current_state.is_discoverable,\n    rss_feeds.etag,\n    rss_feeds.last_modified_at,\n    fetch_state.last_fetch_succeeded_at AS last_fetched_at,\n    rss_feeds.feed_type,\n    rss_feeds.canonical_rss_feed_id,\n    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'is_blocked', feed_hostname.is_blocked, 'is_crawlable', feed_hostname.is_crawlable, 'should_follow_link_rel', feed_hostname.should_follow_link_rel)) AS rss_feed_url,\n        CASE\n            WHEN topic_hostname.hostname IS NULL THEN NULL::json\n            ELSE json_build_object('url', concat('https://', topic_hostname.hostname, '/'))\n        END AS home_page_url,\n    row_to_json(view_embedded_topics.*) AS topic,\n        CASE\n            WHEN publisher_type_topic.id IS NULL THEN NULL::json\n            ELSE json_build_object('id', publisher_type_topic.id, 'slug', publisher_type_topic.slug, 'topic_type', publisher_type_topic.topic_type, 'name', publisher_type_topic.name)\n        END AS publisher_type,\n        CASE\n            WHEN topic_hostname.id IS NULL THEN NULL::json\n            ELSE json_build_object('__entity_type', topic_hostname.__entity_type, 'id', topic_hostname.id, 'hostname', topic_hostname.hostname, 'topic_id', topic_hostname.topic_id)\n        END AS hostname,\n        CASE\n            WHEN podcast_show.rss_feed_id IS NULL THEN NULL::json\n            ELSE json_build_object('itunes_author', podcast_show.itunes_author, 'itunes_owner_name', podcast_show.itunes_owner_name, 'cover_art_url', podcast_show.cover_art_url, 'is_explicit', podcast_show.is_explicit, 'itunes_type', podcast_show.itunes_type, 'description', podcast_show.description)\n        END AS podcast_show,\n    COALESCE(( SELECT json_agg(json_build_object('category_text', category_identity.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY category_identity.category_text) AS json_agg\n           FROM rss_feed_categories c\n             JOIN rss_category_identities category_identity ON category_identity.id = c.category_identity_id\n             LEFT JOIN topics t ON t.id = c.topic_id AND t.deleted_at IS NULL\n          WHERE c.rss_feed_id = rss_feeds.id), '[]'::json) AS categories\n   FROM rss_feeds\n     JOIN urls feed_url ON feed_url.id = rss_feeds.rss_feed_url_id\n     JOIN url_hostnames feed_hostname ON feed_hostname.id = feed_url.hostname_id\n     JOIN view_embedded_topics ON view_embedded_topics.id = rss_feeds.topic_id\n     LEFT JOIN view_url_hostnames topic_hostname ON topic_hostname.id = view_embedded_topics.hostname_id\n     JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = rss_feeds.id\n     LEFT JOIN rss_feed_fetch_states fetch_state ON fetch_state.rss_feed_id = rss_feeds.id\n     LEFT JOIN LATERAL ( SELECT topics.id,\n            topics.slug,\n            topics.name,\n            topics.topic_type\n           FROM relation__topic__publisher_type__topic relation\n             JOIN topics ON topics.id = relation.object_id\n          WHERE relation.subject_id = rss_feeds.topic_id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision AND topics.deleted_at IS NULL\n          ORDER BY relation.votes_score_sort DESC, relation.created_at DESC, relation.object_id DESC\n         LIMIT 1) publisher_type_topic ON true\n     LEFT JOIN podcast_shows podcast_show ON podcast_show.rss_feed_id = rss_feeds.id;",
       "indexes": {},
       "materialized": false
     },

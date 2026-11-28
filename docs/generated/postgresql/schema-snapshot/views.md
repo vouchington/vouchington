@@ -1173,7 +1173,7 @@ RSS feed response projection with current discoverability and topic references.
     current_state.is_discoverable,
     rss_feeds.etag,
     rss_feeds.last_modified_at,
-    rss_feeds.last_fetched_at,
+    fetch_state.last_fetch_succeeded_at AS last_fetched_at,
     rss_feeds.feed_type,
     rss_feeds.canonical_rss_feed_id,
     json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'is_blocked', feed_hostname.is_blocked, 'is_crawlable', feed_hostname.is_crawlable, 'should_follow_link_rel', feed_hostname.should_follow_link_rel)) AS rss_feed_url,
@@ -1199,12 +1199,13 @@ RSS feed response projection with current discoverability and topic references.
              JOIN rss_category_identities category_identity ON ((category_identity.id = c.category_identity_id)))
              LEFT JOIN topics t ON (((t.id = c.topic_id) AND (t.deleted_at IS NULL))))
           WHERE (c.rss_feed_id = rss_feeds.id)), '[]'::json) AS categories
-   FROM (((((((rss_feeds
+   FROM ((((((((rss_feeds
      JOIN urls feed_url ON ((feed_url.id = rss_feeds.rss_feed_url_id)))
      JOIN url_hostnames feed_hostname ON ((feed_hostname.id = feed_url.hostname_id)))
      JOIN view_embedded_topics ON ((view_embedded_topics.id = rss_feeds.topic_id)))
      LEFT JOIN view_url_hostnames topic_hostname ON ((topic_hostname.id = view_embedded_topics.hostname_id)))
      JOIN view_rss_feed_current_states current_state ON ((current_state.rss_feed_id = rss_feeds.id)))
+     LEFT JOIN rss_feed_fetch_states fetch_state ON ((fetch_state.rss_feed_id = rss_feeds.id)))
      LEFT JOIN LATERAL ( SELECT topics.id,
             topics.slug,
             topics.name,

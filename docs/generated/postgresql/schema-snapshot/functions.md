@@ -1496,6 +1496,14 @@ CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind
  LANGUAGE plpgsql
 ```
 
+## `fn_sync_rss_feed_fetch_state`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_fetch_state()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_text_to_timestamptz(text_value text)`
 
 ```sql
