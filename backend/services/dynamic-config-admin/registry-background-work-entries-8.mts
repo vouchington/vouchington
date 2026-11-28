@@ -67,6 +67,12 @@ export const backgroundWorkRegistryEntries8 = {
         'Newest co-followers read per seed feed for collaborative RSS feed recommendations.',
       collaborative_co_follower_feed_limit:
         'Newest follows read per co-follower for collaborative RSS feed recommendations.',
+      friends_followed_user_limit:
+        'Newest accounts the viewer follows that seed friend RSS feed recommendations.',
+      friends_user_feed_limit:
+        'Newest RSS feed follows read per followed account for friend RSS feed recommendations.',
+      topic_followed_topic_limit:
+        'Newest topics the viewer follows that seed topic RSS feed recommendations.',
     },
   }),
   'stripe-work-config': defineBoundedWorkNamespace({

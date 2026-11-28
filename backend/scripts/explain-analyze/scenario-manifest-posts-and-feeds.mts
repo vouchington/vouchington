@@ -38,6 +38,8 @@ export const POSTS_AND_FEEDS_SCENARIOS = [
   'profile-posts-page',
   'recommended-rss-feeds',
   'recommended-rss-feeds-low-visibility',
+  'recommended-rss-feeds-heavy-friends-topics',
+  'recommended-rss-feeds-heavy-friends-topics-cursor',
   'recommended-topics',
   'recommended-topics-long-vote-history',
   'report-judgement-contexts-batch',
