@@ -38,6 +38,7 @@ export async function stageCopyrightCourtFilingDenials(
     getCopyrightSweepLimits().batchSize,
     async (after, limit) => {
       const afterTargetId = after?.target_id ?? null
+      const afterImageId = after?.image_id ?? null
       const { rows } =
         await query<DenialTargetRow>(sql`/* denyCopyrightCourtFilingPlacements:current */
         SELECT target.id AS target_id, placement.id AS placement_id, placement.revision, binding.image_id
@@ -47,8 +48,11 @@ export async function stageCopyrightCourtFilingDenials(
           AND binding.image_id = image.image_id
         JOIN media_placements placement ON placement.id = binding.placement_id
         WHERE target.copyright_notice_id = ${noticeId}
-          AND (${afterTargetId}::uuid IS NULL OR target.id > ${afterTargetId}::uuid)
-        ORDER BY target.id ASC
+          AND (
+            ${afterTargetId}::uuid IS NULL
+            OR (target.id, image.image_id) > (${afterTargetId}::uuid, ${afterImageId}::uuid)
+          )
+        ORDER BY target.id ASC, image.image_id ASC
         LIMIT ${limit}
       `)
       return rows

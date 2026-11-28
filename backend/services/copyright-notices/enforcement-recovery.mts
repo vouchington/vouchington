@@ -27,7 +27,8 @@ export async function recoverMissingDecisionAssessments(
         submission_id, copyright_notice_id, assessed_by_id, screening_id
       FROM (
         (
-          SELECT submission.id AS submission_id, submission.copyright_notice_id,
+          SELECT DISTINCT ON (submission.id)
+            submission.id AS submission_id, submission.copyright_notice_id,
             review.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 1 AS priority
           FROM copyright_notice_form_intake_reviews review
           JOIN copyright_notice_form_intakes intake
@@ -40,12 +41,13 @@ export async function recoverMissingDecisionAssessments(
   if (options.ids !== undefined)
     candidateQuery.append(sql` AND submission.id = ANY(${options.ids}::uuid[])`)
   candidateQuery.append(sql`
-          ORDER BY submission.id ASC
+          ORDER BY submission.id ASC, review.id ASC
           LIMIT ${limit + 1}
         )
         UNION ALL
         (
-          SELECT submission.id AS submission_id, submission.copyright_notice_id,
+          SELECT DISTINCT ON (submission.id)
+            submission.id AS submission_id, submission.copyright_notice_id,
             receipt.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 2 AS priority
           FROM copyright_notice_email_intake_receipts receipt
           JOIN copyright_notice_email_intake_notice_links link
@@ -59,7 +61,7 @@ export async function recoverMissingDecisionAssessments(
   if (options.ids !== undefined)
     candidateQuery.append(sql` AND submission.id = ANY(${options.ids}::uuid[])`)
   candidateQuery.append(sql`
-          ORDER BY submission.id ASC
+          ORDER BY submission.id ASC, receipt.id ASC
           LIMIT ${limit + 1}
         )
       ) durable_decisions

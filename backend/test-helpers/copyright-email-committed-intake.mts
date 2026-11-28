@@ -107,6 +107,35 @@ export async function approveCommittedCopyrightEmailRoot(
   return noticeId
 }
 
+/** Attach an approved initial email intake to an existing notice without creating an assessment. */
+export async function attachApprovedCopyrightEmailRootToNotice(
+  noticeId: string,
+  reviewedById: string,
+): Promise<{ intakeId: string }> {
+  const root = await createCommittedCopyrightEmailIntake()
+  const rationale = encryptSecret(
+    'The root email is a complete statutory notice.',
+    copyrightEmailIntakePurpose(root.amazon_ses_message_id),
+  )
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* seedAttachedCopyrightEmailRootDecision */
+    UPDATE copyright_notice_email_intake_receipts
+    SET review_decision = 'approved', reviewed_at = CURRENT_TIMESTAMP,
+      reviewed_by_id = ${reviewedById}, review_rationale_ciphertext = ${rationale}
+    WHERE id = ${root.id}`)
+  await transaction(sql`/* seedAttachedCopyrightEmailRootReview */
+    INSERT INTO copyright_notice_email_intake_reviews (
+      copyright_notice_email_intake_receipt_id, reviewed_at, reviewed_by_id,
+      decision, rationale_ciphertext, promoted_copyright_notice_id
+    ) VALUES (${root.id}, CURRENT_TIMESTAMP, ${reviewedById}, 'approved', ${rationale}, ${noticeId})`)
+  await transaction(sql`/* seedAttachedCopyrightEmailRootLink */
+    INSERT INTO copyright_notice_email_intake_notice_links (
+      copyright_notice_email_intake_id, copyright_notice_id, link_kind, correspondence_action
+    ) VALUES (${root.id}, ${noticeId}, 'initial', NULL)`)
+  await transaction.commit()
+  return { intakeId: root.id }
+}
+
 /** The root was approved and its waiting reply linked before the intermediate writer arrives. */
 export async function createCommittedWaitingCopyrightEmailThread(reviewedById: string) {
   const { rootMessageId, rootIntakeId, noticeId } =

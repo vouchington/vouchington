@@ -21,9 +21,10 @@ export async function activateLateCopyrightLegalHoldRestrictions(
   transaction: TransactionQuery,
 ): Promise<string[]> {
   const { batchSize } = getCopyrightSweepLimits()
+  const sortedTargetIds = targetIds.toSorted()
   const rows: Array<{ id: string; placement_id: string }> = []
-  for (let offset = 0; offset < targetIds.length; offset += batchSize) {
-    const chunk = targetIds.slice(offset, offset + batchSize)
+  for (let offset = 0; offset < sortedTargetIds.length; offset += batchSize) {
+    const chunk = sortedTargetIds.slice(offset, offset + batchSize)
     // oxlint-disable no-await-in-loop -- chunked late-hold activation runs sequentially within this transaction
     // no-mistakes-disable-next-line query-reached-per-item: chunked by DynamicConfig batch_size (hard max 100) over targetIds
     const { rows: chunkRows } = await transaction<{

@@ -1,6 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
+import { createFixtureTargets } from '@voucha/test-helpers/copyright-restoration-hold-targets'
 import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { getTestMediaDeliveryRegistryRecordId } from '@voucha/test-helpers/entities/image-surface-placements'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { raceCopyrightFilingWithReactivation } from '@voucha/test-helpers/copyright-filing-reactivation-race'
@@ -21,6 +25,7 @@ import {
 import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 import { issueCopyrightGuestCapability } from './guest-capabilities.mts'
 import { appendCopyrightGuestFiling } from './guest-filings.mts'
+import { copyrightSweepConfig } from './work-limits.mts'
 
 describe('court filing denial and profile reactivation', () => {
   afterEach(() => {
@@ -202,5 +207,91 @@ describe('court filing denial and profile reactivation', () => {
         }),
       ),
     ).toMatchObject({ state: 'allow' })
+  })
+
+  it('stages identical court filing denials across multi-page and single-page target batches', async () => {
+    for (const [key, value] of Object.entries(await mediaDeliveryEdgeEnvironment()))
+      vi.stubEnv(key, value)
+    const [claimant, moderator] = await Promise.all([
+      createTestUserDirect(),
+      createTestUserDirect({ extraRoles: ['moderator'] }),
+    ])
+    const now = new Date()
+
+    async function runFiling(batchSize: number) {
+      const targets = await createFixtureTargets(claimant.id, 3)
+      const notice = await createCopyrightNoticeAggregate({
+        jurisdiction: 'us_dmca',
+        receivedAt: now,
+        claimantUserId: null,
+        claimantDisplayName: 'Claimant',
+        claimantContactCiphertext: `contact-${crypto.randomUUID()}`,
+        workDescription: 'Multi-image post under court filing.',
+        policyVersion: 'test-v1',
+        initialSubmission: {
+          kind: 'notice',
+          sourceKind: 'email',
+          bodyCiphertext: `body-${crypto.randomUUID()}`,
+        },
+        targets,
+      })
+      const capability = await issueCopyrightGuestCapability({
+        currentUser: moderator,
+        noticeId: notice.id,
+        issuedAt: now,
+        expiresAt: new Date(now.getTime() + 60 * 60_000),
+      })
+      const restore = overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
+        batch_size: batchSize,
+      })
+      onTestFinished(restore)
+      try {
+        const captured = await runWithCapturedQueries(() =>
+          appendCopyrightGuestFiling({
+            noticeId: notice.id,
+            token: capability.token,
+            now,
+            kind: 'court_or_ccb_hold',
+            statement: 'A federal court proceeding covers all targets.',
+          }),
+        )
+        const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
+        const denialStates = await Promise.all(
+          targets.map(async target => {
+            const current = await getImagePlacementForCopyright(target.placementId)
+            const recordId = current ? await getTestMediaDeliveryRegistryRecordId(current) : null
+            if (recordId) await publishStagedMediaDeliveryRecord(recordId)
+            const item = current
+              ? await readMediaDeliveryRegistryItem(getImagePlacementDeliveryKey(current))
+              : null
+            return { withheld: current?.withheld ?? false, state: item?.state ?? null }
+          }),
+        )
+        return {
+          denialReadCount: captured.queries.filter(q =>
+            q.text.includes('denyCopyrightCourtFilingPlacements:current'),
+          ).length,
+          restrictionCount: aggregate?.restrictions.length ?? 0,
+          withholdIntentCount:
+            aggregate?.actionIntents.filter(i => i.action === 'withhold').length ?? 0,
+          denialStates,
+        }
+      } finally {
+        restore()
+      }
+    }
+
+    const multiPage = await runFiling(2)
+    const singlePage = await runFiling(100)
+    expect(multiPage.denialReadCount).toBe(2)
+    expect(singlePage.denialReadCount).toBe(1)
+    expect(multiPage.restrictionCount).toBe(3)
+    expect(multiPage.withholdIntentCount).toBe(3)
+    expect(multiPage.restrictionCount).toBe(singlePage.restrictionCount)
+    expect(multiPage.withholdIntentCount).toBe(singlePage.withholdIntentCount)
+    expect(multiPage.denialStates).toEqual(singlePage.denialStates)
+    expect(multiPage.denialStates).toEqual(
+      Array.from({ length: 3 }, () => ({ withheld: true, state: 'withheld' })),
+    )
   })
 })
