@@ -2,7 +2,7 @@ import { VOTE_HISTORY_ROW_COUNT } from './seed-data/recommended-topics-vote-hist
 import * as rss from './seed-data/rss-feed-weekly-proxy.mts'
 import * as prompt from './community-agent-prompt-page-ids.mts'
 import { LANDING_PAGE_REVIEW_COUNT } from './seed-data/landing-page-candidates.mts'
-import { FOLLOWER_DISTRIBUTION_SEED_COUNT } from './seed-data/common.mts'
+import { FOLLOWER_DISTRIBUTION_SEED_COUNT, TOPIC_SEED_COUNT } from './seed-data/common.mts'
 import * as ingestion from './seed-data/ingestion-raw-pages.mts'
 import * as retention from './seed-data/agent-moderation-retention.mts'
 import * as friendTrust from './seed-data/friend-trusted-hostnames.mts'
@@ -16,7 +16,7 @@ export const CORE_SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   follower_distribution_deliveries: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   user_email_addresses: 40_000,
   oauth_clients: 26_000,
-  topics: 3_603 + rss.RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT,
+  topics: 2_300 + Math.max(TOPIC_SEED_COUNT, rss.RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT),
   individual_cards: 10_000,
   individual_rewards_program_point_valuations: 10_000,
   spending_entries: 20_000,

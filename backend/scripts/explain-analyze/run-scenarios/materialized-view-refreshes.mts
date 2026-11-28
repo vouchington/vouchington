@@ -2,12 +2,14 @@ import { read } from '@data-stores/psql'
 import { getRssFeedsToFetch } from '@services/rss-feeds/get-to-fetch'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { seedUuid } from '../seed-data/common.mts'
+import { seedUuid, TOPIC_SEED_COUNT } from '../seed-data/common.mts'
 import assert from 'node:assert/strict'
 import { RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT } from '../seed-data/rss-feed-weekly-proxy.mts'
 import { MATERIALIZED_VIEW_SCENARIOS } from '../materialized-view-scenarios.mts'
 
-const PROXY_TOPIC_ROW_BOUND = Math.ceil(RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT * 1.2)
+const SEEDED_TOPIC_ROW_BOUND = Math.ceil(
+  Math.max(TOPIC_SEED_COUNT, RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT) * 1.2,
+)
 
 export async function runMaterializedViewRefreshScenarios(): Promise<void> {
   for (const [scenarioId, view] of MATERIALIZED_VIEW_SCENARIOS) {
@@ -88,7 +90,7 @@ registerScenarioContract('mv-rss-feed-crawl-tiers-refresh', {
     // CI also seeds development feeds/topics before the EXPLAIN cohort.
     rss_feeds: 3089,
     relation__user__follow__rss_feed: 3239,
-    topics: Math.max(5259, PROXY_TOPIC_ROW_BOUND),
+    topics: Math.max(5259, SEEDED_TOPIC_ROW_BOUND),
     memberships: 360,
     membership_products: 5,
     membership_sources: 360,
@@ -153,7 +155,7 @@ registerScenarioContract('mv-platform-stats-refresh', {
     {
       kind: 'maxProcessedRows',
       relation: 'topics',
-      max: Math.max(6000, PROXY_TOPIC_ROW_BOUND),
+      max: Math.max(6000, SEEDED_TOPIC_ROW_BOUND),
     },
   ],
   crossPartition: { posts: 'The snapshot counts all public posts.' },

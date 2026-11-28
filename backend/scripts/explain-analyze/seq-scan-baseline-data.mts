@@ -39,7 +39,6 @@ export const BASELINE_FINGERPRINTS = [
   'topic-import-reference-resolution-at-cap|0|getTopicsByReferenceBatch:force_custom_plan|force_custom_plan:topics',
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_custom_plan|force_custom_plan:notifications',
   'notifications-unread-summary|0|getUnreadNotificationsSummary:force_generic_plan|force_generic_plan:notifications',
-  'recommended-topics|0|buildRecommendationQuery:force_custom_plan|force_custom_plan:topics',
   // Hosted artifact 15034796173 repeated both custom RSS category write scans.
   // Remove these entries with #6417.
   'rss-item-category-insert-at-cap|0|insertMissingCategories:force_custom_plan|force_custom_plan:topic_aliases',

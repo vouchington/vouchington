@@ -1,5 +1,12 @@
 import { beginTransaction } from '@data-stores/psql'
-import { contentHash, FEED_URL_COUNT, HOSTNAME_COUNT, ITEM_URL_POOL, seedUuid } from './common.mts'
+import {
+  contentHash,
+  FEED_URL_COUNT,
+  HOSTNAME_COUNT,
+  ITEM_URL_POOL,
+  seedUuid,
+  TOPIC_SEED_COUNT,
+} from './common.mts'
 
 export { seedUserRemovedPlatformPosts } from './user-removed-platform-posts.mts'
 
@@ -108,25 +115,28 @@ export async function seedUrls(count = FEED_URL_COUNT + ITEM_URL_POOL): Promise<
     await transaction.commit()
   }
 }
-export async function seedTopics(count = 100): Promise<void> {
+export async function seedTopics(count = TOPIC_SEED_COUNT): Promise<void> {
   console.log(`Seeding ${count} topics...`)
   {
     await using transaction = await beginTransaction()
-    const values: unknown[] = []
-    const rows: string[] = []
+    const ids: string[] = []
+    const names: string[] = []
+    const slugs: string[] = []
+    const hashes: string[] = []
     for (let i = 0; i < count; i++) {
-      const id = seedUuid(i, '04')
-      const name = `Seed Topic ${i}`
-      const slug = `seed-topic-${i}`
-      const hash = contentHash(`topic-${i}`)
-      values.push(id, name, slug, hash)
-      const base = values.length - 3
-      rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}, 'system')`)
+      ids.push(seedUuid(i, '04'))
+      names.push(`Seed Topic ${i}`)
+      slugs.push(`seed-topic-${i}`)
+      hashes.push(contentHash(`topic-${i}`).toString('hex'))
     }
     await transaction(
-      `/* seedExplainData */ INSERT INTO topics (id, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
-       VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
-      values,
+      `/* seedExplainData */ INSERT INTO topics
+         (id, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
+       SELECT id, name, slug, decode(hash, 'hex'), 'system'
+       FROM unnest($1::uuid[], $2::text[], $3::text[], $4::text[])
+         AS seed(id, name, slug, hash)
+       ON CONFLICT DO NOTHING`,
+      [ids, names, slugs, hashes],
     )
 
     await transaction.commit()
