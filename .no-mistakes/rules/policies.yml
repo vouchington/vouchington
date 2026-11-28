@@ -2460,10 +2460,6 @@
         {
           reason: 'PRIMARY KEY (community_id, agent_id) restricted by write validation (moderation/community-auto-taggers.mts) to the 7 code-defined slugs in FIXED_LABEL_MODERATOR_SLUGS (moderation/community-auto-tagger-data.mts)',
         }
-      copyright_notice_targets.copyright_notice_id:
-        {
-          reason: 'claimantTargetsMax (DynamicConfig copyright, hard max COPYRIGHT_CLAIMANT_TARGETS_MAX = 50 in copyright-notices/config.mts) is enforced on structured form intake (form-input-validation.mts) and territorial decisions (territorial-decision.mts); staff email promotion has no product cap',
-        }
       copyright_notice_target_images.copyright_notice_target_id:
         { reason: 'PRIMARY KEY (copyright_notice_target_id), so at most 1 row per target' }
       copyright_notice_email_intake_attachments.copyright_notice_email_intake_id:
