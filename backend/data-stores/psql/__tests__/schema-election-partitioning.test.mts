@@ -1,3 +1,4 @@
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
   entityRelationMetadatum,
@@ -5,13 +6,16 @@ import {
 } from '@voucha/types/entities/entity-relations-metadata'
 import { getElectionIndexName } from '../config-driven/utils/election-sql-identifiers.mts'
 import { VOTE_SCHEMA_CONFIGS } from '../config-driven/utils/election-schema-config.mts'
-import { onGracefulShutdown, read } from '../index.mts'
 import { NON_DEFAULT_ID_EXCEPTIONS } from '../../../test-helpers/schema-growth-test-policies.mts'
 import {
   getConstraintRows,
+  getElectionUuidV7Columns,
   getIndexRows,
   getPartitionRows,
+  getUserVouchAggregateColumns,
+  getUuidV7TargetTimestampEvidence,
 } from '../../../test-helpers/data-stores/psql/election-schema.mts'
+import { getRemovedTablePresence } from '../../../test-helpers/data-stores/psql/schema-integrity.mts'
 
 const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)
 const configuredVoteTables = VOTE_SCHEMA_CONFIGS.map(config => config.voteTable)
@@ -19,7 +23,7 @@ const relationVoteTables = electionRelations.map(getEntityRelationVoteTableName)
 
 describe('election schema partitioning', () => {
   afterAll(async () => {
-    await onGracefulShutdown()
+    await onGracefulShutdown('SIGTERM')
   })
 
   it('range-partitions every configured vote table on its target with one DEFAULT child', async () => {
@@ -128,31 +132,16 @@ describe('election schema partitioning', () => {
   })
 
   it('stores vouch aggregates on users and keeps removed bot/vouch extension tables absent', async () => {
-    const { rows: columns } = await read<{
-      column_name: string
-      data_type: string
-      generation_expression: string | null
-    }>(
-      `/* getUserVouchAggregateColumns */
-      SELECT column_name, data_type, generation_expression
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'users'
-        AND column_name = ANY($1)
-      ORDER BY column_name`,
-      [
-        [
-          'votes_count_down',
-          'votes_count_none',
-          'votes_count_up',
-          'votes_score_down',
-          'votes_score_net',
-          'votes_score_none',
-          'votes_score_sort',
-          'votes_score_up',
-        ],
-      ],
-    )
+    const columns = await getUserVouchAggregateColumns([
+      'votes_count_down',
+      'votes_count_none',
+      'votes_count_up',
+      'votes_score_down',
+      'votes_score_net',
+      'votes_score_none',
+      'votes_score_sort',
+      'votes_score_up',
+    ])
     expect(columns.map(column => column.column_name)).toEqual([
       'votes_count_down',
       'votes_count_none',
@@ -171,46 +160,23 @@ describe('election schema partitioning', () => {
     ).toContain('votes_score_up - votes_score_down')
 
     const removedTables = ['user_bot_elections', 'user_bot_votes', 'user_vouch_elections']
-    const { rows: removed } = await read<{ table_name: string; relation: string | null }>(
-      `/* getRemovedElectionTables */
-        SELECT table_name, to_regclass('public.' || table_name)::text AS relation
-        FROM unnest($1::text[]) AS table_name
-        ORDER BY table_name`,
-      [removedTables],
-    )
+    const removed = await getRemovedTablePresence(removedTables)
     expect(removed).toEqual(
       removedTables.toSorted().map(table_name => ({ table_name, relation: null })),
     )
   })
 
   it('uses UUIDv7 target keys for routing and derives vote timestamps from vote UUIDv7 IDs', async () => {
-    const { rows: columns } = await read<{
-      table_name: string
-      column_name: string
-      data_type: string
-      column_default: string | null
-      generation_expression: string | null
-    }>(
-      `/* getElectionUuidV7Columns */
-      SELECT table_name, column_name, data_type, column_default, generation_expression
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND ((table_name = ANY($1) AND column_name = 'id')
-          OR (table_name = ANY($2) AND column_name = ANY($3))
-          OR (table_name = ANY($5) AND column_name = 'entity_relation_id')
-          OR (table_name = ANY($4) AND column_name = 'created_at'))
-      ORDER BY table_name, column_name`,
-      [
-        [
-          ...VOTE_SCHEMA_CONFIGS.map(config => config.entityTable),
-          ...electionRelations.map(metadata => metadata.table_name),
-        ],
-        configuredVoteTables,
-        VOTE_SCHEMA_CONFIGS.map(config => config.entityIdColumn),
-        [...configuredVoteTables, ...relationVoteTables],
-        relationVoteTables,
+    const columns = await getElectionUuidV7Columns({
+      idTables: [
+        ...VOTE_SCHEMA_CONFIGS.map(config => config.entityTable),
+        ...electionRelations.map(metadata => metadata.table_name),
       ],
-    )
+      configuredVoteTables,
+      entityIdColumns: VOTE_SCHEMA_CONFIGS.map(config => config.entityIdColumn),
+      allVoteTables: [...configuredVoteTables, ...relationVoteTables],
+      relationVoteTables,
+    })
 
     for (const config of VOTE_SCHEMA_CONFIGS) {
       const idPolicy = config.entityTable
@@ -266,11 +232,7 @@ describe('election schema partitioning', () => {
       )
     }
 
-    const { rows: samples } = await read<{ target_id: string; target_timestamp: Date }>(
-      `/* getUuidV7TargetTimestampEvidence */
-        WITH sample AS (SELECT uuidv7() AS target_id)
-        SELECT target_id, uuid_extract_timestamp(target_id) AS target_timestamp FROM sample`,
-    )
+    const samples = await getUuidV7TargetTimestampEvidence()
     expect(samples[0]?.target_id).toMatch(/^0[0-9a-f]{7}-[0-9a-f]{4}-7[0-9a-f]{3}-/)
     expect(Math.abs(Date.now() - samples[0]!.target_timestamp.getTime())).toBeLessThan(5_000)
   })

@@ -1,9 +1,18 @@
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
   entityRelationMetadatum,
   getEntityRelationIntegrityTargetColumn,
 } from '@voucha/types/entities/entity-relations-metadata'
-import { onGracefulShutdown, read } from '../index.mts'
+import {
+  readPartitionChildNames,
+  readPublicNonInternalTriggers,
+} from '../../../test-helpers/data-stores/psql/schema-catalog.mts'
+import {
+  readRetainedIdentityLiveForeignKeys,
+  readRetainedRelationForeignKeys,
+  readRetainedRelationImpactForeignKeys,
+} from '../../../test-helpers/data-stores/psql/schema-retained-identities.mts'
 
 const liveRoots = [
   [
@@ -23,26 +32,18 @@ const liveRoots = [
 ] as const
 
 describe('concrete retained entity identities', () => {
-  afterAll(onGracefulShutdown)
+  afterAll(() => onGracefulShutdown('SIGTERM'))
 
   it('registers each live entity through a BEFORE INSERT trigger and restrictive root FK', async () => {
-    const { rows: constraints } = await read<{
-      owner: string
-      target: string
-      delete_action: string
-    }>(`/* readRetainedIdentityLiveForeignKeys */
-      SELECT conrelid::regclass::text AS owner, confrelid::regclass::text AS target,
-        confdeltype::text AS delete_action
-      FROM pg_constraint WHERE contype = 'f' AND conrelid IN
-        ('users'::regclass, 'api_keys'::regclass, 'topics'::regclass, 'posts'::regclass,
-         'rss_feed_items'::regclass, 'memberships'::regclass)`)
-    const { rows: triggers } = await read<{ owner: string; trigger_name: string }>(
-      `/* readRetainedIdentityLiveTriggers */
-      SELECT tgrelid::regclass::text AS owner, tgname AS trigger_name FROM pg_trigger
-      WHERE NOT tgisinternal AND tgrelid IN
-        ('users'::regclass, 'api_keys'::regclass, 'topics'::regclass, 'posts'::regclass,
-         'rss_feed_items'::regclass, 'memberships'::regclass)`,
-    )
+    const constraints = await readRetainedIdentityLiveForeignKeys()
+    const triggers = await readPublicNonInternalTriggers([
+      'users',
+      'api_keys',
+      'topics',
+      'posts',
+      'rss_feed_items',
+      'memberships',
+    ])
     for (const [live, root, trigger] of liveRoots) {
       expect(constraints).toContainEqual({ owner: live, target: root, delete_action: 'r' })
       expect(triggers).toContainEqual({ owner: live, trigger_name: trigger })
@@ -50,12 +51,10 @@ describe('concrete retained entity identities', () => {
   })
 
   it('keeps post and RSS item roots in default-backed UUID range partitions', async () => {
-    const { rows } = await read<{ parent: string; child: string }>(
-      `/* readRetainedIdentityDefaultPartitions */
-      SELECT inhparent::regclass::text AS parent, inhrelid::regclass::text AS child
-      FROM pg_inherits WHERE inhparent IN
-        ('retained_post_identities'::regclass, 'retained_rss_feed_item_identities'::regclass)`,
-    )
+    const rows = await readPartitionChildNames([
+      'retained_post_identities',
+      'retained_rss_feed_item_identities',
+    ])
     expect(rows).toEqual(
       expect.arrayContaining([
         {
@@ -72,25 +71,8 @@ describe('concrete retained entity identities', () => {
 
   it('owns every elected relation through a concrete retained pair and exact impact target', async () => {
     const elected = entityRelationMetadatum.filter(metadata => metadata.election)
-    const { rows: relations } = await read<{
-      owner: string
-      target: string
-      delete_action: string
-    }>(
-      `/* readRetainedRelationForeignKeys */
-       SELECT conrelid::regclass::text AS owner, confrelid::regclass::text AS target,
-         confdeltype::text AS delete_action
-       FROM pg_constraint
-       WHERE contype = 'f' AND conrelid::regclass::text LIKE 'retained_relation__%'`,
-    )
-    const { rows: impacts } = await read<{ column_name: string; target: string }>(
-      `/* readRetainedRelationImpactForeignKeys */
-       SELECT a.attname AS column_name, c.confrelid::regclass::text AS target
-       FROM pg_constraint c
-       JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[2]
-       WHERE c.contype = 'f' AND c.conrelid = 'user_deletion_relation_impacts'::regclass
-         AND array_length(c.conkey, 1) = 2`,
-    )
+    const relations = await readRetainedRelationForeignKeys()
+    const impacts = await readRetainedRelationImpactForeignKeys()
     expect(elected).toHaveLength(17)
     for (const metadata of elected) {
       const retained = `retained_${metadata.table_name}`

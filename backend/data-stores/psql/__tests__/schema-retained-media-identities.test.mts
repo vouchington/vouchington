@@ -1,17 +1,25 @@
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
-import { beginTransaction, onGracefulShutdown, read } from '../index.mts'
+import {
+  readPartitionChildNames,
+  readPublicNonInternalTriggers,
+} from '../../../test-helpers/data-stores/psql/schema-catalog.mts'
+import {
+  insertUnknownRegistryMarker,
+  mutateReservedRetainedBinding,
+  readRegistryBackedMarkerKeys,
+  readRetainedMediaFamilyChecks,
+  readRetainedMediaForeignKeys,
+} from '../../../test-helpers/data-stores/psql/schema-retained-media.mts'
 
 describe('concrete retained media identities', () => {
-  afterAll(onGracefulShutdown)
+  afterAll(() => onGracefulShutdown('SIGTERM'))
 
   it('declares partitioned image and immutable placement binding owners', async () => {
-    const { rows: partitions } = await read<{ parent: string; child: string }>(
-      `/* readRetainedMediaPartitions */
-       SELECT inhparent::regclass::text AS parent, inhrelid::regclass::text AS child
-       FROM pg_inherits WHERE inhparent IN
-         ('retained_image_identities'::regclass,
-          'retained_image_placement_bindings'::regclass)`,
-    )
+    const partitions = await readPartitionChildNames([
+      'retained_image_identities',
+      'retained_image_placement_bindings',
+    ])
     expect(partitions).toEqual(
       expect.arrayContaining([
         { parent: 'retained_image_identities', child: 'retained_image_identities_default' },
@@ -21,26 +29,15 @@ describe('concrete retained media identities', () => {
         },
       ]),
     )
-    const { rows: triggers } = await read<{ trigger_name: string }>(
-      `/* readRetainedMediaBindingGuard */
-       SELECT tgname AS trigger_name FROM pg_trigger
-       WHERE tgrelid = 'retained_image_placement_bindings'::regclass AND NOT tgisinternal`,
-    )
+    const triggers = await readPublicNonInternalTriggers(['retained_image_placement_bindings'])
     expect(triggers).toContainEqual({
+      owner: 'retained_image_placement_bindings',
       trigger_name: 'trigger_guard_retained_image_placement_binding',
     })
   })
 
   it('constrains live children and registry to the exact retained pair', async () => {
-    const { rows } = await read<{ owner: string; target: string; definition: string }>(
-      `/* readRetainedMediaForeignKeys */
-       SELECT conrelid::regclass::text AS owner, confrelid::regclass::text AS target,
-         pg_get_constraintdef(oid) AS definition
-       FROM pg_constraint
-       WHERE contype = 'f' AND confrelid IN
-         ('retained_image_identities'::regclass,
-          'retained_image_placement_bindings'::regclass)`,
-    )
+    const rows = await readRetainedMediaForeignKeys()
     for (const owner of ['image_placements', 'image_surface_placements']) {
       expect(rows).toEqual(
         expect.arrayContaining([
@@ -72,13 +69,7 @@ describe('concrete retained media identities', () => {
         }),
       ]),
     )
-    const { rows: familyChecks } = await read<{ owner: string; definition: string }>(
-      `/* readRetainedMediaFamilyChecks */
-       SELECT conrelid::regclass::text AS owner, pg_get_constraintdef(oid) AS definition
-       FROM pg_constraint WHERE contype = 'c' AND conrelid IN
-         ('image_placements'::regclass, 'image_surface_placements'::regclass)
-         AND pg_get_constraintdef(oid) LIKE '%binding_family%'`,
-    )
+    const familyChecks = await readRetainedMediaFamilyChecks()
     expect(familyChecks).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -91,11 +82,7 @@ describe('concrete retained media identities', () => {
         }),
       ]),
     )
-    const { rows: markerKeys } = await read<{ definition: string }>(
-      `/* readRegistryBackedMarkerKey */ SELECT pg_get_constraintdef(oid) AS definition
-       FROM pg_constraint WHERE contype = 'f'
-         AND conrelid = 'media_delivery_repair_markers'::regclass`,
-    )
+    const markerKeys = await readRegistryBackedMarkerKeys()
     expect(markerKeys).toEqual([
       expect.objectContaining({
         definition: expect.stringContaining(
@@ -108,58 +95,11 @@ describe('concrete retained media identities', () => {
   it.each(['placement_id', 'image_id', 'binding_family'] as const)(
     'rejects mutation of reserved binding %s',
     async field => {
-      await using query = await beginTransaction()
-      const { rows: identities } = await query<{
-        image_id: string
-        other_image_id: string
-        placement_id: string
-        other_placement_id: string
-      }>(
-        '/* allocateRetainedMediaMutationIds */ SELECT uuidv7() AS image_id, uuidv7() AS other_image_id, uuidv7() AS placement_id, uuidv7() AS other_placement_id',
-      )
-      const {
-        image_id: imageId,
-        other_image_id: otherImageId,
-        placement_id: placementId,
-        other_placement_id: otherPlacementId,
-      } = identities[0]!
-      const { rows: uploaders } = await query<{ id: string }>(
-        '/* createRetainedImagesForMutation:uploader */ INSERT INTO retained_user_identities (id) VALUES (uuidv7()) RETURNING id',
-      )
-      await query(
-        '/* createRetainedImagesForMutation */ INSERT INTO retained_image_identities (id, created_by_id) VALUES ($1, $3), ($2, $3)',
-        [imageId, otherImageId, uploaders[0]!.id],
-      )
-      await query(
-        "/* createRetainedBindingForMutation */ INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, 'post')",
-        [placementId, imageId],
-      )
-      const updates = {
-        placement_id: { sql: 'placement_id = $2', value: otherPlacementId },
-        image_id: { sql: 'image_id = $2', value: otherImageId },
-        binding_family: { sql: 'binding_family = $2', value: 'surface' },
-      }
-      const update = updates[field]
-      await expect(
-        query(
-          `/* rejectRetainedBindingMutation */ UPDATE retained_image_placement_bindings SET ${update.sql} WHERE placement_id = $1`,
-          [placementId, update.value],
-        ),
-      ).rejects.toMatchObject({ code: '23514' })
+      await expect(mutateReservedRetainedBinding(field)).rejects.toMatchObject({ code: '23514' })
     },
   )
 
   it('rejects a repair marker without a committed registry parent', async () => {
-    await using query = await beginTransaction()
-    const { rows: identities } = await query<{ record_id: string }>(
-      '/* allocateUnknownMarkerIds */ SELECT uuidv7() AS record_id',
-    )
-    const { record_id: recordId } = identities[0]!
-    await expect(
-      query(
-        '/* rejectUnknownRegistryMarker */ INSERT INTO media_delivery_repair_markers (media_delivery_registry_record_id, marker_token) VALUES ($1, 1)',
-        [recordId],
-      ),
-    ).rejects.toMatchObject({ code: '23503' })
+    await expect(insertUnknownRegistryMarker()).rejects.toMatchObject({ code: '23503' })
   })
 })

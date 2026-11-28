@@ -1,7 +1,11 @@
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
-import { CONVERTED_FINITE_COLUMNS } from '../../../test-helpers/data-stores/psql/schema-finite-columns.mts'
+import {
+  CONVERTED_FINITE_COLUMNS,
+  getFiniteEnumColumnTypes,
+  getFiniteEnumLabels,
+} from '../../../test-helpers/data-stores/psql/schema-finite-columns.mts'
 import { MODERATOR_ACTION_TYPES } from '@ts-shared/utils/moderation-catalogs'
-import { onGracefulShutdown, read } from '../index.mts'
 
 const existingFiniteEnumColumns = [
   {
@@ -169,20 +173,12 @@ const finiteEnumTypes = [
 
 describe('PostgreSQL finite enums', () => {
   afterAll(async () => {
-    await onGracefulShutdown()
+    await onGracefulShutdown('SIGTERM')
   })
 
   it('uses named enums for finite domain columns', async () => {
-    const { rows } = await read<{ column_key: string; type_name: string }>(
-      `/* getFiniteEnumColumnTypes */
-        SELECT
-          table_name || '.' || column_name AS column_key,
-          udt_name AS type_name
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND table_name || '.' || column_name = ANY($1)
-        ORDER BY column_key`,
-      [finiteEnumColumns.map(definition => `${definition.table}.${definition.column}`)],
+    const rows = await getFiniteEnumColumnTypes(
+      finiteEnumColumns.map(definition => `${definition.table}.${definition.column}`),
     )
 
     expect(rows.toSorted((left, right) => left.column_key.localeCompare(right.column_key))).toEqual(
@@ -196,22 +192,7 @@ describe('PostgreSQL finite enums', () => {
   })
 
   it('keeps each finite domain enum label set exact', async () => {
-    const { rows } = await read<{ type_name: string; labels: string[] }>(
-      `/* getFiniteEnumLabels */
-        SELECT
-          type_definition.typname AS type_name,
-          jsonb_agg(enum_definition.enumlabel ORDER BY enum_definition.enumsortorder) AS labels
-        FROM pg_type type_definition
-        JOIN pg_namespace namespace
-          ON namespace.oid = type_definition.typnamespace
-        JOIN pg_enum enum_definition
-          ON enum_definition.enumtypid = type_definition.oid
-        WHERE namespace.nspname = 'public'
-          AND type_definition.typname = ANY($1)
-        GROUP BY type_definition.typname
-        ORDER BY type_definition.typname`,
-      [finiteEnumTypes.map(definition => definition.type)],
-    )
+    const rows = await getFiniteEnumLabels(finiteEnumTypes.map(definition => definition.type))
 
     expect(rows).toEqual(
       finiteEnumTypes

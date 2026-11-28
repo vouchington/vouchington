@@ -1,25 +1,23 @@
 import { randomUUID } from 'node:crypto'
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
+  countCommunityApplicationAnswers,
+  countDeletedCommunityApplicationRows,
+  countSurvivingCommunityApplicationQuestions,
+  deleteCommunityApplication,
+  deleteCommunityForApplicationTest,
   insertAnswer,
   insertApplication,
   insertQuestion,
+  readCommunityApplicationAnswerValues,
   seedCommunity,
+  softDeleteCommunityApplicationQuestion,
 } from '../../../test-helpers/data-stores/psql/community-application-answer-schema.mts'
 import { insertTestCommunity } from '../../../test-helpers/entities/communities.mts'
-import { onGracefulShutdown, read, write } from '../index.mts'
-
-async function countAnswers(applicationId: string): Promise<number> {
-  const { rows } = await read(
-    `/* countCommunityApplicationAnswers */
-      SELECT count(*)::int AS count FROM community_application_answers WHERE application_id = $1`,
-    [applicationId],
-  )
-  return (rows[0] as { count: number }).count
-}
 
 describe('community application answer rows', () => {
-  afterAll(onGracefulShutdown)
+  afterAll(() => onGracefulShutdown('SIGTERM'))
 
   it('rejects a question from another community through the composite FK', async () => {
     const { user, community } = await seedCommunity()
@@ -66,7 +64,7 @@ describe('community application answer rows', () => {
     await expect(
       insertAnswer(applicationId, community.id, questionId, 'second'),
     ).rejects.toMatchObject({ code: '23505' })
-    expect(await countAnswers(applicationId)).toBe(1)
+    expect(await countCommunityApplicationAnswers(applicationId)).toBe(1)
   })
 
   it.each([
@@ -81,11 +79,7 @@ describe('community application answer rows', () => {
     const questionId = await insertQuestion(community.id)
     const applicationId = await insertApplication(community.id, user.id)
     await insertAnswer(applicationId, community.id, questionId, value)
-    const { rows } = await read(
-      `/* readCommunityApplicationAnswerValue */
-        SELECT value FROM community_application_answers WHERE application_id = $1`,
-      [applicationId],
-    )
+    const rows = await readCommunityApplicationAnswerValues(applicationId)
     expect(rows).toEqual([{ value }])
   })
 
@@ -113,17 +107,10 @@ describe('community application answer rows', () => {
     const applicationId = await insertApplication(community.id, user.id)
     await insertAnswer(applicationId, community.id, first, 'a')
     await insertAnswer(applicationId, community.id, second, ['b'])
-    expect(await countAnswers(applicationId)).toBe(2)
-    await write(`/* deleteApplication */ DELETE FROM community_applications WHERE id = $1`, [
-      applicationId,
-    ])
-    expect(await countAnswers(applicationId)).toBe(0)
-    const { rows } = await read(
-      `/* countSurvivingQuestions */
-        SELECT count(*)::int AS count FROM community_application_questions WHERE community_id = $1`,
-      [community.id],
-    )
-    expect(rows[0]).toEqual({ count: 2 })
+    expect(await countCommunityApplicationAnswers(applicationId)).toBe(2)
+    await deleteCommunityApplication(applicationId)
+    expect(await countCommunityApplicationAnswers(applicationId)).toBe(0)
+    expect(await countSurvivingCommunityApplicationQuestions(community.id)).toEqual({ count: 2 })
   })
 
   it('hard-deletes application answers with the community', async () => {
@@ -131,16 +118,12 @@ describe('community application answer rows', () => {
     const questionId = await insertQuestion(community.id)
     const applicationId = await insertApplication(community.id, user.id)
     await insertAnswer(applicationId, community.id, questionId, 'x')
-    await write(`/* deleteCommunity */ DELETE FROM communities WHERE id = $1`, [community.id])
-    const { rows } = await read(
-      `/* countDeletedCommunityApplicationRows */
-        SELECT
-          (SELECT count(*)::int FROM community_applications WHERE community_id = $1) AS applications,
-          (SELECT count(*)::int FROM community_application_questions WHERE community_id = $1) AS questions,
-          (SELECT count(*)::int FROM community_application_answers WHERE community_id = $1) AS answers`,
-      [community.id],
-    )
-    expect(rows[0]).toEqual({ applications: 0, questions: 0, answers: 0 })
+    await deleteCommunityForApplicationTest(community.id)
+    expect(await countDeletedCommunityApplicationRows(community.id)).toEqual({
+      applications: 0,
+      questions: 0,
+      answers: 0,
+    })
   })
 
   it('keeps answers when their question is soft-deleted', async () => {
@@ -148,12 +131,8 @@ describe('community application answer rows', () => {
     const questionId = await insertQuestion(community.id)
     const applicationId = await insertApplication(community.id, user.id)
     await insertAnswer(applicationId, community.id, questionId, 'kept')
-    await write(
-      `/* softDeleteQuestion */
-        UPDATE community_application_questions SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`,
-      [questionId],
-    )
-    expect(await countAnswers(applicationId)).toBe(1)
+    await softDeleteCommunityApplicationQuestion(questionId)
+    expect(await countCommunityApplicationAnswers(applicationId)).toBe(1)
   })
 
   it('rejects an order_index outside 0 to 999 and accepts both ends', async () => {

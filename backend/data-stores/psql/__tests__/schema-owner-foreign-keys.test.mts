@@ -1,12 +1,17 @@
 import { randomUUID } from 'node:crypto'
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createClassifierFixture } from '../../../test-helpers/data-stores/psql/classifiers.mts'
+import { readForeignKeyWithLeadingIndex } from '../../../test-helpers/data-stores/psql/schema-catalog.mts'
+import {
+  insertOwnerFkClassifierBatchWithMissingCommunity,
+  pointOwnerFkReferralLinkAtMissingCrawl,
+} from '../../../test-helpers/data-stores/psql/schema-owner-foreign-keys.mts'
 import {
   createTestReferralLinkWithLastCrawl,
   deleteTestCrawl,
   readTestReferralLinkLastCrawl,
 } from '../../../test-helpers/entities/referral-link-crawl-pointers.mts'
-import { beginTransaction, onGracefulShutdown, read } from '../index.mts'
 
 const foreignKeys = [
   {
@@ -33,23 +38,12 @@ const foreignKeys = [
 ]
 
 describe('owner foreign keys', () => {
-  afterAll(onGracefulShutdown)
+  afterAll(() => onGracefulShutdown('SIGTERM'))
 
   it.each(foreignKeys)(
     '$table has a validated $deleteAction-delete FK to $target with a leading index',
     async ({ table, constraint, target, deleteAction, leadingColumn }) => {
-      const { rows } = await read(
-        `/* readOwnerForeignKey */
-        SELECT c.confrelid::regclass::text AS target, c.confdeltype::text AS delete_action,
-          c.convalidated AS validated,
-          (SELECT a.attname FROM pg_index i
-            JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = i.indkey[0]
-            WHERE i.indrelid = c.conrelid AND i.indkey[0] = c.conkey[1] AND i.indisvalid
-            LIMIT 1) AS leading_column
-        FROM pg_constraint c
-        WHERE c.conrelid = $1::regclass AND c.conname = $2 AND c.conparentid = 0`,
-        [table, constraint],
-      )
+      const rows = await readForeignKeyWithLeadingIndex(table, constraint)
       expect(rows).toEqual([
         { target, delete_action: deleteAction, validated: true, leading_column: leadingColumn },
       ])
@@ -59,16 +53,14 @@ describe('owner foreign keys', () => {
   describe('classifier decision batch community scope', () => {
     it('rejects a community-scoped batch for a community that does not exist', async () => {
       const fixture = await createClassifierFixture()
-      await using query = await beginTransaction()
 
       await expect(
-        query(
-          `/* insertOwnerFkClassifierBatch */
-          INSERT INTO classifier_decision_batches
-            (classifier_id, prompt_version_id, post_id, scope_category, scope_community_id)
-          VALUES ($1, $2, $3, 'community_ai', $4)`,
-          [fixture.classifierId, fixture.promptVersionId, fixture.postId, randomUUID()],
-        ),
+        insertOwnerFkClassifierBatchWithMissingCommunity({
+          classifierId: fixture.classifierId,
+          promptVersionId: fixture.promptVersionId,
+          postId: fixture.postId,
+          missingCommunityId: randomUUID(),
+        }),
       ).rejects.toMatchObject({
         code: '23503',
         constraint: 'classifier_decision_batches_scope_community_id_fkey',
@@ -94,13 +86,9 @@ describe('owner foreign keys', () => {
   describe('referral link last crawl', () => {
     it('rejects a last crawl that does not exist', async () => {
       const { linkId } = await createTestReferralLinkWithLastCrawl()
-      await using query = await beginTransaction()
 
       await expect(
-        query(
-          '/* pointOwnerFkReferralLinkAtMissingCrawl */ UPDATE user_referral_program_links SET last_crawl_id = $2 WHERE id = $1',
-          [linkId, randomUUID()],
-        ),
+        pointOwnerFkReferralLinkAtMissingCrawl(linkId, randomUUID()),
       ).rejects.toMatchObject({
         code: '23503',
         constraint: 'user_referral_program_links_last_crawl_id_fkey',

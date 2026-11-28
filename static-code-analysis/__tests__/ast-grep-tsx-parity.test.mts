@@ -83,9 +83,9 @@ describe('ast-grep rule examples', () => {
 describe('no-sql-in-backend-tests shrinking ignores list', () => {
   const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)))
   const rulePath = join(repoRoot, 'ast-grep-rules', 'no-sql-in-backend-tests.yml')
-  // 2 helper globs + 6 package self-tests + 23 SQL-running psql schema tests.
+  // 2 helper globs + 6 package self-tests.
   // Exact count so removing an entry requires lowering this number in the same PR.
-  const EXPECTED_TOTAL_IGNORES = 31
+  const EXPECTED_TOTAL_IGNORES = 8
   // 27 synthetic ExplainResult/probe fixtures in backend/scripts/explain-analyze +
   // 3 DDL-invariant parser fixtures in backend/data-stores/psql/config-driven/__tests__ +
   // 1 synthetic view definition in backend/data-stores/psql/__tests__/schema-snapshot-verification.test.mts.
@@ -93,7 +93,7 @@ describe('no-sql-in-backend-tests shrinking ignores list', () => {
   // Bare `ast-grep-ignore` (without a `: <rule-id>` list) suppresses every rule, including this one.
   const EXPECTED_BARE_INLINE_IGNORES = 0
 
-  it('locks total ignores to 31 and rejects duplicates or stale file paths', () => {
+  it('locks total ignores to 8 and rejects duplicates or stale file paths', () => {
     const parsed = parse(readFileSync(rulePath, 'utf8')) as { ignores?: string[] }
     const ignores = parsed.ignores ?? []
 

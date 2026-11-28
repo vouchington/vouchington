@@ -1,5 +1,6 @@
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
-import { onGracefulShutdown, read } from '../index.mts'
+import { readTablesReferencingTarget } from '../../../test-helpers/data-stores/psql/schema-catalog.mts'
 
 /**
  * Every table that points at a case must say how its writes reach `last_legal_activity_at`, so a
@@ -42,15 +43,10 @@ const caseTables = {
 }
 
 describe('copyright legal clock coverage', () => {
-  afterAll(onGracefulShutdown)
+  afterAll(() => onGracefulShutdown('SIGTERM'))
 
   it('classifies every table that references a case', async () => {
-    const { rows } = await read<{ name: string }>(`/* readCopyrightCaseReferencingTables */
-      SELECT DISTINCT c.conrelid::regclass::text AS name
-      FROM pg_constraint c
-      JOIN pg_class child ON child.oid = c.conrelid
-      WHERE c.contype = 'f' AND c.confrelid = 'copyright_notices'::regclass
-        AND NOT child.relispartition`)
-    expect(rows.map(row => row.name).toSorted()).toEqual(Object.keys(caseTables).toSorted())
+    const tableNames = await readTablesReferencingTarget('copyright_notices')
+    expect(tableNames.toSorted()).toEqual(Object.keys(caseTables).toSorted())
   })
 })

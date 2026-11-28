@@ -1,6 +1,7 @@
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
-import { onGracefulShutdown, read } from '../index.mts'
 import { PARTITION_POLICIES, UNBOUNDED_UNPARTITIONED_TABLES } from '../schema-growth-registry.mts'
+import { getSchemaGrowthRegistryCatalog } from '../../../test-helpers/data-stores/psql/schema-growth-registry-catalog.mts'
 import { STATIC_IDENTITY_EXCEPTIONS } from '../../../test-helpers/schema-growth-bounded-policies.mts'
 import {
   buildSchemaGrowthRegistry,
@@ -8,45 +9,13 @@ import {
   type SchemaIdPolicy,
 } from '../../../test-helpers/schema-growth-test-policies.mts'
 
-type CatalogTable = {
-  table_name: string
-  id_type: string | null
-  id_default: string | null
-  partition_strategy: 'l' | 'r' | null
-  partition_key: string | null
-}
-
 describe('PostgreSQL schema growth registry', () => {
   afterAll(async () => {
-    await onGracefulShutdown()
+    await onGracefulShutdown('SIGTERM')
   })
 
   it('classifies every logical table and matches its partition strategy', async () => {
-    const { rows } = await read<CatalogTable>(`/* getSchemaGrowthRegistryCatalog */
-      SELECT
-        tables.relname AS table_name,
-        id_type.typname AS id_type,
-        pg_get_expr(id_default.adbin, id_default.adrelid) AS id_default,
-        partitioned.partstrat AS partition_strategy,
-        pg_get_partkeydef(tables.oid) AS partition_key
-      FROM pg_class tables
-      JOIN pg_namespace namespace ON namespace.oid = tables.relnamespace
-      LEFT JOIN pg_attribute id_column
-        ON id_column.attrelid = tables.oid
-       AND id_column.attname = 'id'
-       AND NOT id_column.attisdropped
-      LEFT JOIN pg_type id_type ON id_type.oid = id_column.atttypid
-      LEFT JOIN pg_attrdef id_default
-        ON id_default.adrelid = tables.oid
-       AND id_default.adnum = id_column.attnum
-      LEFT JOIN pg_partitioned_table partitioned ON partitioned.partrelid = tables.oid
-      WHERE namespace.nspname = 'public'
-        AND tables.relkind IN ('r', 'p')
-        AND (
-          tables.relkind = 'p'
-          OR NOT EXISTS (SELECT 1 FROM pg_inherits WHERE inhrelid = tables.oid)
-        )
-      ORDER BY tables.relname`)
+    const rows = await getSchemaGrowthRegistryCatalog()
 
     const unknownIdPolicies: string[] = []
     const tables = new Map(

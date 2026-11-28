@@ -1,3 +1,4 @@
+import { write } from '@data-stores/psql'
 import {
   buildClassifierCommunityPromptFixtureOperations,
   createClassifierCommunityPromptFixtureData,
@@ -36,4 +37,12 @@ export async function createClassifierCommunityPromptFixture() {
     ...prompts,
     ...buildClassifierCommunityPromptFixtureOperations(fixture, prompts),
   }
+}
+
+export function lockClassifierCandidateThresholdNowait(thresholdId: string) {
+  return write(
+    `/* classifierThresholdLockNowait */
+      SELECT id FROM classifier_candidate_thresholds WHERE id = $1 FOR UPDATE NOWAIT`,
+    [thresholdId],
+  )
 }

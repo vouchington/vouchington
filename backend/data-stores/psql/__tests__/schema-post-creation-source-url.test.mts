@@ -1,22 +1,17 @@
+import { onGracefulShutdown } from '@data-stores/graceful-shutdown'
 import { afterAll, describe, expect, it } from 'vitest'
-import { onGracefulShutdown, read } from '../index.mts'
+import { readPublicTriggerDefinition } from '../../../test-helpers/data-stores/psql/schema-catalog.mts'
 
 describe('post creation source URL schema', () => {
   afterAll(async () => {
-    await onGracefulShutdown()
+    await onGracefulShutdown('SIGTERM')
   })
 
   it('keeps the original source URL immutable', async () => {
-    const { rows } = await read<{ definition: string; function_definition: string }>(`
-      /* getPostCreationSourceUrlTrigger */
-      SELECT
-        pg_get_triggerdef(trigger_definition.oid) AS definition,
-        pg_get_functiondef(trigger_definition.tgfoid) AS function_definition
-      FROM pg_trigger trigger_definition
-      WHERE trigger_definition.tgrelid = 'posts'::regclass
-        AND trigger_definition.tgname = 'trigger_posts_creation_source_url_id_immutable'
-        AND NOT trigger_definition.tgisinternal
-    `)
+    const rows = await readPublicTriggerDefinition(
+      'posts',
+      'trigger_posts_creation_source_url_id_immutable',
+    )
 
     expect(rows).toHaveLength(1)
     expect(rows[0]!.definition).toContain('BEFORE UPDATE OF creation_source_url_id')
