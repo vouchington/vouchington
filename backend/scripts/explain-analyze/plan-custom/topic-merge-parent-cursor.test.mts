@@ -40,11 +40,14 @@ function result({
 
 describe('topic merge parent cursor plan gate', () => {
   it.each([
-    '((ROW(subject_id, object_id) > ROW($1, $2)) AND (subject_id = $1))',
     '((subject_id = $1) AND (object_id > $2))',
-  ])('accepts a continuation seek in the primary key index condition: %s', indexCondition => {
-    expect(() => assertTopicMergeParentCursorSeek(result({ indexCondition }))).not.toThrow()
-  })
+    "((subject_id = '01a2236d-385d-7905-bedd-198921397ca2'::uuid) AND (object_id > '01a2236d-3861-77d1-957b-e0cc77a3a124'::uuid))",
+  ])(
+    'accepts a scalar continuation seek in the primary key index condition: %s',
+    indexCondition => {
+      expect(() => assertTopicMergeParentCursorSeek(result({ indexCondition }))).not.toThrow()
+    },
+  )
 
   it('ignores the first-page capture', () => {
     expect(() =>
@@ -52,6 +55,16 @@ describe('topic merge parent cursor plan gate', () => {
         result({ captureIndex: 0, indexCondition: '(subject_id = $1)' }),
       ),
     ).not.toThrow()
+  })
+
+  it('rejects a ROW() comparison even on the expected index', () => {
+    expect(() =>
+      assertTopicMergeParentCursorSeek(
+        result({
+          indexCondition: '((ROW(subject_id, object_id) > ROW($1, $2)) AND (subject_id = $1))',
+        }),
+      ),
+    ).toThrow('without a ROW() comparison or residual filter')
   })
 
   it('rejects a generic continuation that leaves the cursor in a residual filter', () => {
@@ -69,11 +82,11 @@ describe('topic merge parent cursor plan gate', () => {
     expect(() =>
       assertTopicMergeParentCursorSeek(
         result({
-          indexCondition: '((ROW(subject_id, object_id) > ROW($1, $2)) AND (subject_id = $1))',
+          indexCondition: '((subject_id = $1) AND (object_id > $2))',
           filter: '(deleted_at IS NULL)',
         }),
       ),
-    ).toThrow('without a residual filter')
+    ).toThrow('without a ROW() comparison or residual filter')
   })
 
   it('rejects a seek on a different index', () => {

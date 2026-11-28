@@ -88,9 +88,10 @@ function createEntityRelationTable(metadata: EntityRelationMetadata) {
     ${getElectionConstraintClause(metadata.table_name, ['subject_id', 'id'], 'uq')}UNIQUE (subject_id, id)`
   }
 
-  // Covering deleted_at lets topic-merge parent preflight pages walk the PK index-only without sorting.
   const primaryKeyInclude =
-    metadata.table_name === 'relation__topic__parent__topic' ? ' INCLUDE (deleted_at)' : ''
+    metadata.primary_key_include_columns.length > 0
+      ? ` INCLUDE (${metadata.primary_key_include_columns.join(', ')})`
+      : ''
   query += `,
     PRIMARY KEY (${primary_keys.join(', ')})${primaryKeyInclude}`
 

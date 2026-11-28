@@ -43,15 +43,15 @@ export async function processTopicMergeParentPreflightPage(
           `/* pageTopicMergeParentEdges */
             SELECT object_id, deleted_at FROM relation__topic__parent__topic
             WHERE subject_id = $1::uuid
-            ORDER BY subject_id, object_id LIMIT $2::integer`,
+            ORDER BY object_id LIMIT $2::integer`,
           [workItem.topic_id, limit],
         )
       : await query<{ object_id: string; deleted_at: Date | null }>(
           `/* pageTopicMergeParentEdges */
             SELECT object_id, deleted_at FROM relation__topic__parent__topic
             WHERE subject_id = $1::uuid
-              AND (subject_id, object_id) > ($1::uuid, $2::uuid)
-            ORDER BY subject_id, object_id LIMIT $3::integer`,
+              AND object_id > $2::uuid
+            ORDER BY object_id LIMIT $3::integer`,
           [workItem.topic_id, workItem.cursor_object_id, limit],
         )
   // Page tombstones too: the composite primary key supplies the order and cannot scan an
