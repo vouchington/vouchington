@@ -103,8 +103,7 @@ export async function completeCopyrightActionIntentInTransaction(input: {
   const { rowCount } = await input.query(sql`/* completeCopyrightActionIntentInTransaction */
     UPDATE copyright_notice_action_work_items
     SET completed_at = ${input.completedAt},
-      completed_at_reason = ${input.outcome}, failure_message = ${input.failureMessage ?? null},
-      available_at = NULL
+      completed_at_reason = ${input.outcome}, failure_message = ${input.failureMessage ?? null}
     WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND lease_expires_at > clock_timestamp()
   `)
   if (rowCount !== 1) throw new CopyrightActionLeaseExpiredError(input.query)

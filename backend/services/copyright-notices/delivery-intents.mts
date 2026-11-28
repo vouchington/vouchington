@@ -57,7 +57,7 @@ export async function claimCopyrightDeliveryIntent(
       attempt_count = attempt_count + 1, failure_ciphertext = NULL
     WHERE id = ${intentId}
       AND attempt_count < 5
-      AND ((state = 'pending' AND (available_at IS NULL OR available_at <= CURRENT_TIMESTAMP))
+      AND ((state = 'pending' AND available_at <= CURRENT_TIMESTAMP)
         OR (state = 'claimed' AND lease_expires_at <= clock_timestamp()))
     RETURNING id, lease_token, copyright_notice_id, copyright_notice_email_intake_receipt_id,
       copyright_notice_submission_id, copyright_notice_correspondence_message_id, recipient_user_id,

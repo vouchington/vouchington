@@ -37,7 +37,7 @@ export function searchRecoverableCopyrightActionIntentIds(
       FROM copyright_notice_action_work_items
       WHERE completed_at IS NULL
         AND (
-          (state = 'pending' AND (available_at IS NULL OR available_at <= ${options.now}))
+          (state = 'pending' AND available_at <= ${options.now})
           OR (state = 'claimed'
             AND lease_expires_at <= ${options.now})
         )`,

@@ -68,7 +68,7 @@ export async function readTestCopyrightResponseFailure(responseId: string) {
     lease_token: string | null
     leased_at: Date | null
     attempt_count: number
-    available_at: Date | null
+    available_at: Date
     failure_ciphertext: string
   }>(sql`/* readTestCopyrightResponseFailure */
     SELECT state, lease_token, leased_at, attempt_count, available_at, failure_ciphertext

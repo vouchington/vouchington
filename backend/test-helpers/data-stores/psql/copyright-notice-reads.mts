@@ -132,7 +132,7 @@ export async function failTestCopyrightDeliveryIntent(intentId: string): Promise
     UPDATE copyright_notice_delivery_work_items
     SET leased_at = NULL,
       delivery_attempted_at = COALESCE(delivery_attempted_at, CURRENT_TIMESTAMP),
-      failed_at = CURRENT_TIMESTAMP, available_at = NULL,
+      failed_at = CURRENT_TIMESTAMP,
       attempt_count = GREATEST(attempt_count, 5)
     WHERE id = ${intentId} AND sent_at IS NULL AND bounced_at IS NULL
       AND state IN ('pending', 'claimed')
@@ -165,7 +165,7 @@ export async function countTestCopyrightLifecycleEvents(input: {
 export async function failTestCopyrightActionIntent(intentId: string): Promise<void> {
   const { rowCount } = await write(sql`/* failTestCopyrightActionIntent */
     UPDATE copyright_notice_action_work_items SET leased_at = NULL,
-      completed_at = CURRENT_TIMESTAMP, completed_at_reason = 'failed', available_at = NULL,
+      completed_at = CURRENT_TIMESTAMP, completed_at_reason = 'failed',
       lease_token = NULL
     WHERE id = ${intentId} AND state IN ('pending', 'claimed')`)
   if (!rowCount) throw new Error('Copyright action intent was not marked failed')
