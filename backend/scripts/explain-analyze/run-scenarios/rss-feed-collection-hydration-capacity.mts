@@ -88,8 +88,9 @@ async function captureRecentFeedTypeFilter(feedCount: number): Promise<void> {
   registerScenarioContract(scenario, {
     seededRows: { rss_feeds: feedCount },
     expectations: [
-      // The custom plan can walk the catalog. https://github.com/vouchington/vouchington/issues/6603
-      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: feedCount },
+      { kind: 'noSeqScan', relation: 'rss_feeds' },
+      { kind: 'usesIndexes', indexes: ['idx_rss_feeds__feed_type'], noSort: true },
+      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: articles.length },
     ],
   })
   const podcast = await write(sql`/* seedExplainRecentPodcastFeed */

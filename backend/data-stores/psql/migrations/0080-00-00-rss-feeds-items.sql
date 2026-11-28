@@ -95,9 +95,9 @@ CREATE INDEX IF NOT EXISTS idx_rss_feeds__title_trgm
 ON rss_feeds USING GIN (LOWER(title) gin_trgm_ops)
 WHERE deleted_at IS NULL;
 
--- for filtering feeds by type
+-- for filtering feeds by type and covering id-scoped feed_type lookups
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__feed_type
-ON rss_feeds (feed_type)
+ON rss_feeds (feed_type, id)
 WHERE deleted_at IS NULL;
 
 -- for walking canonical redirect chains
