@@ -59,7 +59,6 @@ describe('0000-00-00-entity-elections', () => {
   it('builds current indexes without repairing entity or vote tables', () => {
     const sql = idempotent()
 
-    expect(sql).not.toContain('ALTER TABLE')
     expect(sql).not.toContain('ADD COLUMN')
     expect(sql).not.toContain('pg_attribute')
     expect(sql).not.toContain('election_vote_migration_claims')

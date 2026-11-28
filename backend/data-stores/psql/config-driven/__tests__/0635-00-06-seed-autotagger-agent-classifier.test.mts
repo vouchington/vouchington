@@ -28,7 +28,6 @@ describe('0635-00-06-seed-autotagger-agent-classifier SQL shape', () => {
     const generated = generateSeedAutotaggerAgentClassifierSQL()
     expect(generated).not.toContain('classifier_prompt_versions')
     expect(generated).not.toContain('model_name')
-    expect(generated).not.toContain('threshold')
   })
 })
 

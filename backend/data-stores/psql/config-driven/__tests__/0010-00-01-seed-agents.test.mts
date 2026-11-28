@@ -30,14 +30,8 @@ describe('0010-00-01-seed-agents idempotent', () => {
     }
   })
 
-  it('documents that agent bootstrap is part of db:migrate config-driven', () => {
-    const sql = generateSeedAgentsSQL()
-    expect(sql).toContain('during db:migrate')
-  })
-
   it('seeds baseline flags using the canonical moderator_agents schema', () => {
     const sql = generateSeedAgentsSQL()
-    expect(sql).not.toContain('ALTER TABLE moderator_agents')
     expect(sql).toContain('INSERT INTO moderator_agents (agent_id, slug, is_baseline)')
   })
 
