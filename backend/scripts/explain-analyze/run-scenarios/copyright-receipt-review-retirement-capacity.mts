@@ -63,11 +63,12 @@ async function capturePage(
         captureIndex: 0,
         max: isContinuation ? remainingDue : pageSize,
       },
+      // The gate counts both the bounded candidate scan (375) and the outer receipt-scoped DELETE scan (375).
       {
         kind: 'maxProcessedRows',
         relation: 'copyright_email_receipt_preservation_holds',
         captureIndex: 1,
-        max: 375,
+        max: 750,
       },
       // The gate counts both primary-key reads and the UPDATE output.
       {

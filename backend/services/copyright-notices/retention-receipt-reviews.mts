@@ -59,14 +59,14 @@ async function sweepReceiptReviewPage(
   await drainBatchedWrite(batchSize, async limit => {
     const { rowCount } = await transaction(sql`/* deleteExpiredCopyrightReceiptPreservationHolds */
       DELETE FROM copyright_email_receipt_preservation_holds
-      WHERE id IN (
-        SELECT hold.id
-        FROM copyright_email_receipt_preservation_holds hold
-        WHERE hold.copyright_notice_email_intake_receipt_id = ANY(${ids}::uuid[])
-          AND fn_copyright_receipt_review_retirement_eligible(hold.copyright_notice_email_intake_receipt_id)
-        ORDER BY hold.id ASC
-        LIMIT ${limit}
-      )`)
+      WHERE copyright_notice_email_intake_receipt_id = ANY(${ids}::uuid[])
+        AND id IN (
+          SELECT hold.id
+          FROM copyright_email_receipt_preservation_holds hold
+          WHERE hold.copyright_notice_email_intake_receipt_id = ANY(${ids}::uuid[])
+            AND fn_copyright_receipt_review_retirement_eligible(hold.copyright_notice_email_intake_receipt_id)
+          LIMIT ${limit}
+        )`)
     return rowCount ?? 0
   })
   const { rows } = await transaction<{
