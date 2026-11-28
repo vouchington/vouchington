@@ -16,7 +16,7 @@ describe('explain materialized view maintenance', () => {
     expect(calls).toEqual([
       'refresh:mv_rss_feed_crawl_tiers',
       'analyze:/* refreshExplainMaterializedViews */ ANALYZE "mv_rss_feed_crawl_tiers"',
-      'analyze:/* refreshExplainMaterializedViews */ ANALYZE rss_feed_fetch_states',
+      'analyze:/* refreshExplainMaterializedViews */ VACUUM (ANALYZE) rss_feed_fetch_states',
       'refresh:mv_platform_stats',
       'analyze:/* refreshExplainMaterializedViews */ ANALYZE "mv_platform_stats"',
       'refresh:mv_trending_rss_feeds',

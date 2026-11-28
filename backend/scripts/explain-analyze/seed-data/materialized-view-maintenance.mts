@@ -20,6 +20,6 @@ export async function refreshExplainMaterializedViews(
     await refresh(view)
     await analyze(`/* refreshExplainMaterializedViews */ ANALYZE "${view.replaceAll('"', '""')}"`)
     if (view === 'mv_rss_feed_crawl_tiers')
-      await analyze('/* refreshExplainMaterializedViews */ ANALYZE rss_feed_fetch_states')
+      await analyze('/* refreshExplainMaterializedViews */ VACUUM (ANALYZE) rss_feed_fetch_states')
   }
 }
