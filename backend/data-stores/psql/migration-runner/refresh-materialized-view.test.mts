@@ -12,6 +12,7 @@ import {
 import { refreshMaterializedViewForTest } from '../../../test-helpers/refresh-materialized-view-for-test.mts'
 import { refreshMaterializedView } from './refresh-materialized-view.mts'
 import {
+  CRAWL_TIERS_VIEW_CREATE_MARKER,
   createCrawlTiersSyncTransactionRunner,
   SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL,
 } from './sync-rss-feed-fetch-state-tiers.mts'
@@ -76,21 +77,17 @@ describe('refreshMaterializedView', () => {
     })
 
     await runner(async target => {
-      await target('/* runViews */ CREATE OR REPLACE VIEW view_other AS SELECT 1')
+      await target('other-view-ddl')
     })
-    expect(executed).toEqual([
-      'BEGIN',
-      '/* runViews */ CREATE OR REPLACE VIEW view_other AS SELECT 1',
-      'COMMIT',
-    ])
+    expect(executed).toEqual(['BEGIN', 'other-view-ddl', 'COMMIT'])
 
     executed.length = 0
     await runner(async target => {
-      await target('/* runViews */ CREATE MATERIALIZED VIEW mv_rss_feed_crawl_tiers AS SELECT 1')
+      await target(CRAWL_TIERS_VIEW_CREATE_MARKER)
     })
     expect(executed).toEqual([
       'BEGIN',
-      '/* runViews */ CREATE MATERIALIZED VIEW mv_rss_feed_crawl_tiers AS SELECT 1',
+      CRAWL_TIERS_VIEW_CREATE_MARKER,
       SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL,
       'COMMIT',
     ])

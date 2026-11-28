@@ -19,6 +19,8 @@ export async function refreshRssFeedCrawlTiersInTransaction(tx: TransactionQuery
   await tx(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL)
 }
 
+export const CRAWL_TIERS_VIEW_CREATE_MARKER = 'CREATE MATERIALIZED VIEW mv_rss_feed_crawl_tiers'
+
 export function createCrawlTiersSyncTransactionRunner(
   runInTx: <Result>(handler: (tx: QueryExecutor) => Promise<Result>) => Promise<Result>,
 ): NonNullable<PlatformRunViewsOptions['withTransaction']> {
@@ -26,10 +28,7 @@ export function createCrawlTiersSyncTransactionRunner(
     runInTx(async tx => {
       let createdCrawlTiers = false
       const trackingWriter: QueryExecutor = (input, values) => {
-        if (
-          typeof input === 'string' &&
-          input.includes('CREATE MATERIALIZED VIEW mv_rss_feed_crawl_tiers')
-        ) {
+        if (typeof input === 'string' && input.includes(CRAWL_TIERS_VIEW_CREATE_MARKER)) {
           createdCrawlTiers = true
         }
         return tx(input, values)
