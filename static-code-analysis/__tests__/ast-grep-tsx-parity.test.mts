@@ -90,6 +90,8 @@ describe('no-sql-in-backend-tests shrinking ignores list', () => {
   // 3 DDL-invariant parser fixtures in backend/data-stores/psql/config-driven/__tests__ +
   // 1 synthetic view definition in backend/data-stores/psql/__tests__/schema-snapshot-verification.test.mts.
   const EXPECTED_INLINE_IGNORES = 31
+  // Bare `ast-grep-ignore` (without a `: <rule-id>` list) suppresses every rule, including this one.
+  const EXPECTED_BARE_INLINE_IGNORES = 0
 
   it('locks total ignores to 31 and rejects duplicates or stale file paths', () => {
     const parsed = parse(readFileSync(rulePath, 'utf8')) as { ignores?: string[] }
@@ -103,8 +105,11 @@ describe('no-sql-in-backend-tests shrinking ignores list', () => {
     expect(missing).toEqual([])
   })
 
-  it('locks inline ast-grep-ignore suppressions for no-sql-in-backend-tests to 31', () => {
-    const grep = spawnSync(
+  it('locks inline and bare ast-grep-ignore suppressions for no-sql-in-backend-tests', () => {
+    const parsed = parse(readFileSync(rulePath, 'utf8')) as { files?: string[] }
+    const fileGlobs = (parsed.files ?? []).map(glob => `:(glob)${glob}`)
+
+    const namedGrep = spawnSync(
       'git',
       [
         'grep',
@@ -117,17 +122,34 @@ describe('no-sql-in-backend-tests shrinking ignores list', () => {
       ],
       { cwd: repoRoot, encoding: 'utf8' },
     )
-    if (grep.error) throw grep.error
-    if (grep.status !== 0 && grep.status !== 1) {
-      throw new Error(`git grep failed (${String(grep.status)}): ${grep.stderr}`)
+    if (namedGrep.error) throw namedGrep.error
+    if (namedGrep.status !== 0 && namedGrep.status !== 1) {
+      throw new Error(`git grep failed (${String(namedGrep.status)}): ${namedGrep.stderr}`)
     }
-    const inlineSuppressions =
-      grep.status === 1
+    const namedSuppressions =
+      namedGrep.status === 1
         ? []
-        : grep.stdout
+        : namedGrep.stdout
             .split('\n')
             .filter(line => /ast-grep-ignore[^\n]*\bno-sql-in-backend-tests\b/u.test(line))
 
-    expect(inlineSuppressions.length).toBe(EXPECTED_INLINE_IGNORES)
+    expect(namedSuppressions.length).toBe(EXPECTED_INLINE_IGNORES)
+
+    const bareGrep = spawnSync('git', ['grep', '-n', '-F', 'ast-grep-ignore', '--', ...fileGlobs], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    })
+    if (bareGrep.error) throw bareGrep.error
+    if (bareGrep.status !== 0 && bareGrep.status !== 1) {
+      throw new Error(`git grep failed (${String(bareGrep.status)}): ${bareGrep.stderr}`)
+    }
+    const bareSuppressions =
+      bareGrep.status === 1
+        ? []
+        : bareGrep.stdout
+            .split('\n')
+            .filter(line => /(?:\/\/|\/\*)\s*ast-grep-ignore\b(?!\s*:\s*[a-z0-9-]+)/iu.test(line))
+
+    expect(bareSuppressions).toHaveLength(EXPECTED_BARE_INLINE_IGNORES)
   })
 })
