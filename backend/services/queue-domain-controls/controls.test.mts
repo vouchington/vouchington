@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { rejectPostgresReadForTest } from '@voucha/test-helpers/injected-failures'
 import {
   insertPausedQueueDomainControlForTest,
   removeQueueDomainControlsForTest,
@@ -50,7 +51,18 @@ describe('queue domain controls', () => {
     const second = await createTestUser()
 
     const paused = await pauseQueueDomain(domain, { userId: first.id, reason: 'upstream outage' })
-    const repeated = await pauseQueueDomain(domain, { userId: second.id, reason: 'again' })
+    const restoreRead = rejectPostgresReadForTest(
+      'queue_domain_controls',
+      new Error('replica lag: pauseQueueDomain must read existing row from primary'),
+      () => {},
+      values => values.includes(domain),
+    )
+    let repeated: Awaited<ReturnType<typeof pauseQueueDomain>>
+    try {
+      repeated = await pauseQueueDomain(domain, { userId: second.id, reason: 'again' })
+    } finally {
+      restoreRead()
+    }
 
     expect(paused).toMatchObject({
       domain,

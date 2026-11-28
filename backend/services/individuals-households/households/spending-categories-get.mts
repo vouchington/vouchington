@@ -44,19 +44,11 @@ export type HouseholdSpendingCategory = {
   spending_category: { id: string; name: string; slug: string }
 }
 
-type HouseholdSpendingCategoryPage = {
-  results: HouseholdSpendingCategory[]
-  page_info: PageInfo
-}
-
 function toSpendingEntry(row: SpendingEntryRow): HouseholdSpendingCategory {
   const { amount_minor_units, currency_code, ...entry } = row
   return {
     ...entry,
-    amount: {
-      amount: parsePostgresMoneyAmount(amount_minor_units),
-      currency: currency_code,
-    },
+    amount: { amount: parsePostgresMoneyAmount(amount_minor_units), currency: currency_code },
   }
 }
 
@@ -64,11 +56,22 @@ function spendingCategoryCursorScope(individualId: string): string {
   return `my-spending-categories:${individualId}:id-asc`
 }
 
+function appendSpendingEntryFilters(
+  statement: ReturnType<typeof sql>,
+  filters: { spendingCategoryTopicId?: string; entryId?: string; cursorId: string | null },
+): void {
+  if (filters.spendingCategoryTopicId) {
+    statement.append(sql` AND se.spending_category_topic_id = ${filters.spendingCategoryTopicId}`)
+  }
+  if (filters.entryId) statement.append(sql` AND se.id = ${filters.entryId}`)
+  if (filters.cursorId) statement.append(sql` AND se.id > ${filters.cursorId}`)
+}
+
 export async function getHouseholdSpendingCategoriesByUserId(
   currentUser: PrivateUser | null,
   user: PrivateUser,
   options: GetHouseholdSpendingCategoriesOptions = {},
-): Promise<HouseholdSpendingCategoryPage> {
+): Promise<{ results: HouseholdSpendingCategory[]; page_info: PageInfo }> {
   assert(currentUser, 401)
   const limit = parseBoundedIntegerLimit(options.limit, { min: 1, ...getPaginationLimits(25, 100) })
   assert(await currentUserCanViewUsersSpendingCategories(currentUser, user.id), 403)
@@ -92,57 +95,52 @@ export async function getHouseholdSpendingCategoriesByUserId(
     queryOptions,
   )
   const householdIds = accessibleHouseholds.map(household => household.id)
+  const entryFilters = {
+    spendingCategoryTopicId: options.spending_category_topic_id,
+    entryId: options.entry_id,
+    cursorId,
+  }
 
   const personalEntries = sql`
-    SELECT se.*
+    SELECT se.id, se.spending_category_topic_id, se.amount_minor_units, se.currency_code,
+      se.spending_frequency, se.note, se.individual_id, se.household_id,
+      sc.name AS spending_category_name, sc.slug AS spending_category_slug
     FROM spending_entries se
-    JOIN view_topics visible_category
-      ON visible_category.id = se.spending_category_topic_id
+    JOIN topics sc
+      ON sc.id = se.spending_category_topic_id
+      AND sc.deleted_at IS NULL AND sc.merged_into_topic_id IS NULL
     WHERE se.individual_id = ${individualId}
   `
-  if (options.spending_category_topic_id) {
-    personalEntries.append(
-      sql` AND se.spending_category_topic_id = ${options.spending_category_topic_id}`,
-    )
-  }
-  if (options.entry_id) personalEntries.append(sql` AND se.id = ${options.entry_id}`)
-  if (cursorId) personalEntries.append(sql` AND se.id > ${cursorId}`)
+  appendSpendingEntryFilters(personalEntries, entryFilters)
   personalEntries.append(sql` ORDER BY se.id ASC LIMIT ${limit + 1}`)
+
+  const householdEntries = sql`
+    SELECT hh.id, hh.spending_category_topic_id, hh.amount_minor_units, hh.currency_code,
+      hh.spending_frequency, hh.note, hh.individual_id, hh.household_id,
+      hh.spending_category_name, hh.spending_category_slug
+    FROM UNNEST(${householdIds}::uuid[]) AS accessible_household(household_id)
+    CROSS JOIN LATERAL (
+      SELECT se.id, se.spending_category_topic_id, se.amount_minor_units, se.currency_code,
+        se.spending_frequency, se.note, se.individual_id, se.household_id,
+        sc.name AS spending_category_name, sc.slug AS spending_category_slug
+      FROM spending_entries se
+      JOIN topics sc
+        ON sc.id = se.spending_category_topic_id
+        AND sc.deleted_at IS NULL AND sc.merged_into_topic_id IS NULL
+      WHERE se.household_id = accessible_household.household_id
+  `
+  appendSpendingEntryFilters(householdEntries, entryFilters)
+  householdEntries.append(sql` ORDER BY se.id ASC LIMIT ${limit + 1}
+    ) hh`)
 
   const spendingEntriesQuery = sql`/* getHouseholdSpendingCategoriesByUserId */ WITH visible_entries AS ((`
   spendingEntriesQuery.append(personalEntries)
-  spendingEntriesQuery.append(sql`)`)
-  if (householdIds.length > 0) {
-    for (const householdId of householdIds) {
-      const householdEntries = sql`
-        SELECT se.*
-        FROM spending_entries se
-        JOIN view_topics visible_category
-          ON visible_category.id = se.spending_category_topic_id
-        WHERE se.household_id = ${householdId}
-      `
-      if (options.spending_category_topic_id) {
-        householdEntries.append(
-          sql` AND se.spending_category_topic_id = ${options.spending_category_topic_id}`,
-        )
-      }
-      if (options.entry_id) householdEntries.append(sql` AND se.id = ${options.entry_id}`)
-      if (cursorId) householdEntries.append(sql` AND se.id > ${cursorId}`)
-      householdEntries.append(sql` ORDER BY se.id ASC LIMIT ${limit + 1}`)
-      spendingEntriesQuery.append(sql` UNION ALL (`)
-      spendingEntriesQuery.append(householdEntries)
-      spendingEntriesQuery.append(sql`)`)
-    }
-  }
-  spendingEntriesQuery.append(sql`)`)
-  spendingEntriesQuery.append(sql`
+  spendingEntriesQuery.append(sql`) UNION ALL (`)
+  spendingEntriesQuery.append(householdEntries)
+  spendingEntriesQuery.append(sql`))
     SELECT
-      se.id,
-      se.spending_category_topic_id,
-      se.amount_minor_units::TEXT AS amount_minor_units,
-      se.currency_code,
-      se.spending_frequency,
-      se.note,
+      se.id, se.spending_category_topic_id, se.amount_minor_units::TEXT AS amount_minor_units,
+      se.currency_code, se.spending_frequency, se.note,
       CASE WHEN se.individual_id IS NOT NULL THEN 'individual' ELSE 'household' END AS owner_type,
       (
         COALESCE(se.individual_id = ${currentUser.individual_id}, FALSE)
@@ -152,14 +150,11 @@ export async function getHouseholdSpendingCategoriesByUserId(
           WHERE owned_household.id = se.household_id AND owned_household.owner_user_id = ${currentUser.id}
         )
       ) AS can_manage,
-      JSON_BUILD_OBJECT('id', sc.id, 'name', sc.name, 'slug', sc.slug) AS spending_category
+      JSON_BUILD_OBJECT('id', se.spending_category_topic_id, 'name', se.spending_category_name, 'slug', se.spending_category_slug) AS spending_category
+    FROM visible_entries se
+    ORDER BY se.id ASC
+    LIMIT ${limit + 1}
   `)
-  spendingEntriesQuery.append(sql`FROM visible_entries se`)
-  spendingEntriesQuery.append(sql`
-    JOIN view_topics sc
-      ON sc.id = se.spending_category_topic_id
-  `)
-  spendingEntriesQuery.append(sql` ORDER BY se.id ASC LIMIT ${limit + 1}`)
 
   const { rows } = await query<SpendingEntryRow>(spendingEntriesQuery, queryOptions)
   const results = rows.slice(0, limit).map(toSpendingEntry)

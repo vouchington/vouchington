@@ -174,4 +174,108 @@ describe('spending category visibility', () => {
     expect(byId.get(targetHouseholdEntry.id)).toMatchObject({ can_manage: false })
     expect(byId.get(viewerHouseholdEntry.id)).toMatchObject({ can_manage: true })
   })
+
+  it('merges personal and multi-household entries in id order across keyset pages', async () => {
+    const viewer = await createTestUser()
+    const ownerA = await createTestUser()
+    const ownerB = await createTestUser()
+    const ownedHousehold = await createHousehold(viewer)
+    const memberHouseholdA = await createHousehold(ownerA)
+    const memberHouseholdB = await createHousehold(ownerB)
+    await insertTestHouseholdMembership({
+      householdId: memberHouseholdA.id,
+      individualId: viewer.individual_id!,
+    })
+    await insertTestHouseholdMembership({
+      householdId: memberHouseholdB.id,
+      individualId: viewer.individual_id!,
+    })
+    const [topicPersonal, topicOwned, topicMemberA, topicMemberB, deletedTopic] = await Promise.all(
+      [
+        insertTestSpendingCategory({ createdById: viewer.id }),
+        insertTestSpendingCategory({ createdById: viewer.id }),
+        insertTestSpendingCategory({ createdById: ownerA.id }),
+        insertTestSpendingCategory({ createdById: ownerB.id }),
+        insertTestSpendingCategory({ createdById: ownerA.id }),
+      ],
+    )
+
+    // Interleave inserts across personal and three households so global id order crosses sources.
+    const e1 = await createHouseholdSpendingCategory(
+      ownerA,
+      ownerA,
+      topicMemberA,
+      { amount: { amount: 100, currency: 'usd' } },
+      memberHouseholdA.id,
+    )
+    const e2 = await createHouseholdSpendingCategory(viewer, viewer, topicPersonal, {
+      amount: { amount: 200, currency: 'usd' },
+    })
+    const hidden = await createHouseholdSpendingCategory(
+      ownerA,
+      ownerA,
+      deletedTopic,
+      { amount: { amount: 250, currency: 'usd' } },
+      memberHouseholdA.id,
+    )
+    await softDeleteTopic(deletedTopic, ownerA.id)
+    const e3 = await createHouseholdSpendingCategory(
+      ownerB,
+      ownerB,
+      topicMemberB,
+      { amount: { amount: 300, currency: 'usd' } },
+      memberHouseholdB.id,
+    )
+    const e4 = await createHouseholdSpendingCategory(
+      viewer,
+      viewer,
+      topicOwned,
+      { amount: { amount: 400, currency: 'usd' } },
+      ownedHousehold.id,
+    )
+    const e5 = await createHouseholdSpendingCategory(
+      ownerA,
+      ownerA,
+      topicMemberA,
+      { amount: { amount: 500, currency: 'usd' } },
+      memberHouseholdA.id,
+    )
+    if (!e1 || !e2 || !hidden || !e3 || !e4 || !e5) {
+      throw new Error('Expected all spending entries')
+    }
+    const expectedIds = [e1.id, e2.id, e3.id, e4.id, e5.id].toSorted()
+
+    const page1 = await getHouseholdSpendingCategoriesByUserId(viewer, viewer, { limit: 2 })
+    expect(page1.results.map(entry => entry.id)).toEqual(expectedIds.slice(0, 2))
+    expect(page1.page_info.has_next_page).toBe(true)
+
+    const page2 = await getHouseholdSpendingCategoriesByUserId(viewer, viewer, {
+      limit: 2,
+      after: page1.page_info.end_cursor!,
+    })
+    expect(page2.results.map(entry => entry.id)).toEqual(expectedIds.slice(2, 4))
+    expect(page2.page_info.has_next_page).toBe(true)
+
+    const page3 = await getHouseholdSpendingCategoriesByUserId(viewer, viewer, {
+      limit: 2,
+      after: page2.page_info.end_cursor!,
+    })
+    expect(page3.results.map(entry => entry.id)).toEqual(expectedIds.slice(4))
+    expect(page3.page_info.has_next_page).toBe(false)
+
+    const all = [...page1.results, ...page2.results, ...page3.results]
+    expect(all.some(entry => entry.id === hidden.id)).toBe(false)
+    expect(all.find(entry => entry.id === e1.id)).toMatchObject({
+      owner_type: 'household',
+      can_manage: false,
+    })
+    expect(all.find(entry => entry.id === e2.id)).toMatchObject({
+      owner_type: 'individual',
+      can_manage: true,
+    })
+    expect(all.find(entry => entry.id === e4.id)).toMatchObject({
+      owner_type: 'household',
+      can_manage: true,
+    })
+  })
 })
