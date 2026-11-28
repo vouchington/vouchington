@@ -113,23 +113,7 @@
       "reason": "image lifecycle is not a publication predicate"
     },
     {
-      "path": "backend/services/language-detection/batch-detect-entities.mts",
-      "reason": "language metadata does not change publication eligibility"
-    },
-    {
-      "path": "backend/services/language-detection/batch-detect.mts",
-      "reason": "language metadata does not change publication eligibility"
-    },
-    {
-      "path": "backend/services/language-detection/entities/communities.mts",
-      "reason": "language metadata does not change publication eligibility"
-    },
-    {
-      "path": "backend/services/language-detection/entities/posts.mts",
-      "reason": "language metadata does not change publication eligibility"
-    },
-    {
-      "path": "backend/services/language-detection/entities/rss-feed-items.mts",
+      "path": "backend/services/language-detection/write-results.mts",
       "reason": "language metadata does not change publication eligibility"
     },
     {

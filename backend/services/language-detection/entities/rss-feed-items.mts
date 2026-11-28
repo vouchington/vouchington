@@ -1,8 +1,8 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
-import { computeContentSha256, computeDetectionKey, runDetection } from '../detect.mts'
-import { invalidate } from '@services/entity-cache/invalidate'
+import { writeLanguageDetectionResults } from '../write-results.mts'
+import { computeDetectionKey, runDetection } from '../detect.mts'
 import { firstVisibleRssTextField } from '@modules/utils/rss-text-fields'
 
 export async function detectRssFeedItemLanguage(itemId: string): Promise<void> {
@@ -60,7 +60,7 @@ export async function detectRssFeedItemLanguage(itemId: string): Promise<void> {
 
   if (!item) return
 
-  const data = item.data as Record<string, unknown>
+  const data = item.data
   const title = typeof data['title'] === 'string' ? data['title'] : ''
   const content = firstVisibleRssTextField([
     data['content:encodedSnippet'],
@@ -79,17 +79,18 @@ export async function detectRssFeedItemLanguage(itemId: string): Promise<void> {
   if (item.lingua_rs_input_sha256?.equals(detectionKey)) return
 
   const output = await runDetection(text, declaredLanguage)
-  const contentSha256 = computeContentSha256(text)
 
-  await write(sql`/* detectRssFeedItemLanguage:update */
-    UPDATE rss_feed_items SET
-      lingua_rs_detected_language = ${output.linguaRsDetectedLanguage},
-      lingua_rs_content_sha256 = ${contentSha256},
-      lingua_rs_input_sha256 = ${detectionKey},
-      lingua_rs_results = ${JSON.stringify(output.results)},
-      lingua_rs_detected_at = NOW()
-    WHERE id = ${itemId}
-      AND data IS NOT DISTINCT FROM ${JSON.stringify(item.data)}::jsonb
-  `)
-  await invalidate.rss_feed_items(itemId)
+  await writeLanguageDetectionResults({
+    table: 'rss_feed_items',
+    rows: [
+      {
+        id: itemId,
+        detectedLanguage: output.linguaRsDetectedLanguage,
+        contentSha256: output.contentSha256,
+        inputSha256: detectionKey,
+        resultsJson: JSON.stringify(output.results),
+        data: item.data,
+      },
+    ],
+  })
 }

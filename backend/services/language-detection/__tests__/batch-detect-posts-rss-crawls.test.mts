@@ -11,6 +11,7 @@ import {
   insertLanguageDetectionPostForTest,
 } from '@voucha/test-helpers'
 import { getLanguageDetectionResultForTest } from '@voucha/test-helpers/sql-language-detection-state'
+import { caches } from '@services/entity-cache/caches'
 import { addUrl } from '@services/urls'
 import type { PrivateUser } from '@services/users/types'
 import {
@@ -78,6 +79,41 @@ describe('batch-detect — posts, rss-feed-items, crawls', () => {
       const result = await getLanguageDetectionResultForTest('posts', postId)
       expect(result.lingua_rs_detected_language).toBe('es')
       expect(result.lingua_rs_results).toEqual({ source: 'declared', language: 'es' })
+    })
+
+    it('detects multiple posts in one batch and invalidates each updated post cache', async () => {
+      const englishPostId = await insertLanguageDetectionPostForTest({
+        createdById: user.id,
+        title: 'Multi batch EN',
+        markdown: ENGLISH,
+      })
+      const germanPostId = await insertLanguageDetectionPostForTest({
+        createdById: user.id,
+        title: 'Multi batch DE',
+        markdown: GERMAN,
+      })
+
+      await Promise.all([
+        caches.posts.set(englishPostId, { sentinel: 'en' }),
+        caches.posts.set(germanPostId, { sentinel: 'de' }),
+      ])
+      try {
+        expect(await detectPostLanguageBatch([englishPostId, germanPostId])).toEqual({
+          updated: 2,
+        })
+        expect(
+          (await getLanguageDetectionStateForTest('posts', englishPostId))
+            .lingua_rs_detected_language,
+        ).toBe('en')
+        expect(
+          (await getLanguageDetectionStateForTest('posts', germanPostId))
+            .lingua_rs_detected_language,
+        ).toBe('de')
+        await expect(caches.posts.get(englishPostId)).resolves.toBeNull()
+        await expect(caches.posts.get(germanPostId)).resolves.toBeNull()
+      } finally {
+        await caches.posts.delete(englishPostId, germanPostId)
+      }
     })
   })
 
