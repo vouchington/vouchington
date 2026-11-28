@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createPartitionRetirementFailureFixture } from '@voucha/test-helpers/partition-retirement-failure'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
-import { write } from '../setup.mts'
+import { beginTransaction } from '@voucha/test-helpers'
 import { listMonthlyDropCandidates } from './monthly-partition-candidates.mts'
 import {
   cleanupPartitions,
@@ -42,17 +42,19 @@ describe('monthly partition retirement', () => {
   })
 
   it('reads one catalog page at a time using its durable keyset position', async () => {
-    const first = await listMonthlyDropCandidates(write, 1)
+    await using query = await beginTransaction()
+    const first = await listMonthlyDropCandidates(query, 1)
     expect(first.candidates).toHaveLength(1)
     expect(first.hasMore).toBe(true)
     expect(first.nextCursor).toBeDefined()
-    const second = await listMonthlyDropCandidates(write, 1, first.nextCursor)
+    const second = await listMonthlyDropCandidates(query, 1, first.nextCursor)
     expect(second.candidates).toHaveLength(1)
     expect(second.candidates[0]?.partition).not.toBe(first.candidates[0]?.partition)
   })
 
   it('discovers managed children in dependency order from the live catalog', async () => {
-    const { candidates } = await listMonthlyDropCandidates(write)
+    await using query = await beginTransaction()
+    const { candidates } = await listMonthlyDropCandidates(query)
     const chunkIndices = candidates.flatMap((candidate, index) =>
       candidate.table === 'crawl_chunks' ? [index] : [],
     )

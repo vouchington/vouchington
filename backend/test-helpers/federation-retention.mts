@@ -148,3 +148,25 @@ export async function readFederationRetentionFixtureStateForTest(
     childRowCount: Number(children[0]?.count ?? 0),
   }
 }
+
+export async function removeNextFollowerRetentionCandidateForTest(
+  query: TransactionQuery,
+  distributionId: string,
+): Promise<void> {
+  await query(
+    `/* removeNextFollowerRetentionCandidateForTest */
+     DELETE FROM follower_distributions WHERE id = $1::uuid`,
+    [distributionId],
+  )
+}
+
+export async function removeNextInboxReplayCandidateForTest(
+  query: TransactionQuery,
+  activityId: string,
+): Promise<void> {
+  await query(
+    `/* removeNextInboxReplayCandidateForTest */
+     DELETE FROM activitypub_inbox_activities WHERE id = $1::uuid`,
+    [activityId],
+  )
+}

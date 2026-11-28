@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestTopic, insertTestRssFeedDirect } from '@voucha/test-helpers'
+import { holdRssFeedScopeLockForTest } from '@voucha/test-helpers/data-stores/psql/rss-feed-scope-lock'
 import { backgroundQueue } from '@voucha/test-helpers/shared-background-queue'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { updateTopicElectionVoteStats } from './vote-stats.mts'
@@ -40,10 +41,7 @@ describe('topic vote stats side effects', () => {
     })
     const feed = await insertTestRssFeedDirect({ topicId: topic.id })
     await using holder = await beginTransaction()
-    await holder(
-      `/* holdUnrelatedFeedScope */ SELECT pg_advisory_xact_lock(hashtextextended('rss_feed:' || $1::uuid::text, 0))`,
-      [feed.id],
-    )
+    await holdRssFeedScopeLockForTest(holder, feed.id)
     await using transaction = await beginTransaction()
     await expect(
       updateElectionStatsIfChanged(

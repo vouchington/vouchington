@@ -3,7 +3,11 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import {
+  queryTestAnalyticsCrawlerRequestsByDomainAndEventType,
+  queryTestAnalyticsCrawlerRequestsByDomainAndType,
+  queryTestAnalyticsCrawlerRequestsByDomainTypeAndStatus,
+} from '@voucha/test-helpers/data-stores/analytics/queries'
 import {
   trackCrawlerRequest,
   trackDomainRateLimitLocked,
@@ -28,8 +32,10 @@ describe('crawler', () => {
       trackCrawlerRequest('html', 'example.com', 200, 50, true)
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM crawler_requests WHERE domain = 'example.com' AND crawler_type = 'html' AND status_code = 200`,
+      const rows = await queryTestAnalyticsCrawlerRequestsByDomainTypeAndStatus(
+        'example.com',
+        'html',
+        200,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
@@ -47,9 +53,7 @@ describe('crawler', () => {
       trackCrawlerRequest('rss', 'bad.com', 500, 100, false, 'timeout')
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM crawler_requests WHERE domain = 'bad.com' AND crawler_type = 'rss'`,
-      )
+      const rows = await queryTestAnalyticsCrawlerRequestsByDomainAndType('bad.com', 'rss')
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
       expect(String(row.success)).toBe('false')
@@ -62,8 +66,9 @@ describe('crawler', () => {
       trackDomainRateLimitLocked('html', 'slow.com', 5000)
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM crawler_requests WHERE domain = 'slow.com' AND event_type = 'rate_limit_locked'`,
+      const rows = await queryTestAnalyticsCrawlerRequestsByDomainAndEventType(
+        'slow.com',
+        'rate_limit_locked',
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
@@ -77,8 +82,9 @@ describe('crawler', () => {
       trackDomainRateLimitDeferred('rss', 'slow.com', 2000)
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM crawler_requests WHERE domain = 'slow.com' AND event_type = 'rate_limit_deferred'`,
+      const rows = await queryTestAnalyticsCrawlerRequestsByDomainAndEventType(
+        'slow.com',
+        'rate_limit_deferred',
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!

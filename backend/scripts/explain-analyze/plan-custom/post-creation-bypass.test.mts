@@ -26,6 +26,7 @@ function result(queryText: string, condition: Record<string, string>): ExplainRe
 }
 
 describe('assertPostCreationBypassPointRead', () => {
+  // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult SQL text for custom plan-gate unit test
   const boundedSql = 'SELECT has_creation_moderation_bypass FROM posts WHERE id = $1'
 
   it('accepts a post id index point read', () => {

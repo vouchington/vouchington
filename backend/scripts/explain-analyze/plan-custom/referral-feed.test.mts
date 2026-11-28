@@ -9,6 +9,7 @@ function result(
   return {
     name: 'getReferralLinksFeed',
     scenario_id: scenario,
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for custom plan-gate unit test
     query_text: 'SELECT id FROM user_referral_program_links',
     execution_time_ms: 1,
     planning_time_ms: 1,

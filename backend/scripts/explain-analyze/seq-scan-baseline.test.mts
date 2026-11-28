@@ -8,6 +8,7 @@ function result(name: string, plans: readonly Record<string, unknown>[]): Explai
     scenario_id: 'feed',
     capture_index: 0,
     plan_cache_mode: 'force_custom_plan',
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for seq-scan baseline unit test
     query_text: 'SELECT 1',
     plan: {
       Plan: { 'Node Type': 'Nested Loop', 'Actual Rows': 1, 'Actual Loops': 1, Plans: plans },

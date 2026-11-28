@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import {
@@ -6,7 +5,7 @@ import {
   insertTestCommunityMember,
 } from '../../../backend/test-helpers/entities/communities.mts'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import { setTestCommunityMarkdown } from '../../helpers/community-fixtures.mts'
 
 /**
  * Community detail page tests.
@@ -36,12 +35,7 @@ test.describe('Community Detail Page', () => {
       name: COMMUNITY_NAME,
       slug: COMMUNITY_SLUG,
     })
-    await write(
-      allowUnannotatedQuery(
-        `UPDATE communities SET markdown = 'A test community for Playwright.' WHERE id = $1`,
-      ),
-      [community.id],
-    )
+    await setTestCommunityMarkdown(community.id, 'A test community for Playwright.')
     await insertTestCommunityMember({
       communityId: community.id,
       role: 'owner',

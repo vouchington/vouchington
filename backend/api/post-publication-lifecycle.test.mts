@@ -27,7 +27,10 @@ import {
   captureAddedPublicationEffectsForScopes,
 } from '@voucha/test-helpers/publication-effect-jobs'
 import { describe, expect, it } from 'vitest'
-import { recordAuthorDeletionWithLockTimeout } from '@voucha/test-helpers/api/post-publication-lifecycle-test-support'
+import {
+  lockTestPostForUpdate,
+  recordAuthorDeletionWithLockTimeout,
+} from '@voucha/test-helpers/api/post-publication-lifecycle-test-support'
 
 describe('post publication lifecycle capture integration', () => {
   it('captures an author and every authored post before user deletion reassignment', async () => {
@@ -58,7 +61,7 @@ describe('post publication lifecycle capture integration', () => {
     const post = await createTestPost({ user })
 
     await using first = await beginTransaction()
-    await first(`/* lock authored post */ SELECT id FROM posts WHERE id = $1 FOR UPDATE`, [post.id])
+    await lockTestPostForUpdate(first, post.id)
     await expect(recordAuthorDeletionWithLockTimeout(user.id)).rejects.toMatchObject({
       code: '55P03',
     })

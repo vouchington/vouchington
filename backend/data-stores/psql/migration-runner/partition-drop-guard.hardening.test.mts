@@ -1,7 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { buildMonthlyPartitionName } from '@vouchington/postgres/partitions'
-import { createTestPost, createTestUser } from '@voucha/test-helpers'
+import { beginTransaction, createTestPost, createTestUser } from '@voucha/test-helpers'
+import {
+  insertTestCommunityReviewChangeForPartitionGuard,
+  insertTestPostClearanceChangeForPartitionGuard,
+  insertTestPreservationHoldForPartitionGuard,
+  readLatestTestPostClearanceChangeForPost,
+} from '@voucha/test-helpers/data-stores/psql/partition-drop-guard'
 import { insertTestCommunity } from '@voucha/test-helpers/entities/communities'
 import {
   insertTestCommunityReviewChange,
@@ -15,7 +21,6 @@ import { readTestPostClearanceAuthor } from '@voucha/test-helpers/entities/post-
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { insertPreservationHoldInTransactionForTest } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
-import { beginTransaction } from '../setup.mts'
 import {
   getPartitionDropAgeRefusal,
   getPartitionDropRefusal,
@@ -96,20 +101,11 @@ describe('partition decision-history holds', () => {
     const post = await createTestPost({ user: author })
     await using query = await beginTransaction()
     const monthly = currentDecisionHistoryChild('post_clearance_changes')
-    await query(
-      `/* partitionDropGuard:fixtureEvent */
-       INSERT INTO post_clearance_changes
-         (id, post_id, post_author_user_id, change_type, changed_by_id)
-       VALUES (uuidv7(), $1::uuid, $2::uuid, 'approve', $2::uuid)`,
-      [post.id, actor.id],
-    )
-    const { rows: histories } = await query<{ post_author_user_id: string; changed_by_id: string }>(
-      `/* partitionDropGuard:readFixtureEvent */
-       SELECT post_author_user_id, changed_by_id FROM post_clearance_changes
-       WHERE post_id = $1::uuid ORDER BY id DESC LIMIT 1`,
-      [post.id],
-    )
-    expect(histories[0]).toEqual({ post_author_user_id: author.id, changed_by_id: actor.id })
+    await insertTestPostClearanceChangeForPartitionGuard(query, post.id, actor.id)
+    expect(await readLatestTestPostClearanceChangeForPost(query, post.id)).toEqual({
+      post_author_user_id: author.id,
+      changed_by_id: actor.id,
+    })
     const policy = PARTITION_DROP_POLICIES.post_clearance_changes!
     const referenceDate = new Date('2100-01-01T00:00:00.000Z')
     const preview = () =>
@@ -123,22 +119,10 @@ describe('partition decision-history holds', () => {
     expect((await preview()).get(monthly.partition)).toBeNull()
     expect(await getPartitionDropRefusal(query, monthly, policy, referenceDate)).toBeNull()
 
-    await query(
-      `/* partitionDropGuard:fixtureHold */
-       INSERT INTO user_legal_preservation_holds
-         (account_user_id, placed_by_id, reference_ciphertext)
-       VALUES ($1::uuid, $1::uuid, 'synthetic hold')`,
-      [actor.id],
-    )
+    await insertTestPreservationHoldForPartitionGuard(query, actor.id, 'synthetic hold')
     expect((await preview()).get(monthly.partition)).toBeNull()
     expect(await getPartitionDropRefusal(query, monthly, policy, referenceDate)).toBeNull()
-    await query(
-      `/* partitionDropGuard:fixtureAuthorHold */
-       INSERT INTO user_legal_preservation_holds
-         (account_user_id, placed_by_id, reference_ciphertext)
-       VALUES ($1::uuid, $1::uuid, 'synthetic author hold')`,
-      [author.id],
-    )
+    await insertTestPreservationHoldForPartitionGuard(query, author.id, 'synthetic author hold')
     expect((await preview()).get(monthly.partition)).toBe('legal-hold')
     expect(await getPartitionDropRefusal(query, monthly, policy, referenceDate)).toBe('legal-hold')
   })
@@ -150,25 +134,18 @@ describe('partition decision-history holds', () => {
     const post = await createTestPost({ user: author, community_id: community.id })
     await insertTestPendingCommunityPostReview({ communityId: community.id, postId: post.id })
     await using query = await beginTransaction()
-    const { rows: histories } = await query<{ post_author_user_id: string; changed_by_id: string }>(
-      `/* partitionDropGuard:communityFixtureEvent */
-       INSERT INTO community_post_review_changes
-         (community_id, post_id, post_author_user_id, changed_by_id, change_type, is_platform_override)
-       VALUES ($1::uuid, $2::uuid, $3::uuid, $3::uuid, 'approve', FALSE)
-       RETURNING post_author_user_id, changed_by_id`,
-      [community.id, post.id, actor.id],
-    )
-    expect(histories[0]).toEqual({ post_author_user_id: author.id, changed_by_id: actor.id })
+    expect(
+      await insertTestCommunityReviewChangeForPartitionGuard(
+        query,
+        community.id,
+        post.id,
+        actor.id,
+      ),
+    ).toEqual({ post_author_user_id: author.id, changed_by_id: actor.id })
     const candidate = currentDecisionHistoryChild('community_post_review_changes')
     const policy = PARTITION_DROP_POLICIES.community_post_review_changes!
     const referenceDate = new Date('2100-01-01T00:00:00.000Z')
-    await query(
-      `/* partitionDropGuard:communityAuthorHold */
-       INSERT INTO user_legal_preservation_holds
-         (account_user_id, placed_by_id, reference_ciphertext)
-       VALUES ($1::uuid, $1::uuid, 'synthetic community hold')`,
-      [author.id],
-    )
+    await insertTestPreservationHoldForPartitionGuard(query, author.id, 'synthetic community hold')
     const status = await getPartitionDropStatusRefusals(
       query,
       [candidate],

@@ -17,6 +17,17 @@ import {
   insertTestHostnamePenalty,
   lockTestHostnamePenalty,
 } from '@voucha/test-helpers/operational-tombstone-retention'
+import {
+  attachCompletedHostnameRootForTest,
+  attachOperationalHostnameDescendantForTest,
+  countOperationalHostnameDescendantsForTest,
+  deleteOwnedHostnameBlocksAndHostnamesForTest,
+  insertOperationalPenaltyUserForTest,
+  lockOperationalHostnameDescendantForTest,
+  markIncompleteHostnameRootForTest,
+  readHostnameRootReferencesForTest,
+  readOperationalHostnamePenaltySourceForTest,
+} from '@voucha/test-helpers/operational-tombstone-retention-hostname-blocks'
 import { finishTestPostgresActionWithoutWaiting } from '@voucha/test-helpers/postgres-lock-skip'
 
 const DAY_MS = 24 * 60 * 60 * 1_000
@@ -34,22 +45,9 @@ describe('hostname-block operational retention references', () => {
       insertOperationalHostnameBlockForTest(query, { feed: false, liftedAt: null }),
     ])
     for (const descendant of descendants)
-      await query(
-        `/* attachOperationalHostnameDescendantForTest */
-         UPDATE url_hostname_blocks SET relation_cleanup_root_block_id = $1::uuid
-         WHERE id = $2::uuid`,
-        [root.id, descendant.id],
-      )
-    const { rows: users } = await query<{ id: string }>(
-      `/* insertOperationalPenaltyUserForTest */ INSERT INTO users DEFAULT VALUES RETURNING id`,
-    )
-    const { rows: penalties } = await query<{ id: string }>(
-      `/* insertOperationalHostnamePenaltyForTest */
-       INSERT INTO vote_weight_penalties
-         (user_id, penalty_multiplier, reason, source_hostname_block_id)
-       VALUES ($1::uuid, 0.5, 'retention fixture', $2::uuid) RETURNING id`,
-      [users[0]!.id, root.id],
-    )
+      await attachOperationalHostnameDescendantForTest(query, root.id, descendant.id)
+    const penaltyUserId = await insertOperationalPenaltyUserForTest(query)
+    const penaltyId = await insertTestHostnamePenalty(query, penaltyUserId, root.id)
     const options = {
       batchSize: 1,
       maxBatches: 1,
@@ -64,13 +62,7 @@ describe('hostname-block operational retention references', () => {
         deleted: 0,
         hasMore: true,
       })
-      const { rows } = await query<{ count: string }>(
-        `/* countOperationalHostnameDescendantsForTest */
-         SELECT count(*)::text AS count FROM url_hostname_blocks
-         WHERE relation_cleanup_root_block_id = $1::uuid`,
-        [root.id],
-      )
-      expect(Number(rows[0]!.count)).toBe(remaining)
+      expect(await countOperationalHostnameDescendantsForTest(query, root.id)).toBe(remaining)
       expect(await operationalRowExistsForTest(query, 'url_hostname_blocks', root.id)).toBe(true)
     }
     expect(
@@ -86,12 +78,7 @@ describe('hostname-block operational retention references', () => {
       expect(await operationalRowExistsForTest(query, 'url_hostname_blocks', descendant.id)).toBe(
         true,
       )
-    const { rows: penaltyRows } = await query<{ source_hostname_block_id: string | null }>(
-      `/* readOperationalHostnamePenaltyForTest */
-       SELECT source_hostname_block_id FROM vote_weight_penalties WHERE id = $1::uuid`,
-      [penalties[0]!.id],
-    )
-    expect(penaltyRows[0]!.source_hostname_block_id).toBeNull()
+    expect(await readOperationalHostnamePenaltySourceForTest(query, penaltyId)).toBeNull()
   })
 
   it('ignores the completed root self-reference when draining descendants', async () => {
@@ -105,14 +92,7 @@ describe('hostname-block operational retention references', () => {
       feed: false,
       liftedAt: null,
     })
-    await query(
-      `/* attachCompletedHostnameRootForTest */
-       UPDATE url_hostname_blocks
-       SET relation_cleanup_root_block_id = $1::uuid,
-           relation_cleanup_completed_at = CASE WHEN id = $1::uuid THEN now() END
-       WHERE id = ANY($2::uuid[])`,
-      [root.id, [root.id, child.id]],
-    )
+    await attachCompletedHostnameRootForTest(query, root.id, child.id)
     expect(
       await cleanupOperationalTombstonesForTest('other_hostname_blocks', {
         batchSize: 1,
@@ -122,13 +102,9 @@ describe('hostname-block operational retention references', () => {
         borrowedQuery: query,
       }),
     ).toMatchObject({ deleted: 1, hasMore: false })
-    const { rows } = await query<{ id: string; root: string | null }>(
-      `/* readHostnameRootReferencesForTest */
-       SELECT id, relation_cleanup_root_block_id AS root FROM url_hostname_blocks
-       WHERE id = ANY($1::uuid[])`,
-      [[root.id, child.id]],
-    )
-    expect(rows).toEqual([{ id: child.id, root: null }])
+    expect(await readHostnameRootReferencesForTest(query, [root.id, child.id])).toEqual([
+      { id: child.id, root: null },
+    ])
   })
 
   it('pages past an incomplete hostname cleanup root without erasing its ownership', async () => {
@@ -143,12 +119,7 @@ describe('hostname-block operational retention references', () => {
       feed: false,
       liftedAt: new Date(now.getTime() - 3 * 365 * DAY_MS - 1_000),
     })
-    await query(
-      `/* markIncompleteHostnameRootForTest */
-       UPDATE url_hostname_blocks SET relation_cleanup_root_block_id = id
-       WHERE id = $1::uuid`,
-      [first.id],
-    )
+    await markIncompleteHostnameRootForTest(query, first.id)
     const result = await cleanupOperationalTombstonesForTest('other_hostname_blocks', {
       batchSize: 1,
       maxBatches: 3,
@@ -232,23 +203,14 @@ describe('hostname-block operational retention references', () => {
         feed: false,
         liftedAt: null,
       })
-      await setup(
-        `/* attachLockedOperationalHostnameDescendantForTest */
-         UPDATE url_hostname_blocks SET relation_cleanup_root_block_id = $1::uuid
-         WHERE id = $2::uuid`,
-        [rootBlock.id, childBlock.id],
-      )
+      await attachOperationalHostnameDescendantForTest(setup, rootBlock.id, childBlock.id)
       await setup.commit()
       return { root: rootBlock, child: childBlock }
     })()
     try {
       {
         await using blocker = await beginTransaction()
-        await blocker(
-          `/* lockOperationalHostnameDescendantForTest */
-           SELECT id FROM url_hostname_blocks WHERE id = $1::uuid FOR UPDATE`,
-          [child.id],
-        )
+        await lockOperationalHostnameDescendantForTest(blocker, child.id)
         await using cleanup = await beginTransaction()
         expect(
           await cleanupOperationalTombstonePageForTest('other_hostname_blocks', {
@@ -281,13 +243,10 @@ describe('hostname-block operational retention references', () => {
       ).toMatchObject({ deleted: 0, hasMore: false, stalled: false })
     } finally {
       await using cleanup = await beginTransaction()
-      await cleanup(
-        '/* deleteOwnedHostnameBlocksForLockTest */ DELETE FROM url_hostname_blocks WHERE id = ANY($1::uuid[])',
-        [[child.id, root.id]],
-      )
-      await cleanup(
-        '/* deleteOwnedHostnamesForLockTest */ DELETE FROM url_hostnames WHERE id = ANY($1::uuid[])',
-        [[child.hostnameId, root.hostnameId]],
+      await deleteOwnedHostnameBlocksAndHostnamesForTest(
+        cleanup,
+        [child.id, root.id],
+        [child.hostnameId, root.hostnameId],
       )
       await cleanup.commit()
     }

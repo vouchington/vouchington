@@ -3,7 +3,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import { queryTestAnalyticsVoteDrift } from '@voucha/test-helpers/data-stores/analytics/queries'
 import { trackVoteDrift } from './db.mts'
 
 describe('trackVoteDrift', () => {
@@ -31,7 +31,7 @@ describe('trackVoteDrift', () => {
     })
     await flush()
 
-    const rows = await query(`SELECT * FROM pg_vote_drift WHERE entity_table = '${entityTable}'`)
+    const rows = await queryTestAnalyticsVoteDrift(entityTable)
     expect(rows).toHaveLength(1)
     const row = rows[0]!
     expect(Number(row.sampled)).toBe(500)
@@ -46,7 +46,7 @@ describe('trackVoteDrift', () => {
     trackVoteDrift({ entityTable, sampled: 10, inspected: 10, capped: 0, drifted: 0 })
     await flush()
 
-    const rows = await query(`SELECT * FROM pg_vote_drift WHERE entity_table = '${entityTable}'`)
+    const rows = await queryTestAnalyticsVoteDrift(entityTable)
     expect(rows).toHaveLength(1)
     const row = rows[0]!
     expect(Number(row.sampled)).toBe(10)

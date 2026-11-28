@@ -6,7 +6,7 @@ import {
 } from '@voucha/types/entities/post-classifier'
 import { POST_CLASSIFIER_SYSTEM_USERNAME } from '@voucha/types/entities/user-constants'
 import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
-import { beginTransaction } from '../../setup.mts'
+import { beginTransaction } from '@voucha/test-helpers'
 import {
   getPostClassifierSeedState,
   replacePostClassifierThreshold,

@@ -1,29 +1,179 @@
 id: no-sql-in-backend-tests
 language: Tsx
 severity: error
-message: 'Do not write raw SQL in backend tests — add focused helpers under backend/test-helpers instead'
+message: 'Do not write raw SQL in tests — add focused helpers under backend/test-helpers or playwright/helpers instead'
 files:
   - 'backend/**/*.test.mts'
   - 'backend/**/__tests__/**/*.mts'
+  - 'playwright/tests/**/*.spec.mts'
+  - 'playwright/credentialed/**/*.spec.mts'
+  - 'playwright/**/*.spec.ts'
+  - 'integration-tests/**/*.test.mts'
 ignores:
   - 'backend/test-helpers/**'
+  - 'playwright/helpers/**'
+  # Package self-tests that directly verify the data-store modules themselves:
+  # Directly tests @data-stores/analytics/query SQL execution, invalid-SQL handling, and DuckDB view evolution.
+  - 'backend/data-stores/analytics/query.test.mts'
+  # Directly tests the @data-stores/analytics query() helper and DuckDB views.
+  - 'backend/data-stores/analytics/__tests__/analytics.part-2.test.mts'
+  # Directly tests @data-stores/analytics queue event DuckDB views via query().
+  - 'backend/data-stores/analytics/queue.test.mts'
+  # Directly tests runAllMigrations against backend connection termination and pool recovery.
+  - 'backend/data-stores/psql/migrate.test.mts'
+  # Directly tests the exported surface of ./index.mts and ./transactions.mts (no SQL).
+  - 'backend/data-stores/psql/index.exports.test.mts'
+  # Directly tests beginBoundedTransaction and registerPostCommitAction against ./setup.mts (no SQL).
+  - 'backend/data-stores/psql/post-commit-actions.test.mts'
+  # Shrinking allowlist of SQL-running psql schema tests — this list may only shrink.
+  # Total ignores locked at 31 (2 helper globs + 6 self-tests + 23 schema tests) by
+  # static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts (lower the expected count in the same PR when removing entries).
+  # Tracked for migration into backend/test-helpers in https://github.com/vouchington/vouchington/issues/6740.
+  - 'backend/data-stores/psql/__tests__/index.extension-table-schema.generated.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-classifiers.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-community-application-answers.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-copyright-legal-clock.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-election-partitioning.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-election-vote-stats-snapshot.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-finite-enums.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-growth-registry.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-ingestion-relations.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-membership-entitlement-effects.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-membership-refund-indexes.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-membership-retained-user-references.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-min-child-uuidv7.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-owner-foreign-keys.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-post-admission-reservation-index.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-post-creation-source-url.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-retained-identities.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-retained-media-behavior.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-retained-media-identities.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-retained-user-audit-foreign-keys.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-static-analysis.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-story-projection-relation-fence.test.mts'
+  - 'backend/data-stores/psql/__tests__/schema-user-deletion-relation-impacts.test.mts'
+utils:
+  query-call-sql-literal:
+    all:
+      - any:
+          - kind: string
+          - kind: template_string
+      - regex: '^[''"`]\s*(?:\$\{[^}]*\}\s*)*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
+  uppercase-sql-literal:
+    all:
+      - any:
+          - kind: string
+          - kind: template_string
+      - regex: '^[''"`]\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
 rule:
   any:
+    # Package imports or re-exports of @data-stores/psql (root or SQL client/tx/migration entrypoints)
     - all:
-        - kind: import_statement
-        - regex: 'from [''"]@data-stores/psql[''"]'
+        - any:
+            - kind: import_statement
+            - kind: export_statement
+        - regex: 'from\s+[''"]@data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?[''"]'
         - not:
-            regex: '^import\s+type\b'
+            regex: '^(?:import|export)\s+type\b'
+    # Relative imports or re-exports targeting backend/data-stores/psql (root or SQL client/tx/migration entrypoints)
     - all:
-        - kind: import_statement
-        - regex: 'from [''"]sql-template-strings[''"]'
+        - any:
+            - kind: import_statement
+            - kind: export_statement
+        - regex: 'from\s+[''"](?:\.\.?/)+[^''"]*data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?[''"]'
         - not:
-            regex: '^import\s+type\b'
-    - pattern: "require('@data-stores/psql')"
-    - pattern: "await import('@data-stores/psql')"
-    - pattern: "require('sql-template-strings')"
-    - pattern: "await import('sql-template-strings')"
+            regex: '^(?:import|export)\s+type\b'
+    # Package or relative imports or re-exports of @data-stores/analytics/query
+    - all:
+        - any:
+            - kind: import_statement
+            - kind: export_statement
+        - regex: 'from\s+[''"](?:@data-stores/analytics/query|(?:\.\.?/)+[^''"]*data-stores/analytics/query)(?:\.mts)?[''"]'
+        - not:
+            regex: '^(?:import|export)\s+type\b'
+    # Package-internal relative imports or re-exports of psql/analytics query, transaction, or migration exports.
+    # Graceful-shutdown-only teardown imports do not execute SQL; @data-stores/graceful-shutdown
+    # requires a signal argument, so psql schema tests keep importing onGracefulShutdown here.
+    - all:
+        - any:
+            - kind: import_statement
+            - kind: export_statement
+        - regex: '^(?:import|export)\s*(?:\{[^}]*\b(?:read|write|query|beginTransaction|beginBoundedTransaction|createPool|runAllMigrations|refreshMaterializedView)\b[^}]*\}|\*(?:\s+as\s+[A-Za-z_$][\w$]*)?)\s*from\s+[''"](?:\.\.?/)+(?:index|clients|setup|transactions|migrate|query)(?:\.mts)?[''"]'
+        - not:
+            regex: '^(?:import|export)\s+type\b'
+        - not:
+            regex: '^import\s+\*\s+as\s+[A-Za-z_$][\w$]*\s+from\s+[''"]\.\.?/index(?:\.mts)?[''"]'
+        - not:
+            regex: '^import\s*\{\s*onGracefulShutdown\s*\}\s*from\s+[''"]\.\./index\.mts[''"]'
+    # sql-template-strings imports or re-exports
+    - all:
+        - any:
+            - kind: import_statement
+            - kind: export_statement
+        - regex: 'from\s+[''"]sql-template-strings[''"]'
+        - not:
+            regex: '^(?:import|export)\s+type\b'
+    # Dynamic import() or require() of psql, analytics/query, relative data-store clients, or sql-template-strings (single/double/template quotes or concatenation)
+    - all:
+        - kind: call_expression
+        - any:
+            - regex: '^(?:require|import)\s*\(\s*[''"`](?:@data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?|(?:\.\.?/)+[^''"`]*data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?|@data-stores/analytics/query(?:\.mts)?|(?:\.\.?/)+[^''"`]*data-stores/analytics/query(?:\.mts)?|(?:\.\.?/)+(?:clients|setup|transactions|migrate|query)(?:\.mts)?|sql-template-strings)[''"`]\s*\)$'
+            - all:
+                - regex: '^(?:require|import)\s*\('
+                - has:
+                    field: arguments
+                    has:
+                      nthChild: 1
+                      kind: binary_expression
+                      regex: '(?:@data-stores/psql|data-stores/psql|@data-stores/analytics/query|data-stores/analytics/query|sql-template-strings)'
     - pattern: 'sql`$$$`'
+    # Raw SQL string, template literal (including interpolated prefix), or concatenated string passed as first argument to a query-like call (including multi-level receivers)
+    - all:
+        - kind: call_expression
+        - regex: '^(?:[\w$]+\.)*(?:query|read|write|tx|transaction|exec|execute|runQuery|allowUnannotatedQuery)(?:<[\s\S]*?>)?\s*\('
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              any:
+                - matches: query-call-sql-literal
+                - kind: binary_expression
+                  has:
+                    stopBy: end
+                    matches: query-call-sql-literal
+    # Raw SQL statement (uppercase SQL keywords) passed as first argument to any non-assertion call, awaited or not (catches TransactionQuery variables like setup/blocker/cleanup and Promise.all([...]) without flagging sentence-case Playwright UI text)
+    - all:
+        - kind: call_expression
+        - not:
+            regex: '^(?:expect|assert|it|test|describe|console|vi|findFirst\w*Violation|result|beforePostgresTransactionQueryForTest|captureTransactionQuery|executeCapturedStatement)\b'
+        - not:
+            regex: '^(?:[\w$]+\.)*(?:toContain|toEqual|toBe|toMatch|toThrow|rejects|resolves|includes|startsWith|endsWith|match|replace|replaceAll|split|indexOf|exec|test|push|log|warn|error|info|debug|executeCapturedStatement)\s*\('
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              matches: uppercase-sql-literal
+    # Raw SQL statement (uppercase SQL keywords) written in an initializer, assignment, property value, or return statement
+    - all:
+        - matches: uppercase-sql-literal
+        - inside:
+            any:
+              - kind: variable_declarator
+              - kind: assignment_expression
+              - kind: pair
+              - kind: return_statement
+              - kind: arrow_function
+        - not:
+            inside:
+              stopBy:
+                any:
+                  - kind: statement_block
+                  - kind: arrow_function
+                  - kind: function_declaration
+              kind: call_expression
+              any:
+                - regex: '^(?:expect|assert|it|test|describe|console|vi|findFirst\w*Violation|parsePostgresSql|beforePostgresTransactionQueryForTest|captureTransactionQuery|executeCapturedStatement)\b'
+                - regex: '^(?:[\w$]+\.)*(?:toContain|toEqual|toBe|toMatch|toThrow|rejects|resolves|includes|startsWith|endsWith|match|replace|replaceAll|split|indexOf|exec|test|push|log|warn|error|info|debug|executeCapturedStatement)\s*\('
 examples:
   - code: "import { read } from '@data-stores/psql'"
     isValid: false
@@ -37,7 +187,13 @@ examples:
   - code: "import { createPool } from '@data-stores/psql'"
     isValid: false
     file: 'backend/services/auth/auth.test.mts'
+  - code: "import { write } from '@data-stores/psql/clients'"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
   - code: "import type { SQLStatement } from '@data-stores/psql'"
+    isValid: true
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "import { capturePostgresQueriesForTest } from '@data-stores/psql/query-capture'"
     isValid: true
     file: 'backend/services/auth/auth.test.mts'
   - code: "import sql from 'sql-template-strings'"
@@ -58,12 +214,216 @@ examples:
   - code: "const db = await import('@data-stores/psql')"
     isValid: false
     file: 'backend/data-stores/psql/index.test.mts'
+  - code: 'const db = await import(`@data-stores/psql`)'
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: 'const db = await import(`../../../backend/data-stores/psql/clients.mts`)'
+    isValid: false
+    file: 'playwright/tests/communities/detail.spec.mts'
+  - code: "const db = await import('@data-stores/psql/' + 'clients')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "export { read } from '@data-stores/psql'"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "export { query } from '@data-stores/analytics/query'"
+    isValid: false
+    file: 'backend/services/analytics/ai.test.mts'
+  - code: "export { write } from '../../../backend/data-stores/psql/clients.mts'"
+    isValid: false
+    file: 'playwright/tests/communities/detail.spec.mts'
+  - code: "export type { SQLStatement } from '@data-stores/psql'"
+    isValid: true
+    file: 'backend/services/auth/auth.test.mts'
   - code: "const sql = require('sql-template-strings')"
     isValid: false
     file: 'backend/data-stores/psql/index.test.mts'
   - code: "const sql = await import('sql-template-strings')"
     isValid: false
     file: 'backend/data-stores/psql/index.test.mts'
+  - code: "import { query } from '@data-stores/analytics/query'"
+    isValid: false
+    file: 'backend/services/analytics/ai.test.mts'
+  - code: "const analytics = await import('@data-stores/analytics/query')"
+    isValid: false
+    file: 'backend/services/analytics/ai.test.mts'
+  - code: "import { flush } from '@data-stores/analytics/backend-local'"
+    isValid: true
+    file: 'backend/services/analytics/ai.test.mts'
+  - code: "import { query } from '../query.mts'"
+    isValid: false
+    file: 'backend/data-stores/analytics/__tests__/example.test.mts'
+  - code: "import { flush } from '../backend-local.mts'"
+    isValid: true
+    file: 'backend/data-stores/analytics/__tests__/example.test.mts'
+  - code: "import { beginTransaction } from '../setup.mts'"
+    isValid: false
+    file: 'backend/data-stores/psql/migration-runner/partition-drop-guard.hardening.test.mts'
+  - code: "import { read } from '../index.mts'"
+    isValid: false
+    file: 'backend/data-stores/psql/__tests__/schema-example.test.mts'
+  - code: "import { onGracefulShutdown } from '../index.mts'"
+    isValid: true
+    file: 'backend/data-stores/psql/__tests__/schema-example.test.mts'
+  - code: "import { something } from './index.mts'"
+    isValid: true
+    file: 'backend/services/crawler-rss/index.redirect.test.mts'
+  - code: "import { write } from '../../../backend/data-stores/psql/clients.mts'"
+    isValid: false
+    file: 'playwright/tests/communities/detail.spec.mts'
+  - code: "import { beginTransaction } from '../../../backend/data-stores/psql/index.mts'"
+    isValid: false
+    file: 'playwright/tests/tags/tag-pages.spec.mts'
+  - code: "import { refreshMaterializedView } from '../../../backend/data-stores/psql/migrate.mts'"
+    isValid: false
+    file: 'playwright/tests/admin/top-hashtag-test-ids.spec.mts'
+  - code: "import { write } from '../../backend/data-stores/psql/clients.mts'"
+    isValid: false
+    file: 'playwright/credentialed/rss-modal-sideloaded-images.spec.mts'
+  - code: "const db = await import('../../../backend/data-stores/psql/clients.mts')"
+    isValid: false
+    file: 'playwright/tests/communities/detail.spec.mts'
+  - code: "const db = require('../../../backend/data-stores/psql/clients.mts')"
+    isValid: false
+    file: 'playwright/tests/communities/detail.spec.mts'
+  - code: "const analytics = await import('../../../backend/data-stores/analytics/query.mts')"
+    isValid: false
+    file: 'backend/services/analytics/ai.test.mts'
+  - code: "const db = await import('../clients.mts')"
+    isValid: false
+    file: 'backend/data-stores/psql/__tests__/schema-example.test.mts'
+  - code: "const db = require('../clients.mts')"
+    isValid: false
+    file: 'backend/data-stores/psql/__tests__/schema-example.test.mts'
+  - code: "import { write } from '../../backend/data-stores/psql/clients.mts'"
+    isValid: true
+    file: 'playwright/helpers/community-fixtures.mts'
+  - code: "await query('/* lockTestUserList */ SELECT id FROM user_lists WHERE id = $1 FOR UPDATE', [id])"
+    isValid: false
+    file: 'backend/mcp/registry/list-item-batch.contract.test.mts'
+  - code: "await ctx.pool.query('SELECT id FROM users WHERE id = $1', [id])"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await write('SELECT ' + cols + ' FROM users')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: 'await query(`${prefix} SELECT id FROM users`)'
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: 'await query(`/* removeFixture */ DELETE FROM follower_distributions WHERE id = $1`, [id])'
+    isValid: false
+    file: 'backend/services/data-retention/__tests__/cleanup-federation-continuation.test.mts'
+  - code: 'await setup(`/* attachDescendant */ UPDATE url_hostname_blocks SET root_id = $1 WHERE id = $2`, [rootId, childId])'
+    isValid: false
+    file: 'backend/services/data-retention/__tests__/cleanup-operational-hostname-block-references.test.mts'
+  - code: "await holder('SELECT pg_backend_pid()')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await holder('SELECT id, name FROM users')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await holder('UPDATE users SET x = 1')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await holder('DELETE FROM t')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "const sql = 'SELECT id FROM users'; await client.query(sql)"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "const opts = { text: 'SELECT id FROM users' }"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "function buildQuery() { return 'DELETE FROM users WHERE id = $1' }"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await Promise.all([q('INSERT INTO users (id) VALUES ($1)', [id])])"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await query('DROP TABLE temp_fixtures')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await query(`SET LOCAL lock_timeout = '50ms'`)"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await query('LOCK TABLE users IN SHARE MODE')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await query('REFRESH MATERIALIZED VIEW mv_top_hashtags')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await query('EXPLAIN SELECT id FROM users')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await query('VACUUM ANALYZE users')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await query('ANALYZE users')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await query('BEGIN')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await allowUnannotatedQuery('INSERT INTO topic_votes (user_id, topic_id) VALUES ($1, $2)')"
+    isValid: false
+    file: 'playwright/tests/topics/referral-programs.spec.mts'
+  - code: "await ctx.cache.read('user:profile:42')"
+    isValid: true
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await query('/* note */ cache-key-not-sql')"
+    isValid: true
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "expect(sql).toContain('SELECT id FROM users')"
+    isValid: true
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "page.getByText('Update profile settings')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "x.fill('Select all, then')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Select all from the list')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Select all (3)')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Lock account')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Truncate text')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Create table')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Drop table here')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Insert into cart')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Delete from list')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "page.getByText('Explain select')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "x.fill('Set up to date')"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "const label = 'Select all from the list'"
+    isValid: true
+    file: 'playwright/tests/profile/settings.spec.mts'
+  - code: "expect(entry).toEqual({ sql: 'SELECT id FROM users' })"
+    isValid: true
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await findFirstGeneratedDdlViolation('CREATE TABLE vote_edges (id UUID);')"
+    isValid: true
+    file: 'backend/data-stores/psql/config-driven/__tests__/generated-ddl-guard-regressions.test.mts'
+  - code: "it('delete a post and update its status', () => {})"
+    isValid: true
+    file: 'backend/services/posts/delete.test.mts'
   - code: "import { read } from '@data-stores/psql'"
     isValid: true
     file: 'backend/test-helpers/data-stores/psql/schema.mts'

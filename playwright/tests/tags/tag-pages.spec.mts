@@ -9,8 +9,7 @@ import {
   createTestUserWithAge,
   insertTestPost,
 } from '../../../backend/test-helpers/index.mts'
-import { beginTransaction } from '../../../backend/data-stores/psql/index.mts'
-import { seedPlaywrightPublisherTypeTopics } from '../../../backend/test-helpers/playwright-seed-publisher-type-topics.mts'
+import { seedPublisherTypeTopicsForPlaywright } from '../../helpers/topic-fixtures.mts'
 
 // Uses seed data:
 // - Test user: '019f0000-0000-7000-8000-000000000000'
@@ -32,9 +31,7 @@ let sourceTopicId: string
 
 test.beforeAll(async () => {
   protectPlaywrightHookTimeouts(test.info())
-  await using transaction = await beginTransaction()
-  await seedPlaywrightPublisherTypeTopics(transaction)
-  await transaction.commit()
+  await seedPublisherTypeTopicsForPlaywright()
   contributorId = requireTestValue(
     await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS),
     'Failed to create tag page contributor',

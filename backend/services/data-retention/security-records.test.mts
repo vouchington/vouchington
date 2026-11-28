@@ -1,6 +1,5 @@
-import { randomBytes, randomInt } from 'node:crypto'
+import { randomInt } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { v7 as uuidv7 } from 'uuid'
 import { getMinUuidv7ForDate } from '@modules/utils'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
@@ -31,6 +30,15 @@ import {
   testOAuthGrantExists,
   testSecurityRetentionCursorAt,
 } from '@voucha/test-helpers/entities/oauth-retention-microsecond-page'
+import {
+  countTestOAuthGrantChildArtifacts,
+  deleteTestOAuthClientWithPredicate,
+  deleteTestOAuthGrantWithPredicate,
+  drainTestOAuthAuthorizationRequestsForClient,
+  insertTestRevokedOAuthGrantWithYoungArtifacts,
+  lockTestNeverGrantedOAuthClient,
+  lockTestOAuthGrantForUpdate,
+} from '@voucha/test-helpers/entities/oauth-retention-cascade-fixtures'
 import {
   insertPreservationHoldForTest,
   readPreservationHoldsForTest,
@@ -91,39 +99,20 @@ describe('security record cleanup', () => {
     })
     await using query = await beginTransaction()
     const plan = sourcePlan('oauth_clients', new Date())
-    const client = await query<{ id: string; never_granted: boolean; aged: boolean }>(
-      `/* testNeverGrantedClientWithRequests:lock */ SELECT client.id,
-         NOT EXISTS (SELECT 1 FROM oauth_client_grant_markers marker
-           WHERE marker.client_id = client.id) AS never_granted,
-         client.id < $2::uuid AS aged
-       FROM oauth_clients client WHERE client.client_id = $1::text FOR UPDATE`,
-      [pending.client.client_id, getMinUuidv7ForDate(plan.cutoffAt)],
-    )
-    expect(client.rows[0]?.never_granted).toBe(true)
-    expect(client.rows[0]?.aged).toBe(true)
-    const deletion = await query(
-      `/* testNeverGrantedClientWithRequests:delete */ DELETE FROM oauth_clients target
-       WHERE target.id = $1::uuid AND target.id < $2::uuid
-         AND ${plan.deletePredicate}`,
-      [client.rows[0]!.id, getMinUuidv7ForDate(plan.cutoffAt)],
-    )
-    expect(deletion.rowCount).toBe(0)
+    const cutoffId = getMinUuidv7ForDate(plan.cutoffAt)
+    const client = await lockTestNeverGrantedOAuthClient(query, pending.client.client_id, cutoffId)
+    expect(client?.never_granted).toBe(true)
+    expect(client?.aged).toBe(true)
+    expect(
+      await deleteTestOAuthClientWithPredicate(query, client!.id, cutoffId, plan.deletePredicate!),
+    ).toBe(0)
     expect((await getTestOAuthRetentionRowCounts(pending.client.client_id)).requests).toBe(3)
     // The existing OAuth artifact worker retires expired requests in capped pages. Once that
     // child family is drained, the same otherwise eligible client may be removed.
-    const drained = await query(
-      `/* testNeverGrantedClientWithRequests:drainFixture */
-       DELETE FROM oauth_authorization_requests WHERE client_id = $1::uuid`,
-      [client.rows[0]!.id],
-    )
-    expect(drained.rowCount).toBe(3)
-    const retired = await query(
-      `/* testNeverGrantedClientWithRequests:retire */ DELETE FROM oauth_clients target
-       WHERE target.id = $1::uuid AND target.id < $2::uuid
-         AND ${plan.deletePredicate}`,
-      [client.rows[0]!.id, getMinUuidv7ForDate(plan.cutoffAt)],
-    )
-    expect(retired.rowCount).toBe(1)
+    expect(await drainTestOAuthAuthorizationRequestsForClient(query, client!.id)).toBe(3)
+    expect(
+      await deleteTestOAuthClientWithPredicate(query, client!.id, cutoffId, plan.deletePredicate!),
+    ).toBe(1)
   })
 
   it('keeps noncase rationale ciphertext when a hold commits before erasure commits', async () => {
@@ -172,67 +161,20 @@ describe('security record cleanup', () => {
       audience: 'user',
       scope: 'mcp.user:read',
     })
-    const grantId = uuidv7()
-    const familyId = uuidv7()
     const now = new Date()
     const futureExpiry = new Date(now.getTime() + 30 * 86_400_000)
     const revokedAt = new Date(now.getTime() - 120 * 86_400_000)
     await using query = await beginTransaction()
-    await query(
-      `/* testRevokedGrantWithChildren:grant */ INSERT INTO oauth_grants
-         (id, user_id, client_id, resource, scopes, revoked_at)
-       SELECT $1::uuid, $2::uuid, client.id, 'https://test.voucha.ai/mcp',
-         ARRAY['mcp.user:read']::api_scopes[], $4::timestamptz
-       FROM oauth_clients client WHERE client.client_id = $3::text`,
-      [grantId, user.id, clientId, revokedAt],
-    )
-    await query(
-      `/* testRevokedGrantWithChildren:code */ INSERT INTO oauth_authorization_codes
-         (grant_id, code_hash, redirect_uri, resource, scopes, code_challenge, expires_at)
-       VALUES ($1::uuid, $2::text, 'https://test.voucha.ai/callback',
-         'https://test.voucha.ai/mcp', ARRAY['mcp.user:read']::api_scopes[], $3::text, $4::timestamptz)`,
-      [grantId, randomBytes(32).toString('hex'), 'A'.repeat(43), futureExpiry],
-    )
-    await query(
-      `/* testRevokedGrantWithChildren:family */ INSERT INTO oauth_refresh_token_families
-         (id, grant_id, resource, scopes, expires_at)
-       VALUES ($1::uuid, $2::uuid, 'https://test.voucha.ai/mcp',
-         ARRAY['mcp.user:read']::api_scopes[], $3::timestamptz)`,
-      [familyId, grantId, futureExpiry],
-    )
-    await query(
-      `/* testRevokedGrantWithChildren:refresh */ INSERT INTO oauth_refresh_tokens
-         (family_id, token_hash, scopes, generation, expires_at)
-       VALUES ($1::uuid, $2::text, ARRAY['mcp.user:read']::api_scopes[], 0, $3::timestamptz)`,
-      [familyId, randomBytes(32).toString('hex'), futureExpiry],
-    )
-    await query(
-      `/* testRevokedGrantWithChildren:access */ INSERT INTO oauth_access_tokens
-         (grant_id, refresh_family_id, token_hash, resource, scopes, expires_at)
-       VALUES ($1::uuid, $2::uuid, $3::text, 'https://test.voucha.ai/mcp',
-         ARRAY['mcp.user:read']::api_scopes[], $4::timestamptz)`,
-      [grantId, familyId, randomBytes(32).toString('hex'), futureExpiry],
-    )
-    await query(
-      '/* testRevokedGrantWithChildren:lock */ SELECT id FROM oauth_grants WHERE id = $1::uuid FOR UPDATE',
-      [grantId],
-    )
+    const { grantId, familyId } = await insertTestRevokedOAuthGrantWithYoungArtifacts(query, {
+      userId: user.id,
+      clientId,
+      revokedAt,
+      futureExpiry,
+    })
+    await lockTestOAuthGrantForUpdate(query, grantId)
     const plan = sourcePlan('oauth_grants', now)
-    const deletion = await query(
-      `/* testRevokedGrantWithChildren:delete */ DELETE FROM oauth_grants target
-       WHERE target.id = $1::uuid AND ${plan.deletePredicate}`,
-      [grantId],
-    )
-    expect(deletion.rowCount).toBe(0)
-    const { rows } = await query<{ children: number }>(
-      `/* testRevokedGrantWithChildren:remaining */ SELECT (
-         (SELECT count(*) FROM oauth_authorization_codes WHERE grant_id = $1::uuid)
-         + (SELECT count(*) FROM oauth_refresh_token_families WHERE grant_id = $1::uuid)
-         + (SELECT count(*) FROM oauth_access_tokens WHERE grant_id = $1::uuid)
-         + (SELECT count(*) FROM oauth_refresh_tokens WHERE family_id = $2::uuid))::integer AS children`,
-      [grantId, familyId],
-    )
-    expect(rows[0]?.children).toBe(4)
+    expect(await deleteTestOAuthGrantWithPredicate(query, grantId, plan.deletePredicate!)).toBe(0)
+    expect(await countTestOAuthGrantChildArtifacts(query, grantId, familyId)).toBe(4)
     // The transaction intentionally rolls back its synthetic young artifacts.
   })
 

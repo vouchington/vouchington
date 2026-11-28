@@ -24,7 +24,9 @@ describe('config-driven generated DDL insert invariant regressions', () => {
   })
 
   it('uses the effective EXISTS polarity through nested NOT expressions', async () => {
+    // ast-grep-ignore: no-sql-in-backend-tests -- DDL invariant analyzer input fixture
     const insert = "INSERT INTO prompts (body) SELECT 'hi' "
+    // ast-grep-ignore: no-sql-in-backend-tests -- DDL invariant analyzer input fixture
     const lookup = "SELECT 1 FROM prompts WHERE body = 'hi'"
     expect(
       await findFirstUnguardedInsertViolation(`${insert}WHERE NOT (NOT EXISTS (${lookup}));`),

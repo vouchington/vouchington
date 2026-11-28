@@ -11,6 +11,7 @@ describe('explain analyze paired results', () => {
       const results = ['get_heavy_posts', 'get_posts:heavy', 'get_posts:heavy-follow-users'].map(
         name => ({
           name,
+          // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for analyze-command unit test
           query_text: 'SELECT 1',
           plan: { Plan: { 'Node Type': 'Result' } },
           execution_time_ms: 1,
@@ -38,6 +39,7 @@ describe('explain analyze paired results', () => {
   it('rejects disallowed resource pressure', () => {
     const result = {
       name: 'spilling-query',
+      // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for analyze-command unit test
       query_text: 'SELECT 1',
       plan: { Plan: { 'Node Type': 'Sort', 'Temp Written Blocks': 1 } },
       execution_time_ms: 1,
@@ -55,6 +57,7 @@ describe('explain analyze paired results', () => {
       scenario_id: 'known-scenario',
       capture_index: 0,
       plan_cache_mode: 'auto' as const,
+      // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for analyze-command unit test
       query_text: 'SELECT 1',
       plan: {
         Plan: { 'Node Type': 'Sort', 'Relation Name': 'posts', 'Temp Written Blocks': 1 },
@@ -106,6 +109,7 @@ describe('explain analyze paired results', () => {
   it('still rejects first-capture temp pressure when the repeat is clean', () => {
     const spilling = {
       name: 'spilling-query',
+      // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for analyze-command unit test
       query_text: 'SELECT 1',
       plan: { Plan: { 'Node Type': 'Sort', 'Temp Written Blocks': 1 } },
       execution_time_ms: 1,
@@ -126,6 +130,7 @@ describe('explain analyze paired results', () => {
     const result = {
       name: 'capacity-query',
       scenario_id: 'post-url-capacity-maximum-overcap',
+      // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for analyze-command unit test
       query_text: 'UPDATE users SET markdown = markdown',
       plan: { Plan: { 'Node Type': 'ModifyTable', 'WAL Bytes': limit - 1 } },
       execution_time_ms: 1,
@@ -157,6 +162,7 @@ function walResult(megabytes: number, nodeType = 'Sort') {
     scenario_id: 'wal-scenario',
     capture_index: 0,
     plan_cache_mode: 'auto' as const,
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for analyze-command unit test
     query_text: 'UPDATE relation SET deleted_at = now()',
     plan: {
       Plan: { 'Node Type': nodeType, 'WAL Bytes': megabytes * 1024 * 1024 },
@@ -266,6 +272,7 @@ describe('generic plan regression gate', () => {
       custom,
       { ...generic, capture_index: 1 },
       { ...generic, scenario_id: 'another-scenario' },
+      // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for analyze-command unit test
       { ...generic, query_text: 'SELECT 2' },
     ]
     expect(() => assertNoGenericPlanRegressions(results, results)).not.toThrow()
@@ -281,6 +288,7 @@ function planResult(
     scenario_id: 'story-post-related-url-active-relations-maximum',
     capture_index: 0,
     plan_cache_mode: mode,
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for analyze-command unit test
     query_text: 'SELECT 1',
     plan: { Plan: { 'Node Type': 'Result' } },
     execution_time_ms: executionTimeMs,

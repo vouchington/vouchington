@@ -23,6 +23,7 @@ function seqScanResult(overrides: Partial<ProbedExplainResult> = {}): ProbedExpl
     scenario_id: 'post-search-hot',
     capture_index: 0,
     plan_cache_mode: 'force_custom_plan',
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for seq-scan tie unit test
     query_text: 'SELECT 1',
     plan: {
       Plan: {

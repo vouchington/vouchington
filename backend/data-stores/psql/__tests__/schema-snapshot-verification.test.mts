@@ -166,6 +166,7 @@ describe('verifyLiveSchemaMatchesSnapshot', () => {
       ...snapshot,
       views: {
         ...snapshot.views,
+        // ast-grep-ignore: no-sql-in-backend-tests -- synthetic view definition string for SchemaSnapshot diff unit test
         widgets_view: { definition: 'SELECT 1', comment: null, materialized: false },
       },
     }

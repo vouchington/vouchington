@@ -1,7 +1,7 @@
 import { it, expect, vi, beforeEach, describe } from 'vitest'
 import { createHash } from 'node:crypto'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import { queryTestAnalyticsCrawlerRequestsByDomainAndType } from '@voucha/test-helpers/data-stores/analytics/queries'
 import CrawlerRss from './index.mts'
 
 const mockFetchUrl = vi.fn<VitestLooseMock>()
@@ -36,9 +36,7 @@ function fetchUrlResult(response: unknown) {
 
 async function getRssCrawlerRows(domain: string): Promise<CrawlerRequestRow[]> {
   await flush()
-  return query<CrawlerRequestRow>(
-    `SELECT * FROM crawler_requests WHERE domain = '${domain}' AND crawler_type = 'rss'`,
-  )
+  return queryTestAnalyticsCrawlerRequestsByDomainAndType<CrawlerRequestRow>(domain, 'rss')
 }
 
 async function callCrawlerRss(url: string) {

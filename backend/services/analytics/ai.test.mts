@@ -3,7 +3,10 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import {
+  queryTestAnalyticsAiCallsByKindAndModel,
+  queryTestAnalyticsAiCallsByKindAndReason,
+} from '@voucha/test-helpers/data-stores/analytics/queries'
 import { trackAIEmbeddingCall, trackAIEmbeddingShortCircuit, trackAIModerationCall } from './ai.mts'
 
 describe('ai', () => {
@@ -31,8 +34,9 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM ai_calls WHERE kind = 'embedding' AND model = 'nova-2-multimodal-embeddings-v1'`,
+      const rows = await queryTestAnalyticsAiCallsByKindAndModel(
+        'embedding',
+        'nova-2-multimodal-embeddings-v1',
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
@@ -54,9 +58,7 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM ai_calls WHERE kind = 'embedding' AND model = '${model}'`,
-      )
+      const rows = await queryTestAnalyticsAiCallsByKindAndModel('embedding', model)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.invocation).toBe('single')
     })
@@ -67,8 +69,9 @@ describe('ai', () => {
       trackAIEmbeddingShortCircuit({ reason: 'batch_lock', entityType: 'post' })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM ai_calls WHERE kind = 'embedding_short_circuit' AND reason = 'batch_lock'`,
+      const rows = await queryTestAnalyticsAiCallsByKindAndReason(
+        'embedding_short_circuit',
+        'batch_lock',
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
@@ -81,8 +84,9 @@ describe('ai', () => {
       trackAIEmbeddingShortCircuit({ reason: 'centralized_cache', entityType: 'topic' })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM ai_calls WHERE kind = 'embedding_short_circuit' AND reason = 'centralized_cache'`,
+      const rows = await queryTestAnalyticsAiCallsByKindAndReason(
+        'embedding_short_circuit',
+        'centralized_cache',
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.entity_type).toBe('topic')
@@ -95,8 +99,9 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM ai_calls WHERE kind = 'embedding_short_circuit' AND reason = 'single_skipped_for_backlog'`,
+      const rows = await queryTestAnalyticsAiCallsByKindAndReason(
+        'embedding_short_circuit',
+        'single_skipped_for_backlog',
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.entity_type).toBe('rss_feed_item')
@@ -115,9 +120,7 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM ai_calls WHERE kind = 'moderation' AND model = 'omni-moderation'`,
-      )
+      const rows = await queryTestAnalyticsAiCallsByKindAndModel('moderation', 'omni-moderation')
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
       expect(row.kind).toBe('moderation')

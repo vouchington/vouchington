@@ -9,7 +9,7 @@ import {
   createTopHashtagPostSourceForTest,
 } from '../../../backend/test-helpers/index.mts'
 import { createUnlinkedTopicAlias } from '../../../backend/services/topics/aliases.mts'
-import { refreshMaterializedView } from '../../../backend/data-stores/psql/migrate.mts'
+import { refreshTopHashtagsMaterializedView } from '../../helpers/topic-fixtures.mts'
 
 test.describe('Top hashtag controls', () => {
   test.use({ storageState: ADMIN_AUTH_STATE })
@@ -64,7 +64,7 @@ test.describe('Top hashtag controls', () => {
           ),
       ),
     )
-    await refreshMaterializedView('mv_top_hashtags')
+    await refreshTopHashtagsMaterializedView()
   })
 
   test('shows mapping, row actions, linking form, and pagination', async ({ page }) => {

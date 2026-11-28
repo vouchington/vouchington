@@ -9,7 +9,11 @@ import { createTestUser, followUser, insertTestPost } from '../../../backend/tes
 import { createDeviceAndSessionTokens } from '../../../backend/services/jwt-session/index.mts'
 import { processFollowerDistributionChunk } from '../../../backend/services/follower-distributions/index.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { read } from '../../../backend/data-stores/psql/clients.mts'
+import {
+  countManualSendNotifications,
+  countPostFeedShares,
+  findLatestFollowerDistributionId,
+} from '../../helpers/follower-distribution.mts'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 
 let sharerId = ''
@@ -56,19 +60,7 @@ async function loginAsUser(page: Page, userId: string) {
 async function processLatestPostDistribution(action: 'post_share' | 'post_send', postId: string) {
   await expect
     .poll(async () => {
-      const { rows } = await read<{ id: string }>(
-        `/* share-send-spec follower distribution */
-        SELECT id
-        FROM follower_distributions
-        WHERE sender_user_id = $1
-          AND action = $2
-          AND post_id = $3
-        ORDER BY id DESC
-        LIMIT 1
-      `,
-        [sharerId, action, postId],
-      )
-      const distributionId = rows[0]?.id
+      const distributionId = await findLatestFollowerDistributionId(sharerId, action, postId)
       if (!distributionId) return false
 
       const result = await processFollowerDistributionChunk(distributionId)
@@ -131,19 +123,7 @@ test.describe('Feed Share And Send', () => {
     await processLatestPostDistribution('post_share', sharedPostId)
 
     await expect
-      .poll(async () => {
-        const { rows } = await read(
-          `/* share-send-spec post feed share */
-          SELECT COUNT(*)::INT AS count
-          FROM post_feed_shares
-          WHERE recipient_user_id = $1
-            AND shared_by_id = $2
-            AND post_id = $3
-        `,
-          [followerId, sharerId, sharedPostId],
-        )
-        return rows[0]?.count ?? 0
-      })
+      .poll(() => countPostFeedShares(followerId, sharerId, sharedPostId))
       .toBeGreaterThan(0)
 
     await withMonitoredPage(browser, testInfo, async followerPage => {
@@ -183,20 +163,7 @@ test.describe('Feed Share And Send', () => {
     await processLatestPostDistribution('post_send', sendPostId)
 
     await expect
-      .poll(async () => {
-        const { rows } = await read(
-          `/* share-send-spec notification */
-          SELECT COUNT(*)::INT AS count
-          FROM notifications
-          WHERE user_id = $1
-            AND sent_by_id = $2
-            AND post_id = $3
-            AND delivery_type = 'manual_send'
-        `,
-          [followerId, sharerId, sendPostId],
-        )
-        return rows[0]?.count ?? 0
-      })
+      .poll(() => countManualSendNotifications(followerId, sharerId, sendPostId))
       .toBeGreaterThan(0)
   })
 })

@@ -3,7 +3,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import { queryTestAnalyticsWebClicks } from '@voucha/test-helpers/data-stores/analytics/queries'
 import {
   createTestUserDirect,
   createTestLandingPage,
@@ -43,9 +43,7 @@ describe('record-click', () => {
       await recordLandingPageItemClick({ landingPageId, landingPageItemId, sessionId })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM web_click WHERE page_kind = 'landing_page' AND target_id = '${landingPageItemId}'`,
-      )
+      const rows = await queryTestAnalyticsWebClicks('landing_page', landingPageItemId)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.target_kind).toBe('item')
       expect(rows[0]!.page_id).toBe(landingPageId)
@@ -61,9 +59,7 @@ describe('record-click', () => {
       })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM web_click WHERE page_kind = 'landing_page' AND target_id = '${unrelatedItemId}'`,
-      )
+      const rows = await queryTestAnalyticsWebClicks('landing_page', unrelatedItemId)
       expect(rows.length).toBe(0)
     })
   })

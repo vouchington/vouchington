@@ -1,12 +1,8 @@
 import { it, beforeAll, describe, expect } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'node:assert/strict'
-import {
-  createReferralProgramFixture,
-  createTestUser,
-  deleteForeignKeyTargetDuringInsertForTest,
-  WEB_PROVENANCE,
-} from '@voucha/test-helpers'
+import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
+import { deleteReferralProgramTopicDuringInsertForTest } from '@voucha/test-helpers/postgres-fk-target-race'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { createUserReferralLink } from './create.mts'
 import { deactivateUserReferralLink } from './activate.mts'
@@ -67,27 +63,16 @@ describe('create', () => {
       hostname,
       pathname: '/refer',
     })
-    const outcome = await deleteForeignKeyTargetDuringInsertForTest({
-      queryMarker: '/* createUserReferralLink */',
-      lockTarget: async query => {
-        await query(
-          '/* lockTestReferralProgramTopic */ SELECT topic_id FROM referral_program_topics WHERE topic_id = $1 FOR UPDATE',
-          [fixture.referralProgramId],
-        )
-      },
-      deleteTarget: async query => {
-        await query(
-          '/* deleteTestReferralProgramTopic */ DELETE FROM referral_program_topics WHERE topic_id = $1',
-          [fixture.referralProgramId],
-        )
-      },
-      operation: () =>
+    const outcome = await deleteReferralProgramTopicDuringInsertForTest(
+      '/* createUserReferralLink */',
+      fixture.referralProgramId,
+      () =>
         createUserReferralLink(user, WEB_PROVENANCE, {
           user_id: user.id,
           referral_program_id: fixture.referralProgramId,
           url: `https://${hostname}/refer?race=${randomSuffix}`,
         }),
-    })
+    )
 
     expect(outcome).toMatchObject({ error: { status: 404, message: 'Topic not found' } })
   })

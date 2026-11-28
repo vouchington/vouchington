@@ -10,7 +10,10 @@ import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import {
+  cleanupTestRssFeedFixture,
+  upsertTestArticleUrl,
+} from '../../helpers/rss-article-fixture.mts'
 import { insertTestRssFeedItem } from '../../../backend/test-helpers/entities/rss-feed-items.mts'
 
 // Fixed test user ID seeded by playwright-test-data.mts.
@@ -61,15 +64,11 @@ test.describe('News Page', () => {
     const feed = await insertTestRssFeed(topic.id, suffix)
     youtubeFeedId = feed.id
     const articleUrl = `https://${feed.hostname}/youtube-summary-${suffix}`
-    const urlResult = await write(
-      `/* news.part-2.spec insert youtube summary url */
-       INSERT INTO urls (url, hostname_id, pathname, search_params)
-       VALUES ($1, $2, $3, '{}'::JSONB)
-       ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
-       RETURNING id`,
-      [articleUrl, feed.hostnameId, `/youtube-summary-${suffix}`],
-    )
-    const urlId = urlResult.rows[0].id as string
+    const urlId = await upsertTestArticleUrl({
+      url: articleUrl,
+      hostnameId: feed.hostnameId,
+      pathname: `/youtube-summary-${suffix}`,
+    })
     youtubeUrlId = urlId
 
     youtubeItemId = await insertTestRssFeedItem({
@@ -94,53 +93,13 @@ test.describe('News Page', () => {
 
   test.afterAll(async () => {
     protectPlaywrightHookTimeouts(test.info())
-    const errors: unknown[] = []
-    if (youtubeFeedId && youtubeItemId) {
-      try {
-        await write(
-          `/* news.part-2.spec cleanup youtube summary rss source */
-           DELETE FROM rss_feed_item_sources
-           WHERE rss_feed_id = $1 AND rss_feed_item_id = $2`,
-          [youtubeFeedId, youtubeItemId],
-        )
-      } catch (err) {
-        errors.push(err)
-      }
-    }
-    if (youtubeFeedId) {
-      try {
-        await write(
-          `/* news.part-2.spec cleanup youtube summary rss feed */
-          DELETE FROM rss_feeds WHERE id = $1`,
-          [youtubeFeedId],
-        )
-      } catch (err) {
-        errors.push(err)
-      }
-    }
-    if (youtubeItemId) {
-      try {
-        await write(
-          `/* news.part-2.spec cleanup youtube summary rss item */
-          DELETE FROM rss_feed_item_guids WHERE id = $1`,
-          [youtubeItemId],
-        )
-      } catch (err) {
-        errors.push(err)
-      }
-    }
-    if (youtubeUrlId) {
-      try {
-        await write(
-          `/* news.part-2.spec cleanup youtube summary url */
-          DELETE FROM urls WHERE id = $1`,
-          [youtubeUrlId],
-        )
-      } catch (err) {
-        errors.push(err)
-      }
-    }
-    if (errors.length > 0) throw new AggregateError(errors, 'YouTube RSS summary cleanup failed')
+    await cleanupTestRssFeedFixture({
+      feedId: youtubeFeedId,
+      rssItemId: youtubeItemId,
+      urlId: youtubeUrlId,
+      deleteItemSource: true,
+      errorContext: 'YouTube RSS summary cleanup failed',
+    })
   })
 
   test('/news modal Previous/Next buttons are below article content', async ({ page }) => {

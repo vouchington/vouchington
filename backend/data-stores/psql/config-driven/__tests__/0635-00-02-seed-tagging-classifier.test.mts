@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
-import { beginTransaction } from '../../setup.mts'
+import { beginTransaction } from '@voucha/test-helpers'
 import {
   getLocalClassifierBySlug,
   listLocalActiveClassifierPromptVersions,

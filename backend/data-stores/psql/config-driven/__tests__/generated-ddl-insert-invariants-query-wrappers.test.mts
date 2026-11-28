@@ -57,6 +57,7 @@ describe('config-driven generated DDL insert invariant: PREPARE/EXPLAIN wrappers
   it.each(['UPDATE topics SET name = name WHERE false', 'DELETE FROM topics WHERE false'])(
     'checks each INSERT CTE before %s',
     async statement => {
+      // ast-grep-ignore: no-sql-in-backend-tests -- DDL invariant analyzer input fixture
       const insert = "INSERT INTO prompts (body) VALUES ('hi')"
       expect(
         await findFirstUnguardedInsertViolation(`WITH seeded AS (${insert}) ${statement};`),

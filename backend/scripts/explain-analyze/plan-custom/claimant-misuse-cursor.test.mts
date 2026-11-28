@@ -5,6 +5,7 @@ import { assertClaimantMisuseCursorSeek } from './claimant-misuse-cursor.mts'
 function result(indexCondition: string, indexName = 'idx_copyright_notices__claimant_user') {
   return {
     name: 'copyright-claimant-misuse-near-oldest-window',
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for custom plan-gate unit test
     query_text: 'SELECT id FROM copyright_notices WHERE claimant_user_id = $1 AND id < $2',
     plan: {
       Plan: {

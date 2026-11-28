@@ -43,6 +43,7 @@ const scopedContinuationLockSql = scopedLockSql
     'ORDER BY media_delivery_registry_record_id LIMIT $2',
     'AND media_delivery_registry_record_id > (SELECT record_id FROM replay_cursor) ORDER BY media_delivery_registry_record_id LIMIT (SELECT page_size FROM replay_cursor)',
   )
+// ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult SQL text for custom plan-gate unit test
 const writeSql = `/* ${prefix} */ WITH inserted AS (
   INSERT INTO media_delivery_registry_changes SELECT media_delivery_registry_record_id
   FROM unnest($2::uuid[]) selected(record_id) CROSS JOIN LATERAL (
@@ -50,6 +51,7 @@ const writeSql = `/* ${prefix} */ WITH inserted AS (
     WHERE media_delivery_registry_record_id = selected.record_id LIMIT 1
   ) current_record WHERE state = 'failed'
 ) SELECT media_delivery_registry_record_id FROM inserted`
+// ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult SQL text for custom plan-gate unit test
 const eventSql = `/* ${prefix}:event */ INSERT INTO copyright_notice_lifecycle_changes
   SELECT record.id FROM unnest($2::uuid[]) selected(record_id) CROSS JOIN LATERAL (
     SELECT id FROM media_delivery_registry_records

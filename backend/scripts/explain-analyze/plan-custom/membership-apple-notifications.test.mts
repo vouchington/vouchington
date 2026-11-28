@@ -17,6 +17,7 @@ function result(
   }
   return {
     name: `findRecoverableAppleNotificationJobs:${mode}`,
+    // ast-grep-ignore: no-sql-in-backend-tests -- synthetic ExplainResult fixture for custom plan-gate unit test
     query_text: '/* findRecoverableAppleNotificationJobs */ SELECT 1',
     plan: {
       Plan: {

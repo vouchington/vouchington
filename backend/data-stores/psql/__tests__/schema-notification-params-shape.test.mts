@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
-import { beginTransaction, onGracefulShutdown } from '../index.mts'
+import { onGracefulShutdown } from '../index.mts'
+import { beginTransaction } from '../../../test-helpers/index.mts'
 import { createLocalTestUser } from '../../../test-helpers/data-stores/psql/users.mts'
 import { createNotificationCommunity } from '../../../test-helpers/data-stores/psql/notification-community-events.mts'
 import {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { createTestUser, insertTestRewardsProgramStatus } from '@voucha/test-helpers'
 import {
-  createTestUser,
-  deleteForeignKeyTargetDuringInsertForTest,
-  insertTestRewardsProgramStatus,
-} from '@voucha/test-helpers'
+  deleteIndividualDuringInsertForTest,
+  deleteRewardsProgramStatusTopicDuringInsertForTest,
+} from '@voucha/test-helpers/postgres-fk-target-race'
 import {
   createIndividualRewardsProgramStatus,
   getIndividualRewardsProgramStatuses,
@@ -14,22 +14,11 @@ describe('rewards program status database failures', () => {
   it('returns not found when a status topic is deleted during the insert FK check', async () => {
     const user = await createTestUser()
     const statusId = await insertTestRewardsProgramStatus({ createdById: user.id })
-    const outcome = await deleteForeignKeyTargetDuringInsertForTest({
-      queryMarker: '/* createIndividualRewardsProgramStatus */',
-      lockTarget: async query => {
-        await query(
-          '/* lockTestRewardsProgramStatusTopic */ SELECT topic_id FROM rewards_program_status_topics WHERE topic_id = $1 FOR UPDATE',
-          [statusId],
-        )
-      },
-      deleteTarget: async query => {
-        await query(
-          '/* deleteTestRewardsProgramStatusTopic */ DELETE FROM rewards_program_status_topics WHERE topic_id = $1',
-          [statusId],
-        )
-      },
-      operation: () => createIndividualRewardsProgramStatus(user, user, statusId),
-    })
+    const outcome = await deleteRewardsProgramStatusTopicDuringInsertForTest(
+      '/* createIndividualRewardsProgramStatus */',
+      statusId,
+      () => createIndividualRewardsProgramStatus(user, user, statusId),
+    )
 
     expect(outcome).toMatchObject({ error: { status: 404, message: 'Topic not found' } })
   })
@@ -37,21 +26,11 @@ describe('rewards program status database failures', () => {
   it('preserves the former validation response when the owner FK fails during insert', async () => {
     const user = await createTestUser()
     const statusId = await insertTestRewardsProgramStatus({ createdById: user.id })
-    const outcome = await deleteForeignKeyTargetDuringInsertForTest({
-      queryMarker: '/* createIndividualRewardsProgramStatus */',
-      lockTarget: async query => {
-        await query(
-          '/* lockTestStatusOwner */ SELECT id FROM individuals WHERE id = $1 FOR UPDATE',
-          [user.individual_id!],
-        )
-      },
-      deleteTarget: async query => {
-        await query('/* deleteTestStatusOwner */ DELETE FROM individuals WHERE id = $1', [
-          user.individual_id!,
-        ])
-      },
-      operation: () => createIndividualRewardsProgramStatus(user, user, statusId),
-    })
+    const outcome = await deleteIndividualDuringInsertForTest(
+      '/* createIndividualRewardsProgramStatus */',
+      user.individual_id!,
+      () => createIndividualRewardsProgramStatus(user, user, statusId),
+    )
 
     expect(outcome).toMatchObject({
       error: { status: 422, message: 'Invalid rewards_program_status_topic_id' },
