@@ -1,5 +1,5 @@
 import { continueAfterFailure as runStep } from './scenario-failures.mts'
-import { ORDINARY_EXPLAIN_SHARDS, type OrdinaryExplainShard } from './explain-shards.mts'
+import type { OrdinaryExplainShard } from './explain-shards.mts'
 import { INGESTION_CRAWL_RUNNERS } from './run-ordered-scenarios-ingestion-crawl.mts'
 import { FEEDS_FOLLOWS_RUNNERS } from './run-ordered-scenarios-feeds-follows.mts'
 import { SEARCH_ENTITIES_RUNNERS } from './run-ordered-scenarios-search-entities.mts'
@@ -109,11 +109,6 @@ export function getOrderedRunners(
 ): readonly OrderedRunner[] {
   if (shard === undefined) return EXPLAIN_DOMAIN_NAMES.flatMap(domain => EXPLAIN_DOMAINS[domain])
   return ORDINARY_SHARD_DOMAINS[shard].flatMap(domain => EXPLAIN_DOMAINS[domain])
-}
-
-/** Every domain assigned to ordinary shards in shard order, for structural checks. */
-export function getAssignedShardDomains(): readonly ExplainDomain[] {
-  return ORDINARY_EXPLAIN_SHARDS.flatMap(shard => ORDINARY_SHARD_DOMAINS[shard])
 }
 
 export async function runOrderedRunners(runners: readonly OrderedRunner[]): Promise<void> {

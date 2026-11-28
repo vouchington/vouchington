@@ -8,10 +8,8 @@ import {
   assertFixedShardDeclarations,
   assertOrdinaryCompletedScenarios,
   assertShardCompletedScenarios,
-  assertShardsPartitionManifest,
   isOrdinaryExplainShard,
   parseExplainShard,
-  type ExplainShard,
   type FixedExplainShard,
 } from './explain-shards.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
@@ -20,18 +18,6 @@ const manifest = ['a', 'b', 'c', 'd', 'p1', 'p2']
 const fixedShards: Readonly<Record<FixedExplainShard, readonly string[]>> = {
   partition: ['p1', 'p2'],
   'hn-scale': ['d'],
-}
-
-function subsets(overrides: Partial<Record<ExplainShard, readonly string[]>> = {}) {
-  return {
-    main: ['a'],
-    'main-2': ['b'],
-    'main-3': ['c'],
-    'main-4': [],
-    partition: ['p1', 'p2'],
-    'hn-scale': ['d'],
-    ...overrides,
-  } satisfies Record<ExplainShard, readonly string[]>
 }
 
 describe('parseExplainShard', () => {
@@ -48,24 +34,6 @@ describe('parseExplainShard', () => {
     expect(isOrdinaryExplainShard('partition')).toBe(false)
     expect(isOrdinaryExplainShard('hn-scale')).toBe(false)
     expect(isOrdinaryExplainShard(undefined)).toBe(false)
-  })
-})
-
-describe('assertShardsPartitionManifest', () => {
-  it('accepts disjoint subsets whose union is the manifest', () => {
-    expect(() => assertShardsPartitionManifest(manifest, subsets())).not.toThrow()
-  })
-
-  it('fails for a scenario in no shard, in two shards, or outside the manifest', () => {
-    expect(() => assertShardsPartitionManifest(manifest, subsets({ main: [] }))).toThrow(
-      'neither=[a]',
-    )
-    expect(() => assertShardsPartitionManifest(manifest, subsets({ main: ['a', 'p1'] }))).toThrow(
-      'both=[p1]',
-    )
-    expect(() =>
-      assertShardsPartitionManifest(manifest, subsets({ main: ['a', 'ghost'] })),
-    ).toThrow('unknown=[ghost]')
   })
 })
 

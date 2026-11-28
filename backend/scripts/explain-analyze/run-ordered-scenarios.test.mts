@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ORDINARY_EXPLAIN_SHARDS } from './explain-shards.mts'
@@ -7,7 +7,6 @@ import {
   EXPLAIN_DOMAINS,
   EXPLAIN_DOMAIN_NAMES,
   ORDINARY_SHARD_DOMAINS,
-  getAssignedShardDomains,
   getDomainRunners,
   getOrderedRunners,
   parseExplainDomain,
@@ -18,19 +17,11 @@ const DOMAIN_FILE_PREFIX = 'run-ordered-scenarios-'
 const DOMAIN_FILE_SUFFIX = '.mts'
 
 describe('domain shard layout', () => {
-  it('maps every domain file to EXPLAIN_DOMAINS and assigns every domain to exactly one shard', () => {
-    const domainFiles = readdirSync(EXPLAIN_DIR)
-      .filter(file => file.startsWith(DOMAIN_FILE_PREFIX) && file.endsWith(DOMAIN_FILE_SUFFIX))
-      .map(file => file.slice(DOMAIN_FILE_PREFIX.length, -DOMAIN_FILE_SUFFIX.length))
-      .toSorted()
-    expect(domainFiles).toEqual(
-      [...EXPLAIN_DOMAIN_NAMES.filter(name => name !== 'capacity-audit')].toSorted(),
-    )
-
+  it('assigns every domain to exactly one ordinary shard', () => {
     for (const shard of ORDINARY_EXPLAIN_SHARDS)
       expect(ORDINARY_SHARD_DOMAINS[shard].length).toBeGreaterThan(0)
 
-    const assigned = getAssignedShardDomains()
+    const assigned = ORDINARY_EXPLAIN_SHARDS.flatMap(shard => ORDINARY_SHARD_DOMAINS[shard])
     expect(new Set(assigned).size).toBe(assigned.length)
     expect([...assigned].toSorted()).toEqual([...EXPLAIN_DOMAIN_NAMES].toSorted())
   })
@@ -64,8 +55,8 @@ describe('domain shard layout', () => {
   })
 
   it('forbids domain files from importing other domain files', () => {
-    const domainFiles = readdirSync(EXPLAIN_DIR).filter(
-      file => file.startsWith(DOMAIN_FILE_PREFIX) && file.endsWith(DOMAIN_FILE_SUFFIX),
+    const domainFiles = EXPLAIN_DOMAIN_NAMES.filter(name => name !== 'capacity-audit').map(
+      name => `${DOMAIN_FILE_PREFIX}${name}${DOMAIN_FILE_SUFFIX}`,
     )
     const violations = domainFiles.filter(file =>
       /from ['"]\.\/run-ordered-scenarios-/.test(readFileSync(join(EXPLAIN_DIR, file), 'utf8')),

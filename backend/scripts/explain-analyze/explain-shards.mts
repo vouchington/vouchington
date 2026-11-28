@@ -102,21 +102,3 @@ export function assertShardCompletedScenarios(
   }
   assertScenarioManifest(completed, fixedShards[shard])
 }
-
-/** Fails unless the shard subsets are disjoint and together equal the manifest. */
-export function assertShardsPartitionManifest(
-  manifest: readonly string[],
-  subsets: Readonly<Record<ExplainShard, readonly string[]>>,
-): void {
-  const seen = new Map<string, ExplainShard[]>()
-  for (const shard of EXPLAIN_SHARDS)
-    for (const id of subsets[shard]) seen.set(id, [...(seen.get(id) ?? []), shard])
-  const manifestSet = new Set(manifest)
-  const neither = manifest.filter(id => !seen.has(id))
-  const both = [...seen].filter(([, shards]) => shards.length > 1).map(([id]) => id)
-  const unknown = [...seen.keys()].filter(id => !manifestSet.has(id))
-  if (neither.length > 0 || both.length > 0 || unknown.length > 0)
-    throw new Error(
-      `EXPLAIN shards must partition the scenario manifest; neither=[${neither.join(', ')}] both=[${both.join(', ')}] unknown=[${unknown.join(', ')}]`,
-    )
-}
