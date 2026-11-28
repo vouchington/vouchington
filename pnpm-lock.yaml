@@ -2439,8 +2439,8 @@ importers:
         specifier: workspace:^
         version: link:../utils
       nodemailer:
-        specifier: ^10.6.0
-        version: 10.6.0
+        specifier: ^10.6.1
+        version: 10.6.1
     devDependencies:
       '@types/nodemailer':
         specifier: ^8.0.2
@@ -23577,6 +23577,10 @@ packages:
     resolution: {integrity: sha512-jWanL7D9GD3jvUDYKmoC5rWTiG8MnBgnN2yV68bgMKip1zUJhiSTyz7Eg+18y8sk5OvdVDzws5nZK5arSI4f5Q==}
     engines: {node: '>=20.0.0'}
 
+  nodemailer@10.6.1:
+    resolution: {integrity: sha512-d7kfFfS/tR4Aca+SBvRaQ+MXKNv7d2JiRe5TxaRcFT/kYMh4GGPnW9aKksTIEvyEbA7d/7HYWE4YPDEHxzJj/g==}
+    engines: {node: '>=20.0.0'}
+
   npm-run-path@6.0.0:
     resolution: {integrity: sha512-9qny7Z9DsQU8Ou39ERsPU4OZQlSTP47ShQzuKZ6PRXpYLtIFgl/DEBYEXKlvcEa+9tHVcK8CF81Y2V72qaZhWA==}
     engines: {node: '>=18'}
@@ -32906,6 +32910,8 @@ snapshots:
   node-stream-zip@1.16.0: {}
 
   nodemailer@10.6.0: {}
+
+  nodemailer@10.6.1: {}
 
   npm-run-path@6.0.0:
     dependencies:
