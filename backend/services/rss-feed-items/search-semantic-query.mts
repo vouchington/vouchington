@@ -40,8 +40,8 @@ function getUnscopedCandidateLimit(): number {
 
 function appendUnscopedCandidates(query: SQLStatement, baseFilters: SQLStatement[]): void {
   const candidateLimit = getUnscopedCandidateLimit()
-  // HNSW k-nearest prefix is an approved vector-search exception to the list-reads no-candidate-pool
-  // rule (#6699, matching posts semantic search): pgvector requires ORDER BY <=> LIMIT k to use HNSW.
+  // Vector search carve-out in .agents/skills/vouchington-postgres/SKILL.md (Query shape):
+  // pgvector requires an HNSW k-nearest prefix (ORDER BY <=> LIMIT k) with a bounded DynamicConfig k (#6699).
   query.append(sql`, semantic_nearest AS MATERIALIZED (
       SELECT
         rss_feed_items.id,
