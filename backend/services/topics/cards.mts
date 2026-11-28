@@ -5,8 +5,8 @@ import type { PrivateUser } from '@services/users/types'
 import type { Topic } from './types.mts'
 import { assertTopicExists } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
-import { upsertTopicAttributes } from './upsert-attributes.mts'
-import { isMoney, type CurrencyCode, type Money } from '@ts-shared/money'
+import { upsertTopicAttributes, type TopicAttributeRowMap } from './upsert-attributes.mts'
+import { isMoney, type Money } from '@ts-shared/money'
 import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import { mapCardAttributeReferenceError } from './card-attribute-errors.mts'
 
@@ -16,10 +16,7 @@ type CardAttributes = {
   annual_fee?: Money | null
 }
 
-type CardAttributesRow = Omit<CardAttributes, 'annual_fee'> & {
-  annual_fee_minor_units: string | null
-  currency_code: CurrencyCode | null
-}
+type CardAttributesRow = TopicAttributeRowMap['card_topics']
 
 function toCardAttributes(row: CardAttributesRow): CardAttributes {
   return {
@@ -86,7 +83,7 @@ export async function updateCardAttributes(
   }
 
   const row = await mapCardAttributeReferenceError(() =>
-    upsertTopicAttributes<CardAttributesRow>('card_topics', topic.id, columns, values),
+    upsertTopicAttributes('card_topics', topic.id, columns, values),
   )
   return row ? toCardAttributes(row) : null
 }

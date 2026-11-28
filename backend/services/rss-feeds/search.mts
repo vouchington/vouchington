@@ -8,6 +8,10 @@ import { feedStateFilters } from './search-state-filters.mts'
 import { searchTrendingRssFeeds } from './search-trending.mts'
 export type { SearchRssFeedsOptions }
 
+const DESCENDANT_FEED_COLUMNS =
+  'rss_feeds.id, rss_feeds.topic_id, rss_feeds.deleted_at, rss_feeds.feed_type, rss_feeds.is_enabled, rss_feeds.is_discoverable'
+const DESCENDANT_FEED_TEXT_SEARCH_COLUMNS = `${DESCENDANT_FEED_COLUMNS}, rss_feeds.title, rss_feeds.search_vector`
+
 export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
   const {
     topic_id,
@@ -126,12 +130,17 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     query.append(sql`id`)
   }
   if (usesAnyDescendantTopics) {
+    const descendantFeedColumns = hasTextSearch
+      ? DESCENDANT_FEED_TEXT_SEARCH_COLUMNS
+      : DESCENDANT_FEED_COLUMNS
     query.append(sql` FROM (
       SELECT DISTINCT topic_id FROM topic_descendants
     ) candidate_topics
     JOIN LATERAL (
       -- Live feeds have a unique topic_id, so this keyed probe returns at most one row.
-      SELECT rss_feeds.* FROM rss_feeds
+      SELECT `)
+    query.append(descendantFeedColumns)
+    query.append(sql` FROM rss_feeds
       WHERE rss_feeds.topic_id = candidate_topics.topic_id
         AND rss_feeds.deleted_at IS NULL
       LIMIT 1

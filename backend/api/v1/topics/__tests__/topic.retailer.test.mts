@@ -56,7 +56,14 @@ describe('Topic Retailer Routes', () => {
 
       const response = await request.patch(`/api/v1/topics/${topicId}/retailer`).expect(200)
 
-      expect(response.body.retailer_attributes).toBeDefined()
+      expect(Object.keys(response.body.retailer_attributes).toSorted()).toEqual([
+        'created_at',
+        'topic_id',
+        'updated_at',
+      ])
+      expect(response.body.retailer_attributes.topic_id).toBe(topicId)
+      expect(response.body.retailer_attributes.created_at).toEqual(expect.any(String))
+      expect(response.body.retailer_attributes.updated_at).toEqual(expect.any(String))
     })
 
     it('should return 401 when not authenticated', async () => {

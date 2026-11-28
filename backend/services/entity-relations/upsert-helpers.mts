@@ -11,7 +11,17 @@ export type UpsertEntityTypes = Post | Topic | PrivateUser
 
 export type EntityIdentifier = { id: string }
 
-export type InternalEntityRelationMutationResult = EntityRelation & {
+export type InternalEntityRelationMutationResult = Pick<
+  EntityRelation,
+  | 'id'
+  | 'subject_id'
+  | 'object_id'
+  | 'created_by_id'
+  | 'created_at'
+  | 'deleted_at'
+  | 'deleted_by_id'
+> & {
+  newly_active: boolean
   outbound_activitypub_follow_activity_id?: string | null
 }
 

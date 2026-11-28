@@ -4,7 +4,7 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import type { Topic } from './types.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
-import { upsertTopicAttributes } from './upsert-attributes.mts'
+import { upsertTopicAttributes, type TopicAttributeRowMap } from './upsert-attributes.mts'
 
 type RetailerAttributes = Record<string, never>
 
@@ -30,11 +30,11 @@ export async function getRetailerAttributes(topic: Topic): Promise<RetailerAttri
 export async function updateRetailerAttributes(
   currentUser: PrivateUser | null,
   topic: Topic,
-): Promise<RetailerAttributes | null> {
+): Promise<TopicAttributeRowMap['retailer_topics'] | null> {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
 
-  return upsertTopicAttributes<RetailerAttributes>('retailer_topics', topic.id, [], [])
+  return upsertTopicAttributes('retailer_topics', topic.id, [], [])
 }
 
 export async function getRetailerCountries(topic: Topic): Promise<Country[]> {
@@ -75,7 +75,7 @@ export async function updateRetailerCountries(
 
   await using query = await beginTransaction()
   // Keep the extension and its country references in the same transaction.
-  await upsertTopicAttributes<RetailerAttributes>('retailer_topics', topic.id, [], [], { query })
+  await upsertTopicAttributes('retailer_topics', topic.id, [], [], { query })
   await query(sql`/* updateRetailerCountries delete */
     DELETE FROM retailer_countries
     WHERE retailer_topic_id = ${topic.id}

@@ -90,6 +90,9 @@ export async function processTopicMergeRelationFinalizationPage(
   return { cursor: initialTopicMergeRelationCursor, hasMore: true }
 }
 
+const FINAL_RELATION_PARENT_COLUMNS =
+  'id, subject_id, object_id, created_at, created_by_id, deleted_at, deleted_by_id'
+
 async function createFinalRelationParent(
   query: TransactionQuery,
   table: keyof typeof relationReferences,
@@ -108,9 +111,9 @@ async function createFinalRelationParent(
     : 'object_id'
   await query(
     `/* createFinalRelationParent */
-    WITH original AS MATERIALIZED (SELECT *, ${subject} AS next_subject, ${object} AS next_object
+    WITH original AS MATERIALIZED (SELECT ${FINAL_RELATION_PARENT_COLUMNS}, ${subject} AS next_subject, ${object} AS next_object
       FROM ${table} WHERE subject_id = $2::uuid AND id = $3::uuid LIMIT 1),
-    inserted AS (INSERT INTO ${table} (id, subject_id, object_id, created_at, created_by_id, deleted_at, deleted_by_id)
+    inserted AS (INSERT INTO ${table} (${FINAL_RELATION_PARENT_COLUMNS})
       SELECT uuidv7(), next_subject, next_object, created_at, created_by_id, deleted_at, deleted_by_id
       FROM original WHERE next_subject <> subject_id OR next_object <> object_id
       RETURNING subject_id, id),

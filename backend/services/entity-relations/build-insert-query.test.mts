@@ -75,6 +75,29 @@ describe('buildInsertQuery', () => {
       'THEN relation__user__follow__user.outbound_activitypub_follow_activity_id',
     )
     expect(query.text).toContain('ELSE uuidv7()')
+    expect(query.text).toContain(
+      'RETURNING subject_id, object_id, created_by_id, created_at, deleted_at, deleted_by_id, outbound_activitypub_follow_activity_id',
+    )
+    expect(query.text).not.toContain('RETURNING *')
+    expect(query.text).not.toContain('upserted.*')
+    expect(query.text).not.toContain('upserted.outbound_activitypub_distributed_activity_id')
+  })
+
+  it('names returning columns explicitly and omits vote counters on election-backed relations', () => {
+    const query = buildInsertQuery(relation, creator, [
+      { subject: { id: creator.id }, object: { id: creator.id } },
+    ])
+
+    expect(query.text).toContain(
+      'RETURNING subject_id, object_id, created_by_id, created_at, deleted_at, deleted_by_id, id',
+    )
+    expect(query.text).toContain(
+      'SELECT upserted.subject_id, upserted.object_id, upserted.created_by_id, upserted.created_at, upserted.deleted_at, upserted.deleted_by_id, upserted.id,',
+    )
+    expect(query.text).not.toContain('RETURNING *')
+    expect(query.text).not.toContain('upserted.*')
+    expect(query.text).not.toContain('votes_score_')
+    expect(query.text).not.toContain('votes_count_')
   })
 
   it('keeps identical SQL text for different batch sizes', () => {

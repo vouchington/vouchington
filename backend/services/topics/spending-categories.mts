@@ -5,7 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { Topic } from './types.mts'
 import { validateOptionalBoolean } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
-import { upsertTopicAttributes } from './upsert-attributes.mts'
+import { upsertTopicAttributes, type TopicAttributeRowMap } from './upsert-attributes.mts'
 
 type SpendingCategoryAttributes = {
   is_foreign_transaction?: boolean
@@ -30,7 +30,7 @@ export async function updateSpendingCategoryAttributes(
   currentUser: PrivateUser | null,
   topic: Topic,
   attributes: SpendingCategoryAttributes,
-): Promise<SpendingCategoryAttributes | null> {
+): Promise<TopicAttributeRowMap['spending_category_topics'] | null> {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
 
@@ -60,12 +60,7 @@ export async function updateSpendingCategoryAttributes(
     }
   }
 
-  return upsertTopicAttributes<SpendingCategoryAttributes>(
-    'spending_category_topics',
-    topic.id,
-    columns,
-    values,
-  )
+  return upsertTopicAttributes('spending_category_topics', topic.id, columns, values)
 }
 
 export async function replaceSpendingCategoryAttributes(

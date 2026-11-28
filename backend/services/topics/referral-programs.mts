@@ -10,7 +10,7 @@ import {
   validateOptionalTimestamp,
 } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
-import { upsertTopicAttributes } from './upsert-attributes.mts'
+import { upsertTopicAttributes, type TopicAttributeRowMap } from './upsert-attributes.mts'
 
 type ReferralProgramAttributes = {
   company_topic_id?: string | null
@@ -46,7 +46,7 @@ export async function enableReferralProgram(
     values.push(companyId ?? null)
   }
   await withTransactionOptions({}, query =>
-    upsertTopicAttributes<object>('referral_program_topics', topicId, columns, values, {
+    upsertTopicAttributes('referral_program_topics', topicId, columns, values, {
       query,
     }),
   )
@@ -93,7 +93,7 @@ export async function updateReferralProgramAttributes(
   currentUser: PrivateUser | null,
   topic: Topic,
   attributes: ReferralProgramAttributes,
-): Promise<ReferralProgramAttributes | null> {
+): Promise<TopicAttributeRowMap['referral_program_topics'] | null> {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
   assert(topic.topic_type === 'referral_program', 400, 'Topic is not a referral program')
@@ -128,12 +128,6 @@ export async function updateReferralProgramAttributes(
   }
 
   return withTransactionOptions({}, query =>
-    upsertTopicAttributes<ReferralProgramAttributes>(
-      'referral_program_topics',
-      topic.id,
-      columns,
-      values,
-      { query },
-    ),
+    upsertTopicAttributes('referral_program_topics', topic.id, columns, values, { query }),
   )
 }

@@ -55,8 +55,8 @@ export async function writeEntityRelations(
           })),
           { ...options, query: transactionQuery },
         )
-      const { rows } = await transactionQuery(query)
-      return rows as InternalEntityRelationMutationResult[]
+      const { rows } = await transactionQuery<InternalEntityRelationMutationResult>(query)
+      return rows
     },
   )
   const relations = toPublicEntityRelations(internalRelations)
@@ -92,8 +92,8 @@ export async function insertPrevalidatedPostRelatedUrlEntityRelationsInTransacti
     creator,
     objects.map(object => ({ subject: { id: postId }, object })),
   )
-  const { rows } = await query(insert)
-  return toPublicEntityRelations(rows as InternalEntityRelationMutationResult[])
+  const { rows } = await query<InternalEntityRelationMutationResult>(insert)
+  return toPublicEntityRelations(rows)
 }
 
 function getPostRelatedUrlRelationMetadata(): EntityRelationMetadata {

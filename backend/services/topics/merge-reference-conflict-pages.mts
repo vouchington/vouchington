@@ -67,7 +67,7 @@ export async function processTopicMergeBookmarkReferencePage(
     source_wins: boolean
   }>(
     `/* processTopicMergeBookmarkPage select */ WITH source AS MATERIALIZED (
-      SELECT * FROM ${table} s WHERE ${topicColumns.map(column => `s.${column} = $1::uuid`).join(' OR ')} LIMIT 1 FOR UPDATE
+      SELECT s.subject_id, s.object_id, s.deleted_at FROM ${table} s WHERE ${topicColumns.map(column => `s.${column} = $1::uuid`).join(' OR ')} LIMIT 1 FOR UPDATE
     ) SELECT s.subject_id,s.object_id,${map('subject_id')} AS next_subject,${map('object_id')} AS next_object,
       d.subject_id IS NOT NULL AS destination_exists,
       s.deleted_at IS NULL AND d.deleted_at IS NOT NULL AS source_wins

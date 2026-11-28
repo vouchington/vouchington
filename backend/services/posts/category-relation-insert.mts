@@ -10,7 +10,7 @@ type InsertedCategoryRelation = {
   id: string
   subject_id: string
   object_id: string
-  newly_active?: boolean
+  newly_active: boolean
   relation_kind: 'alias' | 'topic'
 }
 
@@ -101,17 +101,14 @@ export async function upsertPostCategoryRelationRows({
     aliasIds,
     [],
     async (transactionQuery: TransactionQuery) => {
-      const { rows } = await transactionQuery(statement)
-      const inserted = rows as InsertedCategoryRelation[]
-      const topics = inserted.filter(
-        row => row.relation_kind === 'topic' && row.newly_active !== false,
-      )
+      const { rows } = await transactionQuery<InsertedCategoryRelation>(statement)
+      const topics = rows.filter(row => row.relation_kind === 'topic' && row.newly_active)
       await recordPostTopicRelationPublicationChanges(
         transactionQuery,
         topicRelation.table_name,
         topics,
       )
-      return inserted.filter(row => row.relation_kind === 'alias')
+      return rows.filter(row => row.relation_kind === 'alias')
     },
   )
 }
@@ -176,6 +173,6 @@ function appendRelationUpsert(
           END,
           deleted_at = NULL,
           deleted_by_id = NULL
-      RETURNING *
+      RETURNING id, subject_id, object_id
     )`)
 }

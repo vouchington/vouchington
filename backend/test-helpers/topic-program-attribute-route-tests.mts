@@ -10,8 +10,8 @@ type TopicProgramSpec = {
   label: 'Referral' | 'Rewards'
   topicType: 'referral_program' | 'rewards_program'
   route: 'referral-program' | 'rewards-program'
-  attributesKey: 'referral_program_attributes' | 'rewards_program_attributes'
   companySlugPart: '' | 'ref-'
+  expectedPatchKeys: readonly string[]
 }
 
 const topicPrograms: Record<TopicProgramKind, TopicProgramSpec> = {
@@ -20,60 +20,54 @@ const topicPrograms: Record<TopicProgramKind, TopicProgramSpec> = {
     label: 'Referral',
     topicType: 'referral_program',
     route: 'referral-program',
-    attributesKey: 'referral_program_attributes',
     companySlugPart: 'ref-',
+    expectedPatchKeys: [
+      'company_topic_id',
+      'created_at',
+      'disabled_at',
+      'enabled_at',
+      'topic_id',
+      'updated_at',
+    ],
   },
   rewards: {
     kind: 'rewards',
     label: 'Rewards',
     topicType: 'rewards_program',
     route: 'rewards-program',
-    attributesKey: 'rewards_program_attributes',
     companySlugPart: '',
+    expectedPatchKeys: ['company_topic_id', 'created_at', 'topic_id', 'updated_at'],
   },
 }
 
-function randomToken(): string {
-  return Math.random().toString(36).slice(2, 8)
-}
+const randomToken = () => Math.random().toString(36).slice(2, 8)
+const programRoute = (spec: TopicProgramSpec, topicId: string) =>
+  `/api/v1/topics/${topicId}/${spec.route}`
 
-function programRoute(spec: TopicProgramSpec, topicId: string): string {
-  return `/api/v1/topics/${topicId}/${spec.route}`
-}
-
-function companyIdFromBody(
-  body: {
-    referral_program_attributes: { company_topic_id: string }
-    rewards_program_attributes: { company_topic_id: string }
-  },
+function attributesFromBody(
+  body: Record<string, Record<string, unknown>>,
   spec: TopicProgramSpec,
-): string {
+): Record<string, unknown> {
   return spec.kind === 'referral'
-    ? body.referral_program_attributes.company_topic_id
-    : body.rewards_program_attributes.company_topic_id
+    ? body.referral_program_attributes!
+    : body.rewards_program_attributes!
 }
 
-async function insertProgramTopic(
+const insertProgramTopic = (
   spec: TopicProgramSpec,
   ownerId: string,
   slug: string,
   random: string,
-): Promise<string> {
-  return insertTestTopic({
+) =>
+  insertTestTopic({
     name: `Test ${spec.label} Program ${random}`,
     slug,
     createdById: ownerId,
     topicType: spec.topicType,
   })
-}
 
-async function insertCompanyTopic(ownerId: string, slug: string, random: string): Promise<string> {
-  return insertTestTopic({
-    name: `Test Company ${random}`,
-    slug,
-    createdById: ownerId,
-  })
-}
+const insertCompanyTopic = (ownerId: string, slug: string, random: string) =>
+  insertTestTopic({ name: `Test Company ${random}`, slug, createdById: ownerId })
 
 /** Shared referral and rewards program attribute routes. Call from a literal `describe`. */
 export function registerTopicProgramAttributeRouteTests(
@@ -111,7 +105,7 @@ function registerGetTests(spec: TopicProgramSpec, longPublicCacheControl: string
         .expect(200)
 
       const response = await request.get(programRoute(spec, topicId)).expect(200)
-      expect(companyIdFromBody(response.body, spec)).toBe(companyId)
+      expect(attributesFromBody(response.body, spec).company_topic_id).toBe(companyId)
       expect(response.headers['cache-control']).toBe(longPublicCacheControl)
     })
 
@@ -166,7 +160,12 @@ function registerPatchTests(spec: TopicProgramSpec): void {
         .send({ company_topic_id: companyId })
         .expect(200)
 
-      expect(companyIdFromBody(response.body, spec)).toBe(companyId)
+      const attributes = attributesFromBody(response.body, spec)
+      expect(Object.keys(attributes).toSorted()).toEqual(spec.expectedPatchKeys)
+      expect(attributes.company_topic_id).toBe(companyId)
+      expect(attributes.topic_id).toBe(topicId)
+      expect(attributes.created_at).toEqual(expect.any(String))
+      expect(attributes.updated_at).toEqual(expect.any(String))
     })
 
     it('should return 401 when not authenticated', async () => {

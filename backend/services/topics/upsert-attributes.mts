@@ -5,36 +5,97 @@ import {
   type QueryOptions,
 } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
+import type { CurrencyCode } from '@ts-shared/money'
 import type pg from 'pg'
 
-type TopicAttributeTableName =
-  | 'card_topics'
-  | 'referral_program_topics'
-  | 'retailer_topics'
-  | 'rewards_program_status_topics'
-  | 'rewards_program_topics'
-  | 'spending_category_topics'
+type TopicAttributeAuditColumns = {
+  topic_id: string
+  created_at: Date
+  updated_at: Date
+}
 
-/**
- * Upserts topic attributes into a junction table using dynamic column building
- *
- * @param tableName - The table name (e.g., 'card_topics')
- * @param topicId - The topic ID to upsert
- * @param columns - Array of column names to update
- * @param values - Array of values corresponding to the columns
- * @returns The upserted row or null if the operation fails
- */
-export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
-  tableName: TopicAttributeTableName,
+type TopicAttributeColumnTypes = {
+  card_topics: {
+    bank_topic_id: string | null
+    brand_topic_id: string | null
+    annual_fee_minor_units: string | null
+    currency_code: CurrencyCode | null
+  }
+  referral_program_topics: TopicAttributeAuditColumns & {
+    company_topic_id: string | null
+    enabled_at: Date | null
+    disabled_at: Date | null
+  }
+  retailer_topics: TopicAttributeAuditColumns
+  rewards_program_status_topics: TopicAttributeAuditColumns & {
+    lifetime_version_id: string | null
+    order_index: number
+  }
+  rewards_program_topics: TopicAttributeAuditColumns & {
+    company_topic_id: string | null
+  }
+  spending_category_topics: TopicAttributeAuditColumns & {
+    is_foreign_transaction: boolean
+    default_spending_frequency: 'monthly' | 'annually'
+  }
+}
+
+type TopicAttributeTableName = keyof TopicAttributeColumnTypes
+
+const AUDIT_RETURNING_COLUMNS = ['topic_id', 'created_at', 'updated_at'] as const
+
+const TOPIC_ATTRIBUTE_RETURNING_COLUMNS = {
+  card_topics: ['bank_topic_id', 'brand_topic_id', 'annual_fee_minor_units', 'currency_code'],
+  referral_program_topics: [
+    ...AUDIT_RETURNING_COLUMNS,
+    'company_topic_id',
+    'enabled_at',
+    'disabled_at',
+  ],
+  retailer_topics: [...AUDIT_RETURNING_COLUMNS],
+  rewards_program_status_topics: [...AUDIT_RETURNING_COLUMNS, 'lifetime_version_id', 'order_index'],
+  rewards_program_topics: [...AUDIT_RETURNING_COLUMNS, 'company_topic_id'],
+  spending_category_topics: [
+    ...AUDIT_RETURNING_COLUMNS,
+    'is_foreign_transaction',
+    'default_spending_frequency',
+  ],
+} as const satisfies {
+  [K in TopicAttributeTableName]: readonly (keyof TopicAttributeColumnTypes[K])[]
+}
+
+export type TopicAttributeRowMap = {
+  [K in TopicAttributeTableName]: {
+    [
+      C in Extract<
+        (typeof TOPIC_ATTRIBUTE_RETURNING_COLUMNS)[K][number],
+        keyof TopicAttributeColumnTypes[K]
+      >
+    ]: TopicAttributeColumnTypes[K][C]
+  }
+}
+
+function buildReturningColumnsSql(tableName: TopicAttributeTableName): string {
+  return TOPIC_ATTRIBUTE_RETURNING_COLUMNS[tableName]
+    .map(column =>
+      column === 'annual_fee_minor_units'
+        ? 'annual_fee_minor_units::TEXT AS annual_fee_minor_units'
+        : column,
+    )
+    .join(', ')
+}
+
+/** Upserts topic attributes into a subtype table and returns its closed returning column set. */
+export async function upsertTopicAttributes<T extends TopicAttributeTableName>(
+  tableName: T,
   topicId: string,
   columns: string[],
   values: unknown[],
   options?: QueryOptions,
-): Promise<T | null> {
+): Promise<TopicAttributeRowMap[T] | null> {
   if (columns.length === 0) {
-    // No columns to update, but we still want to ensure the row exists
-    // Use a no-op update on conflict so RETURNING always yields a row.
-    return writeTopicAttributeRow<T>(
+    // No-op conflict update ensures the row exists and RETURNING yields it.
+    return writeTopicAttributeRow(
       options ?? {},
       tableName,
       '',
@@ -44,14 +105,9 @@ export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
     )
   }
 
-  // Build placeholders for INSERT values ($2, $3, ...)
   const insertPlaceholders = columns.map((_, i) => `$${i + 2}`).join(', ')
-
-  // Build SET clause for UPDATE (col1 = $2, col2 = $3, ...)
   const updateSets = columns.map((col, i) => `${col} = $${i + 2}`).join(', ')
-
-  // Build the upsert query
-  return writeTopicAttributeRow<T>(
+  return writeTopicAttributeRow(
     options ?? {},
     tableName,
     `, ${columns.join(', ')}`,
@@ -61,21 +117,27 @@ export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
   )
 }
 
-async function writeTopicAttributeRow<T extends pg.QueryResultRow>(
+async function writeTopicAttributeRow<T extends TopicAttributeTableName>(
   options: QueryOptions,
-  tableName: TopicAttributeTableName,
+  tableName: T,
   columns: string,
   values: string,
   updateSets: string,
   parameters: unknown[],
-): Promise<T | null> {
+): Promise<TopicAttributeRowMap[T] | null> {
+  const returningColumns = buildReturningColumnsSql(tableName)
   const suffix = `(topic_id${columns})
     VALUES ($1${values})
     ON CONFLICT (topic_id) DO UPDATE
     SET ${updateSets}
-    RETURNING *`
+    RETURNING ${returningColumns}`
   const run = async (query: TransactionQuery) => {
-    const { rows } = await topicAttributeUpsertQuery<T>(query, tableName, suffix, parameters)
+    const { rows } = await topicAttributeUpsertQuery<TopicAttributeRowMap[T]>(
+      query,
+      tableName,
+      suffix,
+      parameters,
+    )
     return rows[0] ?? null
   }
   if (options.query || options.client) return withTransactionOptions(options, run)

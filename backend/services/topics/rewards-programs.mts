@@ -5,7 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { Topic } from './types.mts'
 import { assertTopicExists } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
-import { upsertTopicAttributes } from './upsert-attributes.mts'
+import { upsertTopicAttributes, type TopicAttributeRowMap } from './upsert-attributes.mts'
 
 type RewardsProgramAttributes = {
   company_topic_id?: string | null
@@ -30,7 +30,7 @@ export async function updateRewardsProgramAttributes(
   currentUser: PrivateUser | null,
   topic: Topic,
   attributes: RewardsProgramAttributes,
-): Promise<RewardsProgramAttributes | null> {
+): Promise<TopicAttributeRowMap['rewards_program_topics'] | null> {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
   assert(topic.topic_type === 'rewards_program', 400, 'Topic is not a rewards program')
@@ -45,10 +45,5 @@ export async function updateRewardsProgramAttributes(
     values.push(attributes.company_topic_id ?? null)
   }
 
-  return upsertTopicAttributes<RewardsProgramAttributes>(
-    'rewards_program_topics',
-    topic.id,
-    columns,
-    values,
-  )
+  return upsertTopicAttributes('rewards_program_topics', topic.id, columns, values)
 }

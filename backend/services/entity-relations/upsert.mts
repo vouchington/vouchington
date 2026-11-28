@@ -65,8 +65,8 @@ export const upsertEntityRelation = async (
           objects,
           relationOptions,
         )
-        const { rows } = await transactionQuery(query)
-        return rows as InternalEntityRelationMutationResult[]
+        const { rows } = await transactionQuery<InternalEntityRelationMutationResult>(query)
+        return rows
       },
     )
     const relations = toPublicEntityRelations(internalRelations)

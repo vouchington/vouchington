@@ -76,10 +76,20 @@ describe('topic.spending-category', () => {
           })
           .expect(200)
 
+        expect(Object.keys(response.body.spending_category_attributes).toSorted()).toEqual([
+          'created_at',
+          'default_spending_frequency',
+          'is_foreign_transaction',
+          'topic_id',
+          'updated_at',
+        ])
+        expect(response.body.spending_category_attributes.topic_id).toBe(topicWithAttributesId)
         expect(response.body.spending_category_attributes.is_foreign_transaction).toBe(true)
         expect(response.body.spending_category_attributes.default_spending_frequency).toBe(
           'annually',
         )
+        expect(response.body.spending_category_attributes.created_at).toEqual(expect.any(String))
+        expect(response.body.spending_category_attributes.updated_at).toEqual(expect.any(String))
       })
 
       it('should return 401 when not authenticated', async () => {

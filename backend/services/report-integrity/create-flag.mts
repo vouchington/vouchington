@@ -2,7 +2,7 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
 import { ENTITY_TYPE_TO_FLAG_FK } from './config.mts'
-import { flagColumns } from './flag-columns.mts'
+import { FLAG_RETURNING_COLUMNS, flagColumns } from './flag-columns.mts'
 import type {
   ReportIntegrityFlagType,
   ReportIntegrityResolution,
@@ -58,7 +58,9 @@ export async function createReportIntegrityFlag(
   query.append(fkColumn)
   query.append(sql` IS NOT NULL
       DO NOTHING
-      RETURNING *
+      RETURNING `)
+  query.append(FLAG_RETURNING_COLUMNS)
+  query.append(sql`
     ), inserted_reporters AS (
       INSERT INTO report_integrity_flag_reporters (flag_id, user_id)
       SELECT DISTINCT inserted.id, reporter.id
@@ -73,6 +75,6 @@ export async function createReportIntegrityFlag(
   query.append(sql`
     FROM inserted`)
 
-  const { rows } = await write(query)
-  return (rows[0] as ReportIntegrityFlag) ?? null
+  const { rows } = await write<ReportIntegrityFlag>(query)
+  return rows[0] ?? null
 }

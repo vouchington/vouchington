@@ -1,4 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { communityReturningColumns } from './columns.mts'
 import { selectCommunityWithOwner } from './select-community.mts'
 
 /** One statement: the community UPDATE and the owner projection it returns. */
@@ -8,7 +9,7 @@ export function communityUpdateReturning(
 ): SQLStatement {
   const statement = annotation.append(sql` WITH updated AS (`)
   statement.append(update)
-  statement.append(sql` RETURNING *) `)
+  statement.append(` RETURNING ${communityReturningColumns()}) `)
   return selectCommunityWithOwner(
     statement.append(sql`SELECT `),
     undefined,

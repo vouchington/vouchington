@@ -28,6 +28,21 @@ describe('createReportIntegrityFlag', () => {
     const flag = await createReportIntegrityFlag('user', targetUser.id, 5, 0.8, {}, [])
 
     expect(flag).not.toBeNull()
+    expect(Object.keys(flag!).toSorted()).toEqual([
+      'created_at',
+      'details',
+      'flag_type',
+      'hostname_id',
+      'id',
+      'new_account_reporter_percent',
+      'post_id',
+      'reported_user_id',
+      'reporter_count',
+      'resolution',
+      'resolved_at',
+      'resolved_by_id',
+      'rss_feed_item_id',
+    ])
     expect(flag!.reported_user_id).toBe(targetUser.id)
     expect(flag!.flag_type).toBe('mass_report_suspected')
     expect(flag!.reporter_count).toBe(5)

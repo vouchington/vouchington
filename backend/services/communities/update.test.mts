@@ -131,5 +131,36 @@ describe('updateCommunity image surfaces', () => {
     })
     expect(updated.profile_image_id).toBe(profileImageId)
     expect(updated.banner_image_id).toBe(bannerImageId)
+    expect(Object.keys(updated).toSorted()).toEqual([
+      'archived_at',
+      'archived_by_id',
+      'automod_action',
+      'banner_image_id',
+      'banner_image_placement',
+      'created_at',
+      'created_by_id',
+      'default_language',
+      'deleted_at',
+      'deleted_by_id',
+      'id',
+      'lingua_rs_detected_language',
+      'list_type',
+      'markdown',
+      'member_invites_allowed_at',
+      'member_roster_visibility',
+      'name',
+      'owner',
+      'post_approval_required_at',
+      'profile_image_id',
+      'profile_image_placement',
+      'rules_markdown',
+      'should_allow_data_point_posts',
+      'should_allow_review_posts',
+      'slug',
+      'trusted_at',
+      'updated_at',
+      'visibility',
+    ])
+    expect(Object.keys(updated.owner!).toSorted()).toEqual(['account_type', 'id', 'username'])
   })
 })

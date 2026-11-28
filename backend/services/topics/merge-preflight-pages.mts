@@ -7,6 +7,7 @@ const probes = [
     table: 'user_referral_program_links',
     column: 'referral_program_topic_id',
     key: 'id',
+    columns: 's.id, s.user_id, s.url_id, s.deleted_at',
     live: 's.deleted_at IS NULL',
     collision: 'd.user_id = s.user_id AND d.url_id = s.url_id AND d.deleted_at IS NULL',
   },
@@ -14,18 +15,21 @@ const probes = [
     table: 'individual_rewards_program_point_valuations',
     column: 'rewards_program_topic_id',
     key: 'individual_id',
+    columns: 's.individual_id',
     collision: 'd.individual_id = s.individual_id',
   },
   {
     table: 'retailer_countries',
     column: 'retailer_topic_id',
     key: 'country_id',
+    columns: 's.country_id',
     collision: 'd.country_id = s.country_id',
   },
   {
     table: 'referral_program_topic_link_validation_rule_sets',
     column: 'referral_program_topic_id',
     key: 'referral_program_link_validation_rule_set_id',
+    columns: 's.referral_program_link_validation_rule_set_id',
     collision:
       'd.referral_program_link_validation_rule_set_id = s.referral_program_link_validation_rule_set_id',
   },
@@ -71,7 +75,7 @@ export async function processTopicMergeCompatibilityPage(
   const live = 'live' in probe ? `AND ${probe.live}` : ''
   const { rows } = await query<{ key: string; conflict: boolean }>(
     `/* processTopicMergeCompatibilityPage references */ WITH page AS MATERIALIZED (
-      SELECT * FROM ${probe.table} s WHERE s.${probe.column} = $1::uuid
+      SELECT ${probe.columns} FROM ${probe.table} s WHERE s.${probe.column} = $1::uuid
         AND ($3::text IS NULL OR s.${probe.key} > $3::${probe.table === 'retailer_countries' ? 'smallint' : 'uuid'})
       ORDER BY s.${probe.key} LIMIT $4
     ) SELECT s.${probe.key} AS key, EXISTS(SELECT 1 FROM ${probe.table} d
