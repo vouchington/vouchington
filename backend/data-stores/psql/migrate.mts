@@ -20,10 +20,7 @@ import {
   type RunConfigDrivenOptions,
 } from './migration-runner/migrations.mts'
 import { refreshMaterializedView } from './migration-runner/refresh-materialized-view.mts'
-import {
-  createCrawlTiersSyncTransactionRunner,
-  SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL,
-} from './migration-runner/sync-rss-feed-fetch-state-tiers.mts'
+import { createCrawlTiersSyncTransactionRunner } from './migration-runner/sync-rss-feed-fetch-state-tiers.mts'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { verifyLiveSchemaMatchesSnapshot } from './schema-snapshot/verify-live-schema.mts'
 import { psql, withTransactionOptions, write } from './setup.mts'
@@ -60,13 +57,12 @@ export async function runViews(options: RunViewsOptions = {}) {
   const writer = options.writer ?? write
   const logger = options.logger ?? console
   const withTransaction =
-    folder === defaultFolder && !options.writer
-      ? createCrawlTiersSyncTransactionRunner(handler => withTransactionOptions({}, handler))
+    folder === defaultFolder
+      ? createCrawlTiersSyncTransactionRunner(
+          options.withTransaction ?? (handler => withTransactionOptions({}, handler)),
+        )
       : options.withTransaction
   await runPlatformViews({ ...options, folder, writer, logger, withTransaction })
-  if (folder === defaultFolder && options.writer) {
-    await writer(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL)
-  }
 }
 
 export async function runConfigDriven(options: RunConfigDrivenOptions = {}) {

@@ -10,7 +10,9 @@ import {
   getRssFeedFetchStateCrawlTier,
 } from '../../../test-helpers/data-stores/psql/rss-feed-crawl-tiers.mts'
 import {
+  isRefreshContentionError,
   refreshMaterializedViewForTest,
+  runWithoutRefreshContentionForTest,
   withMaterializedViewRefreshLockHeldForTest,
 } from '../../../test-helpers/refresh-materialized-view-for-test.mts'
 import { refreshMaterializedView } from './refresh-materialized-view.mts'
@@ -54,11 +56,16 @@ describe('refreshMaterializedView', () => {
 
       await setLocalRssFeedOwningTopicVoteScore(hotFeedId, 1_000_000_000, 0)
 
-      const { result, error } = await withPostgresQueryFailureForTest(
-        '/* syncRssFeedFetchStateCrawlTiers */',
-        () =>
-          refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers').catch((err: unknown) => err),
-        { command: 'UPDATE' },
+      const { result, error } = await runWithoutRefreshContentionForTest(() =>
+        withPostgresQueryFailureForTest(
+          '/* syncRssFeedFetchStateCrawlTiers */',
+          () =>
+            refreshMaterializedView('mv_rss_feed_crawl_tiers').catch((err: unknown) => {
+              if (isRefreshContentionError(err)) throw err
+              return err
+            }),
+          { command: 'UPDATE' },
+        ),
       )
       expect(error).toMatchObject({ code: '25P02' })
       expect(result).toBe(error)
@@ -67,7 +74,9 @@ describe('refreshMaterializedView', () => {
       expect((await getRssFeedCrawlTierAssignments([hotFeedId])).get(hotFeedId)).toBe(5)
       expect(await getRssFeedFetchStateCrawlTier(hotFeedId)).toBe(5)
 
-      await refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers')
+      await runWithoutRefreshContentionForTest(() =>
+        refreshMaterializedView('mv_rss_feed_crawl_tiers'),
+      )
       const promotedViewTier = (await getRssFeedCrawlTierAssignments([hotFeedId])).get(hotFeedId)
       const promotedStateTier = await getRssFeedFetchStateCrawlTier(hotFeedId)
       expect(promotedViewTier).toBeLessThan(5)

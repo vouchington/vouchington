@@ -7,6 +7,8 @@ import {
 import { refreshRssFeedCrawlTiersInTransaction } from '@data-stores/psql/migration-runner/sync-rss-feed-fetch-state-tiers'
 
 const REFRESH_ADVISORY_LOCK_NAME = 'refresh-materialized-view'
+const REFRESH_CONTENTION_MESSAGE = 'Materialized view refresh contention; retryable'
+const MAX_CONTENTION_WAITS = 5
 
 // Same names as refreshMaterializedView. Production still rejects contention; tests wait.
 const REFRESHABLE_MATERIALIZED_VIEWS = new Set([
@@ -47,6 +49,27 @@ export async function withMaterializedViewRefreshLockHeldForTest<Result>(
   if (actionError) throw actionError
   if (unlockError) throw unlockError
   return result as Result
+}
+
+/** Returns true when `err` is the retryable advisory-lock contention error from a concurrent refresh. */
+export function isRefreshContentionError(err: unknown): boolean {
+  return err instanceof Error && err.message === REFRESH_CONTENTION_MESSAGE
+}
+
+/** Wait for a concurrent test holding the shared refresh advisory lock, then invoke `fn`. */
+export async function runWithoutRefreshContentionForTest<Result>(
+  fn: () => Promise<Result>,
+): Promise<Result> {
+  for (let attempt = 0; attempt < MAX_CONTENTION_WAITS; attempt += 1) {
+    try {
+      return await fn()
+    } catch (err) {
+      if (!isRefreshContentionError(err) || attempt === MAX_CONTENTION_WAITS - 1) throw err
+      // Block on PostgreSQL's lock queue until the concurrent holder releases the lock.
+      await withMaterializedViewRefreshLockHeldForTest(async () => {})
+    }
+  }
+  throw new Error('Unreachable contention wait loop exit')
 }
 
 /** Wait on the shared refresh key, then refresh one allowlisted view. */
