@@ -1321,6 +1321,8 @@ CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE UPDATE OR D
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
+-- Copyright action intents are durable media-delivery sagas. Legal eligibility is evaluated
+-- before an intent is created and again by the worker against the authoritative placement.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_action_intent()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
