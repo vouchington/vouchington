@@ -16,6 +16,9 @@ import { runModerationReportPostSidecars } from './run-scenarios/moderation-repo
 import { runCopyrightReceiptReviewRetirementCapacity } from './run-scenarios/copyright-receipt-review-retirement-capacity.mts'
 import { runCopyrightRetainedEmailLookupScenarios } from './run-scenarios/copyright-retained-email-lookup.mts'
 import { runCopyrightEmailFormDispatchCapacityScenarios } from './run-scenarios/copyright-email-form-dispatch.mts'
+import { runTextEmbeddingRetentionCapacityScenario } from './run-scenarios/text-embedding-retention-capacity.mts'
+import { runAiUsageRetentionCapacityScenario } from './run-scenarios/ai-usage-retention-capacity.mts'
+import { runDeletedConversationRetentionCapacityScenarios } from './run-scenarios/deleted-conversation-retention-capacity.mts'
 
 export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // The retained form corpus changes question statistics. Analyze it after ordinary plans.
@@ -33,11 +36,11 @@ export const AFTER_RETENTION_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runModerationAppealListCapacity,
   runApiKeyExpiryCapacityScenarios,
   runCopyrightUnlinkedRecommendationRetentionScenario,
-]
-
-export const AFTER_COPYRIGHT_CAPACITY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightReceiptReviewRetirementCapacity,
   runCopyrightRetainedEmailLookupScenarios,
   runCopyrightEmailFormDispatchCapacityScenarios,
   runCopyrightEmailAncestorRetentionScenarios,
+  runTextEmbeddingRetentionCapacityScenario,
+  runAiUsageRetentionCapacityScenario,
+  runDeletedConversationRetentionCapacityScenarios,
 ]

@@ -1,62 +1,79 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ORDINARY_EXPLAIN_SHARDS } from './explain-shards.mts'
+import { assertPlanRegistry } from './plan-expectations.mts'
 import {
-  BEFORE_PARTITION_RUNNERS,
-  ORDERED_SHARD_STARTS,
+  EXPLAIN_DOMAINS,
+  EXPLAIN_DOMAIN_NAMES,
+  ORDINARY_SHARD_DOMAINS,
+  getAssignedShardDomains,
+  getDomainRunners,
   getOrderedRunners,
-  getShardPrelude,
-  sliceOrderedRunners,
+  parseExplainDomain,
 } from './run-ordered-scenarios.mts'
 
-const names = ['one', 'two', 'three', 'four', 'five']
-const runners = names.map(name => ({ [name]: async () => name })[name]!)
+const EXPLAIN_DIR = import.meta.dirname
+const DOMAIN_FILE_PREFIX = 'run-ordered-scenarios-'
+const DOMAIN_FILE_SUFFIX = '.mts'
 
-describe('sliceOrderedRunners', () => {
-  it('cuts contiguous segments that keep every runner once, in order', () => {
-    const segments = sliceOrderedRunners(runners, ['three', 'five'])
-    expect(segments.map(segment => segment.map(runner => runner.name))).toEqual([
-      ['one', 'two'],
-      ['three', 'four'],
-      ['five'],
-    ])
-  })
-
-  it('rejects a start that is absent or comes before the previous start', () => {
-    expect(() => sliceOrderedRunners(runners, ['ghost'])).toThrow('ghost is missing')
-    expect(() => sliceOrderedRunners(runners, ['four', 'two'])).toThrow('two is missing')
-    expect(() => sliceOrderedRunners(runners, ['one'])).toThrow('one is missing')
-  })
-})
-
-describe('getOrderedRunners', () => {
-  it('gives each ordinary shard one segment and an unsharded run all of them in order', () => {
-    const segments = ORDINARY_EXPLAIN_SHARDS.map(shard =>
-      getOrderedRunners(shard).slice(getShardPrelude(shard).length),
+describe('domain shard layout', () => {
+  it('maps every domain file to EXPLAIN_DOMAINS and assigns every domain to exactly one shard', () => {
+    const domainFiles = readdirSync(EXPLAIN_DIR)
+      .filter(file => file.startsWith(DOMAIN_FILE_PREFIX) && file.endsWith(DOMAIN_FILE_SUFFIX))
+      .map(file => file.slice(DOMAIN_FILE_PREFIX.length, -DOMAIN_FILE_SUFFIX.length))
+      .toSorted()
+    expect(domainFiles).toEqual(
+      [...EXPLAIN_DOMAIN_NAMES.filter(name => name !== 'capacity-audit')].toSorted(),
     )
-    for (const segment of segments) expect(segment.length).toBeGreaterThan(0)
-    expect(segments.flat()).toEqual(BEFORE_PARTITION_RUNNERS)
-    expect(getOrderedRunners(undefined)).toEqual(BEFORE_PARTITION_RUNNERS)
-    expect(new Set(BEFORE_PARTITION_RUNNERS.map(runner => runner.name)).size).toBe(
-      BEFORE_PARTITION_RUNNERS.length,
-    )
+
+    for (const shard of ORDINARY_EXPLAIN_SHARDS)
+      expect(ORDINARY_SHARD_DOMAINS[shard].length).toBeGreaterThan(0)
+
+    const assigned = getAssignedShardDomains()
+    expect(new Set(assigned).size).toBe(assigned.length)
+    expect([...assigned].toSorted()).toEqual([...EXPLAIN_DOMAIN_NAMES].toSorted())
   })
 
-  it('opens each later ordinary shard with its declared start runner', () => {
-    expect(
-      ORDINARY_EXPLAIN_SHARDS.slice(1).map(
-        shard => getOrderedRunners(shard)[getShardPrelude(shard).length]?.name,
-      ),
-    ).toEqual([...ORDERED_SHARD_STARTS])
+  it('gives each domain a nonempty runner list and runs every domain once when unsharded', () => {
+    for (const domain of EXPLAIN_DOMAIN_NAMES) {
+      expect(getDomainRunners(domain).length).toBeGreaterThan(0)
+      expect(parseExplainDomain(domain)).toBe(domain)
+    }
+    expect(parseExplainDomain(undefined)).toBeUndefined()
+    expect(parseExplainDomain('')).toBeUndefined()
+    expect(() => parseExplainDomain('unknown-domain')).toThrow('Invalid EXPLAIN_DOMAIN')
+
+    const expectedAll = EXPLAIN_DOMAIN_NAMES.flatMap(domain => EXPLAIN_DOMAINS[domain])
+    expect(getOrderedRunners(undefined)).toEqual(expectedAll)
   })
 
-  it('replays the earlier seeds before the last shard so its plans keep their corpora', () => {
-    expect(getShardPrelude('main-4').map(runner => runner.name)).toEqual([
-      'replayDispatchWorkPlanSeeds',
-      'seedVoteWeightDispatch',
-      'runAnalyze',
-    ])
-    expect(getOrderedRunners('main-2').map(runner => runner.name)).toContain(
-      'seedVoteWeightDispatch',
+  it('keeps every scenario runner in at most one domain so domains only share idempotent seed helpers', () => {
+    const scenarioOwners = new Map<string, string[]>()
+    for (const domain of EXPLAIN_DOMAIN_NAMES) {
+      const seenInDomain = new Set<string>()
+      for (const runner of EXPLAIN_DOMAINS[domain]) {
+        expect(seenInDomain.has(runner.name)).toBe(false)
+        seenInDomain.add(runner.name)
+        if (runner.name.startsWith('run'))
+          scenarioOwners.set(runner.name, [...(scenarioOwners.get(runner.name) ?? []), domain])
+      }
+    }
+    const duplicated = [...scenarioOwners].filter(([, owners]) => owners.length > 1)
+    expect(duplicated).toEqual([])
+  })
+
+  it('forbids domain files from importing other domain files', () => {
+    const domainFiles = readdirSync(EXPLAIN_DIR).filter(
+      file => file.startsWith(DOMAIN_FILE_PREFIX) && file.endsWith(DOMAIN_FILE_SUFFIX),
     )
+    const violations = domainFiles.filter(file =>
+      /from ['"]\.\/run-ordered-scenarios-/.test(readFileSync(join(EXPLAIN_DIR, file), 'utf8')),
+    )
+    expect(violations).toEqual([])
+  })
+
+  it('forbids import-time registerScenarioContract calls so any domain file can run alone', () => {
+    expect(() => assertPlanRegistry([])).not.toThrow()
   })
 })

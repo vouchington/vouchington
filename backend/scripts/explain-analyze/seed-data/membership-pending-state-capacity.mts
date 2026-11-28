@@ -123,6 +123,28 @@ export async function seedMembershipPendingState() {
   assert.equal(inserted.rowCount, users.length)
   assert.equal((await seedGrants(query, users, grantIds)).rowCount, 2)
   assert.equal((await seedProviderRecords(query, users, records, users[0]!)).rowCount, corpusRows)
+  // Keep membership_operations large enough for a hash join when this domain runs without payment-ledger-retention.
+  const { rows: opCounts } = await query<{ count: number }>(
+    sql`/* seedMembershipPendingStateCapacity:operationCount */ SELECT count(*)::int AS count FROM membership_operations`,
+  )
+  if ((opCounts[0]?.count ?? 0) < 5_000) {
+    await query(sql`/* seedMembershipPendingStateCapacity:operationNoise */
+      WITH anchors AS (
+        SELECT membership_source_id, membership_provider_lineage_id,
+          membership_lineage_binding_id, membership_provider_context_id
+        FROM membership_operations
+        WHERE id = ANY(${records.slice(ownRows, ownRows + 3)}::uuid[])
+      )
+      INSERT INTO membership_operations (
+        membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
+        membership_provider_context_id, operation_kind, idempotency_key, failed_at, failure_message)
+      SELECT anchors.membership_source_id, anchors.membership_provider_lineage_id,
+        anchors.membership_lineage_binding_id, anchors.membership_provider_context_id,
+        'cancel_source',
+        'explain-pending-noise-' || ${timestamp.toString(36)} || '-' || anchors.membership_source_id || '-' || n,
+        CURRENT_TIMESTAMP, 'Synthetic explain noise'
+      FROM anchors CROSS JOIN generate_series(1, 500) AS n`)
+  }
   await query.commit()
 
   await write(`/* analyzeMembershipPendingStateCapacity */

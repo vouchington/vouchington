@@ -155,6 +155,20 @@ export async function prepareReferralUnfurlScale() {
   return { dueAt, ids }
 }
 
+/** Replay the crawl and referral-link volume once per database for plans that read it. */
+export async function ensureDispatchWorkPlanSeeds(): Promise<void> {
+  const { rows } = await write<{ seeded: boolean }>(
+    `/* ensureDispatchWorkPlanSeeds:check */
+     SELECT EXISTS(
+       SELECT 1 FROM url_hostnames WHERE hostname LIKE 'crawl-plan-%.example.com'
+     ) AND (SELECT COUNT(*) FROM user_referral_program_links) >= 30000 AS seeded`,
+  )
+  if (rows[0]?.seeded) return
+  await prepareCrawlDispatchScale()
+  await prepareReferralCrawlScale()
+  await prepareReferralUnfurlScale()
+}
+
 /** Explicit business cursor; never changes native UUID or audit clocks. */
 function ownedSweepAfter(ids: readonly string[], elapsedDays: number): string {
   const timestamps = ids.map(id => {

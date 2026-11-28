@@ -15,6 +15,14 @@ const BATCH_SIZE = 250
 
 /** Representative tooling fixture; all real canonical constraints and triggers stay enabled. */
 export async function seedMediaDeliveryReplay(): Promise<void> {
+  const existing = await write<{ exists: boolean }>(
+    `/* seedMediaDeliveryReplay:check */
+     SELECT EXISTS(
+       SELECT 1 FROM copyright_notice_targets WHERE id = $1::uuid
+     ) AS exists`,
+    [seedUuid(MEDIA_REPLAY_RECORD_COUNT - 1, 'ff')],
+  )
+  if (existing.rows[0]?.exists) return
   {
     await using transaction = await beginTransaction()
     await seedMediaDeliveryReplayNotice(transaction, MEDIA_REPLAY_NOTICE_ID, MEDIA_REPLAY_ACTOR_ID)

@@ -7,6 +7,7 @@ import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 
 export async function runBloomReconciliationScenarios(): Promise<void> {
+  registerBloomReconciliationContracts()
   let first: EntityReconciliationCandidate | undefined
   await runAndCapture('bloom-repair-window', async () => {
     const rows = await collectCandidates(100)
@@ -54,15 +55,17 @@ const sources = [
   'url_hostnames',
   'topic_aliases',
 ]
-for (const id of ['bloom-repair-window', 'bloom-repair-capped', 'bloom-repair-resumed']) {
-  registerScenarioContract(id, {
-    expectations: [
-      { kind: 'usesIndexes', indexes },
-      ...sources.map(relation => ({
-        kind: 'maxProcessedRows' as const,
-        relation,
-        max: id === 'bloom-repair-window' ? (relation === 'blocklisted_domains' ? 10 : 5) : 3,
-      })),
-    ],
-  })
+function registerBloomReconciliationContracts(): void {
+  for (const id of ['bloom-repair-window', 'bloom-repair-capped', 'bloom-repair-resumed']) {
+    registerScenarioContract(id, {
+      expectations: [
+        { kind: 'usesIndexes', indexes },
+        ...sources.map(relation => ({
+          kind: 'maxProcessedRows' as const,
+          relation,
+          max: id === 'bloom-repair-window' ? (relation === 'blocklisted_domains' ? 10 : 5) : 3,
+        })),
+      ],
+    })
+  }
 }

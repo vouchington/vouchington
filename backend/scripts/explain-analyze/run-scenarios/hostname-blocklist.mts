@@ -9,6 +9,7 @@ import {
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 
 export async function runHostnameBlocklistScenario(): Promise<void> {
+  registerHostnameBlocklistContracts()
   await runAndCapture(
     'url-blocklist-hostnames',
     async () => {
@@ -37,34 +38,43 @@ export async function runHostnameBlocklistScenario(): Promise<void> {
   )
 }
 
-registerScenarioContract('url-blocklist-hostnames', {
-  expectations: [
-    {
-      kind: 'usesIndexes',
-      indexes: ['idx_url_hostname_blocks__active_nonfeed'],
-    },
-    // URL-source domains are already streamed from blocklisted_domains. The hostname branch
-    // visits independent block history and non-crawlable hosts, not the projected URL-feed rows.
-    {
-      kind: 'maxProcessedRows',
-      relation: 'url_hostnames',
-      max: BLOOM_REPAIR_SEED_ROW_COUNT + HOSTNAME_FLAG_SEED_ROW_COUNT + 1,
-    },
-    {
-      kind: 'maxProcessedRows',
-      relation: 'url_hostname_blocks',
-      max: BLOOM_REPAIR_SEED_ROW_COUNT + HOSTNAME_FLAG_SEED_ROW_COUNT + 1,
-    },
-  ],
-})
+function registerHostnameBlocklistContracts(): void {
+  registerScenarioContract('url-blocklist-hostnames', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_url_hostname_blocks__active_nonfeed'],
+      },
+      // URL-source domains are already streamed from blocklisted_domains. The hostname branch
+      // visits independent block history and non-crawlable hosts, not the projected URL-feed rows.
+      {
+        kind: 'maxProcessedRows',
+        relation: 'url_hostnames',
+        max: BLOOM_REPAIR_SEED_ROW_COUNT + HOSTNAME_FLAG_SEED_ROW_COUNT + 1,
+      },
+      {
+        kind: 'maxProcessedRows',
+        relation: 'url_hostname_blocks',
+        max: BLOOM_REPAIR_SEED_ROW_COUNT + HOSTNAME_FLAG_SEED_ROW_COUNT + 1,
+      },
+    ],
+  })
 
-registerScenarioContract('hostname-cache-invalidation-claim', {
-  expectations: [
-    { kind: 'usesIndexes', indexes: ['idx_url_hostname_cache_invalidation_work_items__available'] },
-    { kind: 'usesIndexes', indexes: ['url_hostname_cache_invalidation_work_items_pkey'] },
-    // A 500-row claim visits the updated rows, the due-page index, and up to 500 PK probes.
-    { kind: 'maxProcessedRows', relation: 'url_hostname_cache_invalidation_work_items', max: 1500 },
-    { kind: 'queryBinds', token: 'LIMIT' },
-  ],
-  seededRows: { url_hostname_cache_invalidation_work_items: 20_000 },
-})
+  registerScenarioContract('hostname-cache-invalidation-claim', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_url_hostname_cache_invalidation_work_items__available'],
+      },
+      { kind: 'usesIndexes', indexes: ['url_hostname_cache_invalidation_work_items_pkey'] },
+      // A 500-row claim visits the updated rows, the due-page index, and up to 500 PK probes.
+      {
+        kind: 'maxProcessedRows',
+        relation: 'url_hostname_cache_invalidation_work_items',
+        max: 1500,
+      },
+      { kind: 'queryBinds', token: 'LIMIT' },
+    ],
+    seededRows: { url_hostname_cache_invalidation_work_items: 20_000 },
+  })
+}

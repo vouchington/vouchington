@@ -10,16 +10,17 @@ export type CategoryProjectionPendingRow = {
   updated_at: string
 }
 
-/** Seed only after ordinary captures: these pending rows belong to this point-write fixture. */
-export async function seedCategoryProjection() {
-  const { rows } = await write<{ id: string }>(
-    `/* seedCategoryProjection:item */ SELECT id FROM rss_feed_item_guids
-      WHERE url_hostname_id = $1::uuid AND guid = 'seed-item-guid-0'`,
-    [seedUuid(0, '02')],
+/** Seed the long feed history on the first item URL once per database. */
+export async function seedCategoryProjectionFeedHistory(): Promise<void> {
+  const existing = await write<{ exists: boolean }>(
+    `/* seedCategoryProjection:feedHistoryCheck */
+     SELECT EXISTS(
+       SELECT 1 FROM rss_feed_item_guids
+       WHERE url_hostname_id = $1::uuid AND guid = $2::text
+     ) AS exists`,
+    [seedUuid(0, '02'), `seed-category-projection-history-${CATEGORY_PROJECTION_NOISE_ROWS}`],
   )
-  const itemId = rows[0]?.id
-  if (!itemId) throw new Error('Category projection fixture needs the ordinary RSS item seed')
-  // A feed with a long history must not turn this point lookup into a feed-wide scan.
+  if (existing.rows[0]?.exists) return
   await write(
     `/* seedCategoryProjection:feedHistory */
       WITH identities AS (
@@ -44,6 +45,19 @@ export async function seedCategoryProjection() {
       seedUuid(0, '08'),
     ],
   )
+}
+
+/** Seed only after ordinary captures: these pending rows belong to this point-write fixture. */
+export async function seedCategoryProjection() {
+  const { rows } = await write<{ id: string }>(
+    `/* seedCategoryProjection:item */ SELECT id FROM rss_feed_item_guids
+      WHERE url_hostname_id = $1::uuid AND guid = 'seed-item-guid-0'`,
+    [seedUuid(0, '02')],
+  )
+  const itemId = rows[0]?.id
+  if (!itemId) throw new Error('Category projection fixture needs the ordinary RSS item seed')
+  // A feed with a long history must not turn this point lookup into a feed-wide scan.
+  await seedCategoryProjectionFeedHistory()
   await write(
     `/* seedCategoryProjection:results */
       INSERT INTO rss_feed_item_category_projection_results

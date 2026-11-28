@@ -6,7 +6,6 @@ import { runLargeTopicRatingStatsScenario } from './run-scenarios/topic-rating-s
 import { runTopicAliasCategoryWorkScenarios } from './run-scenarios/topic-alias-category-work.mts'
 import { runTopicTextCategoryPageScenarios } from './run-scenarios/topic-text-category-pages.mts'
 import { runHackerNewsFilterScenarios } from './run-scenarios/hacker-news-filter.mts'
-import { RETENTION_RECOVERY_RUNNERS } from './run-ordered-scenarios-retention-recovery.mts'
 import { runHackerNewsCardSidecarScenarios } from './run-scenarios/hacker-news-card-sidecars.mts'
 
 export const PUBLICATION_TOPICS_RUNNERS: readonly (() => Promise<unknown>)[] = [
@@ -19,6 +18,5 @@ export const PUBLICATION_TOPICS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runTopicAliasCategoryWorkScenarios,
   runTopicTextCategoryPageScenarios,
   runHackerNewsFilterScenarios,
-  ...RETENTION_RECOVERY_RUNNERS,
   runHackerNewsCardSidecarScenarios,
 ]

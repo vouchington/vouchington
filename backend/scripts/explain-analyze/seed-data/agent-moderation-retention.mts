@@ -37,10 +37,8 @@ export async function seedAgentModerationRetention(): Promise<void> {
   const oldMs = anchorMs - 120 * DAY_MS
   const newMs = anchorMs - 100 * DAY_MS
   const bulkStartMs = oldMs - 5 * 60_000 + 100
-
   await seedRetentionIdentities(new Date(oldMs - DAY_MS))
-  // Insert triggers read parent identities, post scope, and transparency cohorts before the
-  // final fixture ANALYZE. Prime those dependencies before loading the retention backlog.
+  // Prime parent identities, post scope, and transparency cohorts before loading the backlog.
   await write(`/* analyzeAgentModerationRetentionTriggerDependencies */
     ANALYZE posts, agents, agent_prompts, community_agent_prompts, communities,
       agent_moderations, moderation_transparency_released_daily_rollups`)
@@ -60,13 +58,13 @@ export async function seedAgentModerationRetention(): Promise<void> {
   ).find(row => row.postId === seedUuid(40, '05'))
   if (!reference) throw new Error('Missing referenced agent moderation EXPLAIN row')
   await insertAgentModerationRetentionReferences(reference)
-
   const releasedDay = new Date(oldMs).toISOString().slice(0, 10)
   await write(
     `/* seedAgentModerationRetentionReleasedCohort */
      INSERT INTO moderation_transparency_released_daily_rollups
        (day, community_id, metric, category, count, latest_occurred_at)
-     VALUES ($1::date, NULL, 'automated_moderation', 'agent_moderation', 20, $2::timestamptz)`,
+     VALUES ($1::date, NULL, 'automated_moderation', 'agent_moderation', 20, $2::timestamptz)
+     ON CONFLICT ON CONSTRAINT moderation_transparency_released_daily_rollups_key DO NOTHING`,
     [releasedDay, new Date(anchorMs - 2 * DAY_MS)],
   )
   await seedReleasedCommunityNoise(releasedDay, new Date(oldMs))
@@ -74,6 +72,11 @@ export async function seedAgentModerationRetention(): Promise<void> {
 
 /** Defer the large retention corpus until its own plans, then refresh only its statistics. */
 export async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
+  const { rows } = await write<{ exists: boolean }>(
+    `/* seedAgentModerationRetention:check */ SELECT EXISTS(SELECT 1 FROM agents WHERE id = $1::uuid) AS exists`,
+    [BULK_AGENT_ID],
+  )
+  if (rows[0]?.exists) return
   await seedAgentModerationRetention()
   await write(`/* analyzeAgentModerationRetention */
     ANALYZE posts, agent_moderations, agent_moderation_votes,
@@ -82,7 +85,6 @@ export async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
 
 /** Force a live predecessor lookup past a large deleted tail on one seeded post. */
 async function seedDeletedLiveLookupTail(): Promise<void> {
-  const postId = seedUuid(1, '05')
   await write(
     `/* seedAgentModerationRetentionDeletedLookupTail */
      INSERT INTO agent_moderations
@@ -91,7 +93,7 @@ async function seedDeletedLiveLookupTail(): Promise<void> {
        $2::uuid, $3::uuid, '{}'::jsonb, FALSE, CURRENT_TIMESTAMP
      FROM generate_series(1, 1000) AS sequence
      ON CONFLICT (post_id, input_sha256, prompt_id) DO NOTHING`,
-    [postId, BULK_PROMPT_ID, BULK_AGENT_ID],
+    [seedUuid(1, '05'), BULK_PROMPT_ID, BULK_AGENT_ID],
   )
 }
 
@@ -132,8 +134,7 @@ async function seedRetentionIdentities(bulkAgentDeletedAt: Date): Promise<void> 
   await write(
     `/* seedAgentModerationRetentionIdentities */
      INSERT INTO agents (id, system_user_id, agent_type, deleted_at)
-     VALUES ($1::uuid, $2::uuid, 'moderator', $3::timestamptz),
-            ($4::uuid, $5::uuid, 'moderator', NULL)
+     VALUES ($1::uuid, $2::uuid, 'moderator', $3::timestamptz), ($4::uuid, $5::uuid, 'moderator', NULL)
      ON CONFLICT (id) DO NOTHING`,
     [BULK_AGENT_ID, SYSTEM_USER_ID, bulkAgentDeletedAt, CATEGORY_AGENT_ID, CATEGORY_SYSTEM_USER_ID],
   )
@@ -161,15 +162,16 @@ async function insertModerationRows(
   bulkStartMs: number,
   postCount: number,
 ): Promise<void> {
-  const specialRows = createAgentModerationRetentionSpecialRows(
-    oldMs,
-    newMs,
-    BULK_AGENT_ID,
-    BULK_PROMPT_ID,
-    CATEGORY_AGENT_ID,
-    CATEGORY_PROMPT_ID,
+  await insertAgentModerationRetentionRows(
+    createAgentModerationRetentionSpecialRows(
+      oldMs,
+      newMs,
+      BULK_AGENT_ID,
+      BULK_PROMPT_ID,
+      CATEGORY_AGENT_ID,
+      CATEGORY_PROMPT_ID,
+    ),
   )
-  await insertAgentModerationRetentionRows(specialRows)
   await insertAgentModerationRetentionBulk(
     bulkStartMs,
     newMs,
@@ -180,12 +182,10 @@ async function insertModerationRows(
 }
 
 async function seedReleasedCommunityNoise(day: string, occurredAt: Date): Promise<void> {
-  const communityIds = Array.from(
-    { length: AGENT_MODERATION_RETENTION_RELEASED_NOISE },
-    (_, index) => seedUuid(index, 'f5'),
+  const communityIds = Array.from({ length: AGENT_MODERATION_RETENTION_RELEASED_NOISE }, (_, i) =>
+    seedUuid(i, 'f5'),
   )
   for (let start = 0; start < communityIds.length; start += BATCH_SIZE) {
-    const batch = communityIds.slice(start, start + BATCH_SIZE)
     await write(
       `/* seedAgentModerationRetentionReleasedNoise */
        INSERT INTO moderation_transparency_released_daily_rollups
@@ -193,7 +193,7 @@ async function seedReleasedCommunityNoise(day: string, occurredAt: Date): Promis
        SELECT $1::date, community_id, 'automated_moderation', 'agent_moderation', 20, $2::timestamptz
        FROM unnest($3::uuid[]) AS input(community_id)
        ON CONFLICT ON CONSTRAINT moderation_transparency_released_daily_rollups_key DO NOTHING`,
-      [day, occurredAt, batch],
+      [day, occurredAt, communityIds.slice(start, start + BATCH_SIZE)],
     )
   }
 }

@@ -67,6 +67,7 @@ describe('EXPLAIN ANALYZE seed maintenance', () => {
         'community_members',
         'community_post_reviews',
         'community_search_counts',
+        'community_list_rss_feeds',
       ]),
     )
   })

@@ -206,14 +206,10 @@ jobs:
 
   # Every shard starts PostgreSQL on a copy of the seeded data directory, so the shared corpus,
   # its physical layout and its planner statistics are identical.
-  # The ordinary scenarios run in one fixed order that explain-shards.mts and
-  # run-ordered-scenarios.mts cut into the contiguous segments `main`, `main-2`, `main-3` and
-  # `main-4`; `partition` runs only the partitioned comment fixture and `hn-scale` runs only the
-  # million-post Hacker News fixture. `main`, `main-2` and `main-3` take about 4 to 5 minutes. `main-4`
-  # took 9m53s in run 46075844280 and 10m12s in merge queue run 46080278577, so the ordinary step
-  # allows 13 minutes. It cannot be split further yet: its late fixture writers must stay in the last
-  # shard and depend on rows and statistics the segment before them leaves behind (a trial cut
-  # flipped nine plan gates). Dependency-aware sharding is tracked in #6653.
+  # The ordinary shards (`main`, `main-2`, `main-3`, `main-4`) each own whole self-seeding domain
+  # files in `ORDINARY_SHARD_DOMAINS` (`run-ordered-scenarios.mts`), balanced by measured domain
+  # wall time; `partition` runs only the partitioned comment fixture and `hn-scale` runs only the
+  # million-post Hacker News fixture.
   # The `explain-analyze-gates` job merges all shards and enforces the plan gates, so
   # `backend.yml` still needs one result.
   explain-analyze:
@@ -289,9 +285,8 @@ jobs:
           run-id: ${{ github.run_id }}
       - name: Run ordinary EXPLAIN scenarios
         if: ${{ startsWith(matrix.shard, 'main') }}
-        # Measured in run 46075844280: 3m54s, 3m59s, 4m59s and 9m53s for main-4, which also took
-        # 10m12s in merge queue run 46080278577. 13 minutes leaves headroom over main-4; run.mts
-        # emits a warning annotation past 11 minutes so growth shows before a timeout (#6653).
+        # Whole-domain shards are balanced to ~4-5 minutes each; 13 minutes leaves headroom for
+        # slow runners, and run.mts emits a warning annotation past 11 minutes.
         timeout-minutes: 13
         run: node backend/scripts/explain-analyze/run.mts
         env:

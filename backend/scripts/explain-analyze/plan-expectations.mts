@@ -76,7 +76,7 @@ export function getScenarioContract(id: string): ScenarioPlanContract {
 /** Run after capture so a stale registration cannot silently stop guarding a query. */
 export function assertPlanRegistry(
   capturedIds: readonly string[],
-  /** A shard imports every runner module, whose import-time registrations outside its scope never run. */
+  /** Optional subset of scenario ids to check when verifying a scoped run. */
   scopeIds?: readonly string[],
 ): void {
   const captured = new Set(capturedIds)
