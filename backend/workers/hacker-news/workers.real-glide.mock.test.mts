@@ -16,6 +16,7 @@ import {
   getHackerNewsItemsByUrlIds,
   getHackerNewsTotalsByUrlIds,
 } from '@services/urls/hacker-news-references-read'
+import { promoteDelayedJobs } from '../../test-helpers/queue-jobs.mts'
 import { hardDeleteTestUrl, insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import { MockAgent, withMockAgentDefaultFetchForTest } from '@voucha/test-helpers/provider-http'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
@@ -42,7 +43,7 @@ describe('Hacker News lookup worker', () => {
     const row = await insertFreshRecordingUrl()
     if (!row) throw new Error('Expected a test URL')
     const neverAdmitted = randomUUID()
-    const runAt = new Date(Date.now() + 2500).toISOString()
+    const runAt = new Date(Date.now() + 60_000).toISOString()
     const refreshId = `hacker-news-refresh__${row.id}__${Buffer.from(runAt).toString('base64url')}`
     const noRefreshId = `hacker-news-refresh__${neverAdmitted}__${Buffer.from(runAt).toString('base64url')}`
     const agent = new MockAgent()
@@ -77,6 +78,9 @@ describe('Hacker News lookup worker', () => {
         await enqueueHackerNewsLookupRefreshes([{ urlId: neverAdmitted, runAt }])
         expect(await hackerNewsQueue.getJob(`hacker-news__${neverAdmitted}`)).toBeNull()
         expect(await hackerNewsQueue.getJob(noRefreshId)).toBeNull()
+        // Promote the real delayed refresh instead of waiting out its delay; the worker now runs it
+        // while pulling is disabled, which is the drop this test asserts.
+        expect(await promoteDelayedJobs(hackerNewsQueue, { data: { urlId: row.id } })).toBe(1)
         await pending.promise
         pending.stop()
         expect((await getHackerNewsTotalsByUrlIds([row.id])).has(row.id)).toBe(false)

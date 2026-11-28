@@ -17,6 +17,7 @@ const dependencies = {
   isNetworkError: vi.fn<VitestLooseMock>(),
   isRetryableError: vi.fn<VitestLooseMock>(),
   readResponseBody: vi.fn<VitestLooseMock>(),
+  retryDelayMs: 0,
 }
 
 function randomDomain() {
@@ -177,9 +178,7 @@ describe('fetchRobotsTxtCached', () => {
     dependencies.isNetworkError.mockReturnValue(false)
     dependencies.isRetryableError.mockReturnValue(true)
 
-    await expect(fetchRobotsTxtCached(domain, { ...dependencies, retryDelayMs: 0 })).rejects.toBe(
-      retryableError,
-    )
+    await expect(fetchRobotsTxtCached(domain, dependencies)).rejects.toBe(retryableError)
     expect(mockFetchWithTimeout).toHaveBeenCalledTimes(3)
     expect(dependencies.readResponseBody).not.toHaveBeenCalled()
   })
@@ -193,6 +192,7 @@ describe('real terminated robots response bodies', () => {
       async (transport, requestCount) => {
         const result = await fetchRobotsTxtCached(domain, {
           validateUrl: resolvePublicRobotsAddresses,
+          retryDelayMs: 0,
           fetchWithTimeout: async ({ url }) => ({
             response: await transport(url),
             responseSignal: new AbortController().signal,

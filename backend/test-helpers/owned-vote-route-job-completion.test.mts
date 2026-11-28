@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { waitForOwnedVoteRouteJob } from './owned-vote-route-job-completion.mts'
-import { admissionObservationDeadline } from './real-glide-terminal-deadline.mts'
 
 describe('owned vote route admission deadline', () => {
-  it('names a stalled active job before the default project budget', async () => {
+  it('names a stalled active job when its deadline expires', async () => {
     await expect(
       waitForOwnedVoteRouteJob(
         { getState: async () => 'active' },
         'topics:stalled-admission',
-        admissionObservationDeadline(),
+        AbortSignal.timeout(50),
         new Map(),
         new Map(),
         [],
