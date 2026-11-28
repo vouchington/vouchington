@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { resolveConfig } from 'no-mistakes'
 import { checkSccComplexity } from 'vouchington-tooling/scc-complexity'
 import { buildSharedContext, type SharedContext } from 'vouchington-tooling/shared-context'
 
@@ -25,7 +26,9 @@ async function runOne(check: CheckName, ctx: SharedContext): Promise<CheckResult
       return { name: check, errors: report.errors }
     }
     case 'repo-file-policy': {
-      const report = await checkRepoFilePolicy(ctx)
+      const report = await checkRepoFilePolicy(ctx, {
+        declaredConfig: await resolveConfig({ root: ctx.repoRoot, view: 'declared' }),
+      })
       return { name: check, errors: report.errors }
     }
     case 'scc-complexity': {

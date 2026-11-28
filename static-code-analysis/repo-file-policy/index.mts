@@ -7,7 +7,7 @@ import {
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { resolveConfig } from 'no-mistakes'
+import type { DeclaredConfig } from 'no-mistakes'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 import { checkGhaWorkspacePolicy } from 'vouchington-tooling/gha-workspace-policy'
@@ -43,13 +43,15 @@ import {
 } from './web-id-route-segment-guard.mts'
 
 type RepoFilePolicyOptions = {
+  /** Resolved once by the entry point so nothing reachable from tests reads the live config. */
+  declaredConfig: DeclaredConfig
   schemaSnapshot?: unknown
   remaining?: () => number
 }
 
 export async function checkRepoFilePolicy(
   ctx: SharedContext,
-  options: RepoFilePolicyOptions = {},
+  options: RepoFilePolicyOptions,
 ): Promise<{ errors: string[] }> {
   await initSqlAst()
   const errors: string[] = []
@@ -69,7 +71,7 @@ export async function checkRepoFilePolicy(
 
   const trackedFiles = ctx.trackedFiles.filter(file => existsSync(join(ctx.repoRoot, file)))
   const trackedFileSet = ctx.trackedFileSet
-  const config = await resolveConfig({ root: ctx.repoRoot, view: 'declared' })
+  const config = options.declaredConfig
   errors.push(...(await checkWorkspaceRootCoverage(ctx.repoRoot, ctx.trackedFiles, config)))
   errors.push(
     ...checkBoundedWorkTunables(

@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
 import {
   workspaceRootCoverageErrors,
   checkWorkspaceRootCoverage,
@@ -40,22 +41,22 @@ describe('finite configuration', () => {
     try {
       await mkdir(join(root, 'backend'))
       await writeFile(join(root, 'pnpm-workspace.yaml'), 'packages: [backend]\n')
-      await writeFile(
-        join(root, '.no-mistakes.yml'),
-        'rules:\n  - rule: package-json-workspace-coverage\n    options:\n      requireNamedPackage: true\n      packageRoots: [backend]\n',
-      )
+      const coverageYaml =
+        'rules:\n  - rule: package-json-workspace-coverage\n    options:\n      requireNamedPackage: true\n      packageRoots: [backend]\n'
+      await writeFile(join(root, '.no-mistakes.yml'), coverageYaml)
+      const config = parse(coverageYaml)
       expect(
-        await checkWorkspaceRootCoverage(root, [
-          '.no-mistakes.yml',
-          'pnpm-workspace.yaml',
-          'backend/package.json',
-        ]),
+        await checkWorkspaceRootCoverage(
+          root,
+          ['.no-mistakes.yml', 'pnpm-workspace.yaml', 'backend/package.json'],
+          config,
+        ),
       ).toEqual([])
       await expect(
-        checkWorkspaceRootCoverage(root, ['.no-mistakes.yml', 'backend/package.json']),
+        checkWorkspaceRootCoverage(root, ['.no-mistakes.yml', 'backend/package.json'], config),
       ).rejects.toThrow('Workspace package configuration must be tracked')
       await writeFile(join(root, '.no-mistakes.yml'), 'rules: []\n')
-      expect(await checkWorkspaceRootCoverage(root, ['.no-mistakes.yml'])).toEqual([
+      expect(await checkWorkspaceRootCoverage(root, ['.no-mistakes.yml'], { rules: [] })).toEqual([
         'Workspace coverage requires packageRoots and requireNamedPackage',
       ])
     } finally {
