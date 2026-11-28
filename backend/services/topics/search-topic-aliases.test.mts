@@ -73,6 +73,38 @@ describe('searchTopicAliases - merged topic filter', () => {
     expect(page2.hasNextPage).toBe(false)
   })
 
+  it('combines mixed case with literal % wildcard characters', async () => {
+    const topic = await createTestTopic()
+    const id = crypto.randomUUID()
+    const literal = `mixpct-${id}-a%b-match`
+    const wildcardDecoy = `mixpct-${id}-axb-match`
+    await createTopicAliases(topic.id, [literal, wildcardDecoy])
+
+    const { results } = await searchTopicAliases({
+      prefixQuery: `  MiXpCt-${id.toUpperCase()}-A%B  `,
+    })
+    expect(results.map(result => result.alias)).toEqual([literal])
+  })
+
+  it('folds uppercase non-ASCII prefixes in PostgreSQL LOWER()', async () => {
+    const topic = await createTestTopic()
+    const id = crypto.randomUUID()
+    const accented = `éclair-${id}`
+    const dottedI = `istanbul-${id}`
+    await createTopicAliases(topic.id, [accented, dottedI, `eclair-${id}`])
+
+    const { results: accentedResults } = await searchTopicAliases({
+      prefixQuery: `ÉCLAIR-${id.toUpperCase()}`,
+    })
+    expect(accentedResults.map(result => result.alias)).toEqual([accented])
+
+    // In PostgreSQL en_US.UTF-8, LOWER('İ') is 'i' (matching ILIKE), whereas JS 'İ'.toLowerCase() is 'i\u0307'.
+    const { results: dottedIResults } = await searchTopicAliases({
+      prefixQuery: `İSTANBUL-${id.toUpperCase()}`,
+    })
+    expect(dottedIResults.map(result => result.alias)).toEqual([dottedI])
+  })
+
   it('returns aliases for active topics', async () => {
     const user = await createTestUser()
     const r = Math.random().toString(36).slice(2, 10)

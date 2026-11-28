@@ -17,17 +17,10 @@ import { runViewDrivenHostnameScenarios } from './view-driven-hostnames.mts'
 import { runTopicDataPointInsightsScenario } from './topic-data-point-insights.mts'
 
 export async function runTopicAliasSearchScenarios(): Promise<void> {
-  // The alias keyset owns the order; topics are looked up by alias target id before limiting.
+  // Prefix searches bound candidates via idx_topic_aliases__alias__text_pattern_ops in both
+  // custom and generic plans, then sort matched aliases and hydrate active topics up to LIMIT.
   registerScenarioContract('search-topic-aliases', {
-    expectations: [
-      {
-        kind: 'usesIndexes',
-        indexes: ['topic_aliases_alias_key', 'topics_pkey'],
-        noSort: true,
-      },
-      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
-      { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
-    ],
+    expectations: [{ kind: 'custom', name: 'topicAliasPrefixCandidates' }],
   })
   const firstAliasPage = await searchTopicAliases({ prefixQuery: 'seed', limit: 25 })
   await runAndCapture('search-topic-aliases', () =>
@@ -35,34 +28,14 @@ export async function runTopicAliasSearchScenarios(): Promise<void> {
   )
   if (firstAliasPage.hasNextPage && firstAliasPage.endAlias) {
     registerScenarioContract('search-topic-aliases-cursor', {
-      expectations: [
-        {
-          kind: 'usesIndexes',
-          indexes: ['topic_aliases_alias_key', 'topics_pkey'],
-          noSort: true,
-        },
-        { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
-        { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
-      ],
+      expectations: [{ kind: 'custom', name: 'topicAliasPrefixCandidates' }],
     })
     await runAndCapture('search-topic-aliases-cursor', () =>
       searchTopicAliases({ prefixQuery: 'seed', limit: 25, after: firstAliasPage.endAlias! }),
     )
   }
   registerScenarioContract('search-topic-aliases-selective-prefix', {
-    expectations: [
-      {
-        kind: 'usesIndexes',
-        indexes: ['idx_topic_aliases__alias__text_pattern_ops', 'topic_aliases_alias_key'],
-        anyOf: true,
-      },
-      { kind: 'usesIndexes', indexes: ['topics_pkey'] },
-      { kind: 'noSeqScan', relation: 'topic_aliases' },
-      // Custom plan reads 11 rows via idx_topic_aliases__alias__text_pattern_ops; generic plan
-      // cannot derive text_pattern_ops bounds from $1 and walks all ~4,026 seeded aliases on topic_aliases_alias_key.
-      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 5_000 },
-      { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
-    ],
+    expectations: [{ kind: 'custom', name: 'topicAliasPrefixCandidates' }],
   })
   await runAndCapture('search-topic-aliases-selective-prefix', async () => {
     const page = await searchTopicAliases({ prefixQuery: 'seed-alias-199', limit: 25 })
