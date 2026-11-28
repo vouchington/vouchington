@@ -62,24 +62,29 @@ export const EXPLAIN_DOMAIN_NAMES = Object.keys(EXPLAIN_DOMAINS) as readonly Exp
 export const ORDINARY_SHARD_DOMAINS: Readonly<
   Record<OrdinaryExplainShard, readonly ExplainDomain[]>
 > = {
-  main: ['ingestion-crawl', 'feeds-follows', 'search-entities', 'imports-retention'],
+  main: [
+    'ingestion-crawl',
+    'feeds-follows',
+    'search-entities',
+    'imports-retention',
+    'after-communities',
+  ],
   'main-2': [
     'moderation',
     'read-paths',
     'story-engagement',
     'copyright-cases',
     'media-delivery',
-    'round-trips',
     'uploads-reports',
     'recovery',
+    'after-accounts-rss',
   ],
-  'main-3': ['publication-topics', 'retention-recovery', 'after-communities', 'after-retention'],
+  'main-3': ['publication-topics', 'retention-recovery', 'after-retention', 'after-notifications'],
   'main-4': [
+    'round-trips',
     'embeddings-payments',
     'rss-notifications',
     'after-memberships',
-    'after-notifications',
-    'after-accounts-rss',
     'after-topics',
     'capacity-audit',
   ],
