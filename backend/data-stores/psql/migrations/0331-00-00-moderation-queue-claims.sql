@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderation_queue_claims (
   id            uuid        PRIMARY KEY DEFAULT uuidv7(),
   created_at    timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -41,17 +40,14 @@ COMMENT ON COLUMN moderation_queue_claim_cleanup_cursors.updated_at IS 'Last com
 
 -- One live (un-released) claim per item. Lazy 15-minute expiry is evaluated at read time
 -- and in the upsert takeover predicate — NOT in the index predicate, since now() is not IMMUTABLE.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_moderation_queue_claims__active_report
   ON moderation_queue_claims (report_id)
   WHERE report_id IS NOT NULL AND released_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_moderation_queue_claims__active_post
   ON moderation_queue_claims (post_id)
   WHERE post_id IS NOT NULL AND released_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__community
   ON moderation_queue_claims (community_id);
 
@@ -73,16 +69,13 @@ END $$;
 ALTER TABLE conversations VALIDATE CONSTRAINT fk_conversations_moderation_report_id;
 
 -- Current indexes for fresh schema bootstrap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__claimed_by_id
   ON moderation_queue_claims (claimed_by_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__post_id
   ON moderation_queue_claims (post_id)
   WHERE post_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__report_id
   ON moderation_queue_claims (report_id)
   WHERE report_id IS NOT NULL;

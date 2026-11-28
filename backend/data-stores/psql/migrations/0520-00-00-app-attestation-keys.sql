@@ -1,5 +1,4 @@
 -- Apple App Attest: per-device attested keys used to verify assertions from the iOS app.
--- edited-in-place: pre-launch, never deployed to production
 
 DO $$ BEGIN
   CREATE TYPE app_attestation_environments AS ENUM ('production', 'development');

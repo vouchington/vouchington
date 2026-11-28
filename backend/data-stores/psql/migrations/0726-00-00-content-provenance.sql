@@ -1,5 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_clients__metadata_url
   ON oauth_clients (metadata_url);
 

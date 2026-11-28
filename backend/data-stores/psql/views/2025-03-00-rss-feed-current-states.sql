@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_rss_feed_current_states AS
   SELECT
     id AS rss_feed_id,

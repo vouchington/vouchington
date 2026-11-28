@@ -1,5 +1,4 @@
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
 DO $$ BEGIN
   CREATE TYPE moderation_media_reveal_surfaces AS ENUM (
     'mod_queue',
@@ -10,7 +9,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderation_media_reveals (
   id            uuid        PRIMARY KEY DEFAULT uuidv7(),
   created_at    timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -28,7 +26,6 @@ CREATE TABLE IF NOT EXISTS moderation_media_reveals (
   CHECK (jsonb_typeof(metadata) = 'object')
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_moderation_media_reveals__moderator_revealed
   ON moderation_media_reveals (moderator_user_id, revealed_at DESC);
 

@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Append-only audit log for community agent prompt changes made by moderators.
 DO $$
 BEGIN
@@ -9,7 +8,6 @@ EXCEPTION
 END
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_agent_prompt_revisions (
   id               uuid PRIMARY KEY DEFAULT uuidv7(),
   community_id     uuid NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
@@ -23,11 +21,9 @@ CREATE TABLE IF NOT EXISTS community_agent_prompt_revisions (
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompt_revisions__revised_by_id
   ON community_agent_prompt_revisions (revised_by_id) WHERE revised_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompt_revisions__community_id
   ON community_agent_prompt_revisions (community_id, id DESC);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompt_revisions__community_agent_prompt_id
   ON community_agent_prompt_revisions (community_agent_prompt_id, id DESC);
 
@@ -37,5 +33,4 @@ COMMENT ON COLUMN community_agent_prompt_revisions.community_agent_prompt_id IS 
 COMMENT ON COLUMN community_agent_prompt_revisions.revised_by_id IS 'Moderator who made the change; SET NULL on user deletion.';
 COMMENT ON COLUMN community_agent_prompt_revisions.revision_type IS 'Type of change applied to the prompt (created, updated, deleted, allocated, deallocated, deactivated).';
 COMMENT ON COLUMN community_agent_prompt_revisions.changes IS 'Per-field before/after differences; unchanged fields are omitted.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_community_agent_prompt_revisions_append_only BEFORE UPDATE OR DELETE ON community_agent_prompt_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id');

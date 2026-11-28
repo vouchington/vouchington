@@ -62,7 +62,6 @@ COMMENT ON COLUMN membership_google_play_purchase_tokens.fetched_at IS 'First su
 -- fetch that completes first, even when the subscription expiry and state cycle back unchanged.
 CREATE SEQUENCE IF NOT EXISTS membership_google_play_observation_order_seq AS BIGINT;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_google_play_recovery_cursors (
   recovery_sweep membership_google_play_recovery_sweeps PRIMARY KEY,
   cursor_evidence_id UUID,

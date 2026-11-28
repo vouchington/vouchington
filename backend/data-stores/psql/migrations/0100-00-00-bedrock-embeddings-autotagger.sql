@@ -1,7 +1,4 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: folded idx_bedrock_embedding_batches__job_arn from 0360-00-00-bedrock-batch-job-arn-index
 -- Merged from: 0040-00-00-bedrock-batch-embeddings.sql, 0070-00-00-autotagger-embeddings.sql
 
 -- ==========================================================================
@@ -19,7 +16,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS bedrock_embedding_batches (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   job_arn TEXT,
@@ -42,19 +38,16 @@ CREATE TABLE IF NOT EXISTS bedrock_embedding_batches (
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_bedrock_embedding_batches_updated_at
 BEFORE UPDATE ON bedrock_embedding_batches
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_bedrock_embedding_batches_guard_terminal_lifecycle
 BEFORE UPDATE ON bedrock_embedding_batches
 FOR EACH ROW
 EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at', 'cancelled_at');
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__active
 ON bedrock_embedding_batches (id)
 WHERE submitted_at IS NOT NULL
@@ -62,17 +55,14 @@ WHERE submitted_at IS NOT NULL
   AND failed_at IS NULL
   AND cancelled_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__job_arn
 ON bedrock_embedding_batches (job_arn)
 WHERE job_arn IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__url_id
 ON bedrock_embedding_batches (url_id)
 WHERE url_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__crawl_id
 ON bedrock_embedding_batches (crawl_id)
 WHERE crawl_id IS NOT NULL;
@@ -97,7 +87,6 @@ COMMENT ON COLUMN bedrock_embedding_batches.completed_at IS 'When the Bedrock jo
 COMMENT ON COLUMN bedrock_embedding_batches.failed_at IS 'When the Bedrock job terminated unsuccessfully (Failed or Expired).';
 COMMENT ON COLUMN bedrock_embedding_batches.cancelled_at IS 'When the Bedrock job was Stopped before completion.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS bedrock_embedding_batch_entities (
   batch_id UUID NOT NULL REFERENCES bedrock_embedding_batches ON DELETE CASCADE,
   entity_type bedrock_embedding_batch_job_types NOT NULL,
@@ -161,42 +150,34 @@ CREATE TABLE IF NOT EXISTS bedrock_embedding_batch_entities (
     )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_bedrock_embedding_batch_entities_updated_at
 BEFORE UPDATE ON bedrock_embedding_batch_entities
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batch_entities__batch_id
 ON bedrock_embedding_batch_entities (batch_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bedrock_embedding_batch_entities__topic
 ON bedrock_embedding_batch_entities (topic_id)
 WHERE topic_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bedrock_embedding_batch_entities__post
 ON bedrock_embedding_batch_entities (post_id)
 WHERE post_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bedrock_embedding_batch_entities__rss_feed_item
 ON bedrock_embedding_batch_entities (rss_feed_item_id)
 WHERE rss_feed_item_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bedrock_embedding_batch_entities__crawl_chunk
 ON bedrock_embedding_batch_entities (crawl_id, crawl_order_index)
 WHERE crawl_id IS NOT NULL AND crawl_order_index IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batch_entities__crawl_id
 ON bedrock_embedding_batch_entities (crawl_id)
 WHERE crawl_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bedrock_embedding_batch_entities__image
 ON bedrock_embedding_batch_entities (image_id)
 WHERE image_id IS NOT NULL;
@@ -216,7 +197,6 @@ COMMENT ON COLUMN bedrock_embedding_batch_entities.image_id IS 'Image currently 
 -- ============================================================================
 
 -- Create centralized embeddings table with content_sha256 as primary key
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS bedrock_nova_multimodal_v1_embeddings (
   content_sha256 BYTEA PRIMARY KEY CHECK (OCTET_LENGTH(content_sha256) = 32),
   embedding VECTOR(1024) NOT NULL, -- no-index because this is a lookup table
@@ -225,7 +205,6 @@ CREATE TABLE IF NOT EXISTS bedrock_nova_multimodal_v1_embeddings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_bedrock_nova_multimodal_v1_embeddings_updated_at
 BEFORE UPDATE ON bedrock_nova_multimodal_v1_embeddings
 FOR EACH ROW

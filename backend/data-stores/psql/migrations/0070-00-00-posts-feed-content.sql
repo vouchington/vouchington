@@ -1,14 +1,4 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: added language detection columns (declared_language, lingua_rs_detected_language, detection sha/results)
--- edited-in-place: added is_baseline column to moderator_agents
--- edited-in-place: removed moderator_agents.on_flag_action and the moderator_on_flag_action enum (the C5 classifiers are record-only; the community action is communities.automod_action)
--- edited-in-place: added link post type with url_id column
--- edited-in-place: folded idx_agent_moderations__flagged_prompt from 0430-00-00-automod-simulation-indexes
--- edited-in-place: migrated agent_models enum from gpt-5-nano/gpt-4o to gpt-5.4-nano (deprecation, see docs/development/docs-moved-to-vouchington-docs.md)
--- edited-in-place: swapped 'english' to 'voucha_english' text search config (unaccent support)
--- edited-in-place: removed no-op stat_posts__root_parent_deleted extended statistics (measured; kept per-column ANALYZE)
 -- Merged from: 0010-00-00-posts.sql, 0270-00-00-post-data-point-topics.sql
 
 -- ==========================================================================
@@ -30,7 +20,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS posts (
   id UUID NOT NULL DEFAULT uuidv7() REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
   created_via content_creation_channels NOT NULL,
@@ -151,17 +140,14 @@ CREATE TABLE IF NOT EXISTS posts (
   PRIMARY KEY (id)
 ) PARTITION BY RANGE (id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_register_retained_post_identity
 BEFORE INSERT ON posts
 FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('post');
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__creation_source_url_id
   ON posts (creation_source_url_id)
   WHERE creation_source_url_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_posts_creation_source_url_id_immutable
   BEFORE UPDATE OF creation_source_url_id ON posts
   FOR EACH ROW
@@ -171,7 +157,6 @@ COMMENT ON COLUMN posts.creation_source_url_id IS 'Immutable raw URL submitted w
 
 -- Exact hashtag occurrences are independent from the election-backed category
 -- relation so display casing is preserved without duplicating category votes.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_topic_alias_sources (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
@@ -186,17 +171,14 @@ CREATE TABLE IF NOT EXISTS post_topic_alias_sources (
   UNIQUE (post_id, topic_alias_id, source)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_topic_alias_sources_updated_at
 BEFORE UPDATE ON post_topic_alias_sources
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_alias_sources__topic_alias_id
 ON post_topic_alias_sources (topic_alias_id, post_id DESC, id DESC);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_alias_sources__contributor_id
 ON post_topic_alias_sources (contributor_user_id);
 
@@ -209,7 +191,6 @@ COMMENT ON COLUMN post_topic_alias_sources.authored_token IS 'The exact authored
 
 -- Explicit topic categories are authored post metadata, independent of the
 -- election-backed category relation and data-point structured-topic provenance.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_explicit_topic_categories (
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
   topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
@@ -218,13 +199,11 @@ CREATE TABLE IF NOT EXISTS post_explicit_topic_categories (
   PRIMARY KEY (post_id, topic_id)
 ) PARTITION BY RANGE (post_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_explicit_topic_categories_updated_at
 BEFORE UPDATE ON post_explicit_topic_categories
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_explicit_topic_categories__topic_id
 ON post_explicit_topic_categories (topic_id, post_id);
 
@@ -234,7 +213,6 @@ COMMENT ON COLUMN post_explicit_topic_categories.topic_id IS 'The explicitly sel
 
 -- Recomputes search_vector only when title or markdown change, avoiding a full
 -- tsvector rebuild on every unrelated post update.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_posts_search_vector()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -245,13 +223,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_sync_posts_search_vector
 BEFORE INSERT OR UPDATE OF title, markdown ON posts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_posts_search_vector();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_posts_updated_at
 BEFORE UPDATE OF
   post_type,
@@ -291,46 +267,38 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- browsing latest posts (using id DESC since created_at is derived from id)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__id__post_type
 ON posts (id DESC, post_type)
 WHERE deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__broadcast__users
 ON posts (id DESC)
 WHERE deleted_at IS NULL AND broadcast = 'users';
 
 -- searching posts by text
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__search_vector
 ON posts USING GIN (search_vector)
 WHERE deleted_at IS NULL;
 
 -- searching posts by creator; bare so it also serves as the RI-usable index for created_by_id's FK
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__created_by_id
 ON posts (created_by_id, id);
 
 -- Profile counts prove post_type and deleted_at from the query text. is_anonymous = false is a
 -- range on the second column for a stranger or anonymous viewer.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__is_anonymous__review
 ON posts (created_by_id, is_anonymous)
 WHERE post_type = 'review' AND deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__is_anonymous__discussion
 ON posts (created_by_id, is_anonymous)
 WHERE post_type = 'discussion' AND deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__is_anonymous__comment
 ON posts (created_by_id, is_anonymous)
 WHERE post_type = 'comment' AND deleted_at IS NULL;
 
 -- first-post and ban-evasion candidate lookups within a community
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__created_by_id__community_id__id
 ON posts (created_by_id, community_id, id)
 WHERE deleted_at IS NULL;
@@ -344,59 +312,49 @@ ON posts (clearance_changed_by_id)
 WHERE clearance_changed_by_id IS NOT NULL;
 
 -- RI-usable indexes for the SET NULL audit-column FKs (posts is a large-audit table)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__updated_by_id
 ON posts (updated_by_id)
 WHERE updated_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__deleted_by_id
 ON posts (deleted_by_id)
 WHERE deleted_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__archived_by_id
 ON posts (archived_by_id)
 WHERE archived_by_id IS NOT NULL;
 
 -- searching posts by parent, with id for comment tree queries (created_at is derived from id)
 -- NOT filtered by deleted_at IS NOT NULL as that would break the comment tree structure
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__parent_id__id
 ON posts (parent_post_id, id)
 WHERE parent_post_id IS NOT NULL;
 
 -- find comments in chronological order for a given root post (also the RI-usable index for root_post_id's FK)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__root_id__id
 ON posts (root_post_id, id)
 WHERE root_post_id IS NOT NULL;
 
 -- filter comments by root post and community scope, with id for sorted retrieval
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__root_id__community_id__id
 ON posts (root_post_id, community_id, id)
 WHERE root_post_id IS NOT NULL;
 
 -- find existing embeddings by input hash
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_input_sha256
 ON posts (bedrock_nova_multimodal_v1_input_sha256)
 WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
 
 -- content-hash duplicate probe: another user's recent post with the same moderated content
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__llm_moderation_content_sha256__id
 ON posts (llm_moderation_content_sha256, id);
 
 -- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_embedding
 ON posts USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
 WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
 
 -- find out of date embeddings
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_to_update
 ON posts (id)
 WHERE (
@@ -404,7 +362,6 @@ WHERE (
   OR bedrock_nova_multimodal_v1_input_sha256 != bedrock_nova_multimodal_v1_content_sha256
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__ban_evasion_post_embedding_pending
 ON posts (id)
 WHERE community_id IS NOT NULL
@@ -420,77 +377,64 @@ WHERE community_id IS NOT NULL
   );
 
 -- find private posts by creator for privacy filtering
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__privacy_private ON posts (created_by_id, broadcast)
   WHERE privacy = 'private' AND deleted_at IS NULL;
 
 -- find posts pending language detection
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__lingua_rs_pending
   ON posts (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 
 -- queries that filter to only archived posts (e.g. admin tooling, archival reports)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__archived_at
 ON posts (archived_at, id DESC)
 WHERE deleted_at IS NULL AND archived_at IS NOT NULL;
 
 -- GIN index for full JSONB queries on structured_data
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__structured_data
   ON posts USING GIN (structured_data jsonb_path_ops)
   WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
 
 -- filtering by vertical (most common filter)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__data_point_vertical
   ON posts (data_point_vertical, id DESC)
   WHERE data_point_vertical IS NOT NULL AND deleted_at IS NULL;
 
 -- Story, data-point, and topic-recommendation search read one post type in id order.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__post_type__id
   ON posts (post_type, id DESC)
   WHERE deleted_at IS NULL AND post_type IN ('story', 'data_point', 'topic_recommendation');
 
 -- Best rank for one story, data-point, or topic-recommendation type.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__post_type__votes_score_sort__id
   ON posts (post_type, votes_score_sort DESC, id DESC)
   WHERE deleted_at IS NULL AND post_type IN ('story', 'data_point', 'topic_recommendation');
 
 -- Best rank inside one data-point vertical.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__data_point_vertical__votes_score_sort__id
   ON posts (data_point_vertical, votes_score_sort DESC, id DESC)
   WHERE data_point_vertical IS NOT NULL AND deleted_at IS NULL;
 
 -- Result filter in id order, then by best rank.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__structured_data__result__id
   ON posts ((structured_data->>'result'), id DESC)
   WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__structured_data__result__votes_score_sort__id
   ON posts ((structured_data->>'result'), votes_score_sort DESC, id DESC)
   WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
 
 -- Credit-score filter in id order, then by best rank.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__structured_data__credit_score_range__id
   ON posts ((structured_data->>'credit_score_range'), id DESC)
   WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__credit_score_range__votes_score_sort__id
   ON posts ((structured_data->>'credit_score_range'), votes_score_sort DESC, id DESC)
   WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
 
 -- Hot pages for one data-point result. The result and the id window are the index
 -- condition. Positive votes stay in the predicate so the votes index is not the scan.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__data_point_result__positive__id
   ON posts ((structured_data->>'result'), id DESC)
   INCLUDE (votes_score_sort)
@@ -501,7 +445,6 @@ CREATE INDEX IF NOT EXISTS idx_posts__data_point_result__positive__id
     AND structured_data IS NOT NULL;
 
 -- Hot pages for one data-point credit-score range, same access path as the result index.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__data_point_credit_score_range__positive__id
   ON posts ((structured_data->>'credit_score_range'), id DESC)
   INCLUDE (votes_score_sort)
@@ -512,19 +455,16 @@ CREATE INDEX IF NOT EXISTS idx_posts__data_point_credit_score_range__positive__i
     AND structured_data IS NOT NULL;
 
 -- root-post visibility lookups: privacy filter checks root post broadcast/creator for comments
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__root_post_visibility
   ON posts (id) INCLUDE (broadcast, created_by_id)
   WHERE deleted_at IS NULL;
 
 -- RI-usable index for the url_id FK (ON DELETE RESTRICT — see column comment)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__url_id
   ON posts (url_id)
   WHERE url_id IS NOT NULL;
 
 -- link-post URL lookups: getPostIdsByUrlIds joins posts.url_id against resolved URL chains
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__url_id__link
   ON posts (url_id, id DESC)
   WHERE post_type = 'link';
@@ -564,7 +504,6 @@ COMMENT ON COLUMN posts.declared_language IS 'User-declared ISO 639-1 language o
 -- post_review_topic_ratings
 -- =============================================================================
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_review_topic_ratings (
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
   topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
@@ -575,13 +514,11 @@ CREATE TABLE IF NOT EXISTS post_review_topic_ratings (
   PRIMARY KEY (post_id, topic_id)
 ) PARTITION BY RANGE (post_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_review_topic_ratings_updated_at
 BEFORE UPDATE ON post_review_topic_ratings
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_review_topic_ratings__topic_id
 ON post_review_topic_ratings (topic_id, post_id)
 INCLUDE (rating);
@@ -598,7 +535,6 @@ COMMENT ON COLUMN post_review_topic_ratings.order_index IS 'Display order of thi
 
 -- all slugs associated with a post
 -- the most recent one is canonical
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_slugs (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
@@ -611,7 +547,6 @@ CREATE TABLE IF NOT EXISTS post_slugs (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_slugs_updated_at
 BEFORE UPDATE ON post_slugs
 FOR EACH ROW
@@ -620,7 +555,6 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- Supports latest-slug lookup by post:
 -- WHERE post_id = ? ORDER BY id DESC LIMIT 1
 -- INCLUDE (slug) keeps the lookup index-only when possible.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_slugs__post_id__id_desc
 ON post_slugs (post_id, id DESC)
 INCLUDE (slug);
@@ -671,7 +605,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS agents (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -698,7 +631,6 @@ CREATE INDEX IF NOT EXISTS idx_agents__updated_by_id
   ON agents (updated_by_id) WHERE updated_by_id IS NOT NULL;
 
 -- Agent identities must always belong to automated platform accounts.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_agent_system_account()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE account_kind platform_account_kinds;
@@ -710,12 +642,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_agents_system_account
 BEFORE INSERT OR UPDATE OF system_user_id ON agents
 FOR EACH ROW EXECUTE FUNCTION fn_reject_agent_system_account();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_platform_account_kind_change()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -728,13 +658,11 @@ BEGIN
   RETURN NEW;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_users_platform_account_kind
 BEFORE UPDATE OF platform_account_kind ON users
 FOR EACH ROW EXECUTE FUNCTION fn_reject_platform_account_kind_change();
 
 -- Index for finding active agents by type
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agents__active_by_type
 ON agents (agent_type, activated_at DESC)
 WHERE activated_at IS NOT NULL
@@ -742,12 +670,10 @@ WHERE activated_at IS NOT NULL
   AND deleted_at IS NULL;
 
 -- Index for looking up by system_user_id
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agents__system_user_id
 ON agents (system_user_id)
 WHERE deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS agent_prompts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -777,14 +703,12 @@ CREATE INDEX IF NOT EXISTS idx_agent_prompts__deleted_by_id
 CREATE INDEX IF NOT EXISTS idx_agent_prompts__updated_by_id
   ON agent_prompts (updated_by_id) WHERE updated_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_prompts__agent_id
 ON agent_prompts (agent_id, activated_at DESC)
 INCLUDE (prompt, model_name, model_provider)
 WHERE deleted_at IS NULL;
 
 -- RI-usable index for the agent_id FK (the index above carries a predicate, so it isn't RI-usable)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_prompts__agent_id_bare
 ON agent_prompts (agent_id);
 
@@ -803,21 +727,18 @@ COMMENT ON COLUMN agent_prompts.activated_at IS 'When this prompt version was ac
 COMMENT ON COLUMN agent_prompts.deactivated_at IS 'When this prompt version was deactivated. NULL if currently active.';
 
 -- Trigger to update updated_at on agents
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_agents_updated_at
 BEFORE UPDATE ON agents
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- Trigger to update updated_at on agent_prompts
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_agent_prompts_updated_at
 BEFORE UPDATE ON agent_prompts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- Extension table for moderator-specific configuration
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderator_agents (
   agent_id UUID PRIMARY KEY REFERENCES agents ON DELETE CASCADE,
   slug TEXT NOT NULL UNIQUE CHECK (slug = LOWER(slug) AND TRIM(slug) = slug),
@@ -827,7 +748,6 @@ CREATE TABLE IF NOT EXISTS moderator_agents (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderator_agents_updated_at
 BEFORE UPDATE ON moderator_agents
 FOR EACH ROW
@@ -848,7 +768,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS agent_moderations (
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
   prompt_id UUID NOT NULL REFERENCES agent_prompts ON DELETE CASCADE,
@@ -904,17 +823,14 @@ CREATE TABLE IF NOT EXISTS agent_moderations (
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__deleted_by_id
   ON agent_moderations (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_agent_moderations_updated_at
 BEFORE UPDATE ON agent_moderations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- unique index on (post_id, id) for vote table FK reference
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_moderations__post_id__id ON agent_moderations (post_id, id);
 
 -- index on id alone for election lookup by id (getAgentModerationElectionById)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__id ON agent_moderations (id)
 WHERE deleted_at IS NULL;
 
@@ -933,37 +849,29 @@ CREATE INDEX IF NOT EXISTS idx_agent_moderations__post_prompt_newest
 -- an insert looks up the prior live keeper; this partial index bounds that probe.
 -- Forward order supports live history by prompt and ID. Newest probes fix both
 -- leading keys and can walk the same index backward.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__post_prompt_live
   ON agent_moderations (post_id, prompt_id, id) WHERE deleted_at IS NULL;
 
 -- RI-usable index for the prompt_id FK
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__prompt_id ON agent_moderations (prompt_id);
 
 -- bare so it also serves as the RI-usable index for agent_id's FK
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__agent_id ON agent_moderations (agent_id, post_id DESC);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__flagged_agent ON agent_moderations (agent_id, is_flagged, post_id DESC)
 WHERE deleted_at IS NULL AND is_flagged = TRUE;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__lookup ON agent_moderations (post_id, prompt_id, input_sha256)
 WHERE deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__flagged_prompt
   ON agent_moderations (prompt_id, post_id DESC)
   WHERE deleted_at IS NULL AND is_flagged = TRUE;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__transparency_global
   ON agent_moderations (id)
   WHERE moderation_transparency_category IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__transparency_community
   ON agent_moderations (moderation_transparency_community_id, id)
   WHERE moderation_transparency_category = 'community_ai';
@@ -1146,7 +1054,6 @@ END $$;
 -- Analogous to post_review_topic_ratings for reviews — captures which topics
 -- a data point is specifically "for" (e.g., "Approved for Chase Sapphire Preferred").
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_data_point_topics (
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
   topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
@@ -1156,13 +1063,11 @@ CREATE TABLE IF NOT EXISTS post_data_point_topics (
   PRIMARY KEY (post_id, topic_id)
 ) PARTITION BY RANGE (post_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_data_point_topics_updated_at
 BEFORE UPDATE ON post_data_point_topics
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_data_point_topics__topic_id
 ON post_data_point_topics (topic_id, post_id);
 
@@ -1175,7 +1080,6 @@ COMMENT ON COLUMN post_data_point_topics.order_index IS 'Display order of this t
 -- 0140-00-00-post-images.sql
 -- ============================================================================
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_images (
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
   image_id UUID NOT NULL REFERENCES images ON DELETE CASCADE,
@@ -1187,11 +1091,9 @@ CREATE TABLE IF NOT EXISTS post_images (
   PRIMARY KEY (post_id, image_id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_images__post_id__order_index
   ON post_images (post_id, order_index);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_images__image_id__post_id
   ON post_images (image_id, post_id);
 
@@ -1210,7 +1112,6 @@ COMMENT ON COLUMN post_images.image_id IS 'The image entity.';
 COMMENT ON COLUMN post_images.order_index IS 'Zero-based display order of the image within the post.';
 COMMENT ON COLUMN post_images.caption IS 'Optional caption text for the image.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__created_via_oauth_client_id
   ON posts (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;

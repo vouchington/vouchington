@@ -1,17 +1,13 @@
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: added voucha_english text search configuration (unaccent support)
 -- Merged from: 0000-00-00-functions-and-sites.sql
 
 -- ==========================================================================
 -- 0000-00-00-functions-and-sites.sql
 -- ============================================================================
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TYPE content_creation_channels AS ENUM ('web', 'swift', 'dotnet', 'api', 'mcp', 'system');
 COMMENT ON TYPE content_creation_channels IS 'Channel that created a row: a first-party client (web, swift, dotnet), a credentialed agent path (api, mcp), or a platform job (system).';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_always()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -21,7 +17,6 @@ END;
 $$;
 COMMENT ON FUNCTION fn_reject_always() IS 'Always rejects the statement; the optional first trigger argument replaces the default message.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_copyright_case_purge_permitted(table_name text)
 RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT current_setting('app.copyright_case_purge_table', true) = table_name
@@ -67,7 +62,6 @@ END;
 $$;
 COMMENT ON FUNCTION fn_copyright_case_purge_pointer_cut_permitted(text, jsonb, jsonb) IS 'Allows only nulling named current-result fields on the locked case, so FK cycles can drain in bounded pages.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
@@ -213,7 +207,6 @@ END;
 $$;
 COMMENT ON FUNCTION fn_update_oauth_account_linkage() IS 'Tracks account unlink/relink and invalidates friend observations when a friend-capable account loses its user.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_latest_change()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
@@ -234,7 +227,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_create_metrics()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -246,7 +238,6 @@ $$;
 
 -- Parent scope is stored solely to express concrete composite foreign keys.
 -- Fill it on insertion; the FK also enforces explicit scope and every later UPDATE.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_parent_notice_scope()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE notice_id UUID;
@@ -266,7 +257,6 @@ END;
 $$;
 
 -- Wilson score lower bound function for ranking
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_wilson_score_lower_bound(pos double precision, tot double precision)
 RETURNS double precision
 LANGUAGE sql
@@ -284,7 +274,6 @@ AS $$
 $$;
 
 -- function to update the updated_at column on a table
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -293,7 +282,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_terminal_lifecycle()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -331,7 +319,6 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Currencies table
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS currencies (
   code currency_codes PRIMARY KEY,
   minor_unit_exponent SMALLINT NOT NULL,
@@ -351,10 +338,8 @@ INSERT INTO currencies (code, minor_unit_exponent) VALUES
   ('aud', 2)
 ON CONFLICT (code) DO NOTHING;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- The unused sites table, trigger and seed are removed.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_min_uuidv7(p_at TIMESTAMPTZ) RETURNS UUID
 LANGUAGE sql STABLE PARALLEL SAFE AS $$
   SELECT (lpad(to_hex(floor(extract(epoch FROM p_at) * 1000)::bigint), 12, '0') || '70008000000000000000')::uuid
@@ -362,7 +347,6 @@ $$;
 
 COMMENT ON FUNCTION fn_min_uuidv7(TIMESTAMPTZ) IS 'Smallest UUIDv7 at the timestamp millisecond, for indexed content-id bounds and partition pruning. STABLE permits inlining of timestamptz epoch extraction.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_min_child_uuidv7(p_parent_id UUID) RETURNS UUID
 LANGUAGE sql STABLE PARALLEL SAFE AS $$
   SELECT CASE
@@ -380,7 +364,6 @@ COMMENT ON FUNCTION fn_min_child_uuidv7(UUID) IS 'Smallest UUIDv7 a child row of
 -- (session timezone would make this non-immutable)
 -- Best-effort: malformed dates (bad offset, unknown weekday, out-of-range TZ) return NULL
 -- rather than throwing, so the generated column falls back to uuid_extract_timestamp(id).
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_text_to_timestamptz(text_value TEXT)
 RETURNS TIMESTAMPTZ
 LANGUAGE plpgsql
@@ -433,7 +416,6 @@ END $$;
 -- Countries
 -- ============================================================================
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS countries (
   id SMALLINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   code TEXT UNIQUE NOT NULL,
@@ -447,7 +429,6 @@ CREATE TABLE IF NOT EXISTS countries (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_countries_updated_at
 BEFORE UPDATE ON countries
 FOR EACH ROW
@@ -480,7 +461,6 @@ INSERT INTO countries (code, name) VALUES
   ('TW', 'Taiwan')
 ON CONFLICT (code) DO NOTHING;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_field_changes(before_fields JSONB, after_fields JSONB)
 RETURNS JSONB LANGUAGE sql IMMUTABLE AS $$
   SELECT COALESCE(jsonb_object_agg(field, jsonb_build_object(

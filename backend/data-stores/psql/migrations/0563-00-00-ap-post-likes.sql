@@ -1,5 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, never deployed to production
 -- Remote ActivityPub likes on local posts (Phase C2). Isolated from the local voting system by
 -- design: remote Likes must never affect `post_votes`/`votes_score_net` or any local ranking —
 -- see docs/overview/architecture/fediverse-federation.md's Like reuse-mapping row. `post_activitypub_like_tallies` is
@@ -7,7 +5,6 @@
 -- is the append-only ledger of remote Like/Undo(Like) activity, one row per remote actor's like
 -- state on a post.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_activitypub_like_tallies (
   post_id UUID PRIMARY KEY REFERENCES posts ON DELETE CASCADE,
   activitypub_likes_score DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -16,7 +13,6 @@ CREATE TABLE IF NOT EXISTS post_activitypub_like_tallies (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_activitypub_like_tallies_updated_at
 BEFORE UPDATE ON post_activitypub_like_tallies
 FOR EACH ROW
@@ -27,7 +23,6 @@ COMMENT ON COLUMN post_activitypub_like_tallies.post_id IS 'The local post this 
 COMMENT ON COLUMN post_activitypub_like_tallies.activitypub_likes_score IS 'COUNT of active (non-Undo''d) activitypub_post_likes rows for this post. DOUBLE PRECISION to match the shape of other score columns even though every Like currently weighs 1.';
 COMMENT ON COLUMN post_activitypub_like_tallies.activitypub_likes_count IS 'Same value as activitypub_likes_score, stored separately as a plain display count in case score gains per-actor weighting later.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS activitypub_post_like_activities (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   activity_id TEXT NOT NULL CHECK (char_length(activity_id) BETWEEN 1 AND 2048),
@@ -76,14 +71,11 @@ CREATE TABLE IF NOT EXISTS activitypub_post_likes (
     REFERENCES activitypub_post_like_activities(id, post_id, remote_actor_identity_id) ON DELETE RESTRICT
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_remote_actor ON activitypub_post_likes (post_id, remote_actor_id) WHERE deleted_at IS NULL;
 -- RI-usable leading indexes for the post_id/remote_actor_id FKs — the unique index above is
 -- predicated on deleted_at IS NULL, which the planner can't use for cascade/RESTRICT checks that
 -- must also touch soft-deleted rows (see docs/development/postgres-schema-rules.md).
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_id ON activitypub_post_likes (post_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__remote_actor_id ON activitypub_post_likes (remote_actor_id);
 CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__undone_retention
   ON activitypub_post_likes (deleted_at, id) WHERE deleted_at IS NOT NULL;
@@ -112,7 +104,6 @@ COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by Undo(Like), inclu
 -- Undo replay or any other delta-accounting bug must not drive the tally negative). Same
 -- lazy-creation upsert shape as Phase B's fn_sync_fediverse_instance_integration_status trigger,
 -- delta-accumulation instead of latest-row-wins.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_activitypub_post_likes()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -139,7 +130,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_sync_activitypub_post_likes
 AFTER INSERT OR UPDATE ON activitypub_post_likes
 FOR EACH ROW

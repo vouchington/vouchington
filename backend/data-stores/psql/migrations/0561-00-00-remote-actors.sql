@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, never deployed to production
 -- Remote ActivityPub actors known to this instance (Phase C). A state row per remote actor that
 -- has interacted with us (e.g. sent a Follow) — never overloads the `users` table, since remote
 -- actors are not local accounts. No profile/content fields are persisted here; only the minimum

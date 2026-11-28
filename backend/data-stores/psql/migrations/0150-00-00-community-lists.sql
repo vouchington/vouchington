@@ -1,5 +1,4 @@
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0300-00-00-community-list-items.sql
 
 -- ==========================================================================
@@ -14,7 +13,6 @@ DO $$ BEGIN
 END $$;
 
 -- community_list_topics
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_list_topics (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
@@ -31,17 +29,13 @@ CREATE INDEX IF NOT EXISTS idx_community_list_topics__added_by_id
 CREATE INDEX IF NOT EXISTS idx_community_list_topics__removed_by_id
   ON community_list_topics (removed_by_id) WHERE removed_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_topics__unique ON community_list_topics (community_id, topic_id) WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Live membership keyset in list order. Target eligibility is applied after this page.
 CREATE INDEX IF NOT EXISTS idx_community_list_topics__community_id__order_index__id
   ON community_list_topics (community_id, order_index, id)
   WHERE removed_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_topics__topic ON community_list_topics (topic_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Community delete includes removed rows. Live pages use the partial order index.
 CREATE INDEX IF NOT EXISTS idx_community_list_topics__community_id__foreign_key
   ON community_list_topics (community_id)
@@ -56,7 +50,6 @@ COMMENT ON COLUMN community_list_topics.removed_at IS 'When set, the item has be
 COMMENT ON COLUMN community_list_topics.removed_by_id IS 'User who removed this item from the list.';
 
 -- community_list_rss_feeds
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_list_rss_feeds (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
@@ -73,21 +66,16 @@ CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__added_by_id
 CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__removed_by_id
   ON community_list_rss_feeds (removed_by_id) WHERE removed_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_rss_feeds__unique ON community_list_rss_feeds (community_id, rss_feed_id) WHERE removed_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_community_list_rss_feeds_guard_hard_delete
 BEFORE INSERT OR UPDATE OF rss_feed_id ON community_list_rss_feeds
 FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Live membership keyset in list order. Target eligibility is applied after this page.
 CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__community_id__order_index__id
   ON community_list_rss_feeds (community_id, order_index, id)
   WHERE removed_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__rss_feed ON community_list_rss_feeds (rss_feed_id, id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Community delete includes removed rows. Live pages use the partial order index.
 CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__community_id__foreign_key
   ON community_list_rss_feeds (community_id)
@@ -102,7 +90,6 @@ COMMENT ON COLUMN community_list_rss_feeds.removed_at IS 'When set, the item has
 COMMENT ON COLUMN community_list_rss_feeds.removed_by_id IS 'User who removed this item from the list.';
 
 -- community_list_posts
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_list_posts (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
@@ -119,26 +106,21 @@ CREATE INDEX IF NOT EXISTS idx_community_list_posts__added_by_id
 CREATE INDEX IF NOT EXISTS idx_community_list_posts__removed_by_id
   ON community_list_posts (removed_by_id) WHERE removed_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_posts__unique ON community_list_posts (community_id, post_id) WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Live membership keyset in list order. Target eligibility is applied after this page.
 CREATE INDEX IF NOT EXISTS idx_community_list_posts__community_id__order_index__id
   ON community_list_posts (community_id, order_index, id)
   WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Live membership keyset for import, newest id first. Matches ORDER BY id DESC.
 CREATE INDEX IF NOT EXISTS idx_community_list_posts__community_id__id
   ON community_list_posts (community_id, id DESC)
   WHERE removed_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Generic plans of ORDER BY id DESC also match the primary key and would walk newer
 -- rows from other communities. This index keeps that keyset on one community.
 CREATE INDEX IF NOT EXISTS idx_community_list_posts__community_id__id__all_rows
   ON community_list_posts (community_id, id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_posts__post ON community_list_posts (post_id);
 
 COMMENT ON TABLE community_list_posts IS 'Posts curated into a community list by community leads.';
@@ -150,7 +132,6 @@ COMMENT ON COLUMN community_list_posts.removed_at IS 'When set, the item has bee
 COMMENT ON COLUMN community_list_posts.removed_by_id IS 'User who removed this item from the list.';
 
 -- community_list_url_hostnames
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_list_url_hostnames (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
@@ -167,17 +148,13 @@ CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__added_by_id
 CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__removed_by_id
   ON community_list_url_hostnames (removed_by_id) WHERE removed_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_url_hostnames__unique ON community_list_url_hostnames (community_id, url_hostname_id) WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Live membership keyset in list order. Target eligibility is applied after this page.
 CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__community_id__order_index__id
   ON community_list_url_hostnames (community_id, order_index, id)
   WHERE removed_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__url_hostname ON community_list_url_hostnames (url_hostname_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Community delete includes removed rows. Live pages use the partial order index.
 CREATE INDEX IF NOT EXISTS idx_community_list_url_hostnames__community_id__foreign_key
   ON community_list_url_hostnames (community_id)
@@ -192,7 +169,6 @@ COMMENT ON COLUMN community_list_url_hostnames.removed_at IS 'When set, the item
 COMMENT ON COLUMN community_list_url_hostnames.removed_by_id IS 'User who removed this item from the list.';
 
 -- community_list_urls
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_list_urls (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
@@ -209,17 +185,13 @@ CREATE INDEX IF NOT EXISTS idx_community_list_urls__added_by_id
 CREATE INDEX IF NOT EXISTS idx_community_list_urls__removed_by_id
   ON community_list_urls (removed_by_id) WHERE removed_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_urls__unique ON community_list_urls (community_id, url_id) WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Live membership keyset in list order. Target eligibility is applied after this page.
 CREATE INDEX IF NOT EXISTS idx_community_list_urls__community_id__order_index__id
   ON community_list_urls (community_id, order_index, id)
   WHERE removed_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_list_urls__url ON community_list_urls (url_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Community delete includes removed rows. Live pages use the partial order index.
 CREATE INDEX IF NOT EXISTS idx_community_list_urls__community_id__foreign_key
   ON community_list_urls (community_id)

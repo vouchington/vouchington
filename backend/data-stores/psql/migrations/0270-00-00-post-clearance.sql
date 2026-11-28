@@ -1,6 +1,4 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0400-00-00-post-clearance-history.sql
 
 DO $$
@@ -15,7 +13,6 @@ BEGIN
   END IF;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_clearance_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,

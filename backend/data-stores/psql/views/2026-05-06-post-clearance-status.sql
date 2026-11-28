@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_post_clearance_status AS
   SELECT
     posts.id AS post_id,

@@ -1,6 +1,4 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TYPE community_post_review_change_types AS ENUM ('approve', 'reject', 'unpublish', 'restore');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_post_review_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,

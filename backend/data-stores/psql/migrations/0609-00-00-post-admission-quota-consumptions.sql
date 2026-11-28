@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_admission_quota_consumptions (
   reservation_id UUID PRIMARY KEY REFERENCES post_admission_reservations (id) ON DELETE CASCADE,
   actor_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -8,11 +7,9 @@ CREATE TABLE IF NOT EXISTS post_admission_quota_consumptions (
     CHECK (consumption_mode IN ('all_windows', 'daily_only'))
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_admission_quota_consumptions__actor_source_committed
 ON post_admission_quota_consumptions (actor_user_id, source, committed_at DESC);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_admission_quota_consumptions__actor_committed
 ON post_admission_quota_consumptions (actor_user_id, committed_at DESC);
 

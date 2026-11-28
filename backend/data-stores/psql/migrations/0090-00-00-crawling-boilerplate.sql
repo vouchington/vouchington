@@ -5,7 +5,6 @@
 -- 0130-00-00-url-boilerplate-removals.sql
 -- ============================================================================
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS hostname_path_boilerplate_removals (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   hostname_id UUID NOT NULL REFERENCES url_hostnames ON DELETE CASCADE,
@@ -18,10 +17,8 @@ CREATE TABLE IF NOT EXISTS hostname_path_boilerplate_removals (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_hostname_path_boilerplate_removals_updated_at BEFORE UPDATE ON hostname_path_boilerplate_removals FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_hostname_path_boilerplate_removals__hostname_path_id
   ON hostname_path_boilerplate_removals (hostname_id, parent_path, id DESC);
 COMMENT ON INDEX idx_hostname_path_boilerplate_removals__hostname_path_id IS 'Supports keyed recent-removal checks without scanning old same-path history.';
@@ -31,28 +28,24 @@ COMMENT ON COLUMN hostname_path_boilerplate_removals.hostname_id IS 'The hostnam
 COMMENT ON COLUMN hostname_path_boilerplate_removals.parent_path IS 'The URL parent path pattern for scoping removal rules.';
 COMMENT ON COLUMN hostname_path_boilerplate_removals.results IS 'JSONB containing the computed boilerplate removal selectors and rules.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS hostname_path_boilerplate_removal_urls (
   hostname_path_boilerplate_removal_id UUID NOT NULL CONSTRAINT fk_hostname_path_boilerplate_removal_urls__removal REFERENCES hostname_path_boilerplate_removals ON DELETE CASCADE,
   url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE,
   PRIMARY KEY (hostname_path_boilerplate_removal_id, url_id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_hostname_path_boilerplate_removal_urls__url_id ON hostname_path_boilerplate_removal_urls (url_id);
 
 COMMENT ON TABLE hostname_path_boilerplate_removal_urls IS 'Join table linking boilerplate removal rules to the specific URLs they were computed from.';
 COMMENT ON COLUMN hostname_path_boilerplate_removal_urls.hostname_path_boilerplate_removal_id IS 'The boilerplate removal rule set.';
 COMMENT ON COLUMN hostname_path_boilerplate_removal_urls.url_id IS 'A URL used to compute this boilerplate removal.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS boilerplate_removal_hostname_cursors (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
   cursor_hostname_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_boilerplate_removal_hostname_cursors_updated_at
 BEFORE UPDATE ON boilerplate_removal_hostname_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

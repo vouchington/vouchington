@@ -1,9 +1,7 @@
--- edited-in-place: pre-launch, never deployed to production
 -- Bluesky OAuth lifecycle. Authorizations are durable state-machine records; account credentials
 -- and native completions reference one exact authorization generation. UUIDs are identifiers only:
 -- lifecycle ordering and expiry use explicit status and timestamp columns.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS bluesky_link_authorizations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,

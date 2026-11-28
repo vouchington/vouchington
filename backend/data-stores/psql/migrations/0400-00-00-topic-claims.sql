@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, never deployed to production
 DO $$
 BEGIN
   CREATE TYPE topic_claim_verification_methods AS ENUM ('dns_txt', 'well_known_file', 'manual_admin');

@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- EU and UK copyright contracts. EU (DSA) and UK share one set of territorial tables keyed by a
 -- jurisdiction column, and a composite foreign key keeps every child row on a notice of its own
 -- jurisdiction. Only the EU supervised complaint and transparency report tables stay EU-only. These
@@ -6,7 +5,6 @@
 -- store US restoration clocks, placement keys, or lifecycle metadata. No policy row is seeded: the
 -- contracts stay unavailable until a separate approval exists.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_jurisdiction_policy_approvals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   jurisdiction copyright_jurisdictions NOT NULL,
@@ -23,7 +21,6 @@ CREATE TABLE IF NOT EXISTS copyright_jurisdiction_policy_approvals (
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_jurisdiction_policy_withdrawals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_jurisdiction_policy_approval_id uuid NOT NULL CONSTRAINT uq_copyright_jurisdiction_policy_withdrawals__approval_id UNIQUE
@@ -32,7 +29,6 @@ CREATE TABLE IF NOT EXISTS copyright_jurisdiction_policy_withdrawals (
   withdrawn_by_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_notice_receipts (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
@@ -70,7 +66,6 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_notice_receipts (
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_notice_routings (
   copyright_territorial_notice_receipt_id uuid PRIMARY KEY
     CONSTRAINT fk_copyright_territorial_notice_routings__receipt REFERENCES copyright_territorial_notice_receipts (id) ON DELETE RESTRICT,
@@ -121,7 +116,6 @@ ALTER TABLE copyright_notices
   ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notices VALIDATE CONSTRAINT fk_copyright_notices__current_territorial_decision_identity;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_decisions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
@@ -156,7 +150,6 @@ CREATE INDEX idx_copyright_territorial_decisions__supersedes_page
   ON copyright_territorial_decisions(copyright_notice_id, id)
   WHERE supersedes_decision_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TYPE copyright_notice_legal_retention_phases AS ENUM
   ('claimant', 'submissions', 'incidents', 'targets', 'done');
 CREATE TABLE copyright_notice_operational_retention_cursors (
@@ -202,7 +195,6 @@ CREATE INDEX idx_cpyrght_ntc_oprtnl_rtntn_crsrs__assessment
   ON copyright_notice_operational_retention_cursors (cursor_blocker_assessment_identity_id)
   WHERE cursor_blocker_assessment_identity_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_redress_requests (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
@@ -253,12 +245,10 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_redress_requests (
     char_length(explanation_ciphertext) BETWEEN 1 AND 1048576
   )
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__guest
   ON copyright_territorial_redress_requests (copyright_territorial_decision_id)
   WHERE submitted_by_id IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_territorial_redress_decision_identities (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_territorial_redress_request_id uuid NOT NULL UNIQUE
@@ -275,7 +265,6 @@ ALTER TABLE copyright_territorial_redress_requests
 ALTER TABLE copyright_territorial_redress_requests
   VALIDATE CONSTRAINT fk_copyright_redress_requests__current_decision_identity;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_redress_decisions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_territorial_redress_request_id uuid NOT NULL
@@ -298,7 +287,6 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_redress_decisions (
   )
 ) PARTITION BY RANGE (id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_eu_supervised_complaints (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
@@ -329,7 +317,6 @@ CREATE TABLE IF NOT EXISTS copyright_eu_supervised_complaints (
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_eu_dispute_settlement_referrals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
@@ -352,7 +339,6 @@ CREATE TABLE IF NOT EXISTS copyright_eu_dispute_settlement_referrals (
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_eu_dispute_settlement_outcomes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_eu_dispute_settlement_referral_id uuid NOT NULL CONSTRAINT uq_copyright_eu_dispute_settlement_outcomes__referral_id UNIQUE
@@ -371,12 +357,10 @@ CREATE TABLE IF NOT EXISTS copyright_eu_dispute_settlement_outcomes (
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_copyright_eu_dispute_settlement_outcomes_updated_at
 BEFORE UPDATE ON copyright_eu_dispute_settlement_outcomes
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_territorial_escalations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
@@ -449,7 +433,6 @@ CREATE INDEX idx_copyright_territorial_escalations__open ON copyright_territoria
 CREATE INDEX idx_copyright_eu_supervised_complaints__resolved_by ON copyright_eu_supervised_complaints(resolved_by_id) WHERE resolved_by_id IS NOT NULL;
 CREATE INDEX idx_copyright_territorial_escalations__closed_by ON copyright_territorial_escalations(closed_by_id) WHERE closed_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS copyright_eu_transparency_reports (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   jurisdiction copyright_jurisdictions NOT NULL,
@@ -832,7 +815,6 @@ CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__decision_
   ON copyright_territorial_redress_requests (copyright_territorial_decision_id, id);
 CREATE INDEX idx_copyright_territorial_redress_requests__notice_id
   ON copyright_territorial_redress_requests (copyright_notice_id, id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_copyright_territorial_redress_requests__submitter
   ON copyright_territorial_redress_requests (submitted_by_id) WHERE submitted_by_id IS NOT NULL;
 CREATE INDEX idx_copyright_territorial_redress_decisions__request
@@ -847,10 +829,8 @@ CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__notice
   ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, id);
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__decision
   ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, copyright_territorial_decision_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__referred_by
   ON copyright_eu_dispute_settlement_referrals (referred_by_id) WHERE referred_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_dispute_settlement_referrals__participant_page
   ON copyright_eu_dispute_settlement_referrals (copyright_notice_id, referred_by_id, id)
   WHERE referred_by_id IS NOT NULL;
@@ -907,7 +887,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_invalid_copyright_territorial_decision()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -945,7 +924,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_invalid_copyright_eu_dispute_settlement_outcome()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
@@ -1057,7 +1035,6 @@ CREATE TRIGGER trigger_copyright_eu_supervised_complaints_terminal
 CREATE TRIGGER trigger_copyright_eu_supervised_complaints_delete
   BEFORE DELETE ON copyright_eu_supervised_complaints
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_eu_dispute_settlement_referrals_immutable
   BEFORE UPDATE OR DELETE ON copyright_eu_dispute_settlement_referrals
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('referred_by_id', 'recorded_by_id');

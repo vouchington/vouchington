@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_urls AS
   SELECT
     'url' AS __entity_type,

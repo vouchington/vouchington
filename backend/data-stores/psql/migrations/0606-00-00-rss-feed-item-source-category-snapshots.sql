@@ -1,6 +1,5 @@
 -- Source-owned RSS category snapshots retain each feed's complete view of a shared item.
 -- The reconciliation outbox consumes their union, so one feed cannot remove another feed's labels.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_source_category_snapshots (
   rss_feed_id UUID NOT NULL,
   rss_feed_item_id UUID NOT NULL,
@@ -12,7 +11,6 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_source_category_snapshots (
   CHECK (jsonb_typeof(categories) = 'array')
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_rss_feed_item_source_category_snapshots_updated_at
 BEFORE UPDATE ON rss_feed_item_source_category_snapshots
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

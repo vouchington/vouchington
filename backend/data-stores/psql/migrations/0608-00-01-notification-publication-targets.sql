@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Stable internal targets let reconciliation suppress stale notifications even after display FKs
 -- are cleared by an entity hard delete. They are not exposed through the API contract.
 

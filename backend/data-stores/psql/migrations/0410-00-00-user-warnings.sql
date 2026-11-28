@@ -1,5 +1,3 @@
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_warnings (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   -- guardrails-disable-next-line uuid-must-be-key
@@ -25,19 +23,15 @@ CREATE INDEX IF NOT EXISTS idx_user_warnings__issued_by_id
 CREATE INDEX IF NOT EXISTS idx_user_warnings__revoked_by_id
   ON user_warnings (revoked_by_id) WHERE revoked_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_warnings__user_id ON user_warnings (user_id, id DESC);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_warnings__community_id ON user_warnings (community_id, id DESC)
 WHERE community_id IS NOT NULL;
 
 -- Prevent duplicate warnings for the same report (idempotency on retry when report resolution fails).
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_warnings__report_id_unique ON user_warnings (report_id)
 WHERE report_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_warnings__case_id
   ON user_warnings (case_id);
 

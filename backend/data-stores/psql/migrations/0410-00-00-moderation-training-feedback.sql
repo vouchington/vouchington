@@ -1,5 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, never deployed to production
 DO $$
 BEGIN
   CREATE TYPE moderation_training_source_types AS ENUM (
@@ -53,7 +51,6 @@ EXCEPTION
 END
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS moderation_training_feedbacks (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   source_type moderation_training_source_types NOT NULL,

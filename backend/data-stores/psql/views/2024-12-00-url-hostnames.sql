@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_url_hostnames AS
   SELECT
     'hostname' AS __entity_type,

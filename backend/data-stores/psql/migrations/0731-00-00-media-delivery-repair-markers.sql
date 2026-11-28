@@ -1,6 +1,5 @@
 -- A committed marker survives the deliberately pre-commit edge denial and lets the existing
 -- registry reconciler repair the authoritative tuple after an interrupted owner transaction.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE media_delivery_repair_markers (
   media_delivery_registry_record_id uuid PRIMARY KEY REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT,
   marker_token bigint NOT NULL,
@@ -8,7 +7,6 @@ CREATE TABLE media_delivery_repair_markers (
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_media_delivery_repair_markers_updated_at
 BEFORE UPDATE ON media_delivery_repair_markers
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

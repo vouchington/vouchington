@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Copyright-designated email is retained before any agent or moderation workflow runs.  It is
 -- intentionally separate from a legal case because email cannot safely identify a target until a
 -- moderator verifies the agent's extraction.
@@ -178,7 +177,6 @@ COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.copyri
 COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.input_sha256 IS 'Input digest used only for exact recommendation replay.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.prompt_version IS 'Prompt version used only for exact recommendation replay.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intakes (
   id uuid PRIMARY KEY REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
   amazon_ses_message_id text NOT NULL UNIQUE CHECK (char_length(amazon_ses_message_id) BETWEEN 1 AND 512),
@@ -216,7 +214,6 @@ ALTER TABLE copyright_notice_lifecycle_changes
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_email_intake_fk;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_parses (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT uq_copyright_notice_email_intake_parses__intake_id UNIQUE CONSTRAINT fk_copyright_notice_email_intake_parses__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
@@ -237,7 +234,6 @@ CREATE TABLE copyright_notice_email_intake_parses (
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_attachments (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_attachments__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
@@ -252,7 +248,6 @@ CREATE TABLE copyright_notice_email_intake_attachments (
   CONSTRAINT uq_copyright_notice_email_intake_attachment__intake_id__ordinal UNIQUE (copyright_notice_email_intake_id, ordinal)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_recommendations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_receipt_id uuid NOT NULL CONSTRAINT fk_copyright_email_recommendations__intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
@@ -270,7 +265,6 @@ CREATE TABLE copyright_notice_email_intake_recommendations (
 
 COMMENT ON TYPE copyright_notice_ai_run_statuses IS 'Outcome of an admitted copyright AI run: active until success, definitive failure, or expiry.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_recommendation_runs (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_receipt_id uuid NOT NULL CONSTRAINT fk_copyright_email_recommendation_runs__intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
@@ -290,12 +284,9 @@ CREATE TABLE copyright_notice_email_intake_recommendation_runs (
   CHECK ((completed_at IS NULL) = (copyright_notice_email_intake_recommendation_id IS NULL)),
   CHECK (num_nonnulls(completed_at, failed_at, expired_at) <= 1)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX uq_copyright_notice_email_intake_recommendation_runs__active ON copyright_notice_email_intake_recommendation_runs(copyright_notice_email_intake_receipt_id)
   WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_recommendation_runs__receipt ON copyright_notice_email_intake_recommendation_runs(copyright_notice_email_intake_receipt_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_recommendation_runs__result ON copyright_notice_email_intake_recommendation_runs(copyright_notice_email_intake_recommendation_id) WHERE copyright_notice_email_intake_recommendation_id IS NOT NULL;
 COMMENT ON TABLE copyright_notice_email_intake_recommendation_runs IS 'Per-attempt AI email-intake recommendation runs; the immutable recommendation stays success-only evidence and terminal runs expire under bounded operational retention.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.id IS 'UUIDv7 identity of this admitted run, returned to callers so clients can follow exactly this run.';
@@ -307,7 +298,6 @@ COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.expired_at I
 COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.status IS 'Outcome derived from the lifecycle timestamps; active until one is set.';
 COMMENT ON COLUMN copyright_notice_email_intake_recommendation_runs.created_at IS 'Admission time derived from the UUIDv7 identity.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_receipt_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_reviews__intake_receipt REFERENCES copyright_notice_email_intake_receipts(id) ON DELETE RESTRICT,
@@ -325,21 +315,15 @@ CREATE TABLE copyright_notice_email_intake_reviews (
     REFERENCES copyright_notice_email_intake_recommendation_identities(copyright_notice_email_intake_receipt_id, id) ON DELETE RESTRICT
 ) PARTITION BY RANGE (id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_attachments__intake ON copyright_notice_email_intake_attachments(copyright_notice_email_intake_id, id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_recommendations__intake ON copyright_notice_email_intake_recommendations(copyright_notice_email_intake_receipt_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_reviews__intake ON copyright_notice_email_intake_reviews(copyright_notice_email_intake_receipt_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_reviews__promoted_notice
   ON copyright_notice_email_intake_reviews(promoted_copyright_notice_id, id)
   WHERE promoted_copyright_notice_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_email_intake_reviews__reviewer ON copyright_notice_email_intake_reviews(reviewed_by_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_reviews__recommendation ON copyright_notice_email_intake_reviews(copyright_notice_email_intake_recommendation_id) WHERE copyright_notice_email_intake_recommendation_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_copyright_email_intake_current_recommendation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -385,7 +369,6 @@ $$;
 CREATE TRIGGER trigger_copyright_email_intakes_current_result BEFORE UPDATE OR DELETE
   ON copyright_notice_email_intakes FOR EACH ROW
   EXECUTE FUNCTION fn_reject_copyright_email_intake_current_recommendation();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id');
 CREATE TRIGGER trigger_copyright_email_intakes_claimed_object_delete
   BEFORE DELETE ON copyright_notice_email_intakes FOR EACH ROW
@@ -393,15 +376,10 @@ CREATE TRIGGER trigger_copyright_email_intakes_claimed_object_delete
 CREATE TRIGGER trigger_copyright_email_intake_object_reference_generation
   AFTER INSERT OR UPDATE OF raw_storage_object_id OR DELETE ON copyright_notice_email_intakes
   FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_storage_reference_generation('raw_storage_object_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_parses_immutable BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_parses FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_attachments_immutable BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_attachments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_recommendations_immutable BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_recommendations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_reviews_immutable BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_reviews_require_actor BEFORE INSERT ON copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id');
 
 COMMENT ON TABLE copyright_notice_email_intakes IS 'Immutable, private records for email sent to the designated copyright inbox before a moderator validates it into a legal case.';
@@ -453,17 +431,14 @@ COMMENT ON COLUMN copyright_notice_email_intake_reviews.rationale_ciphertext IS 
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.promoted_copyright_notice_id IS 'Legal case created by an approved review; null for every other decision.';
 
 -- Current indexes for fresh schema bootstrap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_copyright_notice_email_intakes__received_id
   ON copyright_notice_email_intakes (received_at, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intakes__raw_media_type_id ON copyright_notice_email_intakes (raw_media_type_id);
 CREATE INDEX idx_copyright_notice_email_intakes__raw_storage_object_id
   ON copyright_notice_email_intakes (raw_storage_object_id, id)
   WHERE raw_storage_object_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_attachments__media_type_id ON copyright_notice_email_intake_attachments (media_type_id);
 
 COMMENT ON COLUMN copyright_notice_email_intake_recommendation_identities.id IS 'Published UUIDv7 recommendation identity, not an authorization grant.';

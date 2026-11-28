@@ -1,6 +1,4 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Lists: user-curated collections of RSS feed items and posts.
--- edited-in-place: pre-launch, never deployed to production
 
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'list_visibilities') THEN
@@ -14,7 +12,6 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_lists (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   created_via content_creation_channels NOT NULL,
@@ -29,18 +26,15 @@ CREATE TABLE IF NOT EXISTS user_lists (
   removed_at TIMESTAMPTZ
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_lists__owner_user_id
   ON user_lists (owner_user_id, id DESC)
   WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_user_lists_updated_at
   BEFORE UPDATE ON user_lists
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_list_rss_feed_items (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_list_id UUID NOT NULL REFERENCES user_lists (id) ON DELETE CASCADE,
@@ -50,22 +44,18 @@ CREATE TABLE IF NOT EXISTS user_list_rss_feed_items (
   removed_at TIMESTAMPTZ
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__user_list_id__rss_feed_item_id
   ON user_list_rss_feed_items (user_list_id, rss_feed_item_id)
   WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__rss_feed_item_id
   ON user_list_rss_feed_items (rss_feed_item_id)
   WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__user_list_id__id
   ON user_list_rss_feed_items (user_list_id, id DESC)
   WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_list_posts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_list_id UUID NOT NULL REFERENCES user_lists (id) ON DELETE CASCADE,
@@ -75,17 +65,14 @@ CREATE TABLE IF NOT EXISTS user_list_posts (
   removed_at TIMESTAMPTZ
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_list_posts__user_list_id__post_id
   ON user_list_posts (user_list_id, post_id)
   WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_posts__post_id
   ON user_list_posts (post_id)
   WHERE removed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_posts__user_list_id__id
   ON user_list_posts (user_list_id, id DESC)
   WHERE removed_at IS NULL;
@@ -109,51 +96,42 @@ COMMENT ON COLUMN user_list_posts.post_id IS 'The post added to the list.';
 COMMENT ON COLUMN user_list_posts.order_index IS 'Manual sort order within the list (lower = first).';
 COMMENT ON COLUMN user_list_posts.removed_at IS 'Soft-delete timestamp; NULL means active. Re-adding after removal creates a new row.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_lists__created_via_oauth_client_id
   ON user_lists (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
 
 -- Current indexes for fresh schema bootstrap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_posts__user_list_id__foreign_key
   -- Keep this all-row prefix narrow: generic list reads need its lower scan cost when list selectivity is unknown.
   ON user_list_posts (user_list_id)
   WHERE user_list_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_posts__user_list_id__id__all_rows
   -- Final purge pages include removed rows and need ordered LIMIT access independent of the active-row index.
   ON user_list_posts (user_list_id, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_posts__post_id__foreign_key
   ON user_list_posts (post_id)
   WHERE post_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__user_list_id__foreign_key
   -- Keep the referential-integrity index narrow; active reads retain their partial ordered index above.
   ON user_list_rss_feed_items (user_list_id)
   WHERE user_list_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__user_list_id__id__all_rows
   -- Final purge pages include removed rows and need ordered LIMIT access independent of the active-row index.
   ON user_list_rss_feed_items (user_list_id, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__rss_feed_item_id__foreign_key
   ON user_list_rss_feed_items (rss_feed_item_id)
   WHERE rss_feed_item_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_lists__owner_user_id__foreign_key
   -- Keep the referential-integrity index narrow; active list reads retain their partial ordered index above.
   ON user_lists (owner_user_id)
   WHERE owner_user_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_lists__owner_user_id__id__all_rows
   -- Final purge pages include removed rows and need ordered LIMIT access independent of the active-row index.
   ON user_lists (owner_user_id, id);

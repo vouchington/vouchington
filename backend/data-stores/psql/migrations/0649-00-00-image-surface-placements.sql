@@ -1,14 +1,11 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- An image is an immutable byte asset.  Public reachability is represented by a
 -- separately versioned placement, never by the asset UUID alone.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_images_id_immutable
 BEFORE UPDATE OF id ON images
 FOR EACH ROW
   WHEN (ROW(OLD.id) IS DISTINCT FROM ROW(NEW.id)) EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE image_surface_placements (
   placement_id uuid PRIMARY KEY REFERENCES media_placements(id) ON DELETE RESTRICT,
   surface_kind image_surface_placement_surface_kinds NOT NULL CHECK (surface_kind IN (
@@ -35,7 +32,6 @@ CREATE TABLE image_surface_placements (
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE image_surface_placement_activations (
   placement_id uuid NOT NULL,
   surface_kind image_surface_placement_surface_kinds NOT NULL CHECK (surface_kind IN (
@@ -53,13 +49,10 @@ CREATE TABLE image_surface_placement_activations (
   CHECK ((surface_kind IN ('community-profile-image', 'community-banner-image')) =
     (is_bound_by_administrator IS NOT NULL))
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_image_surface_placement_activations__bound_by_user
   ON image_surface_placement_activations(bound_by_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_image_surface_placement_activations__uploaded_by_user
   ON image_surface_placement_activations(uploaded_by_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_image_surface_placement_activations_guard
 BEFORE UPDATE OR DELETE ON image_surface_placement_activations
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
@@ -80,46 +73,34 @@ ON DELETE RESTRICT NOT VALID;
 ALTER TABLE image_surface_placements
 VALIDATE CONSTRAINT fk_image_surface_placements__retained_image_binding;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_image_surface_placements__user_profile
   ON image_surface_placements (user_id, image_id)
   WHERE surface_kind = 'user-profile-image';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_image_surface_placements__topic_logo
   ON image_surface_placements (topic_id, image_id)
   WHERE surface_kind = 'topic-logo-image';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_image_surface_placements__topic_hero
   ON image_surface_placements (topic_id, image_id)
   WHERE surface_kind = 'topic-hero-image';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_image_surface_placements__community_profile
   ON image_surface_placements (community_id, image_id)
   WHERE surface_kind = 'community-profile-image';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_image_surface_placements__community_banner
   ON image_surface_placements (community_id, image_id)
   WHERE surface_kind = 'community-banner-image';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_image_surface_placements__profile_link
   ON image_surface_placements (user_profile_link_id, image_id)
   WHERE surface_kind = 'user-profile-link-image';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_image_surface_placements__image ON image_surface_placements (image_id, placement_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_image_surface_placements__user_foreign_key
   ON image_surface_placements (user_id) WHERE user_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_image_surface_placements__topic_foreign_key
   ON image_surface_placements (topic_id) WHERE topic_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_image_surface_placements__community_foreign_key
   ON image_surface_placements (community_id) WHERE community_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_image_surface_placements__profile_link_foreign_key
   ON image_surface_placements (user_profile_link_id) WHERE user_profile_link_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_image_surface_placement()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -174,12 +155,10 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_image_surface_placement_guard
 BEFORE INSERT OR UPDATE OR DELETE ON image_surface_placements
 FOR EACH ROW EXECUTE FUNCTION fn_reject_image_surface_placement();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_ownerless_image_surface_retirement()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
@@ -193,17 +172,14 @@ BEGIN
   RETURN NEW;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_guard_ownerless_image_surface_retirement
 BEFORE UPDATE ON media_placements
 FOR EACH ROW EXECUTE FUNCTION fn_reject_ownerless_image_surface_retirement();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_image_surface_placements_updated_at
 BEFORE UPDATE ON image_surface_placements
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_sync_image_surface_placement(
   p_surface_kind image_surface_placement_surface_kinds,
   p_image_id uuid,
@@ -292,7 +268,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_user_profile_image_placement()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -302,12 +277,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_sync_user_profile_image_placement
 AFTER INSERT OR UPDATE OF profile_image_id ON users
 FOR EACH ROW EXECUTE FUNCTION fn_project_user_profile_image_placement();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_retire_deleted_user_image_surfaces()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -317,12 +290,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_retire_deleted_user_image_surfaces
 AFTER UPDATE OF deleted_at ON users
 FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_user_image_surfaces();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_handoff_deleted_user_image_surfaces()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -333,12 +304,10 @@ BEGIN
   RETURN OLD;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces
 BEFORE DELETE ON users
 FOR EACH ROW EXECUTE FUNCTION fn_project_handoff_deleted_user_image_surfaces();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_topic_image_placements()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -359,12 +328,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_sync_topic_image_placements
 AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON topics
 FOR EACH ROW EXECUTE FUNCTION fn_project_topic_image_placements();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_community_image_placements()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -382,12 +349,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_sync_community_image_placements
 AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON communities
 FOR EACH ROW EXECUTE FUNCTION fn_project_community_image_placements();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_user_profile_link_image_placement()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -397,12 +362,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_sync_user_profile_link_image_placement
 AFTER INSERT OR UPDATE OF image_id ON user_profile_links
 FOR EACH ROW EXECUTE FUNCTION fn_project_user_profile_link_image_placement();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_retire_deleted_profile_link_image_surfaces()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -412,7 +375,6 @@ BEGIN
   RETURN OLD;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_retire_deleted_profile_link_image_surfaces
 BEFORE DELETE ON user_profile_links
 FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_profile_link_image_surfaces();

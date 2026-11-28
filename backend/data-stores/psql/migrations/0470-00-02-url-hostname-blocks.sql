@@ -1,6 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS url_hostname_blocks (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   url_hostname_id UUID NOT NULL REFERENCES url_hostnames ON DELETE CASCADE,
@@ -73,7 +70,6 @@ CREATE OR REPLACE TRIGGER trigger_url_hostname_blocks_updated_at
 CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__hostname ON url_hostname_blocks (url_hostname_id) WHERE lifted_at IS NULL;
 
 -- URL-source domains are streamed from blocklisted_domains; scan only independent hostname blocks.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__active_nonfeed
   ON url_hostname_blocks (url_hostname_id)
   WHERE lifted_at IS NULL AND blocked_source NOT IN ('url_blocklist', 'email_blocklist');
@@ -106,7 +102,6 @@ CREATE INDEX idx_url_hostname_blocks__other_retention
   WHERE lifted_at IS NOT NULL AND domain_blocklist_source_id IS NULL;
 
 -- Project active URL blocks in one update per statement. Email blocks never change crawl policy.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_insert()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN

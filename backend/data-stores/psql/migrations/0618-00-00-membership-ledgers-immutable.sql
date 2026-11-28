@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_membership_grant_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -35,7 +34,6 @@ BEFORE UPDATE OR DELETE ON membership_grants
 FOR EACH ROW
 EXECUTE FUNCTION fn_reject_membership_grant_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_membership_operation_mutation()
 RETURNS trigger
 LANGUAGE plpgsql

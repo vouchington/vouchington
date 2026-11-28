@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Classifiers are decision configuration, not autonomous agents. Keep their durable
 -- configuration and result history independent of the agent tables retired by Epic A.
 
@@ -260,7 +259,6 @@ CREATE OR REPLACE TRIGGER trigger_classifier_candidate_thresholds_effective
   ON classifier_candidate_thresholds
   FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_effective_thresholds();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_classifier_audit_actor_was_deleted(actor_user_id UUID)
 RETURNS BOOLEAN LANGUAGE sql VOLATILE AS $$
   SELECT actor_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_user_id)
@@ -394,7 +392,6 @@ CREATE OR REPLACE TRIGGER trigger_classifier_candidate_community_overrides_updat
   BEFORE UPDATE ON classifier_candidate_community_overrides
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_decision_batches (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   classifier_id UUID NOT NULL REFERENCES classifiers ON DELETE RESTRICT,
@@ -475,7 +472,6 @@ CREATE OR REPLACE TRIGGER trigger_classifier_decision_batches_updated_at
   BEFORE UPDATE ON classifier_decision_batches
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_decision_batch_candidates (
   batch_id UUID NOT NULL,
   classifier_id UUID NOT NULL,
@@ -605,7 +601,6 @@ CREATE OR REPLACE TRIGGER trigger_classifier_decision_batch_candidates_owner_del
   BEFORE DELETE ON classifier_decision_batch_candidates
   FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_batch_candidate_owner_delete();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_decision_calls (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   batch_id UUID NOT NULL REFERENCES classifier_decision_batches ON DELETE CASCADE,
@@ -620,7 +615,6 @@ CREATE OR REPLACE TRIGGER trigger_classifier_decision_calls_append_only
   BEFORE UPDATE ON classifier_decision_calls
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS topic_classifier_results (
   topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
@@ -701,7 +695,6 @@ CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__classifier_kind
 CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__threshold
   ON topic_classifier_results (threshold_id, topic_id DESC);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS story_classifier_results (
   story_id UUID REFERENCES stories ON DELETE CASCADE,
   rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
@@ -794,7 +787,6 @@ CREATE INDEX IF NOT EXISTS idx_story_classifier_results__threshold
 -- no stored candidate or threshold revision: the prompt version's defaults are the thresholds, and
 -- the community prompt row itself is the candidate identity. Partitioned by the UUIDv7 batch so a
 -- batch read prunes to one child.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_prompt_classifier_results (
   batch_id UUID NOT NULL,
   id UUID NOT NULL DEFAULT uuidv7(),

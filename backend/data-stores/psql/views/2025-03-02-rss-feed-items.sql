@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_rss_feed_items AS
   SELECT
     'rss_feed_item' AS __entity_type,

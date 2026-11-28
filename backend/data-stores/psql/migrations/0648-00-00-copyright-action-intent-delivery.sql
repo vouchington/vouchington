@@ -9,7 +9,6 @@ COMMENT ON COLUMN copyright_notice_action_work_items.available_at IS 'Earliest d
 -- request, while this table supplies exactly-once desired-state convergence across PostgreSQL and
 -- AWS.  A tuple contains the placement revision and asset binding so an allowed placement can
 -- never authorize another asset or a stale revision.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE media_delivery_registry_records (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   placement_id uuid NOT NULL REFERENCES media_placements(id) ON DELETE RESTRICT,
@@ -23,7 +22,6 @@ CREATE TABLE media_delivery_registry_records (
   UNIQUE (placement_id, placement_revision, image_id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE media_delivery_registry_projection_work_items (
   media_delivery_registry_record_id uuid PRIMARY KEY REFERENCES media_delivery_registry_records(id) ON DELETE CASCADE,
   generation bigint NOT NULL CHECK (generation >= 0),
@@ -37,10 +35,8 @@ CREATE TABLE media_delivery_registry_projection_work_items (
   CHECK ((lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
     OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at > leased_at))
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_media_delivery_registry_projection_work_items__available
   ON media_delivery_registry_projection_work_items(available_at, media_delivery_registry_record_id) WHERE lease_token IS NULL AND failed_change_id IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_media_delivery_registry_projection_work_items__expired
   ON media_delivery_registry_projection_work_items(lease_expires_at, media_delivery_registry_record_id) WHERE lease_token IS NOT NULL AND failed_change_id IS NULL;
 CREATE INDEX idx_media_delivery_registry_projection_work_items__failed
@@ -60,7 +56,6 @@ COMMENT ON COLUMN media_delivery_registry_projection_work_items.attempt_count IS
 COMMENT ON COLUMN media_delivery_registry_projection_work_items.available_at IS 'Earliest time an idle projection can be claimed.';
 
 CREATE TYPE media_delivery_registry_change_types AS ENUM ('pending', 'claimed', 'completed', 'failed');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE media_delivery_registry_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   media_delivery_registry_record_id uuid NOT NULL REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT,
@@ -141,7 +136,6 @@ COMMENT ON COLUMN media_delivery_change_retention_cursors.sweep_upper_bound_chan
 COMMENT ON COLUMN media_delivery_change_retention_cursors.updated_at IS 'Last cursor transition time.';
 CREATE TRIGGER trigger_media_delivery_registry_changes_actor BEFORE INSERT ON media_delivery_registry_changes
 FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_media_delivery_change_authority() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE current_generation bigint; current_desired_state media_delivery_desired_states;
 BEGIN
@@ -156,7 +150,6 @@ $$;
 CREATE TRIGGER trigger_media_delivery_registry_changes_generation BEFORE INSERT ON media_delivery_registry_changes
 FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_change_authority();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_project_media_delivery_projection() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   -- The BEFORE trigger retains the authority lock and rejects stale generations.
@@ -194,7 +187,6 @@ $$;
 CREATE TRIGGER trigger_media_delivery_projection_schedule AFTER INSERT ON media_delivery_registry_changes
 FOR EACH ROW EXECUTE FUNCTION fn_project_media_delivery_projection();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE VIEW view_media_delivery_registry_current_records AS
 SELECT record.id AS media_delivery_registry_record_id,
   concat('image-placement:', record.placement_id, ':', record.placement_revision, ':', record.image_id) AS delivery_key, record.placement_id, record.placement_revision, record.image_id,

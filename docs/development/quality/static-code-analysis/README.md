@@ -101,12 +101,6 @@ The relational-storage guard reads the generated schema snapshot with no debt in
 
 The canonical URL terminal-root key is a generated copy of its own row's primary key, rather than a separate relationship. The guard recognizes only its exact conditional expression, the single-column `id` primary key, and the validated canonical self-reference FK; a writable key or altered target fails.
 
-Legacy migration exceptions use the committed comparison base rather than a frozen ceiling, so
-an exception removed from the base cannot later be reintroduced. The ratchet reads retired-marker
-SQL paths at that base: existing wording and stale-entry checks make those paths equivalent to
-the base allowlist without executing or parsing historical TypeScript. It does not establish that
-any migration was never staged; existing legacy markers stay until their provenance is resolved.
-
 Schema test allowlists are checked against the current snapshot from their evaluated exports. This catches removed tables and columns even when an exception is composed through a spread; newly tracked allowlist modules must join the freshness check before they can pass policy.
 
 ## PostgreSQL Conflict Ordering

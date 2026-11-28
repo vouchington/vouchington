@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch membership domain baseline. Never deployed to production.
 
 DO $$ BEGIN CREATE TYPE membership_plan_slugs AS ENUM ('plus', 'pro'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -53,19 +52,15 @@ BEGIN
   RETURN context_id;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_products (
   id UUID PRIMARY KEY DEFAULT uuidv7(), plan membership_plan_slugs NOT NULL,
   billing_interval membership_billing_intervals NOT NULL,
   retired_at TIMESTAMPTZ, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_products_updated_at BEFORE UPDATE ON membership_products FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_products__active_plan_interval ON membership_products (plan, billing_interval) WHERE retired_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_products (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_product_id UUID NOT NULL REFERENCES membership_products(id) ON DELETE RESTRICT,
   membership_provider_context_id UUID NOT NULL REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT,
@@ -79,35 +74,25 @@ CREATE TABLE IF NOT EXISTS membership_provider_products (
   CHECK (offer_id IS NULL OR (char_length(offer_id) BETWEEN 1 AND 255 AND offer_id = TRIM(offer_id))),
   CHECK (sku_id IS NULL OR (char_length(sku_id) BETWEEN 1 AND 255 AND sku_id = TRIM(sku_id)))
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_provider_products_updated_at BEFORE UPDATE ON membership_provider_products FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__provider_identity ON membership_provider_products (membership_provider_context_id, provider_product_id, base_plan_id, offer_id, sku_id) NULLS NOT DISTINCT;
 -- One active catalog key per provider context. A second active price for the same key conflicts.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__active_sku ON membership_provider_products (membership_provider_context_id, sku_id) WHERE retired_at IS NULL AND sku_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__id_context ON membership_provider_products (id, membership_product_id, membership_provider_context_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_products__membership_product_id ON membership_provider_products (membership_product_id);
 CREATE INDEX IF NOT EXISTS idx_membership_provider_products__active_product_context ON membership_provider_products (membership_product_id, membership_provider_context_id, id) WHERE retired_at IS NULL;
 COMMENT ON INDEX idx_membership_provider_products__active_product_context IS
   'Bounds active catalog mapping admission and current-context catalog reads by product and provider context.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_products__currency_code ON membership_provider_products (currency_code);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_lineages (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_provider_context_id UUID NOT NULL REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT, provider_lineage_id TEXT NOT NULL, provider_account_id TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (char_length(provider_lineage_id) BETWEEN 1 AND 255 AND provider_lineage_id = TRIM(provider_lineage_id)),
   CHECK (provider_account_id IS NULL OR (char_length(provider_account_id) BETWEEN 1 AND 255 AND provider_account_id = TRIM(provider_account_id)))
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_lineages__provider_lineage ON membership_provider_lineages (membership_provider_context_id, provider_lineage_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_lineages__id_context ON membership_provider_lineages (id, membership_provider_context_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_membership_provider_lineage_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE'
@@ -123,11 +108,9 @@ BEGIN
   END IF;
   RAISE EXCEPTION 'membership provider lineages are immutable';
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_membership_provider_lineages_immutable BEFORE UPDATE OR DELETE ON membership_provider_lineages FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_provider_lineage_mutation();
 
 -- The account reference is nullable on final purge; binding history remains durable after SET NULL.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_lineage_bindings (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_provider_lineage_id UUID NOT NULL REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT,
   user_id UUID REFERENCES users(id) ON DELETE SET NULL, source_kind membership_source_kinds NOT NULL DEFAULT 'direct', bound_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, released_at TIMESTAMPTZ, release_reason TEXT,
@@ -137,18 +120,12 @@ CREATE TABLE IF NOT EXISTS membership_lineage_bindings (
   CHECK (released_at IS NOT NULL OR user_id IS NOT NULL),
   CHECK (release_reason IS NULL OR (char_length(release_reason) BETWEEN 1 AND 255 AND release_reason = TRIM(release_reason)))
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_lineage_bindings__current_direct_lineage ON membership_lineage_bindings (membership_provider_lineage_id) WHERE released_at IS NULL AND source_kind = 'direct';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_lineage_bindings__current_family_lineage_user ON membership_lineage_bindings (membership_provider_lineage_id, user_id) WHERE released_at IS NULL AND source_kind = 'family';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_lineage_bindings__lineage_id ON membership_lineage_bindings (membership_provider_lineage_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_lineage_bindings__user_id ON membership_lineage_bindings (user_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_lineage_bindings__id_lineage_id ON membership_lineage_bindings (id, membership_provider_lineage_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_evidence_records (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_provider_context_id UUID NOT NULL REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT,
   membership_provider_lineage_id UUID, provider_event_id TEXT, evidence_lookup_sha256 TEXT NOT NULL CONSTRAINT chk_membershi_provider_evidence_records__evidence_lookup_sha256 CHECK (evidence_lookup_sha256 ~ '^[a-f0-9]{64}$'), encrypted_evidence BYTEA NOT NULL,
@@ -159,15 +136,10 @@ CREATE TABLE IF NOT EXISTS membership_provider_evidence_records (
   CHECK (provider_event_id IS NULL OR (char_length(provider_event_id) BETWEEN 1 AND 255 AND provider_event_id = TRIM(provider_event_id))),
   CONSTRAINT fk_membership_provider_evidence_records__lineage_context FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__id_context ON membership_provider_evidence_records (id, membership_provider_context_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__id_lineage_context ON membership_provider_evidence_records (id, membership_provider_lineage_id, membership_provider_context_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__context_event ON membership_provider_evidence_records (membership_provider_context_id, provider_event_id) WHERE provider_event_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__context_lookup ON membership_provider_evidence_records (membership_provider_context_id, evidence_lookup_sha256);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__lineage_id ON membership_provider_evidence_records (membership_provider_lineage_id, id DESC);
 
 CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__pending_received_at
@@ -178,12 +150,10 @@ CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__pending_id
   ON membership_provider_evidence_records (id)
   INCLUDE (membership_provider_context_id)
   WHERE provider_event_id IS NOT NULL AND verified_at IS NULL AND rejected_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__rejected_at
   ON membership_provider_evidence_records (rejected_at, id)
   WHERE rejected_at IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_observations (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_provider_context_id UUID NOT NULL,
   membership_provider_evidence_record_id UUID NOT NULL, membership_provider_lineage_id UUID NOT NULL,
@@ -212,24 +182,14 @@ CREATE TABLE IF NOT EXISTS membership_provider_observations (
   CONSTRAINT fk_membership_provider_observations__product_context FOREIGN KEY (membership_provider_product_id, membership_product_id, membership_provider_context_id) REFERENCES membership_provider_products(id, membership_product_id, membership_provider_context_id) ON DELETE RESTRICT,
   CONSTRAINT fk_membership_provider_observations__renewal_product_context FOREIGN KEY (renewal_membership_provider_product_id, renewal_membership_product_id, membership_provider_context_id) REFERENCES membership_provider_products(id, membership_product_id, membership_provider_context_id) ON DELETE RESTRICT
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_observations__evidence_id ON membership_provider_observations (membership_provider_evidence_record_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_observations__lineage_revision ON membership_provider_observations (membership_provider_lineage_id, provider_revision, provider_order);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_observations__id_lineage_product_kind ON membership_provider_observations (id, membership_provider_lineage_id, membership_product_id, source_kind);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_observations__lineage_effective ON membership_provider_observations (membership_provider_lineage_id, effective_at DESC, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_observations__provider_product_id ON membership_provider_observations (membership_provider_product_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_observations__observed_currency ON membership_provider_observations (observed_price_currency_code);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_observations__renewal_product ON membership_provider_observations (renewal_membership_provider_product_id) WHERE renewal_membership_provider_product_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_observations__renewal_currency ON membership_provider_observations (renewal_price_currency_code) WHERE renewal_price_currency_code IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_verified_membership_provider_observation_evidence() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NOT EXISTS (
@@ -241,13 +201,10 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_membership_provider_observations_verified_evidence BEFORE INSERT ON membership_provider_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_verified_membership_provider_observation_evidence();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_membership_provider_observations_immutable BEFORE UPDATE OR DELETE ON membership_provider_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_purchase_intents (
   id UUID PRIMARY KEY DEFAULT uuidv7(), user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   idempotency_key UUID NOT NULL, request_fingerprint TEXT NOT NULL CHECK (request_fingerprint ~ '^[a-f0-9]{64}$'),
@@ -268,7 +225,6 @@ CREATE TABLE IF NOT EXISTS membership_purchase_intents (
   CHECK (failure_code IS NULL OR (char_length(failure_code) BETWEEN 1 AND 255 AND failure_code = TRIM(failure_code))),
   CONSTRAINT fk_membership_purchase_intents__provider_product_context FOREIGN KEY (membership_provider_product_id, membership_product_id, membership_provider_context_id) REFERENCES membership_provider_products(id, membership_product_id, membership_provider_context_id) ON DELETE RESTRICT
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_purchase_intents_updated_at BEFORE UPDATE ON membership_purchase_intents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 -- Checkout session ids are Stripe-only; context now lives behind an FK, so enforce this
 -- provider-specific invariant against that row instead of keeping a copied provider enum.
@@ -285,15 +241,10 @@ END $$;
 CREATE TRIGGER trigger_membership_purchase_intents_stripe_checkout
 BEFORE INSERT OR UPDATE ON membership_purchase_intents
 FOR EACH ROW EXECUTE FUNCTION fn_reject_non_stripe_membership_purchase_intent_checkout();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_purchase_intents__user_idempotency ON membership_purchase_intents (user_id, idempotency_key);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_purchase_intents__id_user_context ON membership_purchase_intents (id, user_id, membership_provider_context_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__user_id ON membership_purchase_intents (user_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__active_user ON membership_purchase_intents (user_id, expires_at DESC) WHERE failed_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__provider_product_id ON membership_purchase_intents (membership_provider_product_id, id DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_membership_purchase_intents__checkout_context ON membership_purchase_intents (provider_checkout_id, membership_provider_context_id)
   WHERE provider_checkout_id IS NOT NULL;
@@ -301,7 +252,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_membership_purchase_intents__checkout_conte
 CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__retention ON membership_purchase_intents (id) INCLUDE (expires_at)
   WHERE launched_at IS NULL OR failed_at IS NOT NULL OR user_id IS NULL OR expired_at IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_verifications (
   id UUID PRIMARY KEY DEFAULT uuidv7(), user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   idempotency_key UUID NOT NULL, request_fingerprint TEXT NOT NULL CHECK (request_fingerprint ~ '^[a-f0-9]{64}$'),
@@ -315,21 +265,14 @@ CREATE TABLE IF NOT EXISTS membership_verifications (
   CONSTRAINT fk_membership_verifications__purchase_intent_context FOREIGN KEY (membership_purchase_intent_id, user_id, membership_provider_context_id) REFERENCES membership_purchase_intents(id, user_id, membership_provider_context_id) ON DELETE RESTRICT,
   CONSTRAINT fk_membership_verifications__evidence_context FOREIGN KEY (membership_provider_evidence_record_id, membership_provider_context_id) REFERENCES membership_provider_evidence_records(id, membership_provider_context_id) ON DELETE RESTRICT
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_verifications_updated_at BEFORE UPDATE ON membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_verifications__user_idempotency ON membership_verifications (user_id, idempotency_key);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_verifications__user_id ON membership_verifications (user_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_verifications__purchase_intent_id ON membership_verifications (membership_purchase_intent_id, id DESC) WHERE membership_purchase_intent_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_verifications__evidence_id ON membership_verifications (membership_provider_evidence_record_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_verifications__pending ON membership_verifications (id)
 WHERE verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_sources (
   id UUID PRIMARY KEY DEFAULT uuidv7(), user_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   source_kind membership_source_kinds NOT NULL, membership_provider_lineage_id UUID REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT,
@@ -339,24 +282,16 @@ CREATE TABLE IF NOT EXISTS membership_sources (
 -- Direct sources are durable lineage identities: final account purge clears their recipient, but
 -- a later verified claim rebinds that same source. Family sources are recipient-specific and may
 -- therefore retain one released source per former recipient.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_sources__direct_lineage ON membership_sources (membership_provider_lineage_id) WHERE membership_provider_lineage_id IS NOT NULL AND source_kind = 'direct';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_sources__current_family_lineage_user ON membership_sources (membership_provider_lineage_id, user_id) WHERE membership_provider_lineage_id IS NOT NULL AND user_id IS NOT NULL AND source_kind = 'family';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_sources__lineage_id
   ON membership_sources (membership_provider_lineage_id, source_kind, id) INCLUDE (user_id)
   WHERE membership_provider_lineage_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_sources__id_source_kind ON membership_sources (id, source_kind);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_sources__id_lineage_id ON membership_sources (id, membership_provider_lineage_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_sources__id_user_id ON membership_sources (id, user_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_sources__user_id ON membership_sources (user_id, id DESC);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_source_states (
   membership_source_id UUID PRIMARY KEY REFERENCES membership_sources(id) ON DELETE CASCADE,
   source_kind membership_source_kinds NOT NULL,
@@ -378,28 +313,20 @@ CREATE TABLE IF NOT EXISTS membership_source_states (
   CONSTRAINT fk_membership_source_states__observation_lineage_product_kind FOREIGN KEY (membership_provider_observation_id, membership_provider_lineage_id, membership_product_id, source_kind) REFERENCES membership_provider_observations(id, membership_provider_lineage_id, membership_product_id, source_kind) ON DELETE RESTRICT
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_source_states_updated_at
 BEFORE UPDATE ON membership_source_states
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__product_id ON membership_source_states (membership_product_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__lineage_id ON membership_source_states (membership_provider_lineage_id) WHERE membership_provider_lineage_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__observation_id ON membership_source_states (membership_provider_observation_id) WHERE membership_provider_observation_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__family_updated_at
   ON membership_source_states (updated_at, membership_source_id) WHERE source_kind = 'family';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__family_effective_at
   ON membership_source_states (effective_at, membership_source_id) WHERE source_kind = 'family';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__family_expires_at
   ON membership_source_states (expires_at, membership_source_id)
   WHERE source_kind = 'family' AND expires_at IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_grants (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_source_id UUID NOT NULL REFERENCES membership_sources(id) ON DELETE RESTRICT,
   source_kind membership_source_kinds NOT NULL DEFAULT 'admin_grant' CHECK (source_kind = 'admin_grant'),
@@ -414,32 +341,21 @@ CREATE TABLE IF NOT EXISTS membership_grants (
   CONSTRAINT fk_membership_grants__admin_source FOREIGN KEY (membership_source_id, source_kind) REFERENCES membership_sources(id, source_kind) ON DELETE RESTRICT,
   CONSTRAINT fk_membership_grants__source_user FOREIGN KEY (membership_source_id, user_id) REFERENCES membership_sources(id, user_id) ON DELETE RESTRICT
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_grants__source_id ON membership_grants (membership_source_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_grants__id_user_id ON membership_grants (id, user_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_grants__product_id ON membership_grants (membership_product_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_grants__user_id ON membership_grants (user_id, id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_grants__granted_by_id ON membership_grants (granted_by_id) WHERE granted_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_grants__revoked_by_id ON membership_grants (revoked_by_id) WHERE revoked_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_grant_activation_periods (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_grant_id UUID NOT NULL REFERENCES membership_grants(id) ON DELETE RESTRICT,
   user_id UUID NOT NULL, started_at TIMESTAMPTZ NOT NULL, ended_at TIMESTAMPTZ, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (ended_at IS NULL OR ended_at >= started_at),
   CONSTRAINT fk_membership_grant_activation_periods__grant_user FOREIGN KEY (membership_grant_id, user_id) REFERENCES membership_grants(id, user_id) ON DELETE RESTRICT
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_grant_activation_periods__open_grant ON membership_grant_activation_periods (membership_grant_id) WHERE ended_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_grant_activation_periods__open_user ON membership_grant_activation_periods (user_id) WHERE ended_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_grant_activation_periods__grant_id ON membership_grant_activation_periods (membership_grant_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_membership_grant_remaining_duration(grant_id UUID) RETURNS INTERVAL
 LANGUAGE SQL STABLE PARALLEL SAFE AS $$
   SELECT make_interval(days => grant_row.calendar_days) - COALESCE(
@@ -454,7 +370,6 @@ LANGUAGE SQL STABLE PARALLEL SAFE AS $$
   WHERE grant_row.id = grant_id
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS memberships (
   id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_membership_identities(id) ON DELETE RESTRICT, user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   membership_source_id UUID NOT NULL REFERENCES membership_sources(id) ON DELETE RESTRICT,
@@ -465,31 +380,22 @@ CREATE TABLE IF NOT EXISTS memberships (
   CHECK (num_nonnulls(cancelled_at, expired_at, past_due_at, paused_at) <= 1),
   CONSTRAINT fk_memberships__source_user FOREIGN KEY (membership_source_id, user_id) REFERENCES membership_sources(id, user_id) ON DELETE RESTRICT
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_memberships_register_retained_identity
 BEFORE INSERT ON memberships
 FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('membership');
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_memberships_updated_at BEFORE UPDATE ON memberships FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_memberships__effective_user ON memberships (user_id) WHERE projection_ended_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__source_id ON memberships (membership_source_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__live_source
   ON memberships (membership_source_id) WHERE projection_ended_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__product_id ON memberships (membership_product_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__expires_at ON memberships (expires_at, id) WHERE projection_ended_at IS NULL AND expires_at IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__vote_weight_expiry
   ON memberships (expires_at, id)
   WHERE projection_ended_at IS NULL AND cancelled_at IS NULL AND expired_at IS NULL
     AND past_due_at IS NULL AND paused_at IS NULL AND expires_at IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_id UUID NOT NULL REFERENCES retained_membership_identities (id) ON DELETE RESTRICT, user_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   membership_source_id UUID REFERENCES membership_sources(id) ON DELETE RESTRICT,
@@ -502,26 +408,16 @@ CREATE TABLE IF NOT EXISTS membership_changes (
   should_cancel_at_period_end BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL, CHECK (note IS NULL OR char_length(note) <= 1000)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_changes__membership_id ON membership_changes (membership_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_changes__user_id ON membership_changes (user_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_changes__changed_by_id ON membership_changes (changed_by_id) WHERE changed_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_changes__source_id ON membership_changes (membership_source_id, id DESC) WHERE membership_source_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_changes__grant_id ON membership_changes (membership_grant_id, id DESC) WHERE membership_grant_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_changes__from_product_id ON membership_changes (from_membership_product_id) WHERE from_membership_product_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_changes__to_product_id ON membership_changes (to_membership_product_id) WHERE to_membership_product_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_changes__evidence_id ON membership_changes (membership_provider_evidence_record_id) WHERE membership_provider_evidence_record_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_changes__stripe_event ON membership_changes (stripe_event_id) WHERE stripe_event_id IS NOT NULL;
 DO $$ BEGIN ALTER TABLE memberships ADD CONSTRAINT fk_memberships_latest_change_id FOREIGN KEY (latest_change_id) REFERENCES membership_changes(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__latest_change_id ON memberships (latest_change_id) WHERE latest_change_id IS NOT NULL;
 
 -- Compare immutable renewal facts through their observation IDs; work rows do not copy them.
@@ -556,14 +452,10 @@ CREATE TABLE membership_renewal_price_increase_notification_work_items (
   CHECK (completed_at IS NULL OR delivery_attempted_at IS NOT NULL),
   CHECK (completed_at IS NULL OR lease_token IS NULL)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__observation
 ON membership_renewal_price_increase_notification_work_items (membership_provider_observation_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__lease_token
 ON membership_renewal_price_increase_notification_work_items (lease_token) WHERE lease_token IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available
 ON membership_renewal_price_increase_notification_work_items (available_at, membership_id)
 WHERE completed_at IS NULL AND delivery_attempted_at IS NULL;
@@ -594,7 +486,6 @@ COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.avai
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.delivery_attempted_at IS 'Irreversible marker written before the external send; ambiguous sends of the same snapshot are never retried.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.completed_at IS 'When the current generation confirmed its delivery; retained with the snapshot for deduplication.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_entitlement_effects (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   membership_change_id UUID NOT NULL REFERENCES membership_changes(id) ON DELETE RESTRICT,
@@ -607,18 +498,13 @@ CREATE TABLE IF NOT EXISTS membership_entitlement_effects (
   CHECK ((delivery_claim_token IS NULL) = (delivery_claimed_at IS NULL)),
   CHECK (delivery_claim_token IS NULL OR char_length(delivery_claim_token) = 36)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_entitlement_effects_updated_at BEFORE UPDATE ON membership_entitlement_effects FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_entitlement_effects__change_id ON membership_entitlement_effects (membership_change_id);
 CREATE INDEX idx_membership_entitlement_effects__delivered_at
 ON membership_entitlement_effects (delivered_at, id) WHERE delivered_at IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_entitlement_effects__user_id ON membership_entitlement_effects (user_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_entitlement_effects__pending ON membership_entitlement_effects (id) WHERE delivered_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_operations (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_source_id UUID NOT NULL REFERENCES membership_sources(id) ON DELETE RESTRICT,
   membership_provider_lineage_id UUID NOT NULL,
@@ -668,18 +554,12 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   CONSTRAINT fk_membership_operations__binding_lineage FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id)
     REFERENCES membership_lineage_bindings (id, membership_provider_lineage_id) ON DELETE RESTRICT
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_idempotency ON membership_operations (membership_provider_context_id, idempotency_key);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- The context pair enforces same-provider refund attempts without copying text identity.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__id_context ON membership_operations (id, membership_provider_context_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__id_source ON membership_operations (id, membership_source_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_operations__source_id ON membership_operations (membership_source_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_operations__lineage_id ON membership_operations (membership_provider_lineage_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_operations__binding_id ON membership_operations (membership_lineage_binding_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_membership_operations__provider_payment ON membership_operations (membership_provider_context_id, provider_charge_id, id) WHERE provider_charge_id IS NOT NULL;
 COMMENT ON INDEX idx_membership_operations__provider_payment IS
@@ -688,21 +568,17 @@ COMMENT ON COLUMN membership_operations.provider_payment_reference IS
   'Immutable original Stripe charge or payment-intent protocol target used to dispatch and exactly replay a local refund operation.';
 COMMENT ON COLUMN membership_operations.provider_charge_id IS
   'Canonical Stripe charge identity shared by charge and payment-intent targets for local refund admission; never replaces the original dispatch target.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Fiscal retention scan: every completed operation of every kind. Whether a row may be deleted yet
 -- depends on other tables (reversal case state), so a persisted cursor steps past blocked rows
 -- and a run reads at most one page of this index.
 CREATE INDEX IF NOT EXISTS idx_membership_operations__completed_at_id ON membership_operations (completed_at, id)
   WHERE completed_at IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_refund ON membership_operations (membership_provider_context_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
 COMMENT ON COLUMN membership_operations.fiscal_retention_started_at IS
   'One-way finite child-drain progress fact on an expired terminal operation; the operation and this marker are deleted together.';
 COMMENT ON COLUMN membership_operations.provider_refund_id IS 'Latest Stripe refund identity, retained to reconcile non-terminal refund outcomes before retrying.';
 COMMENT ON COLUMN membership_operations.membership_lineage_binding_id IS 'Binding and owner captured when the provider operation was requested.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_operations__currency_code ON membership_operations (currency_code);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE membership_operation_execution_work_items (
   membership_operation_id UUID PRIMARY KEY REFERENCES membership_operations ON DELETE CASCADE,
   lease_token UUID, leased_at TIMESTAMPTZ, lease_expires_at TIMESTAMPTZ,
@@ -711,13 +587,10 @@ CREATE TABLE membership_operation_execution_work_items (
   CHECK (num_nonnulls(lease_token, leased_at, lease_expires_at) IN (0, 3)),
   CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_membership_operation_execution_work_items__lease_token
 ON membership_operation_execution_work_items (lease_token) WHERE lease_token IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_membership_operation_execution_work_items__available
 ON membership_operation_execution_work_items (available_at, membership_operation_id) WHERE lease_token IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_membership_operation_execution_work_items__expired
 ON membership_operation_execution_work_items (lease_expires_at, membership_operation_id) WHERE lease_token IS NOT NULL;
 COMMENT ON TABLE membership_operation_execution_work_items IS 'Pending execution of a durable membership operation; terminal completion deletes the work while refund evidence and attempts remain.';
@@ -728,7 +601,6 @@ COMMENT ON COLUMN membership_operation_execution_work_items.lease_expires_at IS 
 COMMENT ON COLUMN membership_operation_execution_work_items.attempt_count IS 'Monotone number of acquired execution leases.';
 COMMENT ON COLUMN membership_operation_execution_work_items.available_at IS 'Earliest permitted execution or refund reconciliation time.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_create_membership_operation_work()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -744,7 +616,6 @@ AFTER INSERT ON membership_operations
 FOR EACH ROW EXECUTE FUNCTION fn_create_membership_operation_work();
 COMMENT ON FUNCTION fn_create_membership_operation_work() IS 'Creates execution work with a new unfinished operation; replay of an existing completed operation cannot recreate work.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_membership_operation_work()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE current_token UUID;
@@ -767,7 +638,6 @@ AFTER UPDATE ON membership_operations
 FOR EACH ROW EXECUTE FUNCTION fn_update_membership_operation_work();
 COMMENT ON FUNCTION fn_update_membership_operation_work() IS 'Atomically removes completed work or releases the current lease after a token-fenced retryable failure.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_invalid_membership_operation_work_lease()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -785,7 +655,6 @@ BEFORE UPDATE ON membership_operation_execution_work_items
 FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_membership_operation_work_lease();
 COMMENT ON FUNCTION fn_reject_invalid_membership_operation_work_lease() IS 'Preserves operation ownership, monotone execution count, and an unexpired lease against token rotation.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_automatic_refund_receipts (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_operation_id UUID NOT NULL,
   membership_provider_context_id UUID NOT NULL,
@@ -813,17 +682,12 @@ END $$;
 CREATE TRIGGER trigger_membership_automatic_refund_receipts_valid
 BEFORE INSERT ON membership_automatic_refund_receipts
 FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_automatic_refund_receipt();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__provider_refund
 ON membership_automatic_refund_receipts (membership_provider_context_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__operation_id ON membership_automatic_refund_receipts (membership_operation_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__currency_code ON membership_automatic_refund_receipts (currency_code);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- The receipt owns its refunded amount and currency; refundable balance is read from the operation.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_administrator_refund_operation_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   membership_operation_id UUID NOT NULL CONSTRAINT uq_membershi_administra_refund_operation_requests__operation_id UNIQUE CONSTRAINT fk_membership_administrato_refund_operation_requests__operation REFERENCES membership_operations(id) ON DELETE RESTRICT,
@@ -839,14 +703,10 @@ CREATE TABLE IF NOT EXISTS membership_administrator_refund_operation_requests (
   CONSTRAINT chk_membe_admin_refund_operat_reques__administrator_request_key CHECK (char_length(administrator_request_key) BETWEEN 1 AND 255 AND administrator_request_key = TRIM(administrator_request_key)),
   CHECK (note IS NULL OR char_length(note) BETWEEN 1 AND 1000)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membersh_administr_refund_operation_requests__membership_id ON membership_administrator_refund_operation_requests (membership_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membershi_administr_refund_operation_requests__issued_by_id ON membership_administrator_refund_operation_requests (issued_by_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membersh_administr_refund_operation_requests__currency_code ON membership_administrator_refund_operation_requests (currency_code);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_refunds (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_operation_id UUID,
   membership_id UUID NOT NULL REFERENCES retained_membership_identities (id) ON DELETE RESTRICT,
@@ -881,23 +741,14 @@ END $$;
 CREATE TRIGGER trigger_membership_refunds_request_key
 BEFORE INSERT OR UPDATE ON membership_refunds
 FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_request_key_mismatch();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__membership_id ON membership_refunds (membership_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__source_id ON membership_refunds (membership_source_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__user_id ON membership_refunds (user_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__issued_by_id ON membership_refunds (issued_by_id) WHERE issued_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refunds__stripe_refund_id ON membership_refunds (stripe_refund_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__stripe_charge_id ON membership_refunds (stripe_charge_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__stripe_payment_intent_id ON membership_refunds (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refunds__stripe_idempotency_key ON membership_refunds (stripe_idempotency_key) WHERE stripe_idempotency_key IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__operation_id ON membership_refunds (membership_operation_id, id DESC) WHERE membership_operation_id IS NOT NULL;
 -- A reversal case is open while any of its operations is unfinished or failed, or its provider
 -- refund-history verification cycle is still running; settled history never reopens it by itself.
@@ -985,7 +836,6 @@ BEGIN
 END $$;
 COMMENT ON FUNCTION fn_membership_operation_fiscal_retention_due(UUID) IS
   'Permits bounded deletion only after seven full years following the completed operation UTC fiscal year, without live work, once any requested administrator cancellation revoked access, and once a reversal or collision operation case has no unfinished sibling operation or open verification cycle.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_membership_refund_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -1018,13 +868,10 @@ BEGIN
   END IF;
   RAISE EXCEPTION 'membership refund receipts only allow one-way reconciliation or access revocation';
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_membership_refunds_guard BEFORE UPDATE OR DELETE ON membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refunds__operation_receipt ON membership_refunds (membership_operation_id) WHERE membership_operation_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_refund_operation_attempts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   membership_operation_id UUID NOT NULL,
@@ -1045,7 +892,6 @@ CREATE TABLE IF NOT EXISTS membership_refund_operation_attempts (
     REFERENCES membership_operations(id, membership_provider_context_id) ON DELETE RESTRICT,
   CONSTRAINT uq_membership_refund_operation_attempts__operation_ordinal UNIQUE (membership_operation_id, attempt_ordinal)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_membership_refund_operation_attempts__active_provider_key
   ON membership_refund_operation_attempts (membership_provider_context_id, provider_idempotency_key) WHERE rejected_at IS NULL;
 COMMENT ON INDEX idx_membership_refund_operation_attempts__active_provider_key IS 'One unresolved or issued execution per Stripe idempotency key; confirmed pre-execution rejections remain history.';
@@ -1060,10 +906,8 @@ COMMENT ON COLUMN membership_refund_operation_attempts.outcome_unknown_at IS 'Fi
 COMMENT ON COLUMN membership_refund_operation_attempts.rejected_at IS 'When Stripe definitively rejected this execution before its endpoint began; network and indeterminate failures leave this absent.';
 COMMENT ON COLUMN membership_refund_operation_attempts.rejection_reason IS 'Verified pre-execution failure category, recorded once with rejected_at.';
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__provider_refund ON membership_refund_operation_attempts (membership_provider_context_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__currency_code ON membership_refund_operation_attempts (currency_code);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_membership_administrator_refund_request_context() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE valid_context BOOLEAN;
 BEGIN
@@ -1071,10 +915,8 @@ BEGIN
   IF valid_context IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'administrator refund request does not match its operation context' USING ERRCODE = '23514'; END IF;
   RETURN NEW;
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_maror_context BEFORE INSERT ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_context();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Settled operation children stay append-only until their operation is due for fiscal deletion.
 CREATE FUNCTION fn_reject_membership_operation_child_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
@@ -1087,7 +929,6 @@ COMMENT ON FUNCTION fn_reject_membership_operation_child_mutation() IS
   'Rejects every update and every delete except the bounded fiscal-retention delete of a due operation child.';
 CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_operation_child_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_invalid_membership_refund_operation_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE valid_attempt BOOLEAN;
 BEGIN
@@ -1105,9 +946,7 @@ BEGIN
   IF valid_attempt IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'refund attempt does not match its operation' USING ERRCODE = '23514'; END IF;
   RETURN NEW;
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_membership_refund_operation_attempts_valid BEFORE INSERT ON membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_membership_refund_operation_attempt();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_membership_refund_operation_attempt_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -1124,10 +963,8 @@ BEGIN
   IF OLD.rejected_at IS NULL AND OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.membership_provider_context_id, NEW.attempt_ordinal, NEW.provider_idempotency_key, NEW.provider_request_original_attempt_id, NEW.rejected_at, NEW.rejection_reason, NEW.outcome_unknown_at, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.membership_provider_context_id, OLD.attempt_ordinal, OLD.provider_idempotency_key, OLD.provider_request_original_attempt_id, OLD.rejected_at, OLD.rejection_reason, OLD.outcome_unknown_at, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;
   RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_membership_refund_operation_attempts_guard BEFORE UPDATE OR DELETE ON membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_operation_attempt_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_refund_operation_attempt_metadata_scans (
   membership_refund_operation_attempt_id UUID PRIMARY KEY CONSTRAINT fk_membership_refund_operation_attempt_metadata_scans__attempt REFERENCES membership_refund_operation_attempts(id) ON DELETE RESTRICT,
   stable_head_provider_refund_id TEXT, next_provider_refund_id TEXT, lease_token TEXT NOT NULL, completed_at TIMESTAMPTZ,
@@ -1137,7 +974,6 @@ CREATE TABLE IF NOT EXISTS membership_refund_operation_attempt_metadata_scans (
   CONSTRAINT chk_memb_refun_opera_attem_metad_scans__next_provider_refund_id CHECK (next_provider_refund_id IS NULL OR (char_length(next_provider_refund_id) BETWEEN 1 AND 255 AND next_provider_refund_id = TRIM(next_provider_refund_id))),
   CHECK (completed_at IS NULL OR next_provider_refund_id IS NULL)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_membership_refund_metadata_scan_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE lease_matches BOOLEAN;
 BEGIN
@@ -1149,12 +985,9 @@ BEGIN
   IF TG_OP = 'UPDATE' AND (OLD.completed_at IS NOT NULL OR NEW.created_at IS DISTINCT FROM OLD.created_at OR NEW.membership_refund_operation_attempt_id IS DISTINCT FROM OLD.membership_refund_operation_attempt_id OR (NEW.completed_at IS NOT NULL AND NEW.next_provider_refund_id IS NOT NULL)) THEN RAISE EXCEPTION 'membership refund metadata scan cannot be reopened or rewritten after completion'; END IF;
   RETURN NEW;
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_mrefund_attempt_scans_guard BEFORE INSERT OR UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_metadata_scan_mutation();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_mrefund_attempt_scans_updated_at BEFORE UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_event_types (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   stripe_event_type TEXT NOT NULL UNIQUE,
@@ -1165,14 +998,12 @@ COMMENT ON COLUMN stripe_event_types.id IS 'Stable identifier for this Stripe ev
 COMMENT ON COLUMN stripe_event_types.stripe_event_type IS 'Exact provider value; never normalized.';
 COMMENT ON COLUMN stripe_event_types.created_at IS 'When this provider value was first observed.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_events (
   id UUID PRIMARY KEY DEFAULT uuidv7(), stripe_event_id TEXT NOT NULL, stripe_event_type_id UUID NOT NULL REFERENCES stripe_event_types(id) ON DELETE RESTRICT, is_live_mode BOOLEAN NOT NULL DEFAULT false, api_version TEXT,
   occurred_at TIMESTAMPTZ NOT NULL, customer_id TEXT, subscription_id TEXT, invoice_id TEXT, checkout_session_id TEXT,
   received_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, payload JSONB NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_stripe_event_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' AND COALESCE(current_setting('app.billing_retention_delete', true) = 'on', FALSE)
@@ -1185,7 +1016,6 @@ BEGIN
     USING ERRCODE = 'check_violation';
 END $$;
 CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE UPDATE OR DELETE ON stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_stripe_event_mutation();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_event_processing_work_items (
   stripe_event_id UUID PRIMARY KEY REFERENCES stripe_events(id) ON DELETE CASCADE,
   lease_token UUID NOT NULL DEFAULT uuidv7(), leased_at TIMESTAMPTZ, lease_expires_at TIMESTAMPTZ,
@@ -1204,14 +1034,9 @@ COMMENT ON COLUMN stripe_event_processing_work_items.leased_at IS 'When this wor
 COMMENT ON COLUMN stripe_event_processing_work_items.lease_expires_at IS 'Deadline after which the worker cannot publish an outcome.';
 COMMENT ON COLUMN stripe_event_processing_work_items.attempt_count IS 'Number of acquired processing attempts.';
 COMMENT ON COLUMN stripe_event_processing_work_items.available_at IS 'Earliest time this event may be processed.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_events__stripe_event_type_id ON stripe_events (stripe_event_type_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_events__stripe_event_id ON stripe_events (stripe_event_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_event_processing_work_items__lease_token ON stripe_event_processing_work_items (lease_token);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__claim ON stripe_event_processing_work_items (available_at, stripe_event_id) WHERE processed_at IS NULL AND ignored_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__retention ON stripe_event_processing_work_items (stripe_event_id)
   WHERE processed_at IS NOT NULL OR ignored_at IS NOT NULL;
@@ -1229,9 +1054,7 @@ COMMENT ON TABLE payment_operational_cleanup_cursors IS 'One persisted UUIDv7 ke
 COMMENT ON COLUMN payment_operational_cleanup_cursors.kind IS 'Cleanup stream whose position this row stores.';
 COMMENT ON COLUMN payment_operational_cleanup_cursors.cursor_id IS 'Last scanned id; NULL starts the next full pass. The membership operation stream orders by completion time then id and the reversal case stream by collision time then id.';
 COMMENT ON COLUMN payment_operational_cleanup_cursors.updated_at IS 'When this cleanup stream last checkpointed.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_events__subscription_id ON stripe_events (subscription_id, id DESC) WHERE subscription_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_events__customer_id ON stripe_events (customer_id, id DESC) WHERE customer_id IS NOT NULL;
 
 INSERT INTO membership_products (plan, billing_interval) VALUES
@@ -1501,10 +1324,8 @@ COMMENT ON COLUMN stripe_event_processing_work_items.last_error_message IS 'Boun
 COMMENT ON COLUMN stripe_events.payload IS 'Full Stripe event payload stored as JSONB.';
 
 -- Current indexes for fresh schema bootstrap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__user_id
   ON memberships (user_id)
   WHERE user_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_ensure_membership_changes_actor BEFORE INSERT ON membership_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');

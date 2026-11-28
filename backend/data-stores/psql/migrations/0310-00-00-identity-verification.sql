@@ -1,6 +1,5 @@
 --
 -- Identity Verification: paid government-ID check via Stripe Identity.
--- edited-in-place: pre-launch, never deployed to production
 -- A government ID may verify only one account. The keyed fingerprint is retained for anti-reuse.
 -- Raw document numbers are never stored; only the 32-byte HMAC-SHA256 fingerprint.
 
@@ -12,7 +11,6 @@ CREATE TYPE identity_verification_attempt_sources AS ENUM (
 -- verified_identities table
 -- ============================================================================
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS verified_identities (
   identity_fingerprint BYTEA PRIMARY KEY CHECK (octet_length(identity_fingerprint) = 32),
   first_verified_at TIMESTAMPTZ NOT NULL,
@@ -36,7 +34,6 @@ COMMENT ON COLUMN verified_identity_account_links.provider_session_id IS 'Provid
 
 -- Support grants are durable entitlements. Each funded Checkout uses a separate
 -- child row so releasing it preserves the original Checkout audit record.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE identity_verification_attempts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -65,37 +62,30 @@ CREATE TABLE identity_verification_attempts (
   CHECK (consumed_at IS NULL OR provider_creation_started_at IS NOT NULL)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_identity_verification_attempts_updated_at
   BEFORE UPDATE ON identity_verification_attempts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX uq_identity_verification_attempts__included_active_or_consumed
   ON identity_verification_attempts (user_id)
   WHERE source = 'membership_included'
     AND released_at IS NULL
     AND user_id <> '00000000-0000-7000-8000-000000000000'::uuid;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX uq_identity_verification_attempts__support_grant_active_child
   ON identity_verification_attempts (grant_entitlement_attempt_id)
   WHERE grant_entitlement_attempt_id IS NOT NULL AND released_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_identity_verification_attempts__user
   ON identity_verification_attempts (user_id, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_identity_verification_attempts__grant_entitlement
   ON identity_verification_attempts (grant_entitlement_attempt_id)
   WHERE grant_entitlement_attempt_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_identity_verification_attempts__granted_by
   ON identity_verification_attempts (granted_by_id)
   WHERE granted_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_identity_verification_attempts__checkout_session
   ON identity_verification_attempts (checkout_session_id)
   WHERE checkout_session_id IS NOT NULL;

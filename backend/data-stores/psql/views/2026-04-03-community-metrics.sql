@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_community_metrics AS
   SELECT
     'community_metrics' AS __entity_type,

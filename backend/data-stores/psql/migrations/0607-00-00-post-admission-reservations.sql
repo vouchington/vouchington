@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_admission_reservations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   actor_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -46,7 +45,6 @@ CREATE TABLE IF NOT EXISTS post_admission_reservations (
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_admission_reservations_updated_at
 BEFORE UPDATE ON post_admission_reservations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -78,7 +76,6 @@ CREATE INDEX IF NOT EXISTS idx_post_admission_reservations__committed_post_reten
   ON post_admission_reservations (committed_post_id, retention_expires_at)
   WHERE committed_post_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_admission_attempts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -94,10 +91,8 @@ COMMENT ON COLUMN post_admission_attempts.reservation_id IS 'Actor-bound replay 
 COMMENT ON COLUMN post_admission_attempts.attempt_number IS 'Monotonic ordinal allocated while the reservation is locked.';
 COMMENT ON COLUMN post_admission_attempts.lease_token IS 'Exact fencing token of this execution attempt.';
 COMMENT ON COLUMN post_admission_attempts.started_at IS 'When the claim was acquired; retained across retries.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_post_admission_attempts_immutable BEFORE UPDATE OR DELETE ON post_admission_attempts
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_admission_attempt_results (
   post_admission_attempt_id UUID PRIMARY KEY REFERENCES post_admission_attempts(id) ON DELETE CASCADE,
   committed_at TIMESTAMPTZ, failed_at TIMESTAMPTZ, abandoned_at TIMESTAMPTZ,
@@ -111,6 +106,5 @@ COMMENT ON COLUMN post_admission_attempt_results.committed_at IS 'When mutation,
 COMMENT ON COLUMN post_admission_attempt_results.failed_at IS 'When the owned execution failed transiently.';
 COMMENT ON COLUMN post_admission_attempt_results.abandoned_at IS 'When an expired execution was superseded by a new claim.';
 COMMENT ON COLUMN post_admission_attempt_results.failure IS 'Serialized transient diagnostic belonging only to this attempt.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_post_admission_attempt_results_immutable BEFORE UPDATE OR DELETE ON post_admission_attempt_results
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();

@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS review_successions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   predecessor_post_id UUID NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
@@ -85,7 +84,6 @@ COMMENT ON COLUMN review_successions.successor_post_id IS 'Newer review that was
 COMMENT ON COLUMN review_successions.author_user_id IS 'Shared non-null author snapshot for the predecessor and successor reviews.';
 COMMENT ON COLUMN review_successions.predecessor_archived_at IS 'Exact posts.archived_at value written by this automatic archive epoch.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS review_succession_topics (
   review_succession_id UUID NOT NULL REFERENCES review_successions (id) ON DELETE CASCADE,
   topic_id UUID NOT NULL REFERENCES retained_topic_identities (id) ON DELETE RESTRICT,

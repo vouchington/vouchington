@@ -1,14 +1,4 @@
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: hostname crawlability and moderation flags are non-null booleans
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: added language detection columns to crawls
--- edited-in-place: removed blocked_at/blocked_by_id/blocked_source (moved to url_hostname_blocks)
--- edited-in-place: folded hostname-top-indexes and url-hostnames-web-risk (moved from old idempotents/)
--- edited-in-place: added should_ignore_robots_txt to url_hostnames
--- edited-in-place: swapped 'english' to 'voucha_english' text search config (unaccent support)
--- edited-in-place: added unreliable_status_codes to url_hostnames
--- edited-in-place: added html_sha256 to crawls to dedupe redundant S3 PUTs
--- edited-in-place: added normalized embed metadata to crawls
 -- Merged from: 0002-00-00-oauth-urls.sql, 0030-00-00-url-hostname_crawler_configurations.sql
 
 -- ==========================================================================
@@ -16,7 +6,6 @@
 -- ============================================================================
 
 -- Reverse hostname labels for efficient subdomain prefix scans
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reverse_hostname_labels(p_hostname TEXT)
 RETURNS TEXT
 LANGUAGE SQL
@@ -29,7 +18,6 @@ $$;
 -- Hostnames
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS url_hostnames (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -184,16 +172,13 @@ COMMENT ON COLUMN linkedin_accounts.email_domain_hostname_id IS 'Resolved provid
 COMMENT ON COLUMN facebook_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
 COMMENT ON COLUMN microsoft_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__hostname__text_pattern_ops
 ON url_hostnames (hostname text_pattern_ops);
 
 -- trigram index for ILIKE '%query%' searches
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__hostname_trgm
 ON url_hostnames USING GIN (hostname gin_trgm_ops);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__reversed_hostname__text_pattern_ops
 ON url_hostnames (reversed_hostname text_pattern_ops);
 
@@ -202,7 +187,6 @@ CREATE INDEX IF NOT EXISTS idx_url_hostnames__reversed_hostname__id
 ON url_hostnames (reversed_hostname COLLATE "C", id);
 
 -- Partial index for fast exact and prefix hostname lookups among blocked hostnames.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__blocked
   ON url_hostnames (hostname text_pattern_ops)
   WHERE is_blocked;
@@ -213,31 +197,26 @@ CREATE INDEX IF NOT EXISTS idx_url_hostnames__blocked_page
   ON url_hostnames (hostname, id)
   WHERE is_blocked;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__skip_web_risk
   ON url_hostnames (hostname text_pattern_ops)
   WHERE should_skip_web_risk = TRUE;
 
 -- Partial index for URL-blocklist rebuilds; is_blocked covers the disjoint second branch.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__not_crawlable
   ON url_hostnames (hostname) INCLUDE (is_blocked)
   WHERE NOT is_crawlable;
 
 -- Partial index for finding auto-disabled hostnames (admin observability, cleanup queries).
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__dns_disabled_at
   ON url_hostnames (dns_disabled_at)
   WHERE dns_disabled_at IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_url_hostnames_updated_at
 BEFORE UPDATE ON url_hostnames
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- Only crawl-policy transitions invalidate a sweep, including a change later reverted.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_url_hostname_crawl_policy_changed_at()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -299,7 +278,6 @@ COMMENT ON COLUMN url_hostnames.votes_snapshot_xip_count IS 'Number of transacti
 -- URL content types
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS media_types (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -318,7 +296,6 @@ COMMENT ON COLUMN media_types.mime_type IS 'Lowercase MIME type string (e.g. tex
 -- URLs
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS urls (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -355,14 +332,12 @@ CREATE TABLE IF NOT EXISTS urls (
 CREATE INDEX IF NOT EXISTS idx_urls__created_by_id
   ON urls (created_by_id) WHERE created_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_urls_updated_at
 BEFORE UPDATE ON urls
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- Filter URLs by hostname, support bounded UUIDv7 walks, and enforce crawl-state hostname ownership.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_urls__hostname_id
 ON urls (hostname_id, id);
 
@@ -373,7 +348,6 @@ ON urls (hostname_id, feed_rank,
   id DESC);
 
 -- Current crawl state is separate from URL content revisions used by entity reconciliation.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS url_crawl_states (
   url_id UUID PRIMARY KEY,
   hostname_id UUID NOT NULL,
@@ -404,12 +378,10 @@ CREATE OR REPLACE TRIGGER trigger_create_url_crawl_states
 AFTER INSERT ON urls FOR EACH ROW EXECUTE FUNCTION fn_create_url_crawl_states();
 
 -- search urls by url prefix
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_urls__url__text_pattern_ops
 ON urls (url text_pattern_ops);
 
 -- trigram index for ILIKE '%query%' searches on urls
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_urls__url_trgm
 ON urls USING GIN (url gin_trgm_ops);
 
@@ -426,7 +398,6 @@ COMMENT ON COLUMN urls.canonical_root_id IS 'The URL id only while this row is a
 
 -- Variants of one page (scheme, www., m., YouTube aliases) share an identity; the first registered
 -- row owns it, so a later variant can point its canonical_url_id at the owner when it is inserted.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS url_identities (
   url_id UUID PRIMARY KEY REFERENCES urls ON DELETE CASCADE,
   identity TEXT NOT NULL UNIQUE CHECK (char_length(identity) <= 2083)
@@ -447,7 +418,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS domain_blocklist_sources (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   type domain_blocklist_types NOT NULL,
@@ -465,7 +435,6 @@ CREATE TABLE IF NOT EXISTS domain_blocklist_sources (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_domain_blocklist_sources_updated_at
 BEFORE UPDATE ON domain_blocklist_sources
 FOR EACH ROW
@@ -480,7 +449,6 @@ COMMENT ON COLUMN domain_blocklist_sources.last_modified_at IS 'HTTP Last-Modifi
 COMMENT ON COLUMN domain_blocklist_sources.last_fetched_at IS 'When this source was last successfully fetched.';
 COMMENT ON COLUMN domain_blocklist_sources.membership_diff_applied_at IS 'When the last membership diff for this source committed. Conditional fetches skip only while this is set.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS blocklisted_domains (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   source_id BIGINT NOT NULL REFERENCES domain_blocklist_sources ON DELETE CASCADE,
@@ -494,13 +462,11 @@ CREATE TABLE IF NOT EXISTS blocklisted_domains (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_blocklisted_domains_updated_at
 BEFORE UPDATE ON blocklisted_domains
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- C collation matches LC_ALL=C sort and comm, so the reader membership COPY does not sort.
 CREATE INDEX IF NOT EXISTS idx_blocklisted_domains__source_id__domain
 ON blocklisted_domains (source_id, domain COLLATE "C");
@@ -523,7 +489,6 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- rules per crawler
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS hostname_crawler_configurations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   hostname_id UUID NOT NULL REFERENCES url_hostnames ON DELETE CASCADE,
@@ -554,13 +519,11 @@ CREATE INDEX IF NOT EXISTS idx_hostname_crawler_configurations__deleted_by_id
 CREATE INDEX IF NOT EXISTS idx_hostname_crawler_configurations__updated_by_id
   ON hostname_crawler_configurations (updated_by_id) WHERE updated_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_hostname_crawler_configurations_updated_at
 BEFORE UPDATE ON hostname_crawler_configurations
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_hostname_crawler_configurations__hostname_id
 ON hostname_crawler_configurations (hostname_id);
 
@@ -587,7 +550,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS crawls (
   id UUID NOT NULL DEFAULT uuidv7(),
   url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE,
@@ -652,13 +614,11 @@ CREATE TABLE IF NOT EXISTS crawls (
   CHECK (embeddings_generated_at IS NULL OR markdown IS NOT NULL)
 ) PARTITION BY RANGE (id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_crawls_updated_at
 BEFORE UPDATE ON crawls
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- for the dominant query pattern: WHERE url_id = $1 ORDER BY id DESC
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__url_id__id_desc
 ON crawls (url_id, id DESC);
 
@@ -666,30 +626,25 @@ CREATE INDEX IF NOT EXISTS idx_crawls__old_invalid
 ON crawls (id)
 WHERE network_error IS NOT NULL OR completed_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__crawler_id
 ON crawls (hostname_crawler_configuration_id)
 WHERE hostname_crawler_configuration_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__redirect_url_id
 ON crawls (redirect_url_id)
 WHERE redirect_url_id IS NOT NULL;
 
 -- for finding the latest crawl for a URL
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__url_id__embeddings_generated_at
 ON crawls (url_id, embeddings_generated_at DESC)
 WHERE embeddings_generated_at IS NOT NULL;
 
 -- for finding URLs that have pending embeddings
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__url_id__pending_embeddings
 ON crawls (url_id)
 WHERE has_pending_embeddings = TRUE;
 
 -- latest-completed-crawl lookup by URL
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__url_id__completed_at_desc
 ON crawls (url_id, completed_at DESC, id DESC)
 WHERE completed_at IS NOT NULL;
@@ -700,13 +655,11 @@ ON crawls (id)
 WHERE completed_at IS NULL;
 
 -- find crawls pending language detection
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__lingua_rs_pending
   ON crawls (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 
 -- find crawls pending remote oEmbed enrichment
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__oembed_pending
   ON crawls (id)
   WHERE embed_metadata IS NOT NULL
@@ -741,7 +694,6 @@ COMMENT ON COLUMN crawls.language IS 'Language from the <html lang="..."> attrib
 -- crawl_chunks
 -------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS crawl_chunks (
   crawl_id UUID NOT NULL REFERENCES crawls(id) ON DELETE CASCADE,
 
@@ -767,17 +719,14 @@ CREATE TABLE IF NOT EXISTS crawl_chunks (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) PARTITION BY RANGE (crawl_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_crawl_chunks_updated_at
 BEFORE UPDATE ON crawl_chunks
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawl_chunks__search_vector
 ON crawl_chunks USING GIN (search_vector);
 
 -- find existing embeddings by input hash
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256
 ON crawl_chunks (bedrock_nova_multimodal_v1_input_sha256)
 WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
@@ -788,7 +737,6 @@ ON crawl_chunks (crawl_id)
 WHERE bedrock_nova_multimodal_v1_embedding_created_at IS NULL;
 
 -- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawl_chunks__bedrock_nova_multimodal_v1_embedding
 ON crawl_chunks USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
 WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
@@ -803,17 +751,14 @@ COMMENT ON COLUMN crawl_chunks.markdown IS 'The markdown content of this chunk.'
 -- votes_score_sort column added by the elections config-driven generator.
 
 -- Current indexes for fresh schema bootstrap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_hostname_crawler_configurations__created_by_id
   ON hostname_crawler_configurations (created_by_id)
   WHERE created_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_urls__canonical_url_id__id
   ON urls (canonical_url_id, id)
   WHERE canonical_url_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_urls__media_type_id
   ON urls (media_type_id)
   WHERE media_type_id IS NOT NULL;

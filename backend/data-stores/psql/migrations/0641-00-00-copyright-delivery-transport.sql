@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Delivery recipients and notification bindings are deliberately separate from the immutable
 -- notice snapshot. A transport can only decrypt a recipient encrypted specifically for its
 -- durable intent; it never guesses the purpose of claimant evidence.
@@ -12,7 +11,6 @@ ALTER TABLE notifications
 CREATE INDEX idx_notifications__copyright_notice
   ON notifications (copyright_notice_id, user_id, id) WHERE copyright_notice_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_delivery_recipients (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_delivery_work_item_id uuid NOT NULL CONSTRAINT uq_copyright_notice_delivery_recipients__intent_id UNIQUE
@@ -21,7 +19,6 @@ CREATE TABLE copyright_notice_delivery_recipients (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 -- Current automatic authority depends on the receipt and its retained recipient above.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)
 RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS (

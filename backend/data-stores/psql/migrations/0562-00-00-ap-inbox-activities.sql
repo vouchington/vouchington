@@ -3,7 +3,6 @@
 -- delivery (retried by the sending server, or replayed by an attacker who captured a valid
 -- signed request) is rejected once its activity id is already present.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS activitypub_inbox_activities (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   activity_id TEXT NOT NULL,
@@ -13,7 +12,6 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_activities (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_inbox_activities__activity_id ON activitypub_inbox_activities (activity_id);
 
 -- Each Follow cycle keeps its terminal state beyond the maximum replay horizon.

@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_submission_guidance (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL CONSTRAINT fk_copyright_notice_submission_guidance__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
@@ -10,10 +9,8 @@ CREATE TABLE copyright_notice_submission_guidance (
 
   CONSTRAINT uq_cop_not_sub_gui__submission_id__input_sha256__prompt_version UNIQUE (copyright_notice_submission_id, input_sha256, prompt_version)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submission_guidance__submission
   ON copyright_notice_submission_guidance (copyright_notice_submission_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_submission_guidance_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_guidance FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
 COMMENT ON TABLE copyright_notice_submission_guidance IS 'Immutable advisory AI guidance for a filed counter-notice or court/CCB filing; never an authorization to decide or alter material availability.';
@@ -23,7 +20,6 @@ COMMENT ON COLUMN copyright_notice_submission_guidance.prompt_version IS 'Versio
 COMMENT ON COLUMN copyright_notice_submission_guidance.model IS 'Model identifier recorded for guidance provenance.';
 COMMENT ON COLUMN copyright_notice_submission_guidance.guidance_ciphertext IS 'Encrypted, bounded advisory output visible only to authorized staff.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_submission_guidance_runs (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL CONSTRAINT fk_copyright_notice_submission_guidance_runs__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
@@ -41,12 +37,9 @@ CREATE TABLE copyright_notice_submission_guidance_runs (
   CHECK ((completed_at IS NULL) = (copyright_notice_submission_guidance_id IS NULL)),
   CHECK (num_nonnulls(completed_at, failed_at, expired_at) <= 1)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX uq_copyright_notice_submission_guidance_runs__active ON copyright_notice_submission_guidance_runs(copyright_notice_submission_id)
   WHERE completed_at IS NULL AND failed_at IS NULL AND expired_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submission_guidance_runs__submission ON copyright_notice_submission_guidance_runs(copyright_notice_submission_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submission_guidance_runs__result ON copyright_notice_submission_guidance_runs(copyright_notice_submission_guidance_id) WHERE copyright_notice_submission_guidance_id IS NOT NULL;
 COMMENT ON TABLE copyright_notice_submission_guidance_runs IS 'Per-attempt AI submission guidance runs; the immutable guidance stays success-only evidence and terminal runs expire under bounded operational retention.';
 COMMENT ON COLUMN copyright_notice_submission_guidance_runs.id IS 'UUIDv7 identity of this admitted run, returned to callers so clients can follow exactly this run.';

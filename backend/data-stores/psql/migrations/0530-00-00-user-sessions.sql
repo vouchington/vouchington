@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Active user session registry keyed by UUIDv7 JWT sid.
 
 DO $$ BEGIN
@@ -6,7 +5,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_sessions (
   id UUID PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -46,25 +44,20 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   CHECK (char_length(device_name) <= 255)
 ) PARTITION BY RANGE (id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_sessions_updated_at
   BEFORE UPDATE ON user_sessions
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id_active_expires_at
   ON user_sessions (user_id, expires_at, id)
   WHERE revoked_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_sessions__expires_at_id
   ON user_sessions (expires_at, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_sessions__user_agent_id
   ON user_sessions (user_agent_string_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id__foreign_key
   ON user_sessions (user_id);
 

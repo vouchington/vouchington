@@ -100,7 +100,6 @@ COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.invoice_line_coun
 COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.mapped_membership_line_count IS 'Observed number of invoice lines mapped to membership plans.';
 COMMENT ON COLUMN membership_stripe_purchase_collision_reviews.created_at IS 'Review insertion timestamp derived from its UUIDv7 identity.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   id UUID CONSTRAINT pk_mipr_cases PRIMARY KEY DEFAULT uuidv7(),
   membership_source_id UUID NOT NULL,
@@ -121,7 +120,6 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   CHECK (period_ends_at >= period_started_at)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 ALTER TABLE moderator_actions DROP CONSTRAINT IF EXISTS fk_moderator_actions__ineligible_purchase_reversal_case_id;
 ALTER TABLE moderator_actions ADD CONSTRAINT fk_moderator_actions__ineligible_purchase_reversal_case_id
   FOREIGN KEY (membership_ineligible_purchase_reversal_case_id)
@@ -130,27 +128,21 @@ ALTER TABLE moderator_actions ADD CONSTRAINT fk_moderator_actions__ineligible_pu
   NOT VALID;
 ALTER TABLE moderator_actions VALIDATE CONSTRAINT fk_moderator_actions__ineligible_purchase_reversal_case_id;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__invoice
   ON membership_ineligible_purchase_reversal_cases (membership_provider_lineage_id, originating_invoice_id);
 CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__binding
   ON membership_ineligible_purchase_reversal_cases (membership_lineage_binding_id, membership_provider_lineage_id);
 CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__invoice_id
   ON membership_ineligible_purchase_reversal_cases (originating_invoice_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membershi_ineligibl_purchase_reversal_cases__source_lineage
   ON membership_ineligible_purchase_reversal_cases (membership_source_id, membership_provider_lineage_id);
 -- Fiscal retention scan: every case by collision time. Whether a case may go depends on other
 -- tables, so a persisted cursor steps past blocked rows and a run reads at most one page.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_member_inelig_purchase_reversal_cases__collision_at_id
   ON membership_ineligible_purchase_reversal_cases (collision_at, id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_ineligible_purchase_reversal_cases__currency
   ON membership_ineligible_purchase_reversal_cases (currency_code);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_case_operations (
   membership_ineligible_purchase_reversal_case_id UUID NOT NULL
     CONSTRAINT fk_mipr_case_ops__case REFERENCES membership_ineligible_purchase_reversal_cases(id) ON DELETE RESTRICT,
@@ -161,7 +153,6 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_case_operatio
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_members_ineligib_purchase_reversal_case_operatio__operation
   ON membership_ineligible_purchase_reversal_case_operations (membership_operation_id);
 
@@ -188,7 +179,6 @@ ALTER TABLE membership_ineligible_purchase_reversal_case_operations
 ALTER TABLE membership_ineligible_purchase_reversal_case_operations
   VALIDATE CONSTRAINT fk_mipr_case_ops__operation;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_purchase_reversal_case_operation_context()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -213,19 +203,16 @@ BEGIN
   RETURN NEW;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_purchase_reversal_case_operation_context
 BEFORE INSERT ON membership_ineligible_purchase_reversal_case_operations
 FOR EACH ROW
 EXECUTE FUNCTION fn_reject_purchase_reversal_case_operation_context();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_ineligible_purchase_reversal_cases_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_cases
 FOR EACH ROW
 EXECUTE FUNCTION fn_reject_membership_reversal_case_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_purchase_reversal_case_operations_immutable
 BEFORE UPDATE OR DELETE ON membership_ineligible_purchase_reversal_case_operations
 FOR EACH ROW

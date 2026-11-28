@@ -7,7 +7,6 @@ CREATE TYPE copyright_trusted_flagger_change_types AS ENUM (
   'revoked'
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_trusted_flaggers (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   name text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 200),
@@ -31,7 +30,6 @@ CREATE TRIGGER trigger_copyright_trusted_flaggers_updated_at
   BEFORE UPDATE ON copyright_trusted_flaggers
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_trusted_flagger_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_trusted_flagger_id uuid NOT NULL CONSTRAINT fk_copyright_trusted_flagger_changes__flagger REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT,
@@ -58,7 +56,6 @@ CREATE TRIGGER trigger_copyright_trusted_flagger_changes_immutable
   BEFORE UPDATE OR DELETE ON copyright_trusted_flagger_changes
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_trusted_flagger_matches (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL UNIQUE REFERENCES copyright_notices(id) ON DELETE RESTRICT,

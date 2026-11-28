@@ -1,12 +1,4 @@
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: added user_warning entity type and user_warning_id column
--- edited-in-place: added direct_message and modmail notification entity types and conversation_id FK
--- edited-in-place: removed drops of event_key constraints no migration creates
--- edited-in-place: notifications store kind, params and relation ids; title, body and actor_label are removed
--- edited-in-place: added moderation_appeal_id and community_ban_id columns (FK wired in 0450-00-00)
--- edited-in-place: added critical_moderation_alert entity type
--- edited-in-place: community navigation is community_id; target_entity is derived, not stored
 -- Merged from: 0180-00-00-notifications-and-recommendations.sql
 
 -- ==========================================================================
@@ -37,7 +29,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS notifications (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
@@ -402,17 +393,14 @@ ALTER TABLE notifications
 ALTER TABLE notifications
   VALIDATE CONSTRAINT chk_notifications__event_key;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_id__event_key
 ON notifications (user_id, event_key)
 WHERE event_key IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__actor_user_id
 ON notifications (actor_user_id)
 WHERE actor_user_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__community_ban_id
 ON notifications (community_ban_id)
 WHERE community_ban_id IS NOT NULL;
@@ -421,42 +409,34 @@ CREATE INDEX IF NOT EXISTS idx_notifications__household_id
 ON notifications (household_id)
 WHERE household_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__moderation_appeal_id
 ON notifications (moderation_appeal_id)
 WHERE moderation_appeal_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__moderation_report_id
 ON notifications (moderation_report_id)
 WHERE moderation_report_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__post_id__foreign_key
 ON notifications (post_id)
 WHERE post_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__review_dispute_id
 ON notifications (review_dispute_id)
 WHERE review_dispute_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__rss_feed_item_id
 ON notifications (rss_feed_item_id)
 WHERE rss_feed_item_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__sent_by_user_id
 ON notifications (sent_by_id)
 WHERE sent_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__user_warning_id__foreign_key
 ON notifications (user_warning_id)
 WHERE user_warning_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_activity_digest_cursors (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
   sent_through_at TIMESTAMPTZ NOT NULL,
@@ -473,28 +453,24 @@ COMMENT ON COLUMN community_activity_digest_cursors.updated_at IS 'Time the dige
 COMMENT ON COLUMN community_activity_digest_cursors.is_singleton IS 'Only one community activity digest progress row may exist.';
 COMMENT ON COLUMN community_activity_digest_cursors.sent_through_at IS 'Exclusive end of the latest completed digest window; advances only after every recipient page and its durable delivery intents are admitted.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_id__post_id
 ON notifications (user_id, post_id)
 WHERE post_id IS NOT NULL
   AND deleted_at IS NULL
   AND delivery_type = 'subscription';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_id__rss_feed_item
 ON notifications (user_id, rss_feed_item_id)
 WHERE rss_feed_item_id IS NOT NULL
   AND deleted_at IS NULL
   AND delivery_type = 'subscription';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_id__actor_follow
 ON notifications (user_id, actor_user_id)
 WHERE entity_type = 'follow'
   AND deleted_at IS NULL
   AND delivery_type = 'subscription';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__top_post_id
 ON notifications (top_post_id)
 WHERE top_post_id IS NOT NULL;
@@ -503,44 +479,36 @@ CREATE INDEX IF NOT EXISTS idx_notifications__user_id__id_desc
 ON notifications (user_id, id DESC)
 WHERE deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__user_id__unread
 ON notifications (user_id, id DESC, read_at)
 WHERE deleted_at IS NULL AND read_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__post_id
 ON notifications (post_id)
 WHERE post_id IS NOT NULL AND deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__rss_feed_item
 ON notifications (rss_feed_item_id)
 WHERE rss_feed_item_id IS NOT NULL AND deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_id__user_warning
 ON notifications (user_id, user_warning_id)
 WHERE user_warning_id IS NOT NULL
   AND deleted_at IS NULL
   AND delivery_type = 'subscription';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__user_warning_id
 ON notifications (user_warning_id)
 WHERE user_warning_id IS NOT NULL AND deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_conversation_type
 ON notifications (user_id, conversation_id, entity_type)
 WHERE conversation_id IS NOT NULL AND deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__conversation_id__id__user_id
 ON notifications (conversation_id, id, user_id)
 WHERE conversation_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications__user_id__critical_moderation_alert
 ON notifications (user_id, moderation_report_id)
 WHERE entity_type = 'critical_moderation_alert'
@@ -548,7 +516,6 @@ WHERE entity_type = 'critical_moderation_alert'
   AND deleted_at IS NULL
   AND delivery_type = 'subscription';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_notifications_updated_at
 BEFORE UPDATE ON notifications
 FOR EACH ROW
@@ -572,7 +539,6 @@ COMMENT ON COLUMN notifications.target_intent IS 'Structured application navigat
 COMMENT ON COLUMN notifications.household_id IS 'Household associated with an invitation notification; deletion cascades its notifications.';
 COMMENT ON COLUMN notifications.household_invitation_id IS 'Invitation whose current pending state gates push delivery; deletion cascades its notification.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_notification_target_entity(
   notification_entity_type notification_entity_types,
   notification_community_id UUID,
@@ -600,13 +566,11 @@ COMMENT ON COLUMN notifications.read_at IS 'When the user read this notification
 COMMENT ON COLUMN notifications.pushed_at IS 'When a push notification was sent for this notification.';
 COMMENT ON COLUMN notifications.delete_reason IS 'Why this notification was deleted: system_pruned or user_deleted.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__system_pruned_retention
 ON notifications (deleted_at, id, user_id)
 WHERE deleted_at IS NOT NULL AND delete_reason = 'system_pruned'
   AND event_key IS NULL AND entity_type <> 'copyright_notice';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__user_deleted_retention
 ON notifications (deleted_at, id, user_id)
 WHERE deleted_at IS NOT NULL AND delete_reason = 'user_deleted'
@@ -615,7 +579,6 @@ COMMENT ON COLUMN notifications.review_dispute_id IS 'The review dispute this no
 COMMENT ON COLUMN notifications.user_warning_id IS 'The user warning this notification refers to; set when entity_type is user_warning.';
 COMMENT ON COLUMN notifications.conversation_id IS 'The conversation this notification refers to; set when entity_type is direct_message or modmail.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS web_push_subscriptions (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
@@ -635,12 +598,10 @@ CREATE TABLE IF NOT EXISTS web_push_subscriptions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) PARTITION BY RANGE (user_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_web_push_subs__user_id__endpoint
 ON web_push_subscriptions (user_id, endpoint)
 WHERE deleted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_web_push_subs__user_id__id_desc
 ON web_push_subscriptions (user_id, id DESC)
 WHERE deleted_at IS NULL;
@@ -649,7 +610,6 @@ CREATE INDEX IF NOT EXISTS idx_web_push_subs__deleted_at_id_user_id
 ON web_push_subscriptions (deleted_at, id, user_id)
 WHERE deleted_at IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_web_push_subscriptions_updated_at
 BEFORE UPDATE ON web_push_subscriptions
 FOR EACH ROW
@@ -665,7 +625,6 @@ COMMENT ON COLUMN web_push_subscriptions.user_agent IS 'Browser user-agent strin
 COMMENT ON COLUMN web_push_subscriptions.last_success_at IS 'When a push was last successfully delivered to this subscription.';
 COMMENT ON COLUMN web_push_subscriptions.last_failure_at IS 'When a push last failed to deliver to this subscription.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_topic_recommendations (
   post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   topic_title TEXT NOT NULL,
@@ -719,7 +678,6 @@ CREATE TABLE IF NOT EXISTS post_topic_recommendations (
   )
 ) PARTITION BY RANGE (post_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_topic_recommendation_hostnames (
   post_id UUID NOT NULL REFERENCES post_topic_recommendations(post_id) ON DELETE CASCADE,
   hostname_id UUID NOT NULL REFERENCES url_hostnames(id) ON DELETE CASCADE,
@@ -728,29 +686,24 @@ CREATE TABLE IF NOT EXISTS post_topic_recommendation_hostnames (
   PRIMARY KEY (post_id, hostname_id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_topic_recommendations_updated_at
 BEFORE UPDATE ON post_topic_recommendations
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_topic_recommendation_hostnames_updated_at
 BEFORE UPDATE ON post_topic_recommendation_hostnames
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_recommendations__reviewed_by_id
 ON post_topic_recommendations (reviewed_by_id, post_id DESC)
 WHERE reviewed_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_recommendations__created_topic_id
 ON post_topic_recommendations (created_topic_id, post_id)
 WHERE created_topic_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_recommendations__hostname_id
 ON post_topic_recommendations (hostname_id)
 WHERE hostname_id IS NOT NULL;
@@ -770,11 +723,9 @@ COMMENT ON COLUMN post_topic_recommendations.created_topic_id IS 'The topic crea
 COMMENT ON COLUMN post_topic_recommendations.topic_type IS 'The proposed topic type: topic (generic), referral_program, or card.';
 COMMENT ON COLUMN post_topic_recommendations.example_referral_url_id IS 'Normalized example referral URL; registered without crawl events.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_recommendations__example_referral_url_id
 ON post_topic_recommendations (example_referral_url_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_topic_recommendation_landing_page_urls (
   post_id UUID NOT NULL REFERENCES post_topic_recommendations(post_id) ON DELETE CASCADE,
   url_id UUID NOT NULL REFERENCES urls(id) ON DELETE RESTRICT,
@@ -782,7 +733,6 @@ CREATE TABLE IF NOT EXISTS post_topic_recommendation_landing_page_urls (
   PRIMARY KEY (post_id, url_id),
   CONSTRAINT uq_post_topic_recommenda_landing_page_urls__post_id__sort_order UNIQUE (post_id, sort_order)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_recommendation_landing_page_urls__url_id
 ON post_topic_recommendation_landing_page_urls (url_id);
 COMMENT ON TABLE post_topic_recommendation_landing_page_urls IS 'Ordered normalized landing-page URL relations submitted for card recommendations.';
@@ -790,7 +740,6 @@ COMMENT ON COLUMN post_topic_recommendation_landing_page_urls.post_id IS 'The ow
 COMMENT ON COLUMN post_topic_recommendation_landing_page_urls.url_id IS 'The normalized and safety-checked destination.';
 COMMENT ON COLUMN post_topic_recommendation_landing_page_urls.sort_order IS 'Zero-based submitted order.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_recommendation_hostnames__hostname_id
 ON post_topic_recommendation_hostnames (hostname_id, post_id DESC);
 
@@ -798,7 +747,6 @@ COMMENT ON TABLE post_topic_recommendation_hostnames IS 'Additional hostnames as
 COMMENT ON COLUMN post_topic_recommendation_hostnames.post_id IS 'The topic recommendation this hostname is associated with.';
 COMMENT ON COLUMN post_topic_recommendation_hostnames.hostname_id IS 'An additional hostname relevant to this topic recommendation.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_feed_shares (
   recipient_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
@@ -812,20 +760,16 @@ CREATE TABLE IF NOT EXISTS post_feed_shares (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) PARTITION BY RANGE (recipient_user_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_feed_shares__recipient__sort
 ON post_feed_shares (recipient_user_id, sort_at DESC, id DESC);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_feed_shares__post_id
 ON post_feed_shares (post_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Recipient-first share probe for the best-sorted post feed walk.
 CREATE INDEX IF NOT EXISTS idx_post_feed_shares__recipient__post__id
 ON post_feed_shares (recipient_user_id, post_id, id DESC);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_post_feed_shares_updated_at
 BEFORE UPDATE ON post_feed_shares
 FOR EACH ROW
@@ -837,7 +781,6 @@ COMMENT ON COLUMN post_feed_shares.shared_by_id IS 'The user who shared the post
 COMMENT ON COLUMN post_feed_shares.post_id IS 'The post being shared.';
 COMMENT ON COLUMN post_feed_shares.sort_at IS 'Timestamp used for sorting this share in the recipient''s feed.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_feed_shares (
   recipient_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
@@ -851,15 +794,12 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_feed_shares (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) PARTITION BY RANGE (recipient_user_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_feed_shares__recipient__sort
 ON rss_feed_item_feed_shares (recipient_user_id, sort_at DESC, id DESC);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_feed_shares__item
 ON rss_feed_item_feed_shares (rss_feed_item_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_rss_feed_item_feed_shares_updated_at
 BEFORE UPDATE ON rss_feed_item_feed_shares
 FOR EACH ROW

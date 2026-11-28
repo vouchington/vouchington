@@ -15,8 +15,7 @@ export function createRetainedEntityRelationImpacts(
   const retainedOwners = electionRelations.map(metadata => {
     const retained = `retained_${metadata.table_name}`
     const root = `retained_${metadata.subject_type}_identities`
-    return `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS ${retained} (
+    return `CREATE TABLE IF NOT EXISTS ${retained} (
   subject_id UUID NOT NULL ${getElectionConstraintClause(retained, ['subject_id'], 'fk')}REFERENCES ${root} (id) ON DELETE RESTRICT,
   id UUID NOT NULL,
   PRIMARY KEY (subject_id, id)
@@ -25,8 +24,7 @@ CREATE TABLE IF NOT EXISTS ${retained} (
 COMMENT ON TABLE ${retained} IS 'Concrete retained identity for an elected relation captured by durable deletion work.';
 COMMENT ON COLUMN ${retained}.subject_id IS 'Concrete subject root paired with this retained relation identifier.';`
   })
-  const cleanupProgress = `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS retained_relation_identity_cleanup_cursors (
+  const cleanupProgress = `CREATE TABLE IF NOT EXISTS retained_relation_identity_cleanup_cursors (
   entity_relation elected_entity_relations PRIMARY KEY,
   cursor_subject_id UUID,
   cursor_relation_id UUID,
@@ -34,7 +32,6 @@ CREATE TABLE IF NOT EXISTS retained_relation_identity_cleanup_cursors (
   CHECK ((cursor_subject_id IS NULL) = (cursor_relation_id IS NULL))
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -42,7 +39,6 @@ BEGIN
     WHERE tgrelid = 'retained_relation_identity_cleanup_cursors'::regclass
       AND tgname = '${getElectionTriggerName('retained_relation_identity_cleanup_cursors', 'updated_at')}'
   ) THEN
-    -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
     CREATE TRIGGER ${getElectionTriggerName('retained_relation_identity_cleanup_cursors', 'updated_at')}
     BEFORE UPDATE ON retained_relation_identity_cleanup_cursors
     FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -111,8 +107,7 @@ COMMENT ON COLUMN user_deletion_relation_impacts.recomputed_at IS 'Timestamp whe
         `FOREIGN KEY (subject_id, ${column}) REFERENCES ${retained} (subject_id, id) ON DELETE RESTRICT`,
         retained,
       ),
-      `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS ${getElectionIndexName('user_deletion_relation_impacts', indexSuffix)}
+      `CREATE UNIQUE INDEX IF NOT EXISTS ${getElectionIndexName('user_deletion_relation_impacts', indexSuffix)}
 ON user_deletion_relation_impacts (subject_id, ${column}, request_id)
 WHERE ${column} IS NOT NULL;`,
     ]

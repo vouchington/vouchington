@@ -5,8 +5,7 @@ export default function createFiniteValueTypes(): string {
   return Object.entries(GENERATED_FINITE_VALUES)
     .map(([name, values]) => {
       const labels = values.map(value => `'${value.replaceAll("'", "''")}'`).join(', ')
-      return `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-DO $$ BEGIN
+      return `DO $$ BEGIN
   CREATE TYPE ${name} AS ENUM (${labels});
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;

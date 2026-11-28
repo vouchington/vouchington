@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Threading uses keyed digests in a private UUID identity table. Plain RFC headers remain
 -- encrypted in the immutable MIME parse and are never used as a public lookup key.
 
@@ -9,7 +8,6 @@ ALTER TABLE copyright_notice_correspondence_messages
 ALTER TABLE copyright_notice_correspondence_messages
   VALIDATE CONSTRAINT fk_copyright_correspondence__email_intake;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_thread_tokens (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   lookup_digest text NOT NULL CONSTRAINT uq_copyright_notice_email_thread_tokens__lookup_digest UNIQUE
@@ -17,7 +15,6 @@ CREATE TABLE copyright_notice_email_thread_tokens (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_thread_references (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_thread_references__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
@@ -91,7 +88,6 @@ COMMENT ON COLUMN copyright_notice_email_message_ancestors.reply_message_intake_
 COMMENT ON COLUMN copyright_notice_email_message_ancestors.ancestor_message_intake_receipt_id IS 'Inbound ancestor intake resolved from one unambiguous keyed RFC Message-ID.';
 COMMENT ON COLUMN copyright_notice_email_message_ancestors.reference_kind IS 'Whether In-Reply-To or References resolved this ancestor. An existing edge is never rewritten when the other header names the same intake.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_notice_links (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT uq_copyright_notice_email_intake_notice_links__intake_id UNIQUE CONSTRAINT fk_copyright_notice_email_intake_notice_links__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
@@ -222,7 +218,6 @@ ALTER TABLE copyright_notice_lifecycle_changes
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT fk_copyright_lifecycle_events__email_intake_notice;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_correspondence_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_correspondence_reviews__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
@@ -248,38 +243,29 @@ CREATE TABLE copyright_notice_email_correspondence_reviews (
     REFERENCES copyright_notice_email_intake_recommendation_identities(copyright_notice_email_intake_receipt_id, id) ON DELETE RESTRICT
 ) PARTITION BY RANGE (id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_thread_references__token
   ON copyright_notice_email_thread_references(token_id, id)
   WHERE token_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_email_intake_notice_links__matched_token
   ON copyright_notice_email_intake_notice_links(matched_token_id)
   WHERE matched_token_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_correspondence_messages__email_intake
   ON copyright_notice_correspondence_messages(copyright_notice_email_intake_id)
   WHERE copyright_notice_email_intake_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_notice_links__notice
   ON copyright_notice_email_intake_notice_links(copyright_notice_id, id);
 -- One email intake creates the case; later linked messages are thread correspondence.
 CREATE UNIQUE INDEX idx_copyright_notice_email_intake_notice_links__initial_case
   ON copyright_notice_email_intake_notice_links(copyright_notice_id) WHERE link_kind = 'initial';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_correspondence_reviews__notice
   ON copyright_notice_email_correspondence_reviews(copyright_notice_id, id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_correspondence_reviews__reviewer
   ON copyright_notice_email_correspondence_reviews(reviewed_by_id)
   WHERE reviewed_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_corresponden_reviews__recommendation
   ON copyright_notice_email_correspondence_reviews(copyright_notice_email_intake_recommendation_id)
   WHERE copyright_notice_email_intake_recommendation_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_thread_references_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_thread_references
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
@@ -299,7 +285,6 @@ CREATE TRIGGER trigger_copyright_email_thread_references_require_token
 CREATE TRIGGER trigger_copyright_email_thread_tokens_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_thread_tokens
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_copyright_email_link_current_decision()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -334,11 +319,9 @@ $$;
 CREATE TRIGGER trigger_copyright_email_thread_links_current_decision
   BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_notice_links
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_link_current_decision();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_correspondence_reviews_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_correspondence_reviews
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_correspondence_reviews_require_actor
   BEFORE INSERT ON copyright_notice_email_correspondence_reviews
   FOR EACH ROW WHEN (NEW.action <> 'pending')
