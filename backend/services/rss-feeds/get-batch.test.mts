@@ -105,4 +105,33 @@ describe('filterRssFeedIdsByFeedType', () => {
       filterRssFeedIdsByFeedType([article.id, podcast.id, deletedArticle.id], 'article'),
     ).resolves.toEqual(new Set([article.id]))
   })
+
+  it('excludes missing, non-matching, and deleted ids while deduplicating matches', async () => {
+    const [articleA, articleB, podcast, video, mixed, deletedArticle] = await Promise.all([
+      insertTestRssFeedDirect({ feedType: 'article' }),
+      insertTestRssFeedDirect({ feedType: 'article' }),
+      insertTestRssFeedDirect({ feedType: 'podcast' }),
+      insertTestRssFeedDirect({ feedType: 'video' }),
+      insertTestRssFeedDirect({ feedType: 'mixed' }),
+      insertTestRssFeedDirect({ feedType: 'article' }),
+    ])
+    await softDeleteRssFeedById(deletedArticle.id)
+    const missingId = '01900000-0000-7000-8000-000000000001'
+
+    await expect(
+      filterRssFeedIdsByFeedType(
+        [
+          articleA.id,
+          missingId,
+          podcast.id,
+          articleB.id,
+          video.id,
+          mixed.id,
+          deletedArticle.id,
+          articleA.id,
+        ],
+        'article',
+      ),
+    ).resolves.toEqual(new Set([articleA.id, articleB.id]))
+  })
 })

@@ -141970,7 +141970,7 @@
         "idx_rss_feeds__feed_type": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feeds__feed_type ON public.rss_feeds USING btree (feed_type) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_rss_feeds__feed_type ON public.rss_feeds USING btree (feed_type, id) WHERE (deleted_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -141980,6 +141980,15 @@
               "expression": "feed_type",
               "nullsFirst": false,
               "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
