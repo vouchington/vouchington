@@ -21,34 +21,21 @@ export const TOOLS_SEMANTIC_TOPIC_SEARCH_SETTINGS = {
   'hnsw.ef_search': '40',
 } as const
 
-function getToolsSemanticTopicCandidateLimit(): number {
-  const candidateLimit = getTopicsWorkLimit('tools_semantic_topic_candidate_limit')
-  if (!Number.isSafeInteger(candidateLimit) || candidateLimit < 1) {
-    throw new Error('Invalid tools semantic topic candidate limit')
-  }
-  return candidateLimit
-}
-
 export async function toolsSearchTopicsByEmbedding(
   embedding: number[],
   limit: number,
 ): Promise<ToolsTopicSearchResult[]> {
   const safeLimit = Math.min(Math.max(1, limit), 25)
-  const candidateLimit = getToolsSemanticTopicCandidateLimit()
-  const embeddingVector = pgvector.toSql(embedding)
-  if (!embeddingVector) {
-    throw new Error('Invalid search embedding vector')
-  }
+  const candidateLimit = getTopicsWorkLimit('tools_semantic_topic_candidate_limit')
 
   const embeddingCtes = buildEmbeddingCtes({
-    semanticSearchEmbeddingVector: embeddingVector,
+    semanticSearchEmbeddingVector: pgvector.toSql(embedding) ?? undefined,
   })
   const queryStatement = sql`/* toolsSearchTopicsSemantic */
     WITH `
-  embeddingCtes.forEach((cte, index) => {
-    if (index > 0) queryStatement.append(sql`, `)
+  for (const cte of embeddingCtes) {
     queryStatement.append(cte)
-  })
+  }
   // Vector search carve-out in .agents/skills/vouchington-postgres/SKILL.md (Query shape):
   // pgvector requires an HNSW k-nearest prefix (ORDER BY <=> LIMIT k) with a bounded DynamicConfig
   // k and hard maximum bound in SQL (#6770). Both integers are validated constants so PostgreSQL
