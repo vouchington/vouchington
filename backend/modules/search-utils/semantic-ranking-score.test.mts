@@ -1,5 +1,5 @@
 import { expect, it, describe } from 'vitest'
-import { buildSemanticRankingScore } from './semantic-ranking-score.mts'
+import { buildSemanticDistanceScore, buildSemanticRankingScore } from './semantic-ranking-score.mts'
 
 describe('semantic-ranking-score', () => {
   const COL = 't.bedrock_nova_multimodal_v1_embedding'
@@ -74,5 +74,10 @@ describe('semantic-ranking-score', () => {
     const customCol = 'rss_feed_items.bedrock_nova_multimodal_v1_embedding'
     const result = buildSemanticRankingScore(customCol, { ...allFalse, hasSemanticSearch: true })
     expect(result.text).toContain(customCol)
+  })
+
+  it('buildSemanticDistanceScore wraps a precomputed distance expression', () => {
+    const result = buildSemanticDistanceScore('embedding_distance')
+    expect(result.text).toBe('(1.0 / (1.0 + (embedding_distance)))')
   })
 })

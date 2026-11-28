@@ -1,5 +1,6 @@
 export * from './clients.mts'
 export * from './cursors.mts'
+export * from './hnsw-search.mts'
 export * from './shutdown.mts'
 export * from './setup.mts'
 export * from './sql-fragments.mts'
