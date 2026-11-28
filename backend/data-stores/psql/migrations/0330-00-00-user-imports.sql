@@ -1,6 +1,4 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0330-00-00-user-import-requests.sql, 0330-00-01-user-rss-feed-imports.sql
 CREATE TABLE IF NOT EXISTS user_import_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -99,7 +97,6 @@ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_rss_feed_import_batches (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

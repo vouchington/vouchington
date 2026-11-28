@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, never deployed to production
 CREATE TABLE IF NOT EXISTS post_locks (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,

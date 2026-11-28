@@ -20,8 +20,7 @@ export default function generateTopicMergeRelationWorkItemsSql(): string {
       const flagIndex = `idx_vote_integrity_flags__${abbreviatedWords(suffix)}_page`
       const relation = metadata.table_name
       return [
-        `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS ${table} (
+        `CREATE TABLE IF NOT EXISTS ${table} (
   operation_id UUID NOT NULL REFERENCES topic_merge_operations (id) ON DELETE CASCADE,
   priority SMALLINT NOT NULL CHECK (priority BETWEEN 1 AND 4),
   old_subject_id UUID NOT NULL,

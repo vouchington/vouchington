@@ -1,10 +1,8 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Replayable browser-push delivery state. Notifications remain the product record; these rows
 -- capture the asynchronous effect and endpoint-level completion independently.
 CREATE TYPE notification_push_intent_statuses AS ENUM ('pending', 'delivered', 'suppressed');
 CREATE TYPE notification_push_endpoint_statuses AS ENUM ('pending', 'delivered', 'permanently_failed');
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE notification_push_intents (
   id UUID NOT NULL DEFAULT uuidv7() UNIQUE,
   user_id UUID NOT NULL,

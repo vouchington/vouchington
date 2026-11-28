@@ -1,7 +1,6 @@
 -- Lightweight embedded view for nesting in posts/topics JSON.
 -- Uses CASE + scalar subqueries for display_account instead of 7 LEFT JOINs,
 -- so the planner only evaluates one subquery per row (matching provider).
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_embedded_users AS
   SELECT
     'user' AS __entity_type,
@@ -83,7 +82,6 @@ CREATE OR REPLACE VIEW view_embedded_users AS
 -- Full public user view for direct user queries (e.g. getPublicUserByAny).
 -- Adds markdown which is intentionally excluded from view_embedded_users to keep nested payloads lean.
 -- Use view_embedded_users via scalar subquery when nesting inside other views.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_users_public AS
   SELECT
     e.*,
@@ -111,7 +109,6 @@ CREATE OR REPLACE VIEW view_users_public AS
   JOIN users u ON u.id = e.id
 ;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_users_private AS
   SELECT
     'user' AS __entity_type,

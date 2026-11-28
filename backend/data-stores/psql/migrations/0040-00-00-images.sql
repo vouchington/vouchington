@@ -1,11 +1,8 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0003-00-00-images.sql, 0140-00-00-post-images.sql
 
 -- ===================================================================-- 0003-00-00-images.sql
 -- =====================================================================
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS images (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 

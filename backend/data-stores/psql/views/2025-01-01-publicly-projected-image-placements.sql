@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_publicly_projected_image_placements AS
 SELECT registry.placement_id, registry.placement_revision, registry.image_id
 FROM view_media_delivery_registry_current_records registry

@@ -1,5 +1,4 @@
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0080-00-00-referral-links.sql
 
 -- ==========================================================================
@@ -8,7 +7,6 @@
 
 -- NOTE: users can have multiple links for the same referral program.
 -- we just show one
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_referral_program_links (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   created_via content_creation_channels NOT NULL,
@@ -54,67 +52,57 @@ CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__created_by_id
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__deleted_by_id
   ON user_referral_program_links (deleted_by_id) WHERE deleted_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_referral_program_links_updated_at
 BEFORE UPDATE ON user_referral_program_links
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- for searching a referral program's links
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__program_topic_id__user_id
 ON user_referral_program_links (referral_program_topic_id, user_id)
 WHERE activated_at IS NOT NULL
   AND deleted_at IS NULL;
 
 -- for looking up links by URL
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__url_id
 ON user_referral_program_links (url_id)
 WHERE deleted_at IS NULL;
 
 -- unique constraint to prevent duplicate links per user/program/url
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_referral_program_links__unique
 ON user_referral_program_links (user_id, referral_program_topic_id, url_id)
 WHERE deleted_at IS NULL;
 
 -- referential-integrity-usable leading index for the last_crawl_id FK; crawls partitions are dropped
 -- by retention, which does not fire ON DELETE, so cleanupPartitions clears this column first.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__last_crawl_id
 ON user_referral_program_links (last_crawl_id)
 WHERE last_crawl_id IS NOT NULL;
 
 -- referential-integrity-usable leading index for the parent_link_id FK: cascade/RESTRICT
 -- checks must see soft-deleted children too, so this one carries no deleted_at predicate.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__parent_link_id
 ON user_referral_program_links (parent_link_id)
 WHERE parent_link_id IS NOT NULL;
 
 -- for looking up a parent's *active* children (unfurl reconcile/visibility) without
 -- rechecking deleted_at per row
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__parent_link_id_active
 ON user_referral_program_links (parent_link_id)
 WHERE parent_link_id IS NOT NULL
   AND deleted_at IS NULL;
 
 -- Scheduled crawler candidates are selected by indexed nominal due time, then checked for host/retry eligibility.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__crawl_due
 ON user_referral_program_links (COALESCE(last_crawl_success_at, '-infinity'::timestamptz), id)
 WHERE activated_at IS NOT NULL AND deactivated_at IS NULL AND deleted_at IS NULL;
 
 -- URL-event fanout uses its indexed parent scope and the same bounded ID continuation.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__active_url_id
 ON user_referral_program_links (url_id, id)
 WHERE activated_at IS NOT NULL AND deactivated_at IS NULL AND deleted_at IS NULL;
 
 -- for the unfurl dispatcher to self-heal parents stuck requested-but-not-completed
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__unfurl_requested
 ON user_referral_program_links (unfurl_requested_at, id)
 WHERE unfurl_requested_at IS NOT NULL
@@ -141,7 +129,6 @@ COMMENT ON COLUMN user_referral_program_links.created_by_id IS 'Admin who publis
 COMMENT ON COLUMN user_referral_program_links.deleted_by_id IS 'Admin who soft-deleted this official link; NULL for personal links.';
 
 -- a list of validation rules
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS referral_program_link_validation_rule_sets (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   slug TEXT UNIQUE NOT NULL,
@@ -156,14 +143,12 @@ CREATE TABLE IF NOT EXISTS referral_program_link_validation_rule_sets (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_referral_program_link_validation_rule_sets_updated_at
 BEFORE UPDATE ON referral_program_link_validation_rule_sets
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- for searching validations
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_referral_program_link_validation_rule_sets__slug_prefix
   ON referral_program_link_validation_rule_sets (slug text_pattern_ops);
 
@@ -171,7 +156,6 @@ COMMENT ON TABLE referral_program_link_validation_rule_sets IS 'Named validation
 COMMENT ON COLUMN referral_program_link_validation_rule_sets.slug IS 'Unique lowercase identifier for this validation rule set.';
 COMMENT ON COLUMN referral_program_link_validation_rule_sets.user_help_text IS 'Help text shown to the user when they are adding a referral link.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS referral_program_link_validation_rules (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -203,14 +187,12 @@ CREATE TABLE IF NOT EXISTS referral_program_link_validation_rules (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_referral_program_link_validation_rules_updated_at
 BEFORE UPDATE ON referral_program_link_validation_rules
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- for searching rules by validation
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_referral_program_link_validation_rules__validation_id
 ON referral_program_link_validation_rules (referral_program_link_validation_rule_set_id);
 
@@ -223,7 +205,6 @@ COMMENT ON COLUMN referral_program_link_validation_rules.is_invalid_referral_lin
 COMMENT ON COLUMN referral_program_link_validation_rules.user_error_text IS 'Error message shown to the user when validation fails.';
 COMMENT ON COLUMN referral_program_link_validation_rules.example_urls IS 'Example URLs for testing the pattern rules.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS referral_program_topic_link_validation_rule_sets (
   referral_program_topic_id UUID NOT NULL CONSTRAINT fk_referral_program_topic_link_validation_rule_sets__topic REFERENCES referral_program_topics ON DELETE CASCADE,
   referral_program_link_validation_rule_set_id UUID NOT NULL CONSTRAINT fk_refe_prog_topi_link_vali_rule_sets__link_validation_rule_set REFERENCES referral_program_link_validation_rule_sets ON DELETE CASCADE,
@@ -232,7 +213,6 @@ CREATE TABLE IF NOT EXISTS referral_program_topic_link_validation_rule_sets (
   PRIMARY KEY (referral_program_topic_id, referral_program_link_validation_rule_set_id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_referral_program_topic_link_validation_rule_sets__rule_set
 ON referral_program_topic_link_validation_rule_sets (referral_program_link_validation_rule_set_id, referral_program_topic_id);
 
@@ -254,33 +234,27 @@ COMMENT ON COLUMN hostname_crawler_configurations.content_selectors IS 'CSS sele
 COMMENT ON COLUMN hostname_crawler_configurations.referral_program_topic_id IS 'Optional FK linking this crawler to a referral program. When set, this crawler overrides the hostname default for that program''s referral link crawling.';
 COMMENT ON COLUMN user_referral_program_links.last_crawl_id IS 'The most recent crawl for this referral link, set on successful crawl; cleared when that crawl is deleted or its partition expires.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_hostname_crawler_configurations__referral_program_topic_id
 ON hostname_crawler_configurations (referral_program_topic_id)
 WHERE referral_program_topic_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__created_via_oauth_client_id
   ON user_referral_program_links (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
 
 -- Current indexes for fresh schema bootstrap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_refe_prog_link__referral_program_topic_id__foreign_key
   ON user_referral_program_links (referral_program_topic_id)
   WHERE referral_program_topic_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__url_id__foreign_key
   ON user_referral_program_links (url_id)
   WHERE url_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__user_id__foreign_key
   ON user_referral_program_links (user_id)
   WHERE user_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__user_id__list
   ON user_referral_program_links (user_id, id DESC)
   WHERE deleted_at IS NULL AND parent_link_id IS NULL;

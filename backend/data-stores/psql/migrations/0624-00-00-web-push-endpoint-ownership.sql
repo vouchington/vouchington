@@ -1,7 +1,5 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Global endpoint ownership is deliberately unpartitioned: it is the serialization point that
 -- prevents a physical browser endpoint from being active for more than one user generation.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE web_push_endpoint_owners (
   endpoint_digest BYTEA PRIMARY KEY
     CHECK (endpoint_digest = digest(endpoint, 'sha256')),
@@ -15,12 +13,10 @@ CREATE TABLE web_push_endpoint_owners (
   UNIQUE (user_id, subscription_id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_web_push_endpoint_owners_updated_at
 BEFORE UPDATE ON web_push_endpoint_owners
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE notification_push_intent_subscription_receipts (
   user_id UUID NOT NULL,
   notification_id UUID NOT NULL,
@@ -42,16 +38,13 @@ CREATE TABLE notification_push_intent_subscription_receipts (
   CHECK (num_nonnulls(delivered_at, permanently_failed_at) <= 1)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_notifi_push_intent_subscr_receipt__user_id__subscription_id
   ON notification_push_intent_subscription_receipts (user_id, subscription_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_notification_push_receipts_updated_at
 BEFORE UPDATE ON notification_push_intent_subscription_receipts
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_web_push_subscription_owner() RETURNS TRIGGER AS $$
 DECLARE
   checked_user_id UUID := COALESCE(NEW.user_id, OLD.user_id);
@@ -96,7 +89,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_web_push_endpoint_owner_subscription() RETURNS TRIGGER AS $$
 DECLARE
   checked_endpoint_digest BYTEA := COALESCE(NEW.endpoint_digest, OLD.endpoint_digest);
@@ -149,7 +141,6 @@ AFTER INSERT OR UPDATE OR DELETE ON web_push_endpoint_owners
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION fn_reject_web_push_endpoint_owner_subscription();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- This key lookup returns at most one row for any recipient. Reuse its plan across the batch.
 CREATE OR REPLACE FUNCTION fn_reject_notification_push_intent_conversation_mismatch() RETURNS TRIGGER
 SET plan_cache_mode = force_generic_plan AS $$
@@ -179,7 +170,6 @@ CREATE TRIGGER trigger_assert_notification_push_intent_conversation
 BEFORE INSERT OR UPDATE ON notification_push_intents
 FOR EACH ROW EXECUTE FUNCTION fn_reject_notification_push_intent_conversation_mismatch();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_retire_notification_push_intent() RETURNS TRIGGER AS $$
 BEGIN
   -- Retire the prior effect before its foreign keys can cascade to the new generation.
@@ -189,13 +179,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_notifications_retire_push_intent
 BEFORE UPDATE OF id ON notifications
 FOR EACH ROW WHEN (OLD.id IS DISTINCT FROM NEW.id)
 EXECUTE FUNCTION fn_project_retire_notification_push_intent();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Both capture paths reuse the keyed foreign-key check plan across recipients.
 CREATE OR REPLACE FUNCTION fn_project_capture_notification_push_intent() RETURNS TRIGGER AS $$
 BEGIN
@@ -206,12 +194,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SET plan_cache_mode = force_generic_plan;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_notifications_capture_updated_push_intent
 AFTER UPDATE OF id ON notifications
 FOR EACH ROW EXECUTE FUNCTION fn_project_capture_notification_push_intent();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_capture_inserted_notification_push_intents() RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO notification_push_intents (user_id, notification_id, conversation_id)
@@ -223,7 +209,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SET plan_cache_mode = force_generic_plan;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_notifications_capture_inserted_push_intents
 AFTER INSERT ON notifications
 REFERENCING NEW TABLE AS inserted_notifications

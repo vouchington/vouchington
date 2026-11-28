@@ -1,9 +1,7 @@
--- edited-in-place: pre-launch, never deployed to production
 -- Shared browser/native OAuth authorization broker for Facebook, X, GitHub, LinkedIn, Microsoft, and Google.
 
 -- This table was not deployed by an earlier migration. A branch-local database that ran the
 -- pre-launch 0582 draft must be rebuilt rather than silently retaining that superseded schema.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE oauth_authorizations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   provider oauth_authorization_providers NOT NULL CHECK (provider IN ('facebook', 'x', 'github', 'linkedin', 'microsoft', 'google')),
@@ -150,7 +148,6 @@ BEFORE UPDATE ON oauth_authorizations
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__recoverable
 ON oauth_authorizations (status, expires_at, id)
 WHERE status = 'callback_received';
@@ -281,7 +278,6 @@ COMMENT ON COLUMN oauth_authorization_exchange_attempt_results.rejected_at IS 'W
 COMMENT ON COLUMN oauth_authorization_exchange_attempt_results.expired_at IS 'When expiry ended this exchange.';
 COMMENT ON COLUMN oauth_authorization_exchange_attempt_results.callback_error IS 'Credential-free callback or exchange error at finalization.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_create_oauth_authorization_exchange_transition()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN

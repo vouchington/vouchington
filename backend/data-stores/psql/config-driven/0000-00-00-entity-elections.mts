@@ -83,8 +83,7 @@ WHERE votes_score_net > 0${deletedAtClause};`
 function createVoteTableSql(config: VoteSchemaConfig): string {
   const extraColumns = buildVoteTableExtraColumns(config)
 
-  return `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS ${config.voteTable} (
+  return `CREATE TABLE IF NOT EXISTS ${config.voteTable} (
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   ${extraColumns.join('\n  ')}
   id UUID DEFAULT uuidv7() NOT NULL,

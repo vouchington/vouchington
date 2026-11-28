@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, never deployed to production
 -- guardrails: allow-alter-table
 CREATE TABLE IF NOT EXISTS user_suspensions (
   id UUID DEFAULT uuidv7() PRIMARY KEY,

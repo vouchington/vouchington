@@ -1,9 +1,7 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Claimant misuse ledger (DSA Art. 23, 17 U.S.C. 512(f) evidence), the sticky refusals that keep a
 -- gated notice with a moderator, and the marker for restrictions lifted because their claimant was
 -- suspended. No table here suspends anyone.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_claimant_misuse_events (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
@@ -40,7 +38,6 @@ CREATE INDEX idx_copyright_claimant_misuse_events__notice
 CREATE INDEX idx_copyright_claimant_misuse_events__notice_outcome
   ON copyright_claimant_misuse_events (copyright_notice_id, outcome);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_automatic_withholding_refusals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_automatic_withholdi_refusals__notice_submission_id UNIQUE CONSTRAINT fk_copyright_automatic_withholding_refusals__notice_submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
@@ -59,7 +56,6 @@ CREATE TABLE copyright_automatic_withholding_refusals (
   refused_at timestamptz NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_claimant_suspension_reversals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_restriction_id uuid NOT NULL CONSTRAINT uq_copyright_claimant_suspension_reversals__restriction_id UNIQUE CONSTRAINT fk_copyright_claimant_suspension_reversals__restriction REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,

@@ -32,8 +32,7 @@ export default function generateEntityRelationSchemaSql(): string {
 }
 
 function createEntityRelationTable(metadata: EntityRelationMetadata) {
-  let query = `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
+  let query = `CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
   const primary_keys = []
   query += `  subject_id UUID NOT NULL ${getElectionConstraintClause(metadata.table_name, ['subject_id'], 'fk')}REFERENCES ${entityRelationEntityTables[metadata.subject_type as EntityRelationEntityType].foreign_key_table} (id) ON DELETE CASCADE,\n`
   primary_keys.push('subject_id')
@@ -116,8 +115,7 @@ WHERE outbound_activitypub_distributed_activity_id IS NULL
 
 function createEntityRelationVoteTable(metadata: EntityRelationMetadata): string {
   const voteTable = getEntityRelationVoteTableName(metadata)
-  return `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS ${voteTable} (
+  return `CREATE TABLE IF NOT EXISTS ${voteTable} (
   user_id UUID NOT NULL ${getElectionConstraintClause(voteTable, ['user_id'], 'fk')}REFERENCES users ON DELETE CASCADE,
   subject_id UUID NOT NULL,
   entity_relation_id UUID NOT NULL,

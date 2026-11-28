@@ -1,9 +1,7 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- One operative incident per account per confirmed copyright notice.
 -- Restoration does not clear it. A second operative incident opens a staff review
 -- and does not suspend or delete the account.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_incidents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   account_user_id uuid NOT NULL,
@@ -31,12 +29,10 @@ ALTER TABLE copyright_repeat_infringer_incidents
 ALTER TABLE copyright_repeat_infringer_incidents
   VALIDATE CONSTRAINT copyright_repeat_infringer_incidents_account_user_id_fkey;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_copyright_repeat_infringer_incidents_updated_at
 BEFORE UPDATE ON copyright_repeat_infringer_incidents
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
   ON copyright_repeat_infringer_incidents (account_user_id)
   WHERE is_operative;
@@ -75,7 +71,6 @@ CREATE INDEX idx_copyright_repeat_infringer_incident_targets__target
 CREATE INDEX idx_copyright_repeat_infringer_incident_targets__notice
   ON copyright_repeat_infringer_incident_targets (copyright_notice_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_dispositions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_repeat_infringer_incident_id uuid NOT NULL CONSTRAINT fk_copyright_repeat_infringer_dispositions__incident REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE RESTRICT,
@@ -137,7 +132,6 @@ CREATE TABLE copyright_repeat_infringer_account_states (
 CREATE INDEX idx_copyright_repeat_infringer_dispositions__recorded_by
   ON copyright_repeat_infringer_dispositions (recorded_by_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   account_user_id uuid NOT NULL,
@@ -162,7 +156,6 @@ ALTER TABLE copyright_repeat_infringer_reviews
 ALTER TABLE copyright_repeat_infringer_reviews
   VALIDATE CONSTRAINT copyright_repeat_infringer_reviews_account_user_id_fkey;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_copyright_repeat_infringer_reviews_updated_at
 BEFORE UPDATE ON copyright_repeat_infringer_reviews
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

@@ -1,6 +1,4 @@
 -- AI usage ledger: per-call cost tracking for every LLM agent, not only community moderation.
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ai_service_tiers (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   service_tier TEXT NOT NULL UNIQUE,
@@ -11,7 +9,6 @@ COMMENT ON COLUMN ai_service_tiers.id IS 'Stable identifier for this model provi
 COMMENT ON COLUMN ai_service_tiers.service_tier IS 'Exact provider value; never normalized.';
 COMMENT ON COLUMN ai_service_tiers.created_at IS 'When this provider value was first observed.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ai_usage_records (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   -- guardrails-disable-next-line uuid-must-be-key
@@ -60,7 +57,6 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
 -- Global uniqueness cannot be enforced on response_id inside the range-partitioned ledger because
 -- PostgreSQL requires every unique constraint on a partitioned parent to include its partition
 -- key. This non-partitioned map is the durable idempotency gate for provider-reported usage.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ai_usage_provider_response_keys (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   response_id TEXT UNIQUE NOT NULL,
@@ -141,24 +137,20 @@ COMMENT ON COLUMN ai_usage_retention_cursors.cursor_id IS 'Last examined raw usa
 COMMENT ON COLUMN ai_usage_retention_cursors.sweep_upper_bound_id IS 'Fixed exclusive UUIDv7 cutoff for the active scan; cleared when that pass completes.';
 COMMENT ON COLUMN ai_usage_retention_cursors.updated_at IS 'Last checkpoint change time.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__community_id_id
   ON ai_usage_records (community_id, id DESC)
   WHERE community_id IS NOT NULL;
 
 -- RI-usable index for the post_id FK
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__post_id
   ON ai_usage_records (post_id)
   WHERE post_id IS NOT NULL;
 
 -- RI-usable index for the classifier_run_identity_id FK, and the per-run usage join
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__classifier_run_identity_id
   ON ai_usage_records (classifier_run_identity_id)
   WHERE classifier_run_identity_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__currency_code
   ON ai_usage_records (currency_code)
   WHERE currency_code IS NOT NULL;
@@ -187,6 +179,5 @@ COMMENT ON COLUMN ai_usage_records.currency_code IS 'USD for a priced estimated 
 COMMENT ON COLUMN ai_usage_provider_response_keys.response_id IS 'Unique provider response or decision id; it prevents duplicate ledger rows across UUIDv7 ledger partitions.';
 COMMENT ON COLUMN ai_usage_provider_response_keys.ai_usage_record_id IS 'The one ai_usage_records row reserved for this provider response or decision id.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__service_tier_id
   ON ai_usage_records (service_tier_id);

@@ -44,7 +44,6 @@ ON post_moderation_versions (post_id, id) WHERE retention_hash_blocked_at IS NOT
 CREATE INDEX IF NOT EXISTS idx_post_moderation_versions__retention_hash_policy
 ON post_moderation_versions (id) WHERE retention_hash_blocked_at IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- One attempt row is inserted with the version. GlideMQ owns retries and leases.
 CREATE TABLE IF NOT EXISTS post_moderation_attempts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),

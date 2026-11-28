@@ -1,5 +1,4 @@
 -- Only enough information to include in nested JSONs
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_embedded_topics AS
   SELECT
     'topic' AS __entity_type,
@@ -50,7 +49,6 @@ CREATE OR REPLACE VIEW view_embedded_topics AS
     AND topics.merged_into_topic_id IS NULL
 ;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_topics AS
   SELECT
     'topic' AS __entity_type,

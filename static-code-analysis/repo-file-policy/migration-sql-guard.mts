@@ -6,14 +6,8 @@ import { stripSqlComments } from './sql-scanner.mts'
 import { extractPolymorphicTargetTables } from './sql-constraint-ast.mts'
 import {
   ALLOWED_POLYMORPHIC_TARGET_TABLES,
-  LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS,
   POSTGRES_SCHEMA_GUARDRAIL_ALLOWLIST_FILE,
 } from './postgres-schema-guardrail-allowlist.mts'
-import {
-  checkEditedInPlaceMarkerWording,
-  checkLegacyEditedInPlaceMarkerRatchet,
-  checkStaleLegacyEditedInPlaceMarkerEntries,
-} from './edited-in-place-marker-guard.mts'
 
 export async function checkMigrationSqlGuard(
   repoRoot: string,
@@ -21,7 +15,6 @@ export async function checkMigrationSqlGuard(
   errors: string[],
 ): Promise<Set<string>> {
   const observedPolymorphicTargets = new Set<string>()
-  const observedLegacyMarkerMigrations = new Set<string>()
   const observedCreateTableNames = new Set<string>()
   for (const file of trackedFiles) {
     if (!file.startsWith('backend/data-stores/psql/migrations/')) continue
@@ -30,7 +23,6 @@ export async function checkMigrationSqlGuard(
     const filePath = join(repoRoot, file)
     const content = readFileSync(filePath, 'utf8')
     addMigrationCreateTableNames(content, observedCreateTableNames)
-    checkEditedInPlaceMarkerWording(file, content, observedLegacyMarkerMigrations, errors)
     const stripped = stripSqlComments(content)
     // oxlint-disable-next-line no-await-in-loop -- migration file count is unbounded; serial parsing keeps memory flat and error order deterministic
     for (const target of await extractPolymorphicTargetTables(stripped)) {
@@ -49,12 +41,6 @@ export async function checkMigrationSqlGuard(
         `::error file=${POSTGRES_SCHEMA_GUARDRAIL_ALLOWLIST_FILE}::stale PostgreSQL polymorphic-target allowlist entry: ${table}`,
       )
     }
-    checkStaleLegacyEditedInPlaceMarkerEntries(observedLegacyMarkerMigrations, errors)
-    checkLegacyEditedInPlaceMarkerRatchet(
-      repoRoot,
-      LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS,
-      errors,
-    )
   }
   return observedCreateTableNames
 }

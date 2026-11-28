@@ -1,5 +1,4 @@
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Merged from: 0225-00-00-vote-integrity.sql
 
 -- ==========================================================================
@@ -27,7 +26,6 @@ END $$;
 -- User Agent Strings
 -- ============================================================================
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_agent_strings (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   user_agent TEXT NOT NULL,
@@ -161,7 +159,6 @@ COMMENT ON COLUMN post_vote_retained_daily_counts.created_at IS 'When this aggre
 
 -- Moderation review queue for suspicious voting patterns.
 -- Exactly one entity FK is set per row (enforced by CHECK constraint).
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS vote_integrity_flags (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   post_id UUID REFERENCES posts ON DELETE CASCADE,
@@ -219,59 +216,47 @@ CREATE TABLE IF NOT EXISTS vote_integrity_flags (
 CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__resolved_by_id
   ON vote_integrity_flags (resolved_by_id) WHERE resolved_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_vote_integrity_flags_updated_at
   BEFORE UPDATE ON vote_integrity_flags FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__pending
   ON vote_integrity_flags (id)
   WHERE resolved_at IS NULL;
 
 -- Per-entity partial unique indexes for deduplication (used by createVoteIntegrityFlag WHERE NOT EXISTS)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vote_integrity_flags__post_flag_pending
   ON vote_integrity_flags (post_id, flag_type)
   WHERE resolved_at IS NULL AND post_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vote_integrity_flags__topic_flag_pending
   ON vote_integrity_flags (topic_id, flag_type)
   WHERE resolved_at IS NULL AND topic_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vote_integrity_flags__hostname_flag_pending
   ON vote_integrity_flags (hostname_id, flag_type)
   WHERE resolved_at IS NULL AND hostname_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vote_integrity_flags__rss_feed_item_flag_pending
   ON vote_integrity_flags (rss_feed_item_id, flag_type)
   WHERE resolved_at IS NULL AND rss_feed_item_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vote_integrity_flags__agent_moderator_flag_pending
   ON vote_integrity_flags (agent_moderation_id, flag_type)
   WHERE resolved_at IS NULL AND agent_moderation_id IS NOT NULL;
 
 -- Per-entity lookup indexes
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__post_id
   ON vote_integrity_flags (post_id) WHERE post_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__topic_id
   ON vote_integrity_flags (topic_id) WHERE topic_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__hostname_id
   ON vote_integrity_flags (hostname_id) WHERE hostname_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__rss_feed_item_id
   ON vote_integrity_flags (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__agent_moderation_id
   ON vote_integrity_flags (agent_moderation_id) WHERE agent_moderation_id IS NOT NULL;
 
@@ -313,7 +298,6 @@ COMMENT ON COLUMN vote_integrity_flag_detail_cleanup_cursors.updated_at IS 'Last
 -- Vote Weight Penalties
 -- ============================================================================
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS vote_weight_penalties (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -336,11 +320,9 @@ CREATE TABLE IF NOT EXISTS vote_weight_penalties (
 CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__revoked_by_id
   ON vote_weight_penalties (revoked_by_id) WHERE revoked_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_vote_weight_penalties_updated_at
   BEFORE UPDATE ON vote_weight_penalties FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__active
   ON vote_weight_penalties (user_id)
   WHERE revoked_at IS NULL;
@@ -353,32 +335,26 @@ CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__reviewed_by_id
   ON vote_weight_penalties (reviewed_by_id)
   WHERE reviewed_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vote_weight_penalties__user_flag_unique
   ON vote_weight_penalties (user_id, source_flag_id)
   WHERE source_flag_id IS NOT NULL AND revoked_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__flag
   ON vote_weight_penalties (source_flag_id)
   WHERE source_flag_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vote_weight_penalties__user_hostname_unique
   ON vote_weight_penalties (user_id, source_hostname_id)
   WHERE source_hostname_id IS NOT NULL AND revoked_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__hostname
   ON vote_weight_penalties (source_hostname_id)
   WHERE source_hostname_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vote_weight_penalties__user_post_unique
   ON vote_weight_penalties (user_id, source_post_id)
   WHERE source_post_id IS NOT NULL AND revoked_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__post
   ON vote_weight_penalties (source_post_id)
   WHERE source_post_id IS NOT NULL;
@@ -399,7 +375,6 @@ COMMENT ON COLUMN vote_weight_penalties.reviewed_by_id IS 'Staff member who last
 COMMENT ON COLUMN vote_weight_penalties.review_due_at IS 'Next annual review deadline while this penalty remains active.';
 
 -- Current indexes for fresh schema bootstrap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__agent_moderation_post_id
   ON vote_integrity_flags (agent_moderation_post_id)
   WHERE agent_moderation_post_id IS NOT NULL;
@@ -411,12 +386,10 @@ EXECUTE FUNCTION fn_update_agent_moderation_retention_reference(
   'agent_moderation_post_id', 'agent_moderation_id'
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__created_by_id
   ON vote_weight_penalties (created_by_id)
   WHERE created_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__user_id
   ON vote_weight_penalties (user_id)
   WHERE user_id IS NOT NULL;

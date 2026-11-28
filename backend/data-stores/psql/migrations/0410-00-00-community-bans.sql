@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, never deployed to production
 CREATE TABLE IF NOT EXISTS community_bans (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,

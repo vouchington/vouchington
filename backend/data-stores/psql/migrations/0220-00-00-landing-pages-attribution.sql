@@ -1,6 +1,4 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0175-00-00-user-landing-pages.sql
 
 -- ==========================================================================
@@ -81,7 +79,6 @@ COMMENT ON COLUMN user_landing_pages.is_default IS 'Whether this is the user''s 
 -- user_landing_page_items
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_landing_page_items (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   landing_page_id UUID NOT NULL REFERENCES user_landing_pages(id) ON DELETE CASCADE,
@@ -147,7 +144,6 @@ CREATE TABLE IF NOT EXISTS user_landing_page_items (
   )
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__url_id ON user_landing_page_items (url_id);
 
 CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__page_sort
@@ -173,7 +169,6 @@ COMMENT ON COLUMN user_landing_page_items.url_id IS 'Normalized URL relation for
 -- user_landing_page_group_members
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_landing_page_group_members (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   landing_page_item_id UUID NOT NULL REFERENCES user_landing_page_items(id) ON DELETE CASCADE,
@@ -241,7 +236,6 @@ CREATE INDEX IF NOT EXISTS idx_user_landing_page_group_members__referral_link_id
   ON user_landing_page_group_members (referral_link_id)
   WHERE referral_link_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_landing_page_group_members__review_id
   ON user_landing_page_group_members (review_post_id)
   WHERE review_post_id IS NOT NULL;
@@ -254,7 +248,6 @@ CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__referral_link_id
   ON user_landing_page_items (referral_link_id)
   WHERE referral_link_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__review_id
   ON user_landing_page_items (review_post_id)
   WHERE review_post_id IS NOT NULL;

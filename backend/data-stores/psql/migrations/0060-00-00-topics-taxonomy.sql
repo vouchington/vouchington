@@ -1,10 +1,4 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: added language detection columns to topics
--- edited-in-place: swapped 'english' to 'voucha_english' text search config (unaccent support)
--- edited-in-place: idx_topic_aliases__unlink_topic_id is now (unlink_topic_id, id) to serve id-ordered paging
--- edited-in-place: topic_aliases rejects a pending unlink that still has a topic_id
 -- Merged from: 0005-00-00-topics.sql, 0110-00-00-wikipedia-topic-recommendations.sql, 0160-00-00-review-snippet-categories.sql
 
 -- ==========================================================================
@@ -25,7 +19,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS topics (
   id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_topic_identities (id) ON DELETE RESTRICT,
   created_via content_creation_channels NOT NULL,
@@ -112,12 +105,10 @@ CREATE TABLE IF NOT EXISTS topics (
   lingua_rs_detected_at TIMESTAMPTZ
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_register_retained_topic_identity
 BEFORE INSERT ON topics
 FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('topic');
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_topics_updated_at
 BEFORE UPDATE ON topics
 FOR EACH ROW
@@ -281,36 +272,29 @@ COMMENT ON COLUMN topic_merge_metric_users.cursor_review_post_id IS 'Ordering ma
 COMMENT ON COLUMN topic_merge_metric_users.review_rating IS 'Rating from the latest eligible review.';
 
 -- search topics by name
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__name__text_pattern_ops
 ON topics (LOWER(name) text_pattern_ops);
 
 -- unique index on slug
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_topics__slug
 ON topics (slug);
 
 -- search topics by slug
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__slug__text_pattern_ops
 ON topics (slug text_pattern_ops);
 
 -- unique index on name
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_topics__name
 ON topics (LOWER(name));
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__hostname_id
 ON topics (hostname_id)
 WHERE hostname_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__created_by_id
 ON topics (created_by_id)
 WHERE created_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__updated_by_id
 ON topics (updated_by_id)
 WHERE updated_by_id IS NOT NULL;
@@ -319,17 +303,14 @@ CREATE INDEX IF NOT EXISTS idx_topics__content_updated_by_id
 ON topics (content_updated_by_id)
 WHERE content_updated_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__deleted_by_id
 ON topics (deleted_by_id)
 WHERE deleted_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__merged_by_id
 ON topics (merged_by_id)
 WHERE merged_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__homepage_url_id
 ON topics (homepage_url_id)
 WHERE homepage_url_id IS NOT NULL;
@@ -342,19 +323,16 @@ ALTER TABLE url_hostnames VALIDATE CONSTRAINT fk_url_hostnames_topic_id;
 COMMENT ON COLUMN url_hostnames.topic_id IS 'The topic associated with this hostname (e.g. the company''s topic page).';
 
 -- find existing embeddings by input hash
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__bedrock_nova_multimodal_v1_input_sha256
 ON topics (bedrock_nova_multimodal_v1_input_sha256)
 WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
 
 -- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__bedrock_nova_multimodal_v1_embedding
 ON topics USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
 WHERE bedrock_nova_multimodal_v1_embedding IS NOT NULL;
 
 -- find out of date embeddings
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__bedrock_nova_multimodal_v1_to_update
 ON topics (id)
 WHERE (
@@ -365,28 +343,23 @@ WHERE (
 -- GiST trigram indexes keep selective ILIKE '%query%' searches index-served in both plan modes.
 -- Text search only reads active topics. Including merged sources here would also let exact-slug
 -- reference lookups choose GiST and recheck thousands of candidates per input.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__name_trgm
 ON topics USING GiST (name gist_trgm_ops)
 WHERE deleted_at IS NULL AND merged_into_topic_id IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__slug_trgm
 ON topics USING GiST (slug gist_trgm_ops)
 WHERE deleted_at IS NULL AND merged_into_topic_id IS NULL;
 
 -- find topics pending language detection
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__lingua_rs_pending
   ON topics (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__hero_image_id
 ON topics (hero_image_id)
 WHERE hero_image_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__logo_image_id
 ON topics (logo_image_id)
 WHERE logo_image_id IS NOT NULL;
@@ -415,7 +388,6 @@ COMMENT ON COLUMN topics.homepage_url_id IS 'The official homepage URL for this 
 -- topic_metrics
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS topic_metrics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -446,14 +418,12 @@ CREATE TABLE IF NOT EXISTS topic_metrics (
   bookmarks__updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_topic_metrics_updated_at
 BEFORE UPDATE ON topic_metrics
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- sorting by best ratings
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topic_metrics__ratings__score__sort
 ON topic_metrics (ratings__score__sort DESC, topic_id);
 
@@ -478,7 +448,6 @@ COMMENT ON COLUMN topic_metrics.bookmarks__updated_at IS 'When the bookmark coun
 -- Function to auto-create topic_metrics row when topic is created
 
 -- Trigger to create topic_metrics after topic insert
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_create_topic_metrics
 AFTER INSERT ON topics
 FOR EACH ROW
@@ -488,7 +457,6 @@ EXECUTE FUNCTION fn_create_metrics('topic_metrics', 'topic_id');
 -- rewards_program_topics
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rewards_program_topics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
 
@@ -497,13 +465,11 @@ CREATE TABLE IF NOT EXISTS rewards_program_topics (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_rewards_program_topics_updated_at
 BEFORE UPDATE ON rewards_program_topics
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rewards_program_topics__company_topic_id__topic_id
 ON rewards_program_topics (company_topic_id, topic_id)
 WHERE company_topic_id IS NOT NULL;
@@ -516,7 +482,6 @@ COMMENT ON COLUMN rewards_program_topics.company_topic_id IS 'The company topic 
 -- referral_program_topics
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS referral_program_topics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
 
@@ -531,13 +496,11 @@ CREATE TABLE IF NOT EXISTS referral_program_topics (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_referral_program_topics_updated_at
 BEFORE UPDATE ON referral_program_topics
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_referral_program_topics__company_topic_id__topic_id
 ON referral_program_topics (company_topic_id, topic_id)
 WHERE company_topic_id IS NOT NULL;
@@ -559,12 +522,10 @@ ALTER TABLE topics ADD CONSTRAINT fk_topics_referral_program_topic_id FOREIGN KE
 ALTER TABLE topics VALIDATE CONSTRAINT fk_topics_rewards_program_topic_id;
 ALTER TABLE topics VALIDATE CONSTRAINT fk_topics_referral_program_topic_id;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__rewards_program_topic_id__id
 ON topics (rewards_program_topic_id, id)
 WHERE rewards_program_topic_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__referral_program_topic_id__id
 ON topics (referral_program_topic_id, id)
 WHERE referral_program_topic_id IS NOT NULL;
@@ -576,7 +537,6 @@ COMMENT ON COLUMN topics.referral_program_topic_id IS 'The referral program this
 -- card_topics
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS card_topics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
 
@@ -594,23 +554,19 @@ CREATE TABLE IF NOT EXISTS card_topics (
   CHECK ((annual_fee_minor_units IS NULL) = (currency_code IS NULL))
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_card_topics_updated_at
 BEFORE UPDATE ON card_topics
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_card_topics__bank_topic_id__topic_id
 ON card_topics (bank_topic_id, topic_id)
 WHERE bank_topic_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_card_topics__brand_topic_id__topic_id
 ON card_topics (brand_topic_id, topic_id)
 WHERE brand_topic_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_card_topics__currency_code
 ON card_topics (currency_code)
 WHERE currency_code IS NOT NULL;
@@ -626,7 +582,6 @@ COMMENT ON COLUMN card_topics.currency_code IS 'Currency for the annual fee. NUL
 -- rewards_program_status_topics
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rewards_program_status_topics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
 
@@ -641,14 +596,12 @@ CREATE TABLE IF NOT EXISTS rewards_program_status_topics (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_rewards_program_status_topics_updated_at
 BEFORE UPDATE ON rewards_program_status_topics
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- only one lifetime version per rewards program status
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_rewards_program_status_topics__lifetime_version_id
 ON rewards_program_status_topics (lifetime_version_id)
 WHERE lifetime_version_id IS NOT NULL;
@@ -662,7 +615,6 @@ COMMENT ON COLUMN rewards_program_status_topics.order_index IS 'Sort order: lowe
 -- spending_category_topics
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS spending_category_topics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
 
@@ -676,7 +628,6 @@ CREATE TABLE IF NOT EXISTS spending_category_topics (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_spending_category_topics_updated_at
 BEFORE UPDATE ON spending_category_topics
 FOR EACH ROW
@@ -693,7 +644,6 @@ COMMENT ON COLUMN spending_category_topics.default_spending_frequency IS 'Defaul
 
 -- An alias may be unlinked while it is used as a standalone hashtag. Application
 -- validation owns hashtag grammar so the grammar can evolve without a schema change.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS topic_aliases (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   topic_id UUID REFERENCES topics ON DELETE RESTRICT,
@@ -719,13 +669,11 @@ CREATE TABLE IF NOT EXISTS topic_aliases (
   UNIQUE (alias)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_topic_aliases_updated_at
 BEFORE UPDATE ON topic_aliases
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_topic_aliases() RETURNS TRIGGER
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -779,41 +727,33 @@ END;
 $$;
 COMMENT ON FUNCTION fn_project_topic_aliases() IS 'Applies bounded alias transition rows to each affected topic search cache in lexical order.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_topic_aliases_project_insert
 AFTER INSERT ON topic_aliases REFERENCING NEW TABLE AS new_aliases
 FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_topic_aliases_project_update
 AFTER UPDATE ON topic_aliases REFERENCING NEW TABLE AS new_aliases OLD TABLE AS old_aliases
 FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_topic_aliases_project_delete
 AFTER DELETE ON topic_aliases REFERENCING OLD TABLE AS old_aliases
 FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases();
 
 -- finding aliases by topic
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__topic_id
 ON topic_aliases (topic_id, alias)
 WHERE topic_id IS NOT NULL;
 
 -- search by prefix for searching aliases
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__alias__text_pattern_ops
 ON topic_aliases (LOWER(alias) text_pattern_ops);
 
 -- full text search for aliases
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__search_vector
 ON topic_aliases USING GIN (search_vector);
 
 -- indexes for foreign keys
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__created_by_id
 ON topic_aliases (created_by_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__updated_by_id
 ON topic_aliases (updated_by_id);
 
@@ -848,7 +788,6 @@ COMMENT ON COLUMN topic_aliases.alias IS 'Lowercase canonical alias or hashtag l
 
 -- Durable, coalesced work for category mappings changed by a linked alias. This intentionally has
 -- no foreign key: a linked alias DELETE must leave a tombstone for asynchronous cleanup.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TYPE topic_alias_category_reconciliation_phases AS ENUM (
   'rss_item_categories', 'rss_item_text_categories', 'rss_feed_text_categories', 'completed'
 );
@@ -868,17 +807,14 @@ CREATE TABLE IF NOT EXISTS topic_alias_category_mapping_reconciliations (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_topic_alias_category_mapping_reconciliations_updated_at
 BEFORE UPDATE ON topic_alias_category_mapping_reconciliations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topic_alias_category_mapping_reconciliations__updated_at
 ON topic_alias_category_mapping_reconciliations (updated_at, topic_alias_id)
 WHERE unlink_requested_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -931,7 +867,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_topic_aliases_mark_category_mapping_dirty
 AFTER INSERT OR UPDATE OF topic_id, unlink_requested_at OR DELETE ON topic_aliases
 FOR EACH ROW
@@ -953,14 +888,12 @@ COMMENT ON COLUMN topic_alias_category_mapping_reconciliations.cursor_feed_id IS
 -- retailer_topics
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS retailer_topics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_retailer_topics_updated_at
 BEFORE UPDATE ON retailer_topics
 FOR EACH ROW
@@ -986,7 +919,6 @@ END $$;
 -- is declared here but trigger-maintained from an append-only allowlist-decision history table
 -- added by a later migration (see docs/overview/architecture/fediverse-federation.md) — do not
 -- write to it directly.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS fediverse_instance_topics (
   topic_id UUID PRIMARY KEY REFERENCES topics ON DELETE CASCADE,
 
@@ -1004,7 +936,6 @@ CREATE TABLE IF NOT EXISTS fediverse_instance_topics (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_fediverse_instance_topics_updated_at
 BEFORE UPDATE ON fediverse_instance_topics
 FOR EACH ROW
@@ -1022,7 +953,6 @@ COMMENT ON COLUMN fediverse_instance_topics.nodeinfo_raw IS 'Full NodeInfo 2.0 d
 COMMENT ON COLUMN fediverse_instance_topics.integration_status IS 'Admin allowlist decision (pending, approved, blocked). Trigger-maintained from an append-only decision history table.';
 
 -- Only one active (non-deleted, non-merged) fediverse_instance topic per hostname.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_topics__fediverse_instance__hostname_id
 ON topics (hostname_id)
 WHERE topic_type = 'fediverse_instance' AND deleted_at IS NULL AND merged_into_topic_id IS NULL;
@@ -1031,7 +961,6 @@ WHERE topic_type = 'fediverse_instance' AND deleted_at IS NULL AND merged_into_t
 -- fediverse_instance_integration_changes
 --------------------------------------------------------------------------------
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS fediverse_instance_integration_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
@@ -1041,7 +970,6 @@ CREATE TABLE IF NOT EXISTS fediverse_instance_integration_changes (
   CHECK (reason IS NULL OR char_length(reason) <= 1000),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_fediverse_instance_integration_changes__topic_id__id
   ON fediverse_instance_integration_changes (topic_id, id DESC);
 COMMENT ON TABLE fediverse_instance_integration_changes IS 'Append-only audit log of admin allowlist decisions for fediverse_instance topics. Current state is the latest row per topic_id.';
@@ -1055,7 +983,6 @@ COMMENT ON COLUMN fediverse_instance_integration_changes.reason IS 'Optional hum
 -- trusting NEW.integration_status to defend against out-of-order transaction
 -- commits on the same topic.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_sync_fediverse_instance_integration_status
 AFTER INSERT ON fediverse_instance_integration_changes
 FOR EACH ROW
@@ -1107,7 +1034,6 @@ WHERE topic_aliases.topic_id IS NULL OR topic_aliases.topic_id = EXCLUDED.topic_
 
 
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__created_via_oauth_client_id
   ON topics (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
@@ -1198,11 +1124,8 @@ SET aliases = COALESCE(
 WHERE topic.deleted_at IS NULL
   AND topic.merged_into_topic_id IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_ensure_fediverse_instance_integration_changes_actor BEFORE INSERT ON fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_fediverse_instance_integration_changes_append_only BEFORE UPDATE OR DELETE ON fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_fediverse_instance_integration_changes__changed_by_id ON fediverse_instance_integration_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_topics__merged_into_topic_id__id ON topics(merged_into_topic_id,id) WHERE merged_into_topic_id IS NOT NULL;

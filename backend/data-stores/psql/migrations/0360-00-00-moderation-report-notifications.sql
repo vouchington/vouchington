@@ -1,7 +1,3 @@
--- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: added moderation_appeal_id and community_ban_id to all CHECK branches (FK wired in 0450-00-00)
--- edited-in-place: removed upgrade-only drop/re-add of fk_notifications__moderation_report_id and chk_notifications__entity_columns (0120 creates the final CHECK)
--- edited-in-place: scoped idx_notifications__user_id__moderation_report to entity_type = 'moderation_report'
 ALTER TABLE notifications
   ADD CONSTRAINT fk_notifications__moderation_report_id
     FOREIGN KEY (moderation_report_id)

@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Metadata-only change: the ACCESS EXCLUSIVE lock commits before 0726-00-10 validates the
 -- constraints and 0726-00-11 builds the index online.
 
@@ -7,7 +6,6 @@ ALTER TABLE community_applications
   FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT
   NOT VALID;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_applications_content_provenance_immutable
   AFTER UPDATE ON community_applications
   FOR EACH ROW

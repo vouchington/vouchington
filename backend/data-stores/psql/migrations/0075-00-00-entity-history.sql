@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 DO $$ BEGIN
   CREATE TYPE revision_types AS ENUM ('create', 'update', 'delete');
 EXCEPTION
@@ -31,7 +30,6 @@ COMMENT ON COLUMN post_revisions.revised_by_id IS 'The user who performed this c
 COMMENT ON COLUMN post_revisions.changes IS 'JSONB object: { "field_name": { "before": <old>, "after": <new> } }';
 
 -- Topic revisions: monthly UUIDv7 ranges retire as whole partitions.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS topic_revisions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   topic_id UUID NOT NULL,
@@ -61,6 +59,5 @@ COMMENT ON COLUMN topic_revisions.changes IS 'Revision document containing per-f
 
 CREATE INDEX IF NOT EXISTS idx_post_revisions__post_id ON post_revisions (post_id);
 CREATE INDEX IF NOT EXISTS idx_topic_revisions__topic_id ON topic_revisions (topic_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_post_revisions_append_only BEFORE UPDATE OR DELETE ON post_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id');
 CREATE TRIGGER trigger_topic_revisions_append_only BEFORE UPDATE OR DELETE ON topic_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation('revised_by_id');

@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_member_vacations (
   community_id UUID        NOT NULL REFERENCES communities ON DELETE CASCADE,
   user_id      UUID        NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -9,7 +8,6 @@ CREATE TABLE IF NOT EXISTS community_member_vacations (
   PRIMARY KEY (community_id, user_id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_community_member_vacations_updated_at
 BEFORE UPDATE ON community_member_vacations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

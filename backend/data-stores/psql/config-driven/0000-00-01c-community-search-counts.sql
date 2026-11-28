@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_create_community_search_counts() RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO community_search_counts (community_id) VALUES (NEW.id);

@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_membership_provider_evidence_immutability()
 RETURNS trigger
 LANGUAGE plpgsql

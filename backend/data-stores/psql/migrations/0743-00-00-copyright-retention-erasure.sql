@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Pointer clearing for the bounded case purge and operational retention. Legal-record guards stay
 -- in force; they allow a transaction that sets app.copyright_retention_erasure to null only the
 -- storage and token pointers listed in fn_copyright_retention_erasable_columns, right before the

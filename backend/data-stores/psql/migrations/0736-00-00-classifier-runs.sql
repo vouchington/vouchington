@@ -47,7 +47,6 @@ COMMENT ON COLUMN classifier_run_identities.input_sha256 IS 'Exact content diges
 COMMENT ON COLUMN classifier_run_identities.configuration_sha256 IS 'Canonical configuration digest in the immutable run deduplication key.';
 COMMENT ON COLUMN classifier_run_identities.prompt_version_id IS 'Real prompt-version relation in the deduplication key; NULL for classifier runs without a prompt version.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_runs (
   id UUID NOT NULL REFERENCES classifier_run_identities (id) ON DELETE RESTRICT,
   classifier_id UUID NOT NULL REFERENCES classifiers (id) ON DELETE RESTRICT,
@@ -170,7 +169,6 @@ CREATE INDEX IF NOT EXISTS idx_classifier_runs__post
   ON classifier_runs (post_id, id) WHERE post_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_runs__rss_feed_item
   ON classifier_runs (rss_feed_item_id, id) WHERE rss_feed_item_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_classifier_runs__shared_actor
   ON classifier_runs (shared_actor_user_id);
 CREATE INDEX IF NOT EXISTS idx_classifier_runs__community_identity
@@ -283,7 +281,6 @@ CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__rss_feed_item
 -- same ids and the rule text as the replay envelope. Deleting a prompt removes its child; the run
 -- receipt and envelope stay. Unlike classifier_run_candidates, these ids are part of the
 -- configuration the receipt deduplicates on.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_run_community_prompts (
   run_id UUID NOT NULL REFERENCES classifier_runs (id) ON DELETE CASCADE,
   community_agent_prompt_id UUID NOT NULL,
@@ -298,7 +295,6 @@ CREATE INDEX IF NOT EXISTS idx_classifier_run_community_prompts__community_agent
 
 -- community_agent_prompts is created in 0140, so this foreign key is cross-file. The table is
 -- empty on a fresh bootstrap, so validating it in the same ledger entry is a short scan.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 ALTER TABLE classifier_run_community_prompts
   ADD CONSTRAINT fk_classifier_run_community_prompts__community_agent_prompt
   FOREIGN KEY (community_agent_prompt_id)
@@ -321,7 +317,6 @@ CREATE INDEX IF NOT EXISTS idx_autotagger_agent_run_topics__topic
   ON autotagger_agent_run_topics (topic_id, run_id);
 
 -- C5's local detector outcome, retained once per run so every terminal kind can keep it.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_classifier_local_outcomes (
   run_id UUID NOT NULL REFERENCES classifier_runs (id) ON DELETE CASCADE,
   local_topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE CASCADE,

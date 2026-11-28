@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Provider-specific rows keep their original owner family without copying provider text.
 CREATE FUNCTION fn_reject_membership_context_provider_mismatch() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -13,7 +12,6 @@ BEGIN
   RETURN NEW;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgments (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   membership_provider_evidence_record_id UUID NOT NULL CONSTRAINT uq_membership_google_play_acknowledgment__provider_evidence_id UNIQUE,
@@ -32,7 +30,6 @@ CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgments (
 CREATE TRIGGER trigger_membership_google_play_acknowledgments_context
   BEFORE INSERT OR UPDATE ON membership_google_play_acknowledgments
   FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_context_provider_mismatch('google_play');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgment_work_items (
   membership_google_play_acknowledgment_id UUID PRIMARY KEY REFERENCES membership_google_play_acknowledgments(id) ON DELETE CASCADE,
   lease_token UUID, leased_at TIMESTAMPTZ, lease_expires_at TIMESTAMPTZ,
@@ -52,7 +49,6 @@ COMMENT ON COLUMN membership_google_play_acknowledgment_work_items.available_at 
 COMMENT ON COLUMN membership_google_play_acknowledgment_work_items.attempt_count IS 'Number of claimed acknowledgement attempts.';
 COMMENT ON COLUMN membership_google_play_acknowledgment_work_items.completed_at IS 'When the current eligibility generation was acknowledged or skipped.';
 COMMENT ON COLUMN membership_google_play_acknowledgment_work_items.last_error IS 'Bounded provider-neutral diagnostic for the latest failure.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_create_google_play_acknowledgment_work() RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   INSERT INTO membership_google_play_acknowledgment_work_items (membership_google_play_acknowledgment_id, completed_at)
@@ -60,18 +56,12 @@ BEGIN
   RETURN NEW;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_google_play_acknowledgments_work AFTER INSERT ON membership_google_play_acknowledgments
 FOR EACH ROW EXECUTE FUNCTION fn_create_google_play_acknowledgment_work();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_google_play_acknowledgments_updated_at BEFORE UPDATE ON membership_google_play_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_google_play_acknowledgments__purchase ON membership_google_play_acknowledgments (membership_provider_context_id, purchase_token_lookup_sha256);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_acknowledgments__lineage_context ON membership_google_play_acknowledgments (membership_provider_lineage_id, membership_provider_context_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_acknowledgment_work_items__claim ON membership_google_play_acknowledgment_work_items (available_at, membership_google_play_acknowledgment_id) WHERE completed_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_acknowledgments__pending_id ON membership_google_play_acknowledgments (id) WHERE acknowledged_at IS NULL AND skipped_at IS NULL;
 CREATE INDEX idx_membership_google_play_acknowledgments__terminal
   ON membership_google_play_acknowledgments (COALESCE(acknowledged_at, skipped_at), id)

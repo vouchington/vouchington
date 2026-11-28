@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_microsoft_store_credentials (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -27,12 +26,9 @@ CREATE TRIGGER trigger_membership_microsoft_store_credentials_context
   FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_context_provider_mismatch('microsoft_store');
 CREATE OR REPLACE TRIGGER trigger_membership_microsoft_store_credentials_updated_at BEFORE UPDATE ON membership_microsoft_store_credentials FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__user_context ON membership_microsoft_store_credentials (user_id, membership_provider_context_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__provider_context ON membership_microsoft_store_credentials (membership_provider_context_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__due ON membership_microsoft_store_credentials (next_reconciliation_at, id);
 CREATE INDEX IF NOT EXISTS idx_membership_verifications__pending_microsoft_source_recovery ON membership_verifications (user_id, membership_provider_context_id, request_fingerprint) WHERE verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_microsoft_store_recovery_cursors (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton), cursor_source_id UUID, sweep_upper_bound_source_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

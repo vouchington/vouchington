@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, never deployed to production
 -- Receipt table for Bluesky (AT Protocol) follow-record propagation (Phase D3). Tracks the AT-URI
 -- of the app.bsky.graph.follow record created in the follower's PDS repo on the follower's behalf,
 -- so the reconcile worker (@workers/bluesky-follow-propagation) can later delete it without a live

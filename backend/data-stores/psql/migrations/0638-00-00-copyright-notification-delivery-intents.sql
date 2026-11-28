@@ -1,8 +1,6 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Copyright communications are legal records. Delivery is a separate, retryable concern so a
 -- transport outage cannot erase the obligation to notify either party.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_delivery_work_items (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE RESTRICT,
@@ -68,7 +66,6 @@ CREATE TABLE copyright_notice_delivery_work_items (
     AND copyright_notice_submission_id IS NULL AND copyright_notice_correspondence_message_id IS NULL))
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_delivery_attempts (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   work_item_id uuid NOT NULL REFERENCES copyright_notice_delivery_work_items(id) ON DELETE CASCADE,
@@ -105,7 +102,6 @@ COMMENT ON COLUMN copyright_notice_delivery_attempt_results.sent_at IS 'Database
 COMMENT ON COLUMN copyright_notice_delivery_attempt_results.failed_at IS 'Database time this execution ended as failed.';
 COMMENT ON COLUMN copyright_notice_delivery_attempt_results.bounced_at IS 'Database time this execution ended as bounced.';
 COMMENT ON COLUMN copyright_notice_delivery_attempt_results.abandoned_at IS 'Database time this execution ended as abandoned.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_copyright_delivery_work() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());
@@ -121,7 +117,6 @@ END;
 $$;
 CREATE TRIGGER trigger_00_copyright_delivery_work_lease BEFORE INSERT OR UPDATE ON copyright_notice_delivery_work_items
 FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_delivery_work();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_create_copyright_delivery_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND OLD.lease_token IS NOT NULL
@@ -141,9 +136,7 @@ END;
 $$;
 CREATE TRIGGER trigger_copyright_delivery_work_attempt AFTER INSERT OR UPDATE ON copyright_notice_delivery_work_items
 FOR EACH ROW EXECUTE FUNCTION fn_create_copyright_delivery_attempt();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__available ON copyright_notice_delivery_work_items(available_at, id) WHERE lease_token IS NULL AND state = 'pending';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__expired ON copyright_notice_delivery_work_items(lease_expires_at, id) WHERE lease_token IS NOT NULL;
 COMMENT ON COLUMN copyright_notice_delivery_work_items.generation IS 'Explicit replay cycle; clearing failed or blocked current-cycle outcomes increments it while execution history remains immutable.';
 COMMENT ON COLUMN copyright_notice_delivery_work_items.lease_expires_at IS 'Current worker ownership deadline; every owner mutation checks it.';
@@ -156,7 +149,6 @@ ALTER TABLE copyright_notice_lifecycle_changes
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_delivery_intent_fk;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__notice
   ON copyright_notice_delivery_work_items (copyright_notice_id, id);
 CREATE INDEX idx_copyright_notice_delivery_work_items__target_recipient
@@ -167,23 +159,18 @@ CREATE INDEX idx_copyright_notice_delivery_work_items__email_intake_receipt
   WHERE copyright_notice_email_intake_receipt_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_delivery_work_items__notice_updated
   ON copyright_notice_delivery_work_items (copyright_notice_id, updated_at);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__submission
   ON copyright_notice_delivery_work_items (copyright_notice_submission_id, copyright_notice_id)
   WHERE copyright_notice_submission_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__correspondence
   ON copyright_notice_delivery_work_items (copyright_notice_correspondence_message_id, copyright_notice_id)
   WHERE copyright_notice_correspondence_message_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__recipient_user
   ON copyright_notice_delivery_work_items (recipient_user_id)
   WHERE recipient_user_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__amazon_ses_message
   ON copyright_notice_delivery_work_items (amazon_ses_message_id) WHERE amazon_ses_message_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_delivery_intent_transition()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE next_state copyright_notice_delivery_intent_states;
@@ -238,11 +225,9 @@ BEGIN
   RETURN NEW;
 END;
 $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_delivery_intent_transition
 BEFORE UPDATE OR DELETE ON copyright_notice_delivery_work_items
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_delivery_intent_transition();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_delivery_intents_updated_at
 BEFORE UPDATE ON copyright_notice_delivery_work_items
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -273,7 +258,6 @@ COMMENT ON COLUMN copyright_notice_delivery_work_items.amazon_ses_message_id IS 
 COMMENT ON COLUMN copyright_notice_delivery_work_items.failure_ciphertext IS 'Encrypted bounded transport failure visible to staff; retries retain the failure history through lifecycle events.';
 
 -- Current indexes for fresh schema bootstrap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_copyright_notice_delivery_work_items__recoverable
   ON copyright_notice_delivery_work_items (channel, id)
   WHERE state IN ('pending', 'claimed');

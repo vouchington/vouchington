@@ -1,9 +1,7 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Durable per-call audit records for MCP surfaces. One row per JSON-RPC call (plus a follow-up row
 -- when an admitted tool call fails). Validated copyright rationale is encrypted in a separate
 -- legal record; arbitrary arguments, results, tokens, and headers are never stored.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS mcp_call_audit_events (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   audience mcp_call_audit_event_audiences NOT NULL CHECK (audience IN ('user', 'community_moderation', 'brand', 'admin', 'legal')),

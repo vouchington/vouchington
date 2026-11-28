@@ -1,5 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, never deployed to production
 -- Public daily moderation-transparency cohorts are computed from the source tables by a bounded
 -- scheduled job and stored only here, once the UTC day is closed and the cohort is large enough
 -- to disclose. This is the privacy boundary for paid transparency: no user, post, prompt, or
@@ -8,7 +6,6 @@
 -- Once a qualifying daily cohort is released, retain only this aggregate snapshot.
 -- It deliberately has no foreign keys: source, community, and actor deletion cannot
 -- rewrite a published disclosure.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE moderation_transparency_released_daily_rollups (
   day date NOT NULL,
   community_id uuid,
@@ -20,11 +17,9 @@ CREATE TABLE moderation_transparency_released_daily_rollups (
   CONSTRAINT moderation_transparency_released_daily_rollups_key
     UNIQUE NULLS NOT DISTINCT (day, community_id, metric, category)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_moderation_transparency_released_daily_rollups__global_page
   ON moderation_transparency_released_daily_rollups (day DESC)
   WHERE community_id IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_moderatio_transparen_released_daily_rollups__community_page
   ON moderation_transparency_released_daily_rollups (community_id, day DESC)
   WHERE community_id IS NOT NULL;
@@ -37,12 +32,10 @@ COMMENT ON COLUMN moderation_transparency_released_daily_rollups.count IS 'Exact
 COMMENT ON COLUMN moderation_transparency_released_daily_rollups.latest_occurred_at IS 'Latest source event timestamp counted in the released cohort.';
 COMMENT ON COLUMN moderation_transparency_released_daily_rollups.released_at IS 'Transaction timestamp when the aggregate cohort became immutable.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_released_rollup_guard
   BEFORE UPDATE OR DELETE ON moderation_transparency_released_daily_rollups
   FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   NEW := jsonb_populate_record(NEW, jsonb_build_object(
@@ -50,7 +43,6 @@ BEGIN
   RETURN NEW;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_moderation_report_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.moderation_transparency_community_id IS NULL THEN
@@ -62,40 +54,33 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_reports_scope_stamp
   BEFORE INSERT ON moderation_reports FOR EACH ROW
   EXECUTE FUNCTION fn_update_moderation_report_transparency_scope();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_reports_scope_guard
   BEFORE UPDATE OF moderation_transparency_community_id ON moderation_reports
   FOR EACH ROW
   WHEN (ROW(OLD.moderation_transparency_community_id) IS DISTINCT FROM ROW(NEW.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_reports_original_reason_guard
   BEFORE UPDATE OF original_reason ON moderation_reports
   FOR EACH ROW
   WHEN (ROW(OLD.original_reason) IS DISTINCT FROM ROW(NEW.original_reason)) EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_actions_scope_stamp
   BEFORE INSERT ON moderator_actions FOR EACH ROW
   EXECUTE FUNCTION fn_update_transparency_scope('moderation_transparency_community_id', 'community_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_actions_scope_guard
   BEFORE UPDATE OF moderation_transparency_community_id ON moderator_actions
   FOR EACH ROW
   WHEN (ROW(OLD.moderation_transparency_community_id) IS DISTINCT FROM ROW(NEW.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_actions_type_guard
   BEFORE UPDATE OF action_type ON moderator_actions
   FOR EACH ROW
   WHEN (ROW(OLD.action_type) IS DISTINCT FROM ROW(NEW.action_type)) EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_agent_moderation_transparency() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   v_community_id uuid; v_post_community_id uuid;
@@ -135,11 +120,9 @@ BEGIN
   NEW.moderation_transparency_community_id := COALESCE(v_community_id, v_post_community_id);
   RETURN NEW;
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_agent_stamp
   BEFORE INSERT OR UPDATE OF deleted_at ON agent_moderations
   FOR EACH ROW EXECUTE FUNCTION fn_update_agent_moderation_transparency();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_agent_moderation_transparency_projection() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.id IS DISTINCT FROM NEW.id
@@ -154,21 +137,17 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_agent_projection_guard
   BEFORE UPDATE OF id, agent_id, prompt_id, moderation_transparency_category,
     moderation_transparency_community_id ON agent_moderations
   FOR EACH ROW EXECUTE FUNCTION fn_reject_agent_moderation_transparency_projection();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_appeals_scope_stamp
   BEFORE INSERT ON moderation_appeals FOR EACH ROW
   EXECUTE FUNCTION fn_update_transparency_scope('moderation_transparency_community_id', 'community_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_appeals_scope_guard
   BEFORE UPDATE OF moderation_transparency_community_id ON moderation_appeals
   FOR EACH ROW
   WHEN (ROW(OLD.moderation_transparency_community_id) IS DISTINCT FROM ROW(NEW.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_moderation_appeal_resolution() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.resolved_at IS NULL AND OLD.resolution_action IS NULL
@@ -181,33 +160,27 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_appeals_resolution_guard
   BEFORE UPDATE OF resolved_at, resolution_action ON moderation_appeals
   FOR EACH ROW EXECUTE FUNCTION fn_reject_moderation_appeal_resolution();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_clearance_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;
   RETURN NEW;
 END $$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_clearance_scope_stamp
   BEFORE INSERT ON post_clearance_changes FOR EACH ROW
   EXECUTE FUNCTION fn_update_clearance_transparency_scope();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_clearance_scope_guard
   BEFORE UPDATE OF moderation_transparency_community_id ON post_clearance_changes
   FOR EACH ROW
   WHEN (ROW(OLD.moderation_transparency_community_id) IS DISTINCT FROM ROW(NEW.moderation_transparency_community_id)) EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_clearance_categories_guard
   BEFORE UPDATE OF moderation_transparency_categories ON post_clearance_changes
   FOR EACH ROW
   WHEN (ROW(OLD.moderation_transparency_categories) IS DISTINCT FROM ROW(NEW.moderation_transparency_categories)) EXECUTE FUNCTION fn_reject_mutation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_moderation_transparency_clearance_type_guard
   BEFORE UPDATE OF change_type ON post_clearance_changes
   FOR EACH ROW

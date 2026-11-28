@@ -1,5 +1,4 @@
 -- Feed-level podcast metadata and Apple category mapping.
--- edited-in-place: pre-launch, never deployed to production
 -- podcast_shows: 1:1 extension table for rss_feeds rows with feed_type='podcast'.
 -- rss_feed_categories: feed-level Apple itunes:category → internal topics (mirrors item-level rss_feed_item_categories).
 

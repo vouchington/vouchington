@@ -24,4 +24,4 @@ Prelaunch index changes belong in their canonical creators; there is no cross-re
 
 ## Stale local databases
 
-After a rebase that touches migrations, a local database can lag (an edited-in-place pre-launch migration gained columns used by managed views). Rerun `./dev/initialize web`, then `./dev/reset` if validation still reports missing schema, blocked view recreation, or stale columns, following [Ephemeral worktree databases](../../AGENTS.md).
+After a rebase that touches migrations, a local database can lag (a pre-launch migration edited in place gained columns used by managed views). Rerun `./dev/initialize web`, then `./dev/reset` if validation still reports missing schema, blocked view recreation, or stale columns, following [Ephemeral worktree databases](../../AGENTS.md).

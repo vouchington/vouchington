@@ -1,7 +1,6 @@
 -- Unified read-model view over all list item junction tables.
 -- Only active (non-removed) rows are included; removed_at IS NULL is enforced per-branch.
 -- media_type comes from the rss_feed_items table for RSS items; NULL for posts.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_user_list_items AS
   SELECT
     li.id,

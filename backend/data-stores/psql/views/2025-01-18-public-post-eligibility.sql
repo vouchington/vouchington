@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Keep this view a single flat SELECT: no top-level WITH and no UNION ALL.
 -- A subquery carrying a non-empty cteList fails is_simple_subquery()/is_simple_union_all() in
 -- the planner, so PostgreSQL cannot pull this view up into an enclosing query. Any consumer that
@@ -19,7 +18,6 @@
 -- off root_post, none wrapped in COALESCE), and it does not need a LEFT JOIN rewrite to avoid
 -- resource pressure — see #11081. Whole-view aggregation is confined to materialized-view
 -- refresh; request-time readers restrict candidate ids before joining this view.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_public_post_eligibility AS
   SELECT candidate_post.id AS post_id, candidate_post.post_type
   FROM posts candidate_post

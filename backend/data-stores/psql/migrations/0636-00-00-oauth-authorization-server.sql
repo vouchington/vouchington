@@ -1,8 +1,5 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE SEQUENCE IF NOT EXISTS oauth_client_metadata_refresh_generation_seq AS BIGINT;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_clients (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   metadata_url TEXT,
@@ -93,7 +90,6 @@ CREATE TABLE IF NOT EXISTS oauth_client_grant_markers (
 COMMENT ON TABLE oauth_client_grant_markers IS 'One durable marker per OAuth client that has ever held a grant; never-used client cleanup requires its absence.';
 COMMENT ON COLUMN oauth_client_grant_markers.client_id IS 'The live OAuth client whose grant history excludes it from never-used cleanup.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_authorization_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   client_id UUID NOT NULL REFERENCES oauth_clients ON DELETE CASCADE,
@@ -132,7 +128,6 @@ COMMENT ON INDEX idx_oauth_authorization_requests__pending_browser_client IS 'Ke
 CREATE INDEX IF NOT EXISTS idx_oauth_authorization_requests__expiry
 ON oauth_authorization_requests (expires_at, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 DO $$ BEGIN
   CREATE TYPE oauth_native_attestation_statuses AS ENUM ('attested', 'unattested');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -153,7 +148,6 @@ COMMENT ON TABLE oauth_grant_retention_anchors IS 'Non-authorizing identity and 
 COMMENT ON COLUMN oauth_grant_retention_anchors.user_id IS 'Retained owner identity; this row never grants access.';
 COMMENT ON COLUMN oauth_grant_retention_anchors.ended_at IS 'Latest revoke or deletion time, from which the final consent-evidence window runs.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_grants (
   id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES oauth_grant_retention_anchors (id) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -246,8 +240,6 @@ ON oauth_grants (user_id, id DESC NULLS LAST) WHERE revoked_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_oauth_grants__retention
 ON oauth_grants (revoked_at, id) WHERE revoked_at IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_authorization_server_events (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   event_type oauth_authorization_server_event_types NOT NULL CHECK (event_type IN (
@@ -385,7 +377,6 @@ BEFORE UPDATE OR DELETE ON oauth_native_session_token_mints
 FOR EACH ROW EXECUTE FUNCTION fn_reject_native_session_mint_mutation();
 COMMENT ON FUNCTION fn_reject_native_session_mint_mutation() IS 'Rejects mint audit updates and ordinary deletion; only aged rows outside an active account preservation hold may be deleted by bounded retention.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_authorization_codes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   code_hash TEXT NOT NULL UNIQUE CHECK (char_length(code_hash) = 64),
@@ -411,7 +402,6 @@ ON oauth_authorization_codes (grant_id, id);
 CREATE INDEX IF NOT EXISTS idx_oauth_authorization_codes__expiry
 ON oauth_authorization_codes (expires_at, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_refresh_token_families (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   grant_id UUID NOT NULL REFERENCES oauth_grants ON DELETE CASCADE,
@@ -437,7 +427,6 @@ ON oauth_refresh_token_families (grant_id, id);
 CREATE INDEX IF NOT EXISTS idx_oauth_refresh_token_families__expiry
 ON oauth_refresh_token_families (expires_at, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   family_id UUID NOT NULL REFERENCES oauth_refresh_token_families ON DELETE CASCADE,
@@ -462,7 +451,6 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE INDEX IF NOT EXISTS idx_oauth_refresh_tokens__family
 ON oauth_refresh_tokens (family_id, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_oauth_refresh_tokens__replacement
 ON oauth_refresh_tokens (replaced_by_token_id)
 WHERE replaced_by_token_id IS NOT NULL;
@@ -470,7 +458,6 @@ WHERE replaced_by_token_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_oauth_refresh_tokens__expiry
 ON oauth_refresh_tokens (expires_at, family_id, generation, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_access_tokens (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   grant_id UUID NOT NULL REFERENCES oauth_grants ON DELETE CASCADE,

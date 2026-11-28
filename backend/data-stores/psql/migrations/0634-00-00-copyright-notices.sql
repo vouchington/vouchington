@@ -1,4 +1,3 @@
--- edited-in-place: human_review_action check allows only confirm and reverse (folded from 0644)
 CREATE TYPE copyright_notice_lifecycle_change_types AS ENUM ('notice_received', 'supplement_received', 'appeal_received', 'counter_notice_received',
     'withdrawal_received', 'court_or_ccb_hold_received', 'submission_assessed',
     'appeal_reviewed', 'counter_notice_reviewed', 'evidence_artifact_recorded',
@@ -13,7 +12,6 @@ CREATE TYPE copyright_notice_lifecycle_change_types AS ENUM ('notice_received', 
     'restriction_lifted_placement_retained', 'restoration_authorized_pending_delivery',
     'placement_withheld', 'placement_restored', 'guest_capability_issued',
     'guest_capability_revoked', 'guest_capability_revoked_by_withdrawal');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Copyright complaints are a distinct legal aggregate.  This migration records
 -- evidence and decisions only; it deliberately enables no media restriction.
 
@@ -42,7 +40,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notices (
   id uuid PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_copyright_notice_identities(id) ON DELETE RESTRICT,
   jurisdiction copyright_jurisdictions NOT NULL CHECK (jurisdiction IN ('us_dmca', 'eu_dsa', 'uk', 'other')),
@@ -99,7 +96,6 @@ CREATE TABLE copyright_notice_party_identities (
 CREATE INDEX idx_copyright_notice_party_identities__account
   ON copyright_notice_party_identities(account_user_id, copyright_notice_id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_targets (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
@@ -115,7 +111,6 @@ CREATE TABLE copyright_notice_targets (
   UNIQUE (copyright_notice_id, id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_target_images (
   copyright_notice_target_id uuid PRIMARY KEY REFERENCES copyright_notice_targets(id) ON DELETE CASCADE,
   placement_id uuid NOT NULL,
@@ -129,7 +124,6 @@ CREATE TABLE copyright_notice_target_images (
     REFERENCES retained_image_placement_bindings(placement_id, image_id, binding_family) ON DELETE RESTRICT
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_restrictions (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -175,16 +169,13 @@ CREATE TABLE copyright_restrictions (
     REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE CASCADE,
   UNIQUE (copyright_notice_id, id)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_restrictions_scope
   BEFORE INSERT ON copyright_restrictions FOR EACH ROW
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_targets', 'copyright_notice_target_id');
 COMMENT ON COLUMN copyright_restrictions.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_copyright_restrictions__one_active_per_target ON copyright_restrictions(copyright_notice_target_id) WHERE lifted_at IS NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_submissions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
@@ -273,7 +264,6 @@ CREATE TRIGGER trigger_copyright_thread_party_target
   ON copyright_notice_targets
   FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_thread_party_generation();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_storage_objects (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   storage_key text NOT NULL UNIQUE CHECK (char_length(storage_key) BETWEEN 1 AND 1024 AND NOT starts_with(storage_key, 'erased:')),
@@ -305,13 +295,11 @@ CREATE TABLE copyright_notice_evidence_artifacts (
     REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE,
   UNIQUE (copyright_notice_id, id)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_artifacts_scope
   BEFORE INSERT ON copyright_notice_evidence_artifacts FOR EACH ROW
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id');
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_submission_assessment_identities (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL,
@@ -359,13 +347,11 @@ CREATE TABLE copyright_notice_submission_assessments (
     FOREIGN KEY (copyright_notice_submission_id, supersedes_assessment_id)
     REFERENCES copyright_notice_submission_assessment_identities(copyright_notice_submission_id, id) ON DELETE RESTRICT
 ) PARTITION BY RANGE (id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_assessments_scope
   BEFORE INSERT ON copyright_notice_submission_assessments FOR EACH ROW
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id');
 COMMENT ON COLUMN copyright_notice_submission_assessments.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_counter_notice_assessment_targets (
   copyright_notice_id uuid NOT NULL,
   copyright_notice_submission_assessment_identity_id uuid NOT NULL,
@@ -380,13 +366,11 @@ CREATE TABLE copyright_notice_counter_notice_assessment_targets (
     FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
     REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_counter_targets_scope
   BEFORE INSERT ON copyright_notice_counter_notice_assessment_targets FOR EACH ROW
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submission_assessment_identities', 'copyright_notice_submission_assessment_identity_id');
 COMMENT ON COLUMN copyright_notice_counter_notice_assessment_targets.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_legal_hold_assessments (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -413,7 +397,6 @@ CREATE TABLE copyright_notice_legal_hold_assessments (
     REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE,
   CONSTRAINT uq_copyright_notice_legal_hold_assessments__notice_id__id UNIQUE (copyright_notice_id, id)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_hold_assessments_scope
   BEFORE INSERT ON copyright_notice_legal_hold_assessments FOR EACH ROW
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id');
@@ -421,7 +404,6 @@ COMMENT ON COLUMN copyright_notice_legal_hold_assessments.copyright_notice_id IS
 
 COMMENT ON COLUMN copyright_notice_legal_hold_assessments.rationale_ciphertext IS 'Encrypted moderator rationale supporting the immutable legal-hold qualification assessment.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_legal_hold_assessment_targets (
   copyright_notice_id uuid NOT NULL,
   copyright_notice_legal_hold_assessment_id uuid NOT NULL,
@@ -436,13 +418,11 @@ CREATE TABLE copyright_notice_legal_hold_assessment_targets (
     FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
     REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_hold_targets_scope
   BEFORE INSERT ON copyright_notice_legal_hold_assessment_targets FOR EACH ROW
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_legal_hold_assessments', 'copyright_notice_legal_hold_assessment_id');
 COMMENT ON COLUMN copyright_notice_legal_hold_assessment_targets.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_legal_hold_resolutions (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -458,13 +438,11 @@ CREATE TABLE copyright_notice_legal_hold_resolutions (
     REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE RESTRICT,
   CONSTRAINT uq_copyright_notice_legal_hold_resolutions__notice_id__id UNIQUE (copyright_notice_id, id)
 );
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_hold_resolutions_scope
   BEFORE INSERT ON copyright_notice_legal_hold_resolutions FOR EACH ROW
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_legal_hold_assessments', 'copyright_notice_legal_hold_assessment_id');
 COMMENT ON COLUMN copyright_notice_legal_hold_resolutions.copyright_notice_id IS 'Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_deadlines (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
@@ -482,7 +460,6 @@ CREATE TABLE copyright_notice_deadlines (
   UNIQUE (copyright_notice_id, id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_correspondence_messages (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid,
@@ -519,7 +496,6 @@ CREATE TABLE copyright_notice_correspondence_messages (
   CONSTRAINT copyright_notice_correspondence_id_notice_unique UNIQUE (id, copyright_notice_id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_lifecycle_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE CASCADE,
@@ -621,7 +597,6 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   UNIQUE (copyright_notice_id, id)
 ) PARTITION BY RANGE (id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_action_work_items (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -658,7 +633,6 @@ CREATE TABLE copyright_notice_action_work_items (
   UNIQUE (copyright_notice_id, id)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_copyright_operational_retention()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -717,7 +691,6 @@ COMMENT ON COLUMN copyright_notice_action_attempt_results.stale_at IS 'Database 
 COMMENT ON COLUMN copyright_notice_action_attempt_results.blocked_at IS 'Database time this execution ended as blocked.';
 COMMENT ON COLUMN copyright_notice_action_attempt_results.failed_at IS 'Database time this execution ended as failed.';
 COMMENT ON COLUMN copyright_notice_action_attempt_results.abandoned_at IS 'Database time this execution ended as abandoned.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_update_copyright_action_work() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());
@@ -733,7 +706,6 @@ END;
 $$;
 CREATE TRIGGER trigger_00_copyright_action_work_lease BEFORE INSERT OR UPDATE ON copyright_notice_action_work_items
 FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_action_work();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_create_copyright_action_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE' AND OLD.lease_token IS NOT NULL
@@ -753,14 +725,11 @@ END;
 $$;
 CREATE TRIGGER trigger_copyright_action_work_attempt AFTER INSERT OR UPDATE ON copyright_notice_action_work_items
 FOR EACH ROW EXECUTE FUNCTION fn_create_copyright_action_attempt();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_action_work_items__available ON copyright_notice_action_work_items(available_at, id) WHERE lease_token IS NULL AND state = 'pending';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_action_work_items__expired ON copyright_notice_action_work_items(lease_expires_at, id) WHERE lease_token IS NOT NULL;
 COMMENT ON COLUMN copyright_notice_action_work_items.generation IS 'Explicit replay cycle; clearing failed or blocked current-cycle outcomes increments it while execution history remains immutable.';
 COMMENT ON COLUMN copyright_notice_action_work_items.lease_expires_at IS 'Current worker ownership deadline; every owner mutation checks it.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_update_copyright_action_intents_scope
   BEFORE INSERT ON copyright_notice_action_work_items FOR EACH ROW
   EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_restrictions', 'copyright_restriction_id');
@@ -773,7 +742,6 @@ ALTER TABLE copyright_notice_lifecycle_changes
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_action_intent_fk;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_lifecycle_event_source_notice()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -795,28 +763,19 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_guard_copyright_lifecycle_event_source_notice
 BEFORE INSERT ON copyright_notice_lifecycle_changes
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_lifecycle_event_source_notice();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_targets__placement ON copyright_notice_targets(placement_id, placement_revision);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_targets__surface_owner_user ON copyright_notice_targets(surface_owner_user_id)
   WHERE surface_owner_user_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_target_images__image ON copyright_notice_target_images(image_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_target_images__binding ON copyright_notice_target_images(placement_id, image_id, binding_family);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__target ON copyright_restrictions(copyright_notice_target_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__human_reviewer ON copyright_restrictions(human_reviewed_by_id) WHERE human_reviewed_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__notice_received ON copyright_notice_submissions(copyright_notice_id, received_at, id);
 CREATE INDEX idx_copyright_notice_submissions__notice_id ON copyright_notice_submissions(copyright_notice_id, id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__staff_review_kinds
   ON copyright_notice_submissions(kind)
   WHERE kind IN ('appeal', 'counter_notice', 'court_or_ccb_hold');
@@ -831,88 +790,48 @@ CREATE INDEX idx_copyright_notice_submissions__current_assessment
 CREATE INDEX idx_copyright_notice_submissions__current_assessment_global
   ON copyright_notice_submissions(current_assessment_identity_id)
   WHERE current_assessment_identity_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__submitted_by ON copyright_notice_submissions(submitted_by_id) WHERE submitted_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submissions__guest_capability ON copyright_notice_submissions(copyright_notice_guest_capability_id, copyright_notice_id) WHERE copyright_notice_guest_capability_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_copyright_notice_submissions__one_guest_court_hold ON copyright_notice_submissions(copyright_notice_guest_capability_id) WHERE kind = 'court_or_ccb_hold' AND copyright_notice_guest_capability_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submission_assessments__submission ON copyright_notice_submission_assessments(copyright_notice_submission_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_submission_assessments__assessed_by ON copyright_notice_submission_assessments(assessed_by_id) WHERE assessed_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_counter_notice_assessment_targets__target ON copyright_notice_counter_notice_assessment_targets(copyright_notice_target_id, copyright_notice_submission_assessment_identity_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_counter_notice_assessment_targets__notice ON copyright_notice_counter_notice_assessment_targets(copyright_notice_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_legal_hold_assessments__submission ON copyright_notice_legal_hold_assessments(copyright_notice_submission_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_legal_hold_assessments__assessed_by ON copyright_notice_legal_hold_assessments(assessed_by_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_legal_hold_assessment_targets__target ON copyright_notice_legal_hold_assessment_targets(copyright_notice_target_id, copyright_notice_legal_hold_assessment_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_legal_hold_assessment_targets__notice ON copyright_notice_legal_hold_assessment_targets(copyright_notice_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_legal_hold_resolutions__resolved_by ON copyright_notice_legal_hold_resolutions(resolved_by_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_deadlines__notice ON copyright_notice_deadlines(copyright_notice_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_deadlines__pending ON copyright_notice_deadlines(escalation_at, id) WHERE resolved_at IS NULL AND cancelled_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_deadlines__notice_pending
   ON copyright_notice_deadlines(copyright_notice_id, escalation_at, id)
   WHERE resolved_at IS NULL AND cancelled_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_correspondence_messages__notice ON copyright_notice_correspondence_messages(copyright_notice_id, id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_correspondence_messages__submission ON copyright_notice_correspondence_messages(copyright_notice_submission_id) WHERE copyright_notice_submission_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_correspondence_messages__drafted_by ON copyright_notice_correspondence_messages(drafted_by_id) WHERE drafted_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_correspondence_messages__approved_by ON copyright_notice_correspondence_messages(approved_by_id) WHERE approved_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__notice ON copyright_notice_lifecycle_changes(copyright_notice_id, id DESC);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__submission ON copyright_notice_lifecycle_changes(copyright_notice_submission_id) WHERE copyright_notice_submission_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__assessment ON copyright_notice_lifecycle_changes(copyright_notice_submission_assessment_identity_id) WHERE copyright_notice_submission_assessment_identity_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__artifact ON copyright_notice_lifecycle_changes(copyright_notice_evidence_artifact_id) WHERE copyright_notice_evidence_artifact_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__correspondence ON copyright_notice_lifecycle_changes(copyright_notice_correspondence_id) WHERE copyright_notice_correspondence_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__hold_assessment ON copyright_notice_lifecycle_changes(copyright_notice_legal_hold_assessment_id) WHERE copyright_notice_legal_hold_assessment_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__hold_resolution ON copyright_notice_lifecycle_changes(copyright_notice_legal_hold_resolution_id) WHERE copyright_notice_legal_hold_resolution_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__deadline ON copyright_notice_lifecycle_changes(copyright_notice_deadline_id) WHERE copyright_notice_deadline_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__restriction ON copyright_notice_lifecycle_changes(copyright_restriction_id) WHERE copyright_restriction_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__action_intent ON copyright_notice_lifecycle_changes(copyright_notice_action_intent_id) WHERE copyright_notice_action_intent_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__email_intake ON copyright_notice_lifecycle_changes(copyright_notice_email_intake_id) WHERE copyright_notice_email_intake_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__delivery_intent ON copyright_notice_lifecycle_changes(copyright_notice_delivery_work_item_id) WHERE copyright_notice_delivery_work_item_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__media_registry ON copyright_notice_lifecycle_changes(media_delivery_registry_record_id) WHERE media_delivery_registry_record_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__guest_capability ON copyright_notice_lifecycle_changes(copyright_notice_guest_capability_id, copyright_notice_id) WHERE copyright_notice_guest_capability_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_action_work_items__pending ON copyright_notice_action_work_items(id) WHERE completed_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_action_work_items__deadline ON copyright_notice_action_work_items(copyright_notice_deadline_id) WHERE copyright_notice_deadline_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notices__claimant_user ON copyright_notices(claimant_user_id, id DESC) WHERE claimant_user_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__imposed_by ON copyright_restrictions(imposed_by_id) WHERE imposed_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_restrictions__lifted_by ON copyright_restrictions(lifted_by_id) WHERE lifted_by_id IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__actor ON copyright_notice_lifecycle_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_immutable_evidence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE logical_table_name text;
@@ -935,7 +854,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_missing_storage_object()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
@@ -1019,7 +937,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_immutable_with_actor_erasure()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
@@ -1052,7 +969,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_human_actor()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -1063,7 +979,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_assessment_source()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -1079,7 +994,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_counter_notice_assessment_target_scope()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -1097,7 +1011,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_submission()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -1125,7 +1038,6 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_submissions_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_submission();
 -- Every submission producer uses this one table. Capture its account before the
 -- live users FK can be SET NULL by account deletion.
@@ -1146,9 +1058,7 @@ $$;
 CREATE TRIGGER trigger_retain_copyright_submission_party
   AFTER INSERT ON copyright_notice_submissions FOR EACH ROW
   EXECUTE FUNCTION fn_update_copyright_submission_party();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE UPDATE OR DELETE ON copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_evidence_requires_storage_object BEFORE INSERT OR UPDATE ON copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('storage_object_id');
 CREATE TRIGGER trigger_copyright_evidence_claimed_object_delete
   BEFORE DELETE ON copyright_notice_evidence_artifacts FOR EACH ROW
@@ -1156,30 +1066,19 @@ CREATE TRIGGER trigger_copyright_evidence_claimed_object_delete
 CREATE TRIGGER trigger_copyright_evidence_object_reference_generation
   AFTER INSERT OR UPDATE OF storage_object_id OR DELETE ON copyright_notice_evidence_artifacts
   FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_storage_reference_generation('storage_object_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_assessments_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('assessed_by_id');
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_assessments_source BEFORE INSERT ON copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_assessment_source();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_scope BEFORE INSERT ON copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_counter_notice_assessment_target_scope();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_hold_assessments_immutable BEFORE UPDATE OR DELETE ON copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('assessed_by_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_hold_assessments_require_actor BEFORE INSERT ON copyright_notice_legal_hold_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('assessed_by_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_hold_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_legal_hold_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_hold_resolutions_immutable BEFORE UPDATE OR DELETE ON copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('resolved_by_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_hold_resolutions_require_actor BEFORE INSERT ON copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('resolved_by_id');
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_events_immutable BEFORE UPDATE OR DELETE ON copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_identity()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -1216,14 +1115,10 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notices_identity_immutable BEFORE UPDATE OR DELETE ON copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_identity();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_targets_immutable BEFORE UPDATE OR DELETE ON copyright_notice_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_target_images_immutable BEFORE UPDATE OR DELETE ON copyright_notice_target_images FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_notice_lifecycle()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -1248,12 +1143,9 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notices_lifecycle_guard BEFORE UPDATE ON copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_lifecycle();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notices_updated_at BEFORE UPDATE ON copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_restriction_lifecycle()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -1316,14 +1208,11 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE UPDATE OR DELETE ON copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_restriction_lifecycle();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- Copyright action intents are durable media-delivery sagas. Legal eligibility is evaluated
 -- before an intent is created and again by the worker against the authoritative placement.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_action_intent()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE next_state copyright_notice_action_intent_states;
@@ -1362,12 +1251,9 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_action_intents_guard BEFORE UPDATE OR DELETE ON copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_action_intent();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_action_intents_updated_at BEFORE UPDATE ON copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_deadline()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -1398,12 +1284,9 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_deadlines_guard BEFORE UPDATE OR DELETE ON copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_deadline();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_deadlines_updated_at BEFORE UPDATE ON copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_correspondence()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -1464,9 +1347,7 @@ BEGIN
 END;
 $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_correspondence_guard BEFORE UPDATE OR DELETE ON copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_correspondence();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_correspondence_updated_at BEFORE UPDATE ON copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE copyright_notices IS 'Legal copyright allegation aggregate. Member views must use an allowlisted projection and never expose contact or evidence.';
@@ -1619,7 +1500,6 @@ COMMENT ON COLUMN copyright_notice_action_work_items.action IS 'Requested revers
 COMMENT ON COLUMN copyright_notice_action_work_items.completed_at IS 'One-way timestamp set only after the fenced delivery transition is durably confirmed.';
 
 -- Current indexes for fresh schema bootstrap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notices__legal_activity ON copyright_notices(jurisdiction, last_legal_activity_at, id);
 
 CREATE INDEX IF NOT EXISTS idx_copyright_notices__received_id
@@ -1627,10 +1507,8 @@ CREATE INDEX IF NOT EXISTS idx_copyright_notices__received_id
 
 COMMENT ON COLUMN copyright_notice_action_work_items.lease_token IS 'Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.';
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_ensure_copyright_notice_lifecycle_changes_actor BEFORE INSERT ON copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_copyright_case_lifecycle_activity() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -1650,7 +1528,6 @@ CREATE TRIGGER trigger_record_copyright_case_lifecycle_activity
 AFTER INSERT ON copyright_notice_lifecycle_changes
 FOR EACH ROW EXECUTE FUNCTION fn_update_copyright_case_lifecycle_activity();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON copyright_notice_evidence_artifacts (media_type_id);
 CREATE INDEX idx_copyright_notice_evidence_artifacts__storage_object_id
   ON copyright_notice_evidence_artifacts (storage_object_id, id)

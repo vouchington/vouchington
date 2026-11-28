@@ -42,15 +42,13 @@ export function createEntityRelationVoteIntegrityTargets(
         `vif_${shortName}_target_pair_check`,
         `CHECK ((${subjectColumn} IS NULL) = (${targetColumn} IS NULL))`,
       ),
-      `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS ${getElectionIndexName('vote_integrity_flags', pendingSuffix)}
+      `CREATE UNIQUE INDEX IF NOT EXISTS ${getElectionIndexName('vote_integrity_flags', pendingSuffix)}
 ON vote_integrity_flags (${targetColumn}, flag_type)
 WHERE resolved_at IS NULL AND ${targetColumn} IS NOT NULL;`,
       ...(hasTopicMergePageIndex
         ? []
         : [
-            `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS ${getElectionIndexName('vote_integrity_flags', `${shortName}_id`)}
+            `CREATE INDEX IF NOT EXISTS ${getElectionIndexName('vote_integrity_flags', `${shortName}_id`)}
 ON vote_integrity_flags (${targetColumn})
 WHERE ${targetColumn} IS NOT NULL;`,
           ]),

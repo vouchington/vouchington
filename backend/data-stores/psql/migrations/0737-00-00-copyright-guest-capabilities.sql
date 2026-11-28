@@ -1,8 +1,6 @@
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Case-scoped guest access. The raw token is never stored. Email receipt and
 -- thread correlation do not create a row.
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_guest_capability_identities (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
@@ -12,7 +10,6 @@ CREATE TABLE copyright_notice_guest_capability_identities (
 CREATE INDEX idx_cpyrght_ntc_gst_cpblty_idntts__notice
   ON copyright_notice_guest_capability_identities (copyright_notice_id, id);
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_guest_capabilities (
   id uuid PRIMARY KEY,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
@@ -30,7 +27,6 @@ CREATE TABLE copyright_notice_guest_capabilities (
     CHECK (expires_at - uuid_extract_timestamp(id) <= interval '30 days')
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_copyright_notice_guest_capabilities_updated_at
 BEFORE UPDATE ON copyright_notice_guest_capabilities
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -83,7 +79,6 @@ ALTER TABLE copyright_notice_lifecycle_changes
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_guest_capability_fk;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_urgent_filings (
   copyright_notice_submission_id uuid PRIMARY KEY
     CONSTRAINT fk_copyright_notice_urgent_filings__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,

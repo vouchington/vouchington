@@ -1,4 +1,3 @@
--- edited-in-place: pre-launch, never deployed to production
 CREATE TABLE IF NOT EXISTS moderation_cases (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   -- Exactly one of these must be non-null (the entity this case concerns).
