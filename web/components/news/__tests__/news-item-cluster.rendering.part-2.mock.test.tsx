@@ -112,20 +112,4 @@ describe('NewsItemCluster rendering', () => {
     const cardWrapped = clusterCard?.querySelectorAll('div[data-pw="news-item-card"]')
     expect(cardWrapped?.length).toBe(0)
   })
-
-  it('action row uses horizontal scroll instead of wrapping on narrow viewports', () => {
-    const { container } = render(
-      <NewsItemCluster
-        primary={primary}
-        storyItems={[]}
-        view='summary'
-        relatedPosts={[]}
-      />,
-    )
-    const actionRow = container.querySelector('.scrollbar-hide')
-    expect(actionRow).not.toBeNull()
-    expect(actionRow?.className).toContain('overflow-x-auto')
-    expect(actionRow?.className).not.toContain('flex-wrap')
-    expect(actionRow?.className).toContain('scrollbar-hide')
-  })
 })

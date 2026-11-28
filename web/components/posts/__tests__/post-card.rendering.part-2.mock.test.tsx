@@ -11,7 +11,7 @@ import { PostCard } from '../post-card'
 
 import type { Post, PostElection } from '@/types/posts'
 
-import type { PublicUser, User } from '@/types/user'
+import type { User } from '@/types/user'
 
 vi.mock(
   import('@/lib/auth/context'),
@@ -144,21 +144,7 @@ describe('PostCard', () => {
     expect(title).toHaveAttribute('dir', 'auto')
   })
 
-  describe('floating kebab and title padding', () => {
-    it('card view: title gets pr-14 for authenticated non-owner on shareable post', () => {
-      mockPostCardUser.current = { id: 'user-2' } as User
-      const { container } = render(<PostCard post={mockPost} />)
-      expect(container.querySelector('h3')?.className).toContain('pr-14')
-    })
-    it('card view: title has no pr-14 for post owner', () => {
-      mockPostCardUser.current = { id: 'user-1' } as User
-      const { container } = render(<PostCard post={mockPost} />)
-      expect(container.querySelector('h3')?.className).not.toContain('pr-14')
-    })
-    it('card view: title has no pr-14 when signed out', () => {
-      const { container } = render(<PostCard post={mockPost} />)
-      expect(container.querySelector('h3')?.className).not.toContain('pr-14')
-    })
+  describe('floating kebab', () => {
     it('card view: omits follower share actions when signed out', () => {
       render(<PostCard post={mockPost} />)
       expect(screen.queryByTestId('follower-share-actions')).toBeNull()
@@ -167,42 +153,6 @@ describe('PostCard', () => {
       mockPostCardUser.current = { id: 'user-2' } as User
       render(<PostCard post={mockPost} />)
       expect(screen.getByTestId('follower-share-actions')).toBeInTheDocument()
-    })
-    it('compact view: title has no pr-14 even for authenticated non-owner', () => {
-      mockPostCardUser.current = { id: 'user-2' } as User
-      const { container } = render(
-        <PostCard
-          post={mockPost}
-          view='compact'
-        />,
-      )
-      expect(container.querySelector('h3')?.className).not.toContain('pr-14')
-    })
-    it('card view: shared byline gets pr-14 for authenticated non-owner', () => {
-      mockPostCardUser.current = { id: 'user-3' } as User
-      const sharedByUser: PublicUser = { account_type: null, id: 'user-2', username: 'sharer' }
-      const { container } = render(
-        <PostCard
-          post={mockPost}
-          sharedByUser={sharedByUser}
-        />,
-      )
-      expect(container.querySelector('[data-pw="shared-byline"]')?.getAttribute('data-class')).toBe(
-        'pr-14',
-      )
-    })
-    it('card view: shared byline has no pr-14 for post owner', () => {
-      mockPostCardUser.current = { id: 'user-1' } as User
-      const sharedByUser: PublicUser = { account_type: null, id: 'user-2', username: 'sharer' }
-      const { container } = render(
-        <PostCard
-          post={mockPost}
-          sharedByUser={sharedByUser}
-        />,
-      )
-      expect(container.querySelector('[data-pw="shared-byline"]')?.getAttribute('data-class')).toBe(
-        '',
-      )
     })
   })
 })

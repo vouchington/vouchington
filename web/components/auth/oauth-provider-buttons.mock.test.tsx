@@ -65,7 +65,6 @@ describe('FacebookLoginButton', () => {
     const button = screen.getByRole('button', { name: 'Continue with Facebook (unavailable)' })
     expect(button).toHaveAttribute('aria-disabled', 'true')
     expect(button).not.toBeDisabled()
-    expect(button.className).toContain('bg-[#166FE5]')
 
     fireEvent.click(button)
     expect(onToken).not.toHaveBeenCalled()

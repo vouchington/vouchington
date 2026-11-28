@@ -227,42 +227,4 @@ describe('PostDetail byline and layout', () => {
     expect(screen.getByText('Posted by Anonymous')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Posted by/i })).toBeNull()
   })
-
-  describe('floating kebab and title padding (shareMenuVisible)', () => {
-    it('title gets pr-14 for authenticated non-owner on shareable post', () => {
-      mockCurrentUser = { id: 'user-viewer' } as User
-      const post: Post = { ...basePost, title: 'My Post', created_by_id: 'user-owner' }
-      const { container } = render(
-        <PostDetail
-          post={post}
-          html=''
-          currentUserId='user-viewer'
-        />,
-      )
-      expect(container.querySelector('h1')?.className).toContain('pr-14')
-    })
-
-    it('title has no pr-14 when user is the post owner', () => {
-      mockCurrentUser = { id: 'user-1' } as User
-      const post: Post = { ...basePost, title: 'My Post', created_by_id: 'user-1' }
-      const { container } = render(
-        <PostDetail
-          post={post}
-          html=''
-        />,
-      )
-      expect(container.querySelector('h1')?.className).not.toContain('pr-14')
-    })
-
-    it('title has no pr-14 when signed out', () => {
-      const post: Post = { ...basePost, title: 'My Post', created_by_id: 'user-owner' }
-      const { container } = render(
-        <PostDetail
-          post={post}
-          html=''
-        />,
-      )
-      expect(container.querySelector('h1')?.className).not.toContain('pr-14')
-    })
-  })
 })

@@ -77,7 +77,6 @@ describe('UserProfileLinks', () => {
     expect(github.getAttribute('target')).toBe('_blank')
     expect(github.getAttribute('rel')).toBe('noopener noreferrer nofollow')
     expect(github.getAttribute('data-pw')).toBe('profile-link-github')
-    expect(github.className).toContain('size-11')
     expect(screen.getByRole('link', { name: 'X / Twitter' }).getAttribute('href')).toBe(
       'https://x.com/jack',
     )

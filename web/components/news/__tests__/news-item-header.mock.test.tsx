@@ -118,14 +118,6 @@ describe('NewsItemHeader', () => {
     expect(chips.getAttribute('data-tab')).toBe('news')
   })
 
-  it('renders in a scrollable row without flex-wrap', () => {
-    const { container } = render(<NewsItemHeader item={MOCK_ITEM} />)
-    const header = container.querySelector('[data-pw="news-item-header"]')
-    expect(header?.className).toContain('overflow-x-auto')
-    expect(header?.className).toContain('scrollbar-hide')
-    expect(header?.className).not.toContain('flex-wrap')
-  })
-
   it('renders category chips within the same flex row', () => {
     const itemWithCategories: RssFeedItem = {
       ...MOCK_ITEM,

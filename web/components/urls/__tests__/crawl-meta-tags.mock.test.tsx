@@ -161,9 +161,9 @@ describe('CrawlMetaTags', () => {
       lang: null,
     })
 
-    // Find the dt elements in the "All Meta Tags" section (the xs font ones)
-    const smallDts = [...document.querySelectorAll('dt.text-xs')]
-    const keys = smallDts.map(dt => dt.textContent)
+    // Find the dt elements in the "All Meta Tags" section
+    const keyTerms = [...document.querySelectorAll('details dt')]
+    const keys = keyTerms.map(dt => dt.textContent)
     expect(keys).toEqual(keys.toSorted())
   })
 

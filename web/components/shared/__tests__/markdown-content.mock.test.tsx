@@ -55,7 +55,6 @@ describe('MarkdownContent', () => {
     const paragraph = container.querySelector('p')
     const link = container.querySelector('a')
     const image = container.querySelector('img')
-    expect(paragraph).toHaveClass('body')
     expect(paragraph).toHaveAttribute('data-kind', 'post')
     expect(paragraph).not.toHaveAttribute('style')
     expect(paragraph).not.toHaveAttribute('onclick')
@@ -103,17 +102,6 @@ describe('MarkdownContent', () => {
     )
     expect(container.querySelector('div')).toBeInTheDocument()
     expect(container.querySelector('pre')).toBeNull()
-  })
-
-  it('applies className to rendered element', () => {
-    const { container } = render(
-      <MarkdownContent
-        lang={null}
-        html='<p>test</p>'
-        className='my-class'
-      />,
-    )
-    expect(container.firstChild).toHaveClass('my-class')
   })
 
   it('renders MarkdownContentEnhancer when features.code is true', () => {
@@ -235,7 +223,6 @@ describe('MarkdownContent', () => {
     const enhancer = screen.getByTestId('enhancer')
     expect(enhancer.querySelector('h1')).toBeNull()
     expect(enhancer.querySelector('h3')?.textContent).toBe('Top')
-    expect(enhancer.querySelector('h3')).toHaveClass('title')
     expect(enhancer.querySelector('p')?.getAttribute('data-example')).toBe('<h1>')
     expect(enhancer.querySelector('h4')?.textContent).toBe('Nested')
   })

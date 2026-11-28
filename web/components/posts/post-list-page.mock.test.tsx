@@ -1,7 +1,6 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { render } from '@testing-library/react'
 import { PostListPage } from './post-list-page'
 
 vi.mock(import('@/lib/api/server/hacker-news-config'), () => ({
@@ -128,14 +127,6 @@ const mockConfig = {
 }
 
 describe('PostListPage', () => {
-  it('renders without a max-w-4xl constraint inside PageWithAside', async () => {
-    const ui = await PostListPage({ config: mockConfig, searchParams: Promise.resolve({}) })
-    const { container } = render(ui)
-    const innerDiv = container.querySelector('[data-testid="page-with-aside"] > div')
-    expect(innerDiv).not.toBeNull()
-    expect(innerDiv!.className).not.toContain('max-w-')
-  })
-
   it('preserves legacy topics query params for bookmarked post list URLs', async () => {
     await PostListPage({
       config: mockConfig,

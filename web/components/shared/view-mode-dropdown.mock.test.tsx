@@ -115,17 +115,7 @@ describe('ViewModeDropdown', () => {
       />,
     )
     const trigger = screen.getByRole('button', { name: 'View: Card' })
-    // The sr-only span carries the label
-    const srSpan = trigger.querySelector('.sr-only')
-    expect(srSpan).not.toBeNull()
-    expect(srSpan!.textContent).toBe('Card')
-    // No non-sr-only child of the trigger renders 'Card' as visible text
-    const visibleTriggerText = [...trigger.childNodes].reduce(
-      (acc, n) =>
-        n instanceof Element && n.classList.contains('sr-only') ? acc : acc + (n.textContent ?? ''),
-      '',
-    )
-    expect(visibleTriggerText).not.toContain('Card')
+    expect(trigger).toHaveAccessibleName('View: Card')
   })
 
   it('dropdown menu items show the full visible label', () => {

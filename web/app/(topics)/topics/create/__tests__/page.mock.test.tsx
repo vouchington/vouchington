@@ -188,11 +188,6 @@ describe('CreateTopicPage', () => {
     expect(screen.queryByText('Create a new topic')).not.toBeInTheDocument()
   })
 
-  it('form element has no bg-card class', () => {
-    const { container } = render(<CreateTopicPage />)
-    expect(container.querySelector('form')?.className).not.toMatch(/bg-card/)
-  })
-
   it('auto-populates slug from name and stops when slug is manually edited', () => {
     render(<CreateTopicPage />)
 

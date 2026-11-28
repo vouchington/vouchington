@@ -87,7 +87,10 @@ export function NotificationRow({
             {title}
           </span>
           {!notification.read_at ? (
-            <span className='inline-flex h-2 w-2 rounded-full bg-destructive' />
+            <span
+              data-pw='notification-unread-indicator'
+              className='inline-flex h-2 w-2 rounded-full bg-destructive'
+            />
           ) : null}
         </span>
         {body ? <span className='mt-1 block text-sm text-muted-foreground'>{body}</span> : null}

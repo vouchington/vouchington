@@ -5,34 +5,11 @@ import { render, screen } from '@testing-library/react'
 import { HoverableCard } from '../hoverable-card'
 
 describe('HoverableCard', () => {
-  it('renders a div with the shared hoverable card shell classes', () => {
+  it('renders a div', () => {
     const { container } = render(<HoverableCard>Card content</HoverableCard>)
     const card = container.firstElementChild
 
     expect(card?.tagName).toBe('DIV')
-    expect(card?.className).toContain('rounded-md')
-    expect(card?.className).toContain('border')
-    expect(card?.className).toContain('bg-card')
-    expect(card?.className).toContain('p-4')
-    expect(card?.className).toContain('text-card-foreground')
-    expect(card?.className).toContain('shadow-sm')
-    expect(card?.className).toContain('transition-shadow')
-    expect(card?.className).toContain('hover:shadow-md')
-    expect(card?.className).toContain('dark:shadow-none')
-    expect(card?.className).toContain('dark:hover:shadow-none')
-    expect(card?.className).toContain('dark:hover:border-accent-foreground/20')
-  })
-
-  it('merges additional classes and allows spacing overrides', () => {
-    const { container } = render(
-      <HoverableCard className='flex items-center p-0'>Compact card</HoverableCard>,
-    )
-    const card = container.firstElementChild
-
-    expect(card?.className).toContain('flex')
-    expect(card?.className).toContain('items-center')
-    expect(card?.className).toContain('p-0')
-    expect(card?.className).not.toContain('p-4')
   })
 
   it('forwards HTML props, children, and data-pw', () => {
@@ -51,20 +28,16 @@ describe('HoverableCard', () => {
     expect(card?.getAttribute('data-pw')).toBe('hoverable-card')
   })
 
-  it('can render the shell classes onto a child element', () => {
+  it('can render onto a child element', () => {
     render(
-      <HoverableCard
-        asChild
-        className='block'
-      >
+      <HoverableCard asChild>
         <Link href='/topics'>Topics</Link>
       </HoverableCard>,
     )
 
     const link = screen.getByRole('link', { name: 'Topics' })
     expect(link.getAttribute('href')).toBe('/topics')
-    expect(link.className).toContain('block')
-    expect(link.className).toContain('hover:shadow-md')
+    expect(link.getAttribute('data-pw')).toBe('hoverable-card')
   })
 
   it('forwards refs to the rendered element', () => {

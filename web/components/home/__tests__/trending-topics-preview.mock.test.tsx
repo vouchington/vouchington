@@ -54,8 +54,7 @@ describe('TrendingTopicsPreview', () => {
 
     render(<TrendingTopicsPreview data={data} />)
 
-    const topicLink = screen.getByRole('link', { name: /Acme Rewards/i })
-    expect(topicLink.className).toContain('hover:shadow-md')
+    expect(screen.getByRole('link', { name: /Acme Rewards/i })).toBeInTheDocument()
     expect(screen.getByText('4.5')).toBeInTheDocument()
     expect(screen.getByText('1.3K')).toBeInTheDocument()
     expect(screen.getByText('Card')).toBeInTheDocument()

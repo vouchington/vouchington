@@ -59,11 +59,7 @@ describe('CommentNodeHeader collapsed reply count', () => {
     )
 
     const count = screen.getByText((_, element) => {
-      return (
-        element?.tagName === 'SPAN' &&
-        element.classList.contains('ml-1') &&
-        hasPhrase(element.textContent ?? '', expected)
-      )
+      return element?.tagName === 'SPAN' && hasPhrase(element.textContent ?? '', expected)
     })
     expect(count).toBeInTheDocument()
     expect(count.textContent).not.toContain('children')

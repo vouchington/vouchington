@@ -42,7 +42,6 @@ describe('DiscussInCommunityAction', () => {
       />,
     )
     const discussButton = screen.getByRole('button', { name: /discuss/i })
-    expect(discussButton.className).toContain('h-11')
     expect(discussButton.querySelector('svg')).not.toBeNull()
     fireEvent.click(discussButton)
 

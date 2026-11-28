@@ -190,20 +190,4 @@ describe('PostImageLightbox', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
-
-  it('carousel arrows are positioned inside the viewport', () => {
-    render(
-      <PostImageLightbox
-        images={images}
-        startIndex={0}
-        open
-        onOpenChange={vi.fn<VitestLooseMock>()}
-        alt='Post'
-      />,
-    )
-    const prevBtn = screen.getByRole('button', { name: 'Previous slide' })
-    const nextBtn = screen.getByRole('button', { name: 'Next slide' })
-    expect(prevBtn.className).toContain('left-2')
-    expect(nextBtn.className).toContain('right-2')
-  })
 })

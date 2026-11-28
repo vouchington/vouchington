@@ -58,8 +58,6 @@ describe('SourcesFilterForm — keyboard submit', () => {
 
     const button = screen.getByRole('button', { name: 'Search' })
     expect(button).toBeVisible()
-    expect(button).toHaveClass('h-11', 'w-11')
-    expect(button).not.toHaveClass('sm:h-9', 'sm:w-9')
   })
 
   it('publisher type select pushes publisher_type param immediately', () => {

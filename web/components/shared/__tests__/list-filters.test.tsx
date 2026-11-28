@@ -136,8 +136,6 @@ describe('ListFilters', () => {
 
     const button = screen.getByRole('button', { name: 'Search' })
     expect(button).toBeVisible()
-    expect(button).toHaveClass('h-11', 'w-11')
-    expect(button).not.toHaveClass('sm:h-9', 'sm:w-9')
   })
 
   it('uses a custom accessible label for page-specific search inputs', () => {

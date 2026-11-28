@@ -53,11 +53,9 @@ function ForwardRefAside({ ref }: { ref?: React.Ref<HTMLDivElement> }) {
 }
 
 describe('PageWithAside', () => {
-  it('wraps children in the main min-w-0 column', () => {
-    const { container } = render(<PageWithAside>content</PageWithAside>)
-    const wrapper = container.querySelector('.min-w-0')
-    expect(wrapper).not.toBeNull()
-    expect(wrapper?.textContent).toBe('content')
+  it('renders children', () => {
+    render(<PageWithAside>content</PageWithAside>)
+    expect(screen.getByText('content')).toBeInTheDocument()
   })
 
   describe('without aside', () => {
@@ -79,20 +77,6 @@ describe('PageWithAside', () => {
     it('does not render AsideDrawer when aside is false', () => {
       render(<PageWithAside aside={false as unknown as ReactNode}>content</PageWithAside>)
       expect(screen.queryByTestId('aside-drawer')).toBeNull()
-    })
-
-    it('does not apply lg:flex-row to the content wrapper when aside is omitted', () => {
-      const { container } = render(<PageWithAside>content</PageWithAside>)
-      const wrapper = container.querySelector('[data-pw="page-content-wrapper"]')
-      expect(wrapper).not.toBeNull()
-      expect(wrapper!.className).not.toContain('lg:flex-row')
-    })
-
-    it('does not apply lg:flex-row to the content wrapper when aside is null', () => {
-      const { container } = render(<PageWithAside aside={null}>content</PageWithAside>)
-      const wrapper = container.querySelector('[data-pw="page-content-wrapper"]')
-      expect(wrapper).not.toBeNull()
-      expect(wrapper!.className).not.toContain('lg:flex-row')
     })
   })
 

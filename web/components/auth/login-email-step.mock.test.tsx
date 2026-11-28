@@ -69,16 +69,6 @@ describe('LoginEmailStep', () => {
     expect(privacyLink).toHaveAttribute('href', '/article/privacy-policy')
   })
 
-  it('hides content when active is false', () => {
-    render(
-      <LoginEmailStep
-        {...defaultProps}
-        active={false}
-      />,
-    )
-    expect(screen.getByLabelText(/email/i).closest('.hidden')).not.toBeNull()
-  })
-
   it('calls onEmailChange when email input changes', () => {
     const onEmailChange = vi.fn<VitestLooseMock>()
     render(

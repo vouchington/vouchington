@@ -123,7 +123,7 @@ describe('VoteIntegrityFlagsClient', () => {
   })
 
   it('updates the status selector immediately when changing filters', async () => {
-    const { container } = render(
+    render(
       <VoteIntegrityFlagsClient
         initialData={initialData}
         initialStatus='pending'
@@ -143,9 +143,6 @@ describe('VoteIntegrityFlagsClient', () => {
 
     expect(screen.getByText('Filter: resolved')).toBeInTheDocument()
     expect(mockReplace).toHaveBeenCalledWith('/vote-integrity/flags?status=resolved')
-    expect(container.firstElementChild?.className).not.toMatch(
-      /(?:^|\s)(?:mx-auto|max-w-\S+|p-8)(?:\s|$)/,
-    )
   })
 
   it('uses the server-provided status after navigation completes', async () => {

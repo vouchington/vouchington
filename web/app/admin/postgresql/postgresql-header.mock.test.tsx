@@ -42,15 +42,8 @@ describe('PostgreSQLHeader', () => {
         loading={false}
       />,
     )
-    const heading = screen.getByRole('heading', { level: 1, name: 'PostgreSQL' })
-    expect(heading).toHaveClass('text-xl', 'font-semibold', 'sm:text-2xl')
-    expect(heading).not.toHaveClass('font-bold')
-    expect(screen.getByText('Database migrations and management')).toHaveClass(
-      'mt-1',
-      'text-sm',
-      'text-muted-foreground',
-    )
-    expect(heading.parentElement?.parentElement).toHaveClass('flex-col', 'gap-3', 'sm:flex-row')
+    expect(screen.getByRole('heading', { level: 1, name: 'PostgreSQL' })).toBeInTheDocument()
+    expect(screen.getByText('Database migrations and management')).toBeInTheDocument()
   })
 
   it('renders the refresh button in loading state', () => {

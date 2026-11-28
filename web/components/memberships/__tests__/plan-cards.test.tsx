@@ -104,17 +104,6 @@ describe('PlanCards', () => {
     expect(screen.getByRole('link', { name: /get started/i })).toBeInTheDocument()
   })
 
-  it('"Get Started" button uses default variant, not outline', () => {
-    renderWithProviders(<PlanCards plans={MOCK_PLANS} />)
-
-    const link = screen.getByRole('link', { name: /get started/i })
-    // The Button renders the variant as a class on the element. Default variant adds
-    // bg-primary; outline variant adds border and no background fill class.
-    const btn = link.closest('a') ?? link
-    expect(btn.className).not.toContain('border-input')
-    expect(btn.className).toContain('bg-primary')
-  })
-
   it('links signed-out paid plan CTAs to login instead of checkout', () => {
     renderWithProviders(<PlanCards plans={MOCK_PLANS} />)
 

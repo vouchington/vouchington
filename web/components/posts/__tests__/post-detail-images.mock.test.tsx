@@ -57,7 +57,5 @@ describe('PostDetail images', () => {
 
     const image = container.querySelector('img[data-image-id="img-1"]')
     expect(image).toBeDefined()
-    expect(image?.parentElement?.className).toContain('items-center')
-    expect(image?.parentElement?.className).toContain('justify-center')
   })
 })

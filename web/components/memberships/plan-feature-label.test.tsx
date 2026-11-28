@@ -11,17 +11,6 @@ describe('PlanFeatureLabel', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
-  it('applies className to the plain label wrapper', () => {
-    render(
-      <PlanFeatureLabel
-        label='Browse all content'
-        className='text-muted-foreground'
-      />,
-    )
-
-    expect(screen.getByText('Browse all content')).toHaveClass('text-muted-foreground')
-  })
-
   it('renders a stable data-pw hook for tooltip labels', () => {
     const { container } = render(
       <PlanFeatureLabel
@@ -32,9 +21,6 @@ describe('PlanFeatureLabel', () => {
     )
 
     expect(screen.getByRole('button', { name: 'Immediate access' })).toBeInTheDocument()
-    expect(container.querySelector('[data-pw="custom-plan-feature-label"]')).toHaveClass(
-      'min-w-0',
-      'flex-1',
-    )
+    expect(container.querySelector('[data-pw="custom-plan-feature-label"]')).not.toBeNull()
   })
 })

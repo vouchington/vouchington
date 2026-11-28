@@ -153,14 +153,6 @@ describe('TopicListPage', () => {
     })
   })
 
-  it('renders without a max-w-4xl constraint inside PageWithAside', async () => {
-    const ui = await TopicListPage({ config: mockConfig, searchParams: Promise.resolve({}) })
-    const { container } = render(ui)
-    const innerDiv = container.querySelector('[data-testid="page-with-aside"] > div')
-    expect(innerDiv).not.toBeNull()
-    expect(innerDiv!.className).not.toContain('max-w-')
-  })
-
   it('renders RecommendedTopicsAside when intent is topics', async () => {
     mockGetActiveIntent.mockReturnValue('topics')
     const ui = await TopicListPage({ config: mockConfig, searchParams: Promise.resolve({}) })

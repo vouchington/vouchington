@@ -180,8 +180,6 @@ describe('LinkPostMedia', () => {
     expect(image).not.toBeNull()
     expect(image?.getAttribute('width')).toBe('640')
     expect(image?.getAttribute('height')).toBe('360')
-    expect(image?.className).toContain('aspect-video')
-    expect(image?.className).toContain('w-full')
   })
 
   it('renders a rich article embed in card view', () => {

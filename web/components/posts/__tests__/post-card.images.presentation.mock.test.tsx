@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 
@@ -88,14 +88,6 @@ describe('PostCard image presentation', () => {
       'href',
       expect.stringContaining(post.id),
     )
-  })
-
-  it('places card carousel arrows inside the viewport', async () => {
-    const PostCard = await loadPostCard()
-    render(<PostCard post={postWithImages(2)} />)
-
-    expect(screen.getByRole('button', { name: 'Previous slide' })).toHaveClass('left-2')
-    expect(screen.getByRole('button', { name: 'Next slide' })).toHaveClass('right-2')
   })
 
   it('shows raw vote counts with the signed-out voting link', async () => {

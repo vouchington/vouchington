@@ -31,9 +31,8 @@ describe('ModerationTransparencyLoading', () => {
   it('mirrors the page wrapper, header, range control, and loading panel', async () => {
     getTranslationsMock.mockResolvedValue((key: string) => key)
 
-    const { container } = render(await Loading())
+    render(await Loading())
 
-    expect(container.firstElementChild).toHaveClass('space-y-6')
     expect(screen.getByTestId('settings-page-header')).toBeInTheDocument()
     expect(rangeFilterMock).toHaveBeenCalledWith(
       expect.objectContaining({

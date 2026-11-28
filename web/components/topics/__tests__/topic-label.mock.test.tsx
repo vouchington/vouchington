@@ -113,13 +113,4 @@ describe('TopicLabel', () => {
     const { container } = render(<TopicLabel topic={baseTopic} />)
     expect(container.firstElementChild?.getAttribute('data-pw')).toBe('topic-label')
   })
-
-  it('uses compact focus-visible styling without a ring offset', () => {
-    const { container } = render(<TopicLabel topic={baseTopic} />)
-    expect(container.firstElementChild).toHaveClass(
-      'focus-visible:ring-1',
-      'focus-visible:ring-ring',
-    )
-    expect(container.firstElementChild).not.toHaveClass('focus:ring-2', 'focus:ring-offset-2')
-  })
 })

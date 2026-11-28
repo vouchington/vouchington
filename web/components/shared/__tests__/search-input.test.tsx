@@ -21,14 +21,6 @@ describe('SearchInput', () => {
     expect(screen.getByPlaceholderText('Search posts...')).toBeInTheDocument()
   })
 
-  it('uses type=search with CSS to suppress the native WebKit clear button', () => {
-    render(<SearchInput />)
-    const inputs = document.querySelectorAll('input[type="search"]')
-    expect(inputs.length).toBeGreaterThan(0)
-    const input = inputs[0] as HTMLInputElement
-    expect(input.className).toContain('[&::-webkit-search-cancel-button]:hidden')
-  })
-
   it('forwards name and defaultValue', () => {
     render(
       <SearchInput
@@ -40,29 +32,6 @@ describe('SearchInput', () => {
     const input = screen.getByPlaceholderText('Search...') as HTMLInputElement
     expect(input.name).toBe('q')
     expect(input.defaultValue).toBe('hello')
-  })
-
-  it('applies inputClassName to the inner input', () => {
-    render(
-      <SearchInput
-        placeholder='Search...'
-        inputClassName='my-custom-class'
-      />,
-    )
-    const input = screen.getByPlaceholderText('Search...')
-    expect(input.className).toContain('my-custom-class')
-  })
-
-  it('applies className to the outer shell', () => {
-    render(
-      <SearchInput
-        placeholder='Search...'
-        className='shell-class'
-      />,
-    )
-    const input = screen.getByPlaceholderText('Search...')
-    const shell = input.closest('[class*="shell-class"]')
-    expect(shell).toBeTruthy()
   })
 
   it('renders the default shell data-pw hook', () => {

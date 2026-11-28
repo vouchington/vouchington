@@ -178,8 +178,6 @@ describe('ModerationTransparencyPanel', () => {
 
     expect(screen.getByText('Other')).toBeInTheDocument()
     expect(screen.queryByText('Internal only category')).toBeNull()
-    expect(screen.getByRole('table').parentElement).toHaveClass('overflow-x-auto')
-    expect(screen.getByRole('table').parentElement).not.toHaveClass('overflow-hidden')
   })
 
   it('uses the safe fallback when the API introduces an unknown metric', () => {

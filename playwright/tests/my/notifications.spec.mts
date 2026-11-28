@@ -102,6 +102,12 @@ test.describe('My Notifications', () => {
         .getByTestId('notification-item-title')
         .filter({ hasText: '@test-friend started following you' }),
     ).toBeVisible()
+    await expect(
+      page
+        .getByTestId('notification-item-follow')
+        .first()
+        .getByTestId('notification-unread-indicator'),
+    ).toBeVisible()
   })
 
   test('service worker registers and enable/disable push round-trip works', async ({

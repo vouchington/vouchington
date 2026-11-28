@@ -28,6 +28,5 @@ describe('TopicLogo', () => {
     expect(image).toHaveAttribute('height', '200')
     expect(image).toHaveAttribute('data-unoptimized', 'true')
     expect(image).toHaveAttribute('data-pw', 'topic-logo')
-    expect(image).toHaveClass('h-16', 'w-16', 'object-contain')
   })
 })

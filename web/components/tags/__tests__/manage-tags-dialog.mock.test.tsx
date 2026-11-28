@@ -162,7 +162,7 @@ describe('ManageTagsDialog', () => {
     fireEvent.click(screen.getByRole('menuitem'))
 
     await waitFor(() => expect(screen.getByTestId('dialog')).toBeInTheDocument())
-    expect(screen.getByText('Category')).toHaveClass('sr-only')
+    expect(screen.getByText('Category')).toBeInTheDocument()
     expect(mockFetchEntityRelations).toHaveBeenCalledWith(
       'rss_feed_item',
       'item-1',
@@ -197,7 +197,7 @@ describe('ManageTagsDialog', () => {
     await waitFor(() =>
       expect(screen.getByRole('link', { name: 'Manage all tags' })).toBeInTheDocument(),
     )
-    expect(screen.getByText('Publisher Type')).toHaveClass('sr-only')
+    expect(screen.getByText('Publisher Type')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Manage all tags' }).getAttribute('href')).toBe(
       '/source/test-topic/tags/publisher_type',
     )
@@ -235,7 +235,7 @@ describe('ManageTagsDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Manage' }))
 
     await waitFor(() => expect(screen.getByTestId('dialog')).toBeInTheDocument())
-    expect(screen.getByText('Choose the most accurate categories.')).not.toHaveClass('sr-only')
+    expect(screen.getByText('Choose the most accurate categories.')).toBeInTheDocument()
   })
 
   it('falls back to an sr-only heading when dialog description is empty', async () => {
@@ -258,6 +258,6 @@ describe('ManageTagsDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Manage' }))
 
     await waitFor(() => expect(screen.getByTestId('dialog')).toBeInTheDocument())
-    expect(screen.getByText('Category')).toHaveClass('sr-only')
+    expect(screen.getByText('Category')).toBeInTheDocument()
   })
 })

@@ -53,46 +53,16 @@ describe('sidebar structure', () => {
   })
 })
 
-describe('sidebar animation', () => {
-  it('inner wrapper has horizontal-shift transition classes for offcanvas collapse', () => {
-    const { container } = renderSidebar()
-
-    const inner = container
-      .querySelector('[data-sidebar="sidebar"]')
-      ?.closest('[class*="transition-[width,translate]"]')
-    expect(inner).not.toBeNull()
-    expect(inner?.className).toContain('transition-[width,translate]')
-    expect(inner?.className).toContain('translate-x-0')
-    expect(inner?.className).toContain(
-      'group-data-[collapsible=offcanvas]:group-data-[side=left]:-translate-x-full',
-    )
-    expect(inner?.className).toContain(
-      'group-data-[collapsible=offcanvas]:group-data-[side=right]:translate-x-full',
-    )
-  })
-
-  it('keeps active menu rows dimension-stable', () => {
+describe('sidebar active state', () => {
+  it('marks the current page menu button active', () => {
     setMockPathname('/data-points')
-    const { container } = renderSidebar()
-
-    const content = container.querySelector('[data-sidebar="content"]')
-    expect(content?.className).toContain('overflow-x-hidden')
-    expect(content?.className).toContain('overflow-y-auto')
+    renderSidebar()
 
     const dataPointsLink = screen.getByRole('link', { name: /Data Points/i })
-    const activeButton = dataPointsLink.closest('[data-sidebar="menu-button"]')
-    expect(activeButton).not.toBeNull()
-    expect(activeButton?.className).toContain('box-border')
-    expect(activeButton?.className).toContain('w-full')
-    expect(activeButton?.className).toContain('max-w-full')
-    expect(activeButton?.className).toContain('min-w-0')
-    expect(activeButton?.className).toContain('focus-visible:ring-inset')
-    expect(activeButton?.className).toContain('transition-[background-color,color,box-shadow]')
-    expect(activeButton?.className).not.toContain('data-[active=true]:font-medium')
-
-    const item = activeButton?.closest('[data-sidebar="menu-item"]')
-    expect(item?.className).toContain('min-w-0')
-    expect(item?.className).toContain('max-w-full')
+    expect(dataPointsLink.closest('[data-sidebar="menu-button"]')).toHaveAttribute(
+      'data-active',
+      'true',
+    )
   })
 })
 

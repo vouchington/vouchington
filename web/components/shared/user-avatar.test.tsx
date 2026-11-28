@@ -9,15 +9,4 @@ describe('UserAvatar', () => {
     expect(container.querySelector('[data-pw="user-avatar"]')).not.toBeNull()
     expect(screen.getByText('AL')).toBeInTheDocument()
   })
-
-  it('renders configured size class when image id is present', () => {
-    const { container } = render(
-      <UserAvatar
-        username='alex'
-        size='lg'
-      />,
-    )
-
-    expect(container.querySelector('[data-pw="user-avatar"]')).toHaveClass('h-16', 'w-16')
-  })
 })

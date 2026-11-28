@@ -8,7 +8,6 @@ describe('ThirdPartyText', () => {
       <div lang='en'>
         <ThirdPartyText
           as='p'
-          className='summary'
           text='نص من خدمة أخرى'
         />
       </div>,
@@ -16,7 +15,6 @@ describe('ThirdPartyText', () => {
 
     const text = screen.getByText('نص من خدمة أخرى')
     expect(text.tagName).toBe('P')
-    expect(text).toHaveClass('summary')
     expect(text).toHaveAttribute('dir', 'auto')
     expect(text).toHaveAttribute('lang', '')
   })

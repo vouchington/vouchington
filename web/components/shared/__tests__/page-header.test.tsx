@@ -24,6 +24,9 @@ describe('PageHeader', () => {
     expect(h1.nextSibling).toBeNull()
   })
 
+  // The title-size tests below assert class names on purpose: PageHeader's
+  // hasBaseTitleSize branch decides whether a caller's titleClassName drops the
+  // default sm:text-3xl, and the class string is that branch's only output.
   it('applies custom titleClassName to the h1', () => {
     render(
       <PageHeader
@@ -89,18 +92,6 @@ describe('PageHeader', () => {
     )
     expect(h1).toHaveClass('text-[24px]/8')
     expect(h1).not.toHaveClass('sm:text-3xl')
-  })
-
-  it('description uses mt-1 and text-sm styles', () => {
-    render(
-      <PageHeader
-        title='Stories'
-        description='Subtitle text'
-      />,
-    )
-    const p = screen.getByText('Subtitle text')
-    expect(p.className).toContain('mt-1')
-    expect(p.className).toContain('text-sm')
   })
 
   it('defaults the title data-pw to page-header-title', () => {

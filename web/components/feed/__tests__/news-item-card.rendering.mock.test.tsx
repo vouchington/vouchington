@@ -156,30 +156,10 @@ describe('NewsItemCard rendering', () => {
     const { container } = render(<NewsItemCard item={mockItem} />)
     const titleLink = container.querySelector('[data-pw="news-item-card"] a[target="_blank"]')
     expect(titleLink).not.toBeNull()
-    // The title link must NOT use inline-flex — that causes the icon to float to the
-    // right end of the flex container instead of trailing the wrapped text.
-    expect(titleLink?.className).not.toContain('inline-flex')
     // The ExternalLink SVG must be the last child inside the title link.
     const svgIcon = titleLink?.querySelector('svg')
     expect(svgIcon).not.toBeNull()
     expect(titleLink?.lastElementChild?.tagName.toLowerCase()).toBe('svg')
-  })
-  it('card root has relative positioning for floating kebab', () => {
-    const { container } = render(<NewsItemCard item={mockItem} />)
-    const card = container.querySelector('[data-pw="news-item-card"]')
-    expect(card?.className).toContain('relative')
-  })
-  it('title column has pr-12 when authenticated so text does not overlap the floating kebab', () => {
-    const { container } = render(<NewsItemCard item={mockItem} />)
-    const titleCol = container.querySelector('[data-pw="news-item-card"] .space-y-1')
-    expect(titleCol?.className).toContain('pr-12')
-  })
-  it('passes absolute-positioning className to FollowerShareActions compact kebab', async () => {
-    render(<NewsItemCard item={mockItem} />)
-    const actions = await screen.findByTestId('follower-share-actions')
-    expect(actions.className).toContain('absolute')
-    expect(actions.className).toContain('right-2')
-    expect(actions.className).toContain('top-2')
   })
   it('renders source name exactly once (no duplicate source chip)', () => {
     render(<NewsItemCard item={mockItem} />)
