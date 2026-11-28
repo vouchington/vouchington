@@ -1,5 +1,8 @@
-import { createAsyncGeneratorFromCursor } from '@data-stores/psql/cursors'
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import {
+  createAsyncGeneratorFromCursor,
+  resolveCursorOptionsFromQueryOptions,
+} from '@data-stores/psql/cursors'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { getReferralLinkValidationLimit } from '@services/topics/referral-link-validation-limits'
 import sql from 'sql-template-strings'
 
@@ -45,30 +48,15 @@ export async function getAmexCardSlugCatalog(options: QueryOptions = {}): Promis
   const catalog: AmexCardSlug[] = []
   for await (const row of createAsyncGeneratorFromCursor<{ pathname: string }>(
     query,
-    resolveCursorOptions(options),
+    resolveCursorOptionsFromQueryOptions(
+      options,
+      getReferralLinkValidationLimit('rule_cursor_batch_size'),
+    ),
   )) {
     const entry = parseCardSlugFromPathname(row.pathname)
     if (entry) catalog.push(entry)
   }
   return catalog
-}
-
-function resolveCursorOptions(options: QueryOptions) {
-  if (options.query && !hasCursorClient(options.query)) {
-    throw new Error(
-      'getAmexCardSlugCatalog requires query.client to preserve transaction visibility',
-    )
-  }
-  const client = options.query?.client ?? options.client
-  return {
-    batchSize: getReferralLinkValidationLimit('rule_cursor_batch_size'),
-    readOnly: client ? false : (options.readOnly ?? true),
-    ...(client ? { client } : {}),
-  }
-}
-
-function hasCursorClient(query: QueryOptions['query']): query is TransactionQuery {
-  return Boolean(query && 'client' in query)
 }
 
 function parseCardSlugFromPathname(pathname: string): AmexCardSlug | null {

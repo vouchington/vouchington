@@ -1,1 +1,5 @@
-export { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches } from './setup.mts'
+export {
+  createAsyncGeneratorFromCursor,
+  executeHandlerWithCursorInBatches,
+  resolveCursorOptionsFromQueryOptions,
+} from './setup.mts'

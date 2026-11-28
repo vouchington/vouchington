@@ -1,5 +1,9 @@
-import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import {
+  createAsyncGeneratorFromCursor,
+  read,
+  resolveCursorOptionsFromQueryOptions,
+} from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import { getPaginationLimit } from '@services/pagination/config'
 import type { Crawler } from './types.mts'
@@ -115,30 +119,12 @@ export const getCrawlersForHostname = async (
     ORDER BY c.priority DESC, c.id ASC
   `,
     [hostnameId],
-    resolveHostnameCrawlerCursorOptions(options),
+    resolveCursorOptionsFromQueryOptions(options, getPaginationLimit('bulk_default_limit')),
   )) {
     rows.push({ ...toCrawler(row), hostname: row.hostname as string })
   }
 
   return rows
-}
-
-function resolveHostnameCrawlerCursorOptions(options: QueryOptions) {
-  if (options.query && !hasCursorClient(options.query)) {
-    throw new Error(
-      'getCrawlersForHostname requires query.client to preserve transaction visibility',
-    )
-  }
-  const client = options.query?.client ?? options.client
-  return {
-    batchSize: getPaginationLimit('bulk_default_limit'),
-    readOnly: client ? false : (options.readOnly ?? true),
-    ...(client ? { client } : {}),
-  }
-}
-
-function hasCursorClient(query: QueryOptions['query']): query is TransactionQuery {
-  return Boolean(query && 'client' in query)
 }
 
 export function toCrawler(row: Record<string, unknown>): Crawler {

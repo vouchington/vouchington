@@ -1,5 +1,8 @@
 import type { QueryMethod } from './types.mts'
-import { createBoundedCursorApi } from './bounded-cursor-api.mts'
+import {
+  createBoundedCursorApi,
+  resolveCursorOptionsFromQueryOptions,
+} from './bounded-cursor-api.mts'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import pg from 'pg'
 import onError from '@modules/on-error'
@@ -75,6 +78,7 @@ export const write: QueryMethod = (input, valuesOrOptions, options) =>
 
 export const { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches } =
   createBoundedCursorApi(psql)
+export { resolveCursorOptionsFromQueryOptions }
 export const close: Psql['close'] = async () => {
   await Promise.all([psql.close(), jobSerializationPool.end()])
 }

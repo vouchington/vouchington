@@ -1,5 +1,8 @@
-import { createAsyncGeneratorFromCursor } from '@data-stores/psql/cursors'
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import {
+  createAsyncGeneratorFromCursor,
+  resolveCursorOptionsFromQueryOptions,
+} from '@data-stores/psql/cursors'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { getReferralLinkValidationLimit } from '@services/topics/referral-link-validation-limits'
 import sql from 'sql-template-strings'
 import { isHttpUrlWithoutFragment, normalizeUrlForUrlTable } from '@modules/utils/urls'
@@ -170,27 +173,12 @@ async function loadEnabledReferralLinkRules(
   const rules: ValidationRule[] = []
   for await (const rule of createAsyncGeneratorFromCursor<ValidationRule>(
     query,
-    resolveCursorOptions(queryOptions),
+    resolveCursorOptionsFromQueryOptions(
+      queryOptions,
+      getReferralLinkValidationLimit('rule_cursor_batch_size'),
+    ),
   )) {
     rules.push(rule)
   }
   return rules
-}
-
-function resolveCursorOptions(options: QueryOptions) {
-  if (options.query && !hasCursorClient(options.query)) {
-    throw new Error(
-      'loadEnabledReferralLinkRules requires query.client to preserve transaction visibility',
-    )
-  }
-  const client = options.query?.client ?? options.client
-  return {
-    batchSize: getReferralLinkValidationLimit('rule_cursor_batch_size'),
-    readOnly: client ? false : (options.readOnly ?? true),
-    ...(client ? { client } : {}),
-  }
-}
-
-function hasCursorClient(query: QueryOptions['query']): query is TransactionQuery {
-  return Boolean(query && 'client' in query)
 }

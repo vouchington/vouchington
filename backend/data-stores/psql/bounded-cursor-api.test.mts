@@ -4,7 +4,12 @@ import {
   BOUNDED_CURSOR_SERIES_QUERY_FOR_TEST,
 } from '@voucha/test-helpers/sql-query-inputs'
 import { readBoundedCursorConnectionProbeForTest } from '@voucha/test-helpers/bounded-cursor'
-import { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches } from './setup.mts'
+import {
+  createAsyncGeneratorFromCursor,
+  executeHandlerWithCursorInBatches,
+  resolveCursorOptionsFromQueryOptions,
+} from './setup.mts'
+import type { PoolClient, QueryExecutor, TransactionQuery } from './types.mts'
 
 describe('bounded cursor execution', () => {
   it('preserves the underlying fetch default for complete generators without options', async () => {
@@ -136,4 +141,24 @@ describe('bounded cursor execution', () => {
       expect(handled).toBe(false)
     },
   )
+
+  it('resolves cursor options from QueryOptions and rejects executors without a client', () => {
+    expect(resolveCursorOptionsFromQueryOptions({}, 100)).toEqual({
+      batchSize: 100,
+      readOnly: true,
+    })
+    const fakeClient = {} as PoolClient
+    const txQuery = Object.assign(() => Promise.resolve({ rows: [] }), {
+      client: fakeClient,
+    }) as unknown as TransactionQuery
+    expect(resolveCursorOptionsFromQueryOptions({ query: txQuery }, 50)).toEqual({
+      batchSize: 50,
+      readOnly: false,
+      client: fakeClient,
+    })
+    const bareExecutor = (() => Promise.resolve({ rows: [] })) as unknown as QueryExecutor
+    expect(() => resolveCursorOptionsFromQueryOptions({ query: bareExecutor }, 50)).toThrow(
+      'Cursor read requires query.client to preserve transaction visibility',
+    )
+  })
 })
