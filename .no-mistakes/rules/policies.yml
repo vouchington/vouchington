@@ -3204,10 +3204,10 @@
       - job: '.github/workflows/tests-web.yml#web-tests'
         maxMinutes: 30
       # Each shard needs about 1.5m of setup and seeded data directory transfer plus one scenario
-      # step of at most 12m; steps sum to 59m, cap 15m is below it and above the slowest-runner
-      # estimate (about 11m for the largest shard); healthy runtime is 6m to 8m.
+      # step of at most 13m (main-4 took 9m53s and 10m12s, see #6653); steps sum to 62m, cap 17m is
+      # below it and above the slowest-runner estimate; healthy runtime is 6m to 11m.
       - job: '.github/workflows/explain-analyze.yml#explain-analyze'
-        maxMinutes: 15
+        maxMinutes: 17
       # Setup, restore, the crawl-tier check, both seeds (up to 9m), the data directory archive and
       # its uploads; steps sum to 38m, cap 20m is below it.
       - job: '.github/workflows/explain-analyze.yml#seed-explain'

@@ -9,6 +9,7 @@ import {
 import { assertScenarioManifest } from './scenario-manifest-check.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 import {
+  type ExplainShard,
   ORDINARY_EXPLAIN_SHARDS,
   assertShardDeclarations,
   getShardScenarioIds,
@@ -38,8 +39,22 @@ import { runTextEmbeddingRetentionCapacityScenario } from './run-scenarios/text-
 import { runCommunityRosterReadCapacityScenario } from './run-scenarios/community-roster-read-capacity.mts'
 import { runNotificationUnreadCapacityScenario } from './run-scenarios/notification-unread-capacity.mts'
 
+// The ordinary step times out at 13 minutes in explain-analyze.yml; warn well before that so a
+// growing shard shows up as an annotation instead of a timeout. It never fails the run.
+const SLOW_SHARD_WARNING_MS = 11 * 60_000
+
+function warnWhenShardRunsSlow(shard: ExplainShard | undefined, startedAt: number): void {
+  const elapsedMs = Date.now() - startedAt
+  if (!isOrdinaryExplainShard(shard) || elapsedMs <= SLOW_SHARD_WARNING_MS) return
+  const minutes = (elapsedMs / 60_000).toFixed(1)
+  console.log(
+    `::warning title=EXPLAIN shard ${shard} is near its limit::The ${shard} scenarios took ${minutes} minutes against the 13 minute step limit; see #6653 for sharding the late fixture writers.`,
+  )
+}
+
 // EXPLAIN_SHARD splits the CI run (explain-shards.mts); unset runs everything.
 async function main() {
+  const startedAt = Date.now()
   const shard = parseExplainShard(process.env.EXPLAIN_SHARD)
   assertShardDeclarations(EXPLAIN_SCENARIO_MANIFEST)
   prepareOutputDir()
@@ -112,6 +127,7 @@ async function main() {
     assertNoScenarioFailures(runErrors)
   } finally {
     writeResults()
+    warnWhenShardRunsSlow(shard, startedAt)
   }
 }
 async function run(): Promise<void> {
