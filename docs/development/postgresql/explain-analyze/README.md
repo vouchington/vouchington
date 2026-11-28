@@ -225,8 +225,9 @@ proof) and `hn-scale` (the million-post Hacker News fixture) own their fixed sce
 `explain-shards.mts`. Each domain file seeds any extra corpus it needs through idempotent helpers
 in `seed-data/` so it runs alone on a fresh seeded database (`EXPLAIN_DOMAIN=<domain>`), without
 relying on leftovers from earlier domains. Adding a scenario touches only its scenario file,
-`scenario-manifest.mts` and its domain's `run-ordered-scenarios-<domain>.mts` (plus one line in
-`ORDINARY_SHARD_DOMAINS` when adding a new domain). A plan that changes after moving a domain is
+`scenario-manifest.mts` and its domain's `run-ordered-scenarios-<domain>.mts` (plus registering the
+new domain in `EXPLAIN_DOMAINS` and assigning it to a shard in `ORDINARY_SHARD_DOMAINS` when adding
+a new domain). A plan that changes after moving a domain is
 fixed by seeding its required corpus, never by loosening its contract. Both `partition` and
 `hn-scale` are additive, so no other scenario reads them and each has its own shard. Both load
 their posts on parallel connections, one monthly leaf per task, with a

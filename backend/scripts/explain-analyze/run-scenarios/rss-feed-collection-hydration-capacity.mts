@@ -87,15 +87,15 @@ async function captureRecentFeedTypeFilter(feedCount: number): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'rss_feeds', max: articles.length },
     ],
   })
-  const podcast = await write(sql`/* seedExplainRecentPodcastFeed */
-    UPDATE rss_feeds SET feed_type = 'podcast'
-    WHERE id = ${podcastId} AND feed_type = 'article' AND deleted_at IS NULL`)
-  assert.equal(podcast.rowCount, 1)
-  const deleted = await write(sql`/* seedExplainRecentDeletedArticleFeed */
-    UPDATE rss_feeds SET deleted_at = CURRENT_TIMESTAMP
-    WHERE id = ${deletedId} AND feed_type = 'article' AND deleted_at IS NULL`)
-  assert.equal(deleted.rowCount, 1)
   try {
+    const podcast = await write(sql`/* seedExplainRecentPodcastFeed */
+      UPDATE rss_feeds SET feed_type = 'podcast'
+      WHERE id = ${podcastId} AND feed_type = 'article' AND deleted_at IS NULL`)
+    assert.equal(podcast.rowCount, 1)
+    const deleted = await write(sql`/* seedExplainRecentDeletedArticleFeed */
+      UPDATE rss_feeds SET deleted_at = CURRENT_TIMESTAMP
+      WHERE id = ${deletedId} AND feed_type = 'article' AND deleted_at IS NULL`)
+    assert.equal(deleted.rowCount, 1)
     await runAndCapture(
       scenario,
       async () => {

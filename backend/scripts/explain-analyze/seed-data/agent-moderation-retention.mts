@@ -61,8 +61,7 @@ export async function seedAgentModerationRetention(): Promise<void> {
   const releasedDay = new Date(oldMs).toISOString().slice(0, 10)
   await write(
     `/* seedAgentModerationRetentionReleasedCohort */
-     INSERT INTO moderation_transparency_released_daily_rollups
-       (day, community_id, metric, category, count, latest_occurred_at)
+     INSERT INTO moderation_transparency_released_daily_rollups (day, community_id, metric, category, count, latest_occurred_at)
      VALUES ($1::date, NULL, 'automated_moderation', 'agent_moderation', 20, $2::timestamptz)
      ON CONFLICT ON CONSTRAINT moderation_transparency_released_daily_rollups_key DO NOTHING`,
     [releasedDay, new Date(anchorMs - 2 * DAY_MS)],
@@ -72,9 +71,10 @@ export async function seedAgentModerationRetention(): Promise<void> {
 
 /** Defer the large retention corpus until its own plans, then refresh only its statistics. */
 export async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
+  const releasedDay = new Date(postSeedTimestampMs(0) - 120 * DAY_MS).toISOString().slice(0, 10)
   const { rows } = await write<{ exists: boolean }>(
-    `/* seedAgentModerationRetention:check */ SELECT EXISTS(SELECT 1 FROM agents WHERE id = $1::uuid) AS exists`,
-    [BULK_AGENT_ID],
+    `/* seedAgentModerationRetention:check */ SELECT EXISTS(SELECT 1 FROM moderation_transparency_released_daily_rollups WHERE day = $1::date AND community_id = $2::uuid AND metric = 'automated_moderation' AND category = 'agent_moderation') AS exists`,
+    [releasedDay, seedUuid(AGENT_MODERATION_RETENTION_RELEASED_NOISE - 1, 'f5')],
   )
   if (rows[0]?.exists) return
   await seedAgentModerationRetention()

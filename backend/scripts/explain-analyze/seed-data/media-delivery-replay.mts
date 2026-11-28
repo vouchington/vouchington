@@ -18,9 +18,10 @@ export async function seedMediaDeliveryReplay(): Promise<void> {
   const existing = await write<{ exists: boolean }>(
     `/* seedMediaDeliveryReplay:check */
      SELECT EXISTS(
-       SELECT 1 FROM copyright_notice_targets WHERE id = $1::uuid
+       SELECT 1 FROM media_delivery_registry_projection_work_items
+       WHERE media_delivery_registry_record_id = $1::uuid AND failed_change_id IS NOT NULL
      ) AS exists`,
-    [seedUuid(MEDIA_REPLAY_RECORD_COUNT - 1, 'ff')],
+    [mediaReplayFailedIds().at(-1)],
   )
   if (existing.rows[0]?.exists) return
   {
