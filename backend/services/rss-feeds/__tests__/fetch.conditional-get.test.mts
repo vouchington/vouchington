@@ -64,6 +64,74 @@ describe('fetch.conditional-get', () => {
     ).resolves.toBeNull()
   })
 
+  it('getLatestRssFeedCrawlForFeedWithOptions returns newest complete crawl past same-feed failures and other feeds', async () => {
+    const random = Math.random().toString(36).slice(2, 15)
+    const [topicA, topicB] = await Promise.all([
+      createTestTopic({
+        name: `Topic latest A ${random}`,
+        slug: `topic-latest-a-${random}`,
+        hostname: `fetch-latest-a-${random}.example.com`,
+      }),
+      createTestTopic({
+        name: `Topic latest B ${random}`,
+        slug: `topic-latest-b-${random}`,
+        hostname: `fetch-latest-b-${random}.example.com`,
+      }),
+    ])
+    const [feedA, feedB] = await Promise.all([
+      createRssFeed({
+        provenance: WEB_PROVENANCE,
+        skipRemoteValidation: true,
+        rss_feed_url: `https://example.com/latest-a-${random}.xml`,
+        topic_id: topicA.id,
+        title: `Feed latest A ${random}`,
+      }),
+      createRssFeed({
+        provenance: WEB_PROVENANCE,
+        skipRemoteValidation: true,
+        rss_feed_url: `https://example.com/latest-b-${random}.xml`,
+        topic_id: topicB.id,
+        title: `Feed latest B ${random}`,
+      }),
+    ])
+    const [olderFeed, olderSha] = createMockFeedFixture(`older-${random}`)
+    const [newestFeed, newestSha] = createMockFeedFixture(`newest-${random}`)
+    const [otherFeed, otherSha] = createMockFeedFixture(`other-${random}`)
+    await insertTestRssFeedCrawl({
+      rssFeedId: feedA.id,
+      responseCode: 200,
+      feedData: olderFeed,
+      feedDataSha256: olderSha,
+    })
+    await insertTestRssFeedCrawl({
+      rssFeedId: feedA.id,
+      responseCode: 200,
+      feedData: newestFeed,
+      feedDataSha256: newestSha,
+    })
+    await insertTestRssFeedCrawl({
+      rssFeedId: feedA.id,
+      responseCode: 503,
+    })
+    await insertTestRssFeedCrawl({
+      rssFeedId: feedA.id,
+      responseCode: 304,
+    })
+    await insertTestRssFeedCrawl({
+      rssFeedId: feedB.id,
+      responseCode: 200,
+      feedData: otherFeed,
+      feedDataSha256: otherSha,
+    })
+
+    const [summary, payload] = await Promise.all([
+      getLatestRssFeedCrawlForFeedWithOptions(feedA.id, { includeFeedData: false }),
+      getLatestRssFeedCrawlForFeedWithOptions(feedA.id, { includeFeedData: true }),
+    ])
+    expect(summary).toEqual({ feed_data: null, feed_data_sha256: newestSha })
+    expect(payload).toEqual({ feed_data: newestFeed, feed_data_sha256: newestSha })
+  })
+
   it('fetchRssFeed withholds validators and stores items when the crawl body is gone', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({

@@ -138029,6 +138029,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_rss_feed_crawls__rss_feed_id_with_payload": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_crawls__rss_feed_id_with_payload ON ONLY public.rss_feed_crawls USING btree (rss_feed_id, id DESC) WHERE ((feed_data IS NOT NULL) AND (feed_data_sha256 IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "rss_feed_id",
+              "descending": false,
+              "expression": "rss_feed_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((feed_data IS NOT NULL) AND (feed_data_sha256 IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "rss_feed_crawls_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,

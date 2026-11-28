@@ -37,12 +37,13 @@ export async function runRssLatestCrawlCapacityScenario(): Promise<void> {
     await write('/* analyzeExplainLatestRssFeedCrawl */ ANALYZE rss_feed_crawls')
     registerScenarioContract(scenario, {
       seededRows: { rss_feed_crawls: ids.length },
+      forbidSequentialScans: ['rss_feed_crawls'],
       crossPartition: {
         rss_feed_crawls: 'The last successful crawl can precede the newest history partition.',
       },
       expectations: [
-        // Both modes can walk the global newest crawl IDs. https://github.com/vouchington/vouchington/issues/6579
-        { kind: 'maxProcessedRows', relation: 'rss_feed_crawls', max: ids.length - 1 },
+        { kind: 'maxProcessedRows', relation: 'rss_feed_crawls', max: 1 },
+        { kind: 'maxInputRows', nodeType: 'Sort', max: 0 },
       ],
     })
     await runAndCapture(
