@@ -55,7 +55,7 @@ function makeResult(scenarioId: string, plan: PlanNode): ExplainResult {
   return {
     name: 'searchTopicAliases:force_generic_plan',
     scenario_id: scenarioId,
-    query_text: '/* searchTopicAliases */ SELECT 1',
+    query_text: '/* searchTopicAliases */',
     plan,
     execution_time_ms: 0.06,
     planning_time_ms: 0.01,
