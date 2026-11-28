@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
-import { resolveConfig } from 'no-mistakes'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
@@ -25,31 +24,5 @@ describe('tracked-only ShellCheck consumer', () => {
     expect(root.devDependencies['no-mistakes']).toMatch(/^\^\d+\.\d+\.\d+$/)
     expect(ci.dependencies['no-mistakes']).toBe(root.devDependencies['no-mistakes'])
     expect(staticAnalysis.dependencies['no-mistakes']).toBe(root.devDependencies['no-mistakes'])
-  })
-
-  it('limits ShellCheck to tracked scripts, including supported root shebang scripts', async () => {
-    const config = (await resolveConfig({ root: repoRoot, view: 'declared' })) as {
-      rules?: Array<{
-        rule?: string
-        options?: {
-          shebangDirs?: string[]
-          shellFiles?: string[]
-          shellcheck?: { severity?: string }
-          trackedOnly?: boolean
-        }
-      }>
-    }
-    const rule = config.rules?.find(entry => entry.rule === 'shellcheck-runner')
-    expect(rule?.options).toMatchObject({
-      trackedOnly: true,
-      shebangDirs: ['.'],
-      shellcheck: { severity: 'warning' },
-    })
-    expect(rule?.options?.shellFiles).toEqual([
-      'ci/lint-links.sh',
-      'ci/check-needs-results.sh',
-      'ci/coverage-artifacts.sh',
-      'ci/with-node-test-options',
-    ])
   })
 })

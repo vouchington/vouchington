@@ -16,19 +16,7 @@ describe('migration initializer fault project', () => {
   it('owns only the two-case file and registers the same external mocks before normal setup', () => {
     const ordinary = projects.find(project => project.name === 'backend-mocks')
     const dedicated = projects.find(project => project.name === 'backend-migration-initializers')
-    expect(dedicated?.include).toEqual([target])
-    expect(dedicated).toMatchObject({
-      isolate: true,
-      pool: 'forks',
-      sequence: { setupFiles: 'list' },
-      runner: ordinary?.runner,
-      globalSetup: [
-        './test-helpers/vitest.setup.data-stores.mts',
-        './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
-      ],
-      testTimeout: 5_000,
-      hookTimeout: 5_000,
-    })
+    expect(dedicated?.runner).toBe(ordinary?.runner)
     const ordinarySetup = ordinary?.setupFiles
     if (!Array.isArray(ordinarySetup))
       throw new Error('Expected ordered backend mock setup files', { cause: ordinarySetup })

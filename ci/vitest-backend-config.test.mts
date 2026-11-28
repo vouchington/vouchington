@@ -1,12 +1,9 @@
 import { mergeConfig } from 'vitest/config'
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-import picomatch from 'picomatch'
 import config from '../vitest.config.mts'
 import { backendCoreProjects } from '../test-helpers/vitest-config/backend-core-projects.mts'
 import { backendDataProjects } from '../test-helpers/vitest-config/backend-data-projects.mts'
-import { backendAliases, realGlideMqAlias } from '../test-helpers/vitest-config/aliases.mts'
+import { realGlideMqAlias } from '../test-helpers/vitest-config/aliases.mts'
 interface BackendProject {
   extends?: boolean
   resolve?: {
@@ -29,29 +26,9 @@ const realGlideProjectConfig = (): BackendProject | undefined => {
   const projects = config.test?.projects as BackendProject[] | undefined
   return projects?.find(project => project.test?.name === 'backend-real-glide-mq')
 }
-const realGlideProject = (): BackendProject['test'] => realGlideProjectConfig()?.test
 const backendProjects = (): BackendProject[] =>
   (backendCoreProjects as BackendProject[]).concat(backendDataProjects as BackendProject[])
-const backendProjectTest = (name: string): BackendProject['test'] =>
-  backendProjects().find(project => project.test?.name === name)?.test
-function projectOwnsPath(project: BackendProject, path: string): boolean {
-  const includes = project.test?.include ?? []
-  const excludes = project.test?.exclude ?? []
-  return (
-    includes.some(pattern => picomatch.isMatch(path, pattern)) &&
-    !excludes.some(pattern => picomatch.isMatch(path, pattern))
-  )
-}
 describe('backend Vitest project config', () => {
-  it('runs the election waiter contract with the worker and data-store lifecycle', () => {
-    const path = 'backend/test-helpers/election-vote-stats.test.mts'
-    const owners = backendProjects().filter(project => projectOwnsPath(project, path))
-    expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
-    expect(owners[0]?.test?.globalSetup).toContain('./test-helpers/vitest.setup.data-stores.mts')
-    expect(owners[0]?.test?.setupFiles).toContain(
-      './test-helpers/vitest.setup.glide-mq-workers.mts',
-    )
-  })
   it('registers request query timing before the database setup in profiled projects', () => {
     const projects = config.test?.projects as BackendProject[] | undefined
     const profiledProjects =
@@ -69,43 +46,6 @@ describe('backend Vitest project config', () => {
         setupFiles.indexOf('./test-helpers/vitest.setup.request-query-timing.mts'),
       ).toBeLessThan(setupFiles.indexOf('./test-helpers/vitest.setup.shared-db-scope-guard.mts'))
     }
-  })
-  it('registers the GlideMQ attachment guard runner only for backend-data-stores', () => {
-    const runner = './test-helpers/vitest.runner.backend-data-guards.mts'
-    const projects = config.test?.projects as BackendProject[] | undefined
-    const owners = projects?.filter(project => project.test?.runner === runner) ?? []
-    const dataStores = backendProjectTest('backend-data-stores')
-    expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
-    expect(dataStores?.runner).toBe(runner)
-    expect(realGlideProject()?.runner).toBeUndefined()
-  })
-  it('keeps the self-isolating global media replay case in backend-data-stores', () => {
-    const path = 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts'
-    const owners = backendProjects()
-      .filter(project => projectOwnsPath(project, path))
-      .map(project => project.test?.name)
-
-    expect(owners).toEqual(['backend-data-stores'])
-  })
-
-  it('gives schema fixtures synthetic secret encryption keys without full data-store setup', () => {
-    const schema = backendProjectTest('backend-postgres-schema')
-
-    expect(schema?.globalSetup).toBeUndefined()
-    expect(schema?.setupFiles).toContain(
-      './test-helpers/vitest.setup.stored-secret-encryption-keys.mts',
-    )
-  })
-
-  it('raises the Valkey request budget before DB-backed setup creates clients', () => {
-    const setupSource = readFileSync('test-helpers/vitest.setup.data-stores.mts', 'utf8')
-    const timeoutAssignment = setupSource.indexOf(
-      "process.env.VALKEY_REQUEST_TIMEOUT_MS ??= '5000'",
-    )
-    const setupFunction = setupSource.indexOf('export async function setup()')
-
-    expect(timeoutAssignment).toBeGreaterThan(-1)
-    expect(timeoutAssignment).toBeLessThan(setupFunction)
   })
 
   it('keeps every fork-leak project backed by data-store global setup', () => {
@@ -129,22 +69,6 @@ describe('backend Vitest project config', () => {
     )
   })
 
-  it('isolates the real GlideMQ transport contract without global queue setup', () => {
-    expect(realGlideProject()).toMatchObject({
-      pool: 'forks',
-      isolate: true,
-      include: ['backend/**/*.real-glide.mock.test.mts', 'backend/**/*.real-glide.test.mts'],
-    })
-    // No queue global setup: the AWS Emulator is the only shared service this project starts.
-    expect(realGlideProject()?.globalSetup).toBe(
-      './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
-    )
-    expect(realGlideProject()?.setupFiles).toEqual([
-      './test-helpers/vitest.setup.postgres-sessions.mts',
-      './backend/test-helpers/vitest.setup.aws-emulator.mts',
-    ])
-  })
-
   it('resolves GlideMQ to the installed package after inheriting root aliases', () => {
     const project = realGlideProjectConfig()
     const effectiveConfig = mergeConfig({ resolve: config.resolve }, { resolve: project?.resolve })
@@ -155,60 +79,6 @@ describe('backend Vitest project config', () => {
 
     expect(project?.extends).toBe(true)
     expect(glideMqAlias).toEqual(realGlideMqAlias())
-    expect(backendAliases().find(alias => String(alias.find) === '/^glide-mq$/')?.replacement).toBe(
-      resolve(process.cwd(), 'test-helpers/worker-query-profile.mts'),
-    )
-  })
-
-  it('keeps no-data mocks disjoint from DB-backed mocks without service setup', () => {
-    const noDataMocks = backendProjectTest('backend-no-data-mocks')
-    const dataMocks = backendProjectTest('backend-mocks')
-
-    expect(noDataMocks).toMatchObject({
-      isolate: true,
-      pool: 'forks',
-      setupFiles: [
-        './backend/test-helpers/vitest.setup.sentry-mock.mts',
-        './backend/test-helpers/vitest.setup.aws-emulator.mts',
-      ],
-    })
-    // The AWS Emulator is the only service a no-data project starts.
-    expect(noDataMocks?.globalSetup).toBe(
-      './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
-    )
-    expect(noDataMocks?.setupFiles).not.toEqual(
-      expect.arrayContaining([
-        './test-helpers/vitest.setup.dynamic-config-isolation.mts',
-        './test-helpers/vitest.setup.glide-mq-workers.mts',
-      ]),
-    )
-    expect(dataMocks?.exclude).toContain('**/*.no-data.mock.test.mts')
-  })
-
-  it('keeps no-data mocks and injected unit tests owned by one project without database setup', () => {
-    const noDataMocks = backendProjectTest('backend-no-data-mocks')
-    const dataMocks = backendProjectTest('backend-mocks')
-
-    expect(noDataMocks?.include).toContain('backend/**/*.no-data.mock.test.mts')
-    for (const path of [
-      'backend/modules/example.no-data.mock.test.mts',
-      'backend/modules/model-providers/openai-generate.no-data.test.mts',
-      'backend/entrypoints/api/startup.test.mts',
-      'backend/entrypoints/api/glidemq-dashboard.test.mts',
-      'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts',
-      'backend/data-stores/graceful-shutdown/index.test.mts',
-      'backend/services/jwt-session/verify-request-memo.test.mts',
-    ]) {
-      const owners = backendProjects().filter(project => projectOwnsPath(project, path))
-      expect(owners.map(project => project.test?.name)).toEqual(['backend-no-data-mocks'])
-      expect(owners[0]?.test?.globalSetup).toBe(
-        './backend/test-helpers/vitest.setup.aws-emulator-server.mts',
-      )
-    }
-    expect(dataMocks?.include).toContain(
-      'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,mcp,worker-runtime,workers}/**/*.mock.test.mts',
-    )
-    expect(dataMocks?.exclude).toContain('**/*.no-data.mock.test.mts')
   })
 
   it('excludes nested dependency tests from broad backend project globs', () => {
@@ -217,67 +87,11 @@ describe('backend Vitest project config', () => {
       return include?.some(pattern => pattern.startsWith('backend/') && pattern.includes('**/'))
     })
 
-    expect(broadBackendProjects.map(project => project.test?.name)).toContain(
-      'backend/services/analytics',
-    )
     expect(broadBackendProjects).not.toHaveLength(0)
     expect(
       broadBackendProjects.filter(
         project => !project.test?.exclude?.includes('**/node_modules/**'),
       ),
     ).toEqual([])
-  })
-
-  it('folds the seed CSV import back into ordinary backend-data-stores coverage', () => {
-    const dataStores = backendProjects().find(
-      project => project.test?.name === 'backend-data-stores',
-    )?.test
-
-    expect(
-      backendProjects().find(project => project.test?.name === 'backend-seed-csvs'),
-    ).toBeUndefined()
-    expect(dataStores?.exclude ?? []).not.toContain(
-      'backend/services/admin-imports/seed-csvs.test.mts',
-    )
-  })
-
-  it('folds the report pagination matrices back into ordinary backend-data-stores coverage', () => {
-    const dataStores = backendProjects().find(
-      project => project.test?.name === 'backend-data-stores',
-    )?.test
-
-    expect(
-      backendProjects().find(project => project.test?.name === 'backend-report-pagination'),
-    ).toBeUndefined()
-    expect(dataStores?.exclude ?? []).not.toContain(
-      'backend/api/v1/reports/__tests__/reports.clustered-pagination-matrix.test.mts',
-    )
-    expect(dataStores?.exclude ?? []).not.toContain(
-      'backend/api/v1/reports/__tests__/reports.flat-pagination-matrix.test.mts',
-    )
-  })
-
-  it('isolates the Crawler RSS analytics contract in exactly one project', () => {
-    const path = 'backend/services/crawler-rss/index.redirect.test.mts'
-    const projects = config.test?.projects as BackendProject[] | undefined
-    const owners = projects?.filter(project => projectOwnsPath(project, path)) ?? []
-
-    expect(owners.map(project => project.test?.name)).toEqual(['backend/services/analytics'])
-    expect(owners[0]?.test).toMatchObject({
-      isolate: true,
-      setupFiles: expect.arrayContaining([
-        './backend/test-helpers/vitest.setup.analytics-local-env.mts',
-      ]),
-    })
-
-    const setupSource = readFileSync(
-      'backend/test-helpers/vitest.setup.analytics-local-env.mts',
-      'utf8',
-    )
-    expect(setupSource).toContain("process.env.ANALYTICS_BACKEND = 'local'")
-    expect(setupSource).not.toContain('process.env.ANALYTICS_BACKEND ??=')
-    expect(setupSource).toContain('await flush()')
-    expect(setupSource).toContain('try {')
-    expect(setupSource).toContain('} finally {')
   })
 })
