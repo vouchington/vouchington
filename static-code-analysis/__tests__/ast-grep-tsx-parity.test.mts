@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -85,6 +86,10 @@ describe('no-sql-in-backend-tests shrinking ignores list', () => {
   // 2 helper globs + 6 package self-tests + 23 SQL-running psql schema tests.
   // Exact count so removing an entry requires lowering this number in the same PR.
   const EXPECTED_TOTAL_IGNORES = 31
+  // 27 synthetic ExplainResult/probe fixtures in backend/scripts/explain-analyze +
+  // 3 DDL-invariant parser fixtures in backend/data-stores/psql/config-driven/__tests__ +
+  // 1 synthetic view definition in backend/data-stores/psql/__tests__/schema-snapshot-verification.test.mts.
+  const EXPECTED_INLINE_IGNORES = 31
 
   it('locks total ignores to 31 and rejects duplicates or stale file paths', () => {
     const parsed = parse(readFileSync(rulePath, 'utf8')) as { ignores?: string[] }
@@ -96,5 +101,33 @@ describe('no-sql-in-backend-tests shrinking ignores list', () => {
       .filter(entry => !entry.includes('*'))
       .filter(relativePath => !existsSync(join(repoRoot, relativePath)))
     expect(missing).toEqual([])
+  })
+
+  it('locks inline ast-grep-ignore suppressions for no-sql-in-backend-tests to 31', () => {
+    const grep = spawnSync(
+      'git',
+      [
+        'grep',
+        '-n',
+        '-F',
+        'ast-grep-ignore',
+        '--',
+        '.',
+        ':!static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts',
+      ],
+      { cwd: repoRoot, encoding: 'utf8' },
+    )
+    if (grep.error) throw grep.error
+    if (grep.status !== 0 && grep.status !== 1) {
+      throw new Error(`git grep failed (${String(grep.status)}): ${grep.stderr}`)
+    }
+    const inlineSuppressions =
+      grep.status === 1
+        ? []
+        : grep.stdout
+            .split('\n')
+            .filter(line => /ast-grep-ignore[^\n]*\bno-sql-in-backend-tests\b/u.test(line))
+
+    expect(inlineSuppressions.length).toBe(EXPECTED_INLINE_IGNORES)
   })
 })

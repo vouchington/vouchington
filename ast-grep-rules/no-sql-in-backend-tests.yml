@@ -52,48 +52,80 @@ ignores:
   - 'backend/data-stores/psql/__tests__/schema-static-analysis.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-story-projection-relation-fence.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-user-deletion-relation-impacts.test.mts'
+utils:
+  query-call-sql-literal:
+    all:
+      - any:
+          - kind: string
+          - kind: template_string
+      - regex: '^[''"`]\s*(?:\$\{[^}]*\}\s*)*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
+  uppercase-sql-literal:
+    all:
+      - any:
+          - kind: string
+          - kind: template_string
+      - regex: '^[''"`]\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
 rule:
   any:
-    # Package imports of @data-stores/psql (root or SQL client/tx/migration entrypoints)
+    # Package imports or re-exports of @data-stores/psql (root or SQL client/tx/migration entrypoints)
     - all:
-        - kind: import_statement
+        - any:
+            - kind: import_statement
+            - kind: export_statement
         - regex: 'from\s+[''"]@data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?[''"]'
         - not:
-            regex: '^import\s+type\b'
-    # Relative imports targeting backend/data-stores/psql (root or SQL client/tx/migration entrypoints)
+            regex: '^(?:import|export)\s+type\b'
+    # Relative imports or re-exports targeting backend/data-stores/psql (root or SQL client/tx/migration entrypoints)
     - all:
-        - kind: import_statement
+        - any:
+            - kind: import_statement
+            - kind: export_statement
         - regex: 'from\s+[''"](?:\.\.?/)+[^''"]*data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?[''"]'
         - not:
-            regex: '^import\s+type\b'
-    # Package or relative imports of @data-stores/analytics/query
+            regex: '^(?:import|export)\s+type\b'
+    # Package or relative imports or re-exports of @data-stores/analytics/query
     - all:
-        - kind: import_statement
+        - any:
+            - kind: import_statement
+            - kind: export_statement
         - regex: 'from\s+[''"](?:@data-stores/analytics/query|(?:\.\.?/)+[^''"]*data-stores/analytics/query)(?:\.mts)?[''"]'
         - not:
-            regex: '^import\s+type\b'
-    # Package-internal relative imports of psql/analytics query, transaction, or migration exports.
+            regex: '^(?:import|export)\s+type\b'
+    # Package-internal relative imports or re-exports of psql/analytics query, transaction, or migration exports.
     # Graceful-shutdown-only teardown imports do not execute SQL; @data-stores/graceful-shutdown
     # requires a signal argument, so psql schema tests keep importing onGracefulShutdown here.
     - all:
-        - kind: import_statement
-        - regex: '^import\s*(?:\{[^}]*\b(?:read|write|query|beginTransaction|beginBoundedTransaction|createPool|runAllMigrations|refreshMaterializedView)\b[^}]*\}|\*\s+as\s+[A-Za-z_$][\w$]*)\s*from\s+[''"](?:\.\.?/)+(?:index|clients|setup|transactions|migrate|query)(?:\.mts)?[''"]'
+        - any:
+            - kind: import_statement
+            - kind: export_statement
+        - regex: '^(?:import|export)\s*(?:\{[^}]*\b(?:read|write|query|beginTransaction|beginBoundedTransaction|createPool|runAllMigrations|refreshMaterializedView)\b[^}]*\}|\*(?:\s+as\s+[A-Za-z_$][\w$]*)?)\s*from\s+[''"](?:\.\.?/)+(?:index|clients|setup|transactions|migrate|query)(?:\.mts)?[''"]'
         - not:
-            regex: '^import\s+type\b'
+            regex: '^(?:import|export)\s+type\b'
         - not:
             regex: '^import\s+\*\s+as\s+[A-Za-z_$][\w$]*\s+from\s+[''"]\.\.?/index(?:\.mts)?[''"]'
         - not:
             regex: '^import\s*\{\s*onGracefulShutdown\s*\}\s*from\s+[''"]\.\./index\.mts[''"]'
-    # sql-template-strings imports
+    # sql-template-strings imports or re-exports
     - all:
-        - kind: import_statement
+        - any:
+            - kind: import_statement
+            - kind: export_statement
         - regex: 'from\s+[''"]sql-template-strings[''"]'
         - not:
-            regex: '^import\s+type\b'
-    # Dynamic import() or require() of psql, analytics/query, relative data-store clients, or sql-template-strings
+            regex: '^(?:import|export)\s+type\b'
+    # Dynamic import() or require() of psql, analytics/query, relative data-store clients, or sql-template-strings (single/double/template quotes or concatenation)
     - all:
         - kind: call_expression
-        - regex: '^(?:require|import)\s*\(\s*[''"](?:@data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?|(?:\.\.?/)+[^''"]*data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?|@data-stores/analytics/query(?:\.mts)?|(?:\.\.?/)+[^''"]*data-stores/analytics/query(?:\.mts)?|(?:\.\.?/)+(?:clients|setup|transactions|migrate|query)(?:\.mts)?|sql-template-strings)[''"]\s*\)$'
+        - any:
+            - regex: '^(?:require|import)\s*\(\s*[''"`](?:@data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?|(?:\.\.?/)+[^''"`]*data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?|@data-stores/analytics/query(?:\.mts)?|(?:\.\.?/)+[^''"`]*data-stores/analytics/query(?:\.mts)?|(?:\.\.?/)+(?:clients|setup|transactions|migrate|query)(?:\.mts)?|sql-template-strings)[''"`]\s*\)$'
+            - all:
+                - regex: '^(?:require|import)\s*\('
+                - has:
+                    field: arguments
+                    has:
+                      nthChild: 1
+                      kind: binary_expression
+                      regex: '(?:@data-stores/psql|data-stores/psql|@data-stores/analytics/query|data-stores/analytics/query|sql-template-strings)'
     - pattern: 'sql`$$$`'
     # Raw SQL string, template literal (including interpolated prefix), or concatenated string passed as first argument to a query-like call (including multi-level receivers)
     - all:
@@ -104,18 +136,11 @@ rule:
             has:
               nthChild: 1
               any:
-                - kind: string
-                  regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
-                - kind: template_string
-                  regex: '^`\s*(?:\$\{[^}]*\}\s*)*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
+                - matches: query-call-sql-literal
                 - kind: binary_expression
                   has:
                     stopBy: end
-                    any:
-                      - kind: string
-                        regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
-                      - kind: template_string
-                        regex: '^`\s*(?:\$\{[^}]*\}\s*)*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
+                    matches: query-call-sql-literal
     # Raw SQL statement (uppercase SQL keywords) passed as first argument to any non-assertion call, awaited or not (catches TransactionQuery variables like setup/blocker/cleanup and Promise.all([...]) without flagging sentence-case Playwright UI text)
     - all:
         - kind: call_expression
@@ -127,18 +152,10 @@ rule:
             field: arguments
             has:
               nthChild: 1
-              any:
-                - kind: string
-                  regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
-                - kind: template_string
-                  regex: '^`\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
+              matches: uppercase-sql-literal
     # Raw SQL statement (uppercase SQL keywords) written in an initializer, assignment, property value, or return statement
     - all:
-        - any:
-            - kind: string
-              regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
-            - kind: template_string
-              regex: '^`\s*(?:/\*[\s\S]*?\*/\s*)*\b(?:INSERT\s+INTO\b|DELETE\s+FROM\b|UPDATE\s+[A-Za-z_][A-Za-z0-9_."]*\s+SET\b|SELECT\s+(?:\*|DISTINCT\b|\d+\b|[A-Za-z_][A-Za-z0-9_."]*(?:\s*\(|(?:\s*,\s*[A-Za-z_][A-Za-z0-9_."]*)*\s+(?:FROM|AS)\b))|TRUNCATE\s+(?:TABLE\s+)?[A-Za-z_]|ALTER\s+(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|MATERIALIZED)\b|CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP\s+|TEMPORARY\s+|UNIQUE\s+|MATERIALIZED\s+)?(?:TABLE|INDEX|VIEW|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|DROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED|SCHEMA|TYPE|FUNCTION|TRIGGER|EXTENSION)\b|SET\s+(?:LOCAL\s+|SESSION\s+)?[A-Za-z_][A-Za-z0-9_."]*\s*(?:=|TO\b)|LOCK\s+(?:TABLE\s+)?[A-Za-z_]|REFRESH\s+MATERIALIZED\s+VIEW\b|EXPLAIN\b(?:\s*\([^)]*\)|\s+(?:ANALYZE|BUFFERS|COSTS|FORMAT|SETTINGS|SUMMARY|TIMING|VERBOSE|SELECT|INSERT|UPDATE|DELETE|WITH)\b)|VACUUM\b(?:\s*\([^)]*\)|\s+(?:FULL|FREEZE|VERBOSE|ANALYZE|[A-Za-z_]))|ANALYZE\s+(?:VERBOSE\s+)?[A-Za-z_]|WITH\s+(?:RECURSIVE\s+)?[A-Za-z_][A-Za-z0-9_]*\s+AS\s*\(|BEGIN(?:\s+(?:TRANSACTION|WORK|ISOLATION|READ|DEFERRABLE|NOT\s+DEFERRABLE))?\s*;?\s*$)'
+        - matches: uppercase-sql-literal
         - inside:
             any:
               - kind: variable_declarator
@@ -197,6 +214,27 @@ examples:
   - code: "const db = await import('@data-stores/psql')"
     isValid: false
     file: 'backend/data-stores/psql/index.test.mts'
+  - code: 'const db = await import(`@data-stores/psql`)'
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: 'const db = await import(`../../../backend/data-stores/psql/clients.mts`)'
+    isValid: false
+    file: 'playwright/tests/communities/detail.spec.mts'
+  - code: "const db = await import('@data-stores/psql/' + 'clients')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "export { read } from '@data-stores/psql'"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "export { query } from '@data-stores/analytics/query'"
+    isValid: false
+    file: 'backend/services/analytics/ai.test.mts'
+  - code: "export { write } from '../../../backend/data-stores/psql/clients.mts'"
+    isValid: false
+    file: 'playwright/tests/communities/detail.spec.mts'
+  - code: "export type { SQLStatement } from '@data-stores/psql'"
+    isValid: true
+    file: 'backend/services/auth/auth.test.mts'
   - code: "const sql = require('sql-template-strings')"
     isValid: false
     file: 'backend/data-stores/psql/index.test.mts'
