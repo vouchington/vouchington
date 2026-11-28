@@ -15,22 +15,19 @@ export async function imposeCopyrightCourtFilingRestrictions(
   query: TransactionQuery,
 ): Promise<string[]> {
   const pageSize = getCopyrightSweepLimits().batchSize
-  const placements = await collectKeysetPages<{ id: string }, string>(
-    pageSize,
-    async (afterId, limit) => {
-      const { rows } = await query<{ id: string }>(sql`
-        /* imposeCopyrightCourtFilingRestrictions:placements */
-        SELECT DISTINCT placement.id FROM media_placements placement
-        JOIN copyright_notice_targets target ON target.placement_id = placement.id
-        WHERE target.copyright_notice_id = ${noticeId}
-          AND (${afterId}::uuid IS NULL OR placement.id > ${afterId}::uuid)
-        ORDER BY placement.id ASC
-        LIMIT ${limit}
-      `)
-      return rows
-    },
-    row => row.id,
-  )
+  const placements = await collectKeysetPages<{ id: string }>(pageSize, async (after, limit) => {
+    const afterId = after?.id ?? null
+    const { rows } = await query<{ id: string }>(sql`
+      /* imposeCopyrightCourtFilingRestrictions:placements */
+      SELECT DISTINCT placement.id FROM media_placements placement
+      JOIN copyright_notice_targets target ON target.placement_id = placement.id
+      WHERE target.copyright_notice_id = ${noticeId}
+        AND (${afterId}::uuid IS NULL OR placement.id > ${afterId}::uuid)
+      ORDER BY placement.id ASC
+      LIMIT ${limit}
+    `)
+    return rows
+  })
   await lockCopyrightPlacementTransitions(
     placements.map(placement => placement.id),
     query,
@@ -75,12 +72,10 @@ export async function imposeCopyrightCourtFilingRestrictions(
       if (withheld[0]) previousRevision.set(placement.id, withheld[0].prior_revision)
     }),
   )
-  const rows = await collectKeysetPages<
-    { id: string; placement_id: string; revision: number },
-    string
-  >(
+  const rows = await collectKeysetPages<{ id: string; placement_id: string; revision: number }>(
     pageSize,
-    async (afterId, limit) => {
+    async (after, limit) => {
+      const afterId = after?.id ?? null
       const { rows: page } = await query<{ id: string; placement_id: string; revision: number }>(
         sql`
           /* imposeCopyrightCourtFilingRestrictions:actions */
@@ -97,7 +92,6 @@ export async function imposeCopyrightCourtFilingRestrictions(
       )
       return page
     },
-    row => row.id,
   )
   const intents = await insertCopyrightActionIntents(
     query,
@@ -115,9 +109,10 @@ export async function insertCopyrightCourtFilingRestoreIntents(
   noticeId: string,
   query: TransactionQuery,
 ): Promise<string[]> {
-  const rows = await collectKeysetPages<{ id: string; revision: number }, string>(
+  const rows = await collectKeysetPages<{ id: string; revision: number }>(
     getCopyrightSweepLimits().batchSize,
-    async (afterId, limit) => {
+    async (after, limit) => {
+      const afterId = after?.id ?? null
       const { rows: page } = await query<{ id: string; revision: number }>(sql`
         /* insertCopyrightCourtFilingRestoreIntents */
         SELECT restriction.id, placement.revision
@@ -133,7 +128,6 @@ export async function insertCopyrightCourtFilingRestoreIntents(
       `)
       return page
     },
-    row => row.id,
   )
   const intents = await insertCopyrightActionIntents(
     query,

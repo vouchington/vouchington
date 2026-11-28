@@ -109,9 +109,10 @@ export async function getCopyrightPublicNoticeDetail(
   const notice = toCopyrightPublicNotice(noticeRow)
   const pageSize = getCopyrightSweepLimits().batchSize
   const [targets, timeline] = await Promise.all([
-    collectKeysetPages<CopyrightPublicNoticeDetail['targets'][number], string>(
+    collectKeysetPages<CopyrightPublicNoticeDetail['targets'][number]>(
       pageSize,
-      async (afterId, limit) => {
+      async (after, limit) => {
+        const afterId = after?.id ?? null
         const targetsSql = sql`/* getCopyrightPublicNotice:targets */
           SELECT target.id, COALESCE(surface.surface_kind::text, 'post-image') AS surface,
             CASE WHEN `
@@ -140,11 +141,11 @@ export async function getCopyrightPublicNoticeDetail(
           await transaction<CopyrightPublicNoticeDetail['targets'][number]>(targetsSql)
         return rows
       },
-      row => row.id,
     ),
-    collectKeysetPages<CopyrightPublicNoticeDetail['timeline'][number], string>(
+    collectKeysetPages<CopyrightPublicNoticeDetail['timeline'][number]>(
       pageSize,
-      async (afterId, limit) => {
+      async (after, limit) => {
+        const afterId = after?.id ?? null
         const { rows } = await transaction<CopyrightPublicNoticeDetail['timeline'][number]>(
           sql`/* getCopyrightPublicNotice:timeline */
             SELECT id, change_type AS event_type, created_at
@@ -158,7 +159,6 @@ export async function getCopyrightPublicNoticeDetail(
         )
         return rows
       },
-      row => row.id,
     ),
   ])
   await transaction.commit()

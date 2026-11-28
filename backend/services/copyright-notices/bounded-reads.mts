@@ -12,20 +12,19 @@ type ParticipantNoticeSubmissionSummary = {
   source_kind: FiniteValue<'copyright_notice_submission_source_kinds'>
 }
 
-export async function collectKeysetPages<Row, Cursor>(
+export async function collectKeysetPages<Row>(
   pageSize: number,
-  fetchPage: (cursor: Cursor | null, limit: number) => Promise<Row[]>,
-  getNextCursor: (lastRow: Row) => Cursor,
+  fetchPage: (after: Row | null, limit: number) => Promise<Row[]>,
 ): Promise<Row[]> {
   const all: Row[] = []
-  let cursor: Cursor | null = null
+  let after: Row | null = null
   while (true) {
     // oxlint-disable no-await-in-loop -- keyset page advances sequentially until a short page ends the scan
-    const page = await fetchPage(cursor, pageSize)
+    const page = await fetchPage(after, pageSize)
     // oxlint-enable no-await-in-loop
     all.push(...page)
     if (page.length < pageSize) break
-    cursor = getNextCursor(page.at(-1)!)
+    after = page.at(-1)!
   }
   return all
 }
@@ -49,9 +48,10 @@ export async function selectSubmissionTargetIds(
   query: QueryExecutor,
   submissionId: string,
 ): Promise<string[]> {
-  const rows = await collectKeysetPages<{ copyright_notice_target_id: string }, string>(
+  const rows = await collectKeysetPages<{ copyright_notice_target_id: string }>(
     getCopyrightSweepLimits().batchSize,
-    async (afterTargetId, limit) => {
+    async (after, limit) => {
+      const afterTargetId = after?.copyright_notice_target_id ?? null
       const { rows: page } = await query<{ copyright_notice_target_id: string }>(sql`
         /* selectCopyrightSubmissionTargetIds */
         SELECT copyright_notice_target_id
@@ -63,7 +63,6 @@ export async function selectSubmissionTargetIds(
       `)
       return page
     },
-    row => row.copyright_notice_target_id,
   )
   return rows.map(row => row.copyright_notice_target_id)
 }
@@ -99,9 +98,9 @@ export async function selectParticipantNoticeSubmissions(
   isStaff: boolean,
   transaction: TransactionQuery,
 ): Promise<ParticipantNoticeSubmissionSummary[]> {
-  return collectKeysetPages<ParticipantNoticeSubmissionSummary, { receivedAt: Date; id: string }>(
+  return collectKeysetPages<ParticipantNoticeSubmissionSummary>(
     getCopyrightSweepLimits().batchSize,
-    async (cursor, limit) => {
+    async (after, limit) => {
       const { rows } = await transaction<ParticipantNoticeSubmissionSummary>(
         sql`/* getCopyrightParticipantNoticeDetail:submissions */
           SELECT id, kind, received_at, source_kind
@@ -109,8 +108,8 @@ export async function selectParticipantNoticeSubmissions(
           WHERE copyright_notice_id = ${noticeId}
             AND (${isStaff} OR submitted_by_id = ${userId})
             AND (
-              ${cursor?.id ?? null}::uuid IS NULL
-              OR (received_at, id) > (${cursor?.receivedAt ?? null}::timestamptz, ${cursor?.id ?? null}::uuid)
+              ${after?.id ?? null}::uuid IS NULL
+              OR (received_at, id) > (${after?.received_at ?? null}::timestamptz, ${after?.id ?? null}::uuid)
             )
           ORDER BY received_at ASC, id ASC
           LIMIT ${limit}
@@ -118,7 +117,6 @@ export async function selectParticipantNoticeSubmissions(
       )
       return rows
     },
-    row => ({ receivedAt: row.received_at, id: row.id }),
   )
 }
 
@@ -127,9 +125,10 @@ export async function selectParticipantRespondableTargetIds(
   userId: string,
   transaction: TransactionQuery,
 ): Promise<string[]> {
-  const rows = await collectKeysetPages<{ id: string }, string>(
+  const rows = await collectKeysetPages<{ id: string }>(
     getCopyrightSweepLimits().batchSize,
-    async (afterId, limit) => {
+    async (after, limit) => {
+      const afterId = after?.id ?? null
       const targetSql = sql`/* getCopyrightParticipantNoticeDetail:respondableTargets */
         SELECT DISTINCT target.id
         FROM copyright_notice_targets target
@@ -144,7 +143,6 @@ export async function selectParticipantRespondableTargetIds(
       const { rows: page } = await transaction<{ id: string }>(targetSql)
       return page
     },
-    row => row.id,
   )
   return rows.map(row => row.id)
 }
@@ -154,9 +152,10 @@ export async function selectNoticeTargetUrls(
   noticeId: string,
   targetIds: readonly string[] | null,
 ): Promise<string[]> {
-  const rows = await collectKeysetPages<{ id: string; hosted_use_url: string }, string>(
+  const rows = await collectKeysetPages<{ id: string; hosted_use_url: string }>(
     getCopyrightSweepLimits().batchSize,
-    async (afterId, limit) => {
+    async (after, limit) => {
+      const afterId = after?.id ?? null
       const { rows: page } = await query<{ id: string; hosted_use_url: string }>(sql`
         /* getCopyrightSubmissionGuidanceSource:targets */
         SELECT target.id, target.hosted_use_url
@@ -169,7 +168,6 @@ export async function selectNoticeTargetUrls(
       `)
       return page
     },
-    row => row.id,
   )
   return rows.map(row => row.hosted_use_url)
 }

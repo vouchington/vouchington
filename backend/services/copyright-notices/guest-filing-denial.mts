@@ -34,9 +34,10 @@ export async function stageCopyrightCourtFilingDenials(
     revision: number
     image_id: string
   }
-  const current = await collectKeysetPages<DenialTargetRow, string>(
+  const current = await collectKeysetPages<DenialTargetRow>(
     getCopyrightSweepLimits().batchSize,
-    async (afterTargetId, limit) => {
+    async (after, limit) => {
+      const afterTargetId = after?.target_id ?? null
       const { rows } =
         await query<DenialTargetRow>(sql`/* denyCopyrightCourtFilingPlacements:current */
         SELECT target.id AS target_id, placement.id AS placement_id, placement.revision, binding.image_id
@@ -52,7 +53,6 @@ export async function stageCopyrightCourtFilingDenials(
       `)
       return rows
     },
-    row => row.target_id,
   )
   current.sort(
     (a, b) =>

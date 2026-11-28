@@ -78,9 +78,10 @@ export async function reviewCopyrightAppeal(
     action: CopyrightHumanReviewAction
     copyright_notice_appeal_recommendation_id: string | null
   }
-  const existingRows = await collectKeysetPages<ExistingReviewRow, string>(
+  const existingRows = await collectKeysetPages<ExistingReviewRow>(
     getCopyrightSweepLimits().batchSize,
-    async (afterId, limit) => {
+    async (after, limit) => {
+      const afterId = after?.id ?? null
       const { rows } = await transaction<ExistingReviewRow>(sql`/* reviewCopyrightAppeal:existing */
         SELECT id, copyright_restriction_id, action, copyright_notice_appeal_recommendation_id
         FROM copyright_notice_appeal_reviews
@@ -91,7 +92,6 @@ export async function reviewCopyrightAppeal(
       `)
       return rows
     },
-    row => row.id,
   )
   if (existingRows.length > 0) {
     const expected = new Map(

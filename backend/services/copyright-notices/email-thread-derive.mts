@@ -49,9 +49,10 @@ async function deriveCopyrightEmailThreadInTransaction(
     return null
   }
   const lookupDigests = referenceRows.map(row => row.lookup_digest)
-  const currentTokens = await collectKeysetPages<{ id: string; lookup_digest: string }, string>(
+  const currentTokens = await collectKeysetPages<{ id: string; lookup_digest: string }>(
     getCopyrightSweepLimits().batchSize,
-    async (afterTokenId, limit) => {
+    async (after, limit) => {
+      const afterTokenId = after?.id ?? null
       const { rows } = await transaction<{ id: string; lookup_digest: string }>(sql`
         /* recordCopyrightEmailThreadReferences:currentTokens */
         SELECT DISTINCT token.id, token.lookup_digest
@@ -65,7 +66,6 @@ async function deriveCopyrightEmailThreadInTransaction(
       `)
       return rows
     },
-    row => row.id,
   )
   const tokenIds = new Map(currentTokens.map(row => [row.lookup_digest, row.id]))
   const ambiguous = await copyrightEmailMessageIdIsAmbiguous(transaction, input.intakeId)

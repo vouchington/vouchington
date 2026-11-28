@@ -5,15 +5,11 @@ describe('copyright-notices bounded-reads helpers', () => {
   it('collectKeysetPages advances cursor across full pages until a short page', async () => {
     const pages = [[{ id: 'a' }, { id: 'b' }], [{ id: 'c' }, { id: 'd' }], [{ id: 'e' }]]
     const seenCursors: Array<string | null> = []
-    const rows = await collectKeysetPages<{ id: string }, string>(
-      2,
-      async (cursor, limit) => {
-        seenCursors.push(cursor)
-        expect(limit).toBe(2)
-        return pages[seenCursors.length - 1] ?? []
-      },
-      row => row.id,
-    )
+    const rows = await collectKeysetPages<{ id: string }>(2, async (after, limit) => {
+      seenCursors.push(after?.id ?? null)
+      expect(limit).toBe(2)
+      return pages[seenCursors.length - 1] ?? []
+    })
     expect(seenCursors).toEqual([null, 'b', 'd'])
     expect(rows).toEqual([{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }, { id: 'e' }])
   })

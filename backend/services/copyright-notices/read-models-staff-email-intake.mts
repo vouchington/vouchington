@@ -151,9 +151,10 @@ async function getCopyrightEmailLinkedNotice(noticeId: string): Promise<{
   targets: Array<{ id: string; placement_key: string }>
 } | null> {
   await using transaction = await beginTransaction()
-  const rows = await collectKeysetPages<{ id: string; placement_key: string }, string>(
+  const rows = await collectKeysetPages<{ id: string; placement_key: string }>(
     getCopyrightSweepLimits().batchSize,
-    async (afterId, limit) => {
+    async (after, limit) => {
+      const afterId = after?.id ?? null
       const { rows: page } = await transaction<{ id: string; placement_key: string }>(sql`
         /* getCopyrightEmailLinkedNotice */
         SELECT id, concat('image-placement:', placement_id) AS placement_key
@@ -165,7 +166,6 @@ async function getCopyrightEmailLinkedNotice(noticeId: string): Promise<{
       `)
       return page
     },
-    row => row.id,
   )
   await transaction.commit()
   return rows.length > 0 ? { id: noticeId, targets: rows } : null

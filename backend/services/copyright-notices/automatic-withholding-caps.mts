@@ -22,9 +22,10 @@ export async function checkAutomaticWithholdingCaps(
   },
 ): Promise<AutomaticWithholdingRefusalReason | null> {
   const windowStart = new Date((input.now ?? new Date()).getTime() - DAY_MS)
-  const posterRows = await collectKeysetPages<{ user_id: string }, string>(
+  const posterRows = await collectKeysetPages<{ user_id: string }>(
     getCopyrightSweepLimits().batchSize,
-    async (afterUserId, limit) => {
+    async (after, limit) => {
+      const afterUserId = after?.user_id ?? null
       const { rows } = await transaction<{ user_id: string }>(sql`
         /* checkAutomaticWithholdingCaps:posters */
         SELECT DISTINCT post.created_by_id AS user_id
@@ -38,7 +39,6 @@ export async function checkAutomaticWithholdingCaps(
       `)
       return rows
     },
-    row => row.user_id,
   )
   const posterIds = posterRows.map(row => row.user_id)
   const { rows: claimantRows } = await transaction<{ total: number }>(sql`

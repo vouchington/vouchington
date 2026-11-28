@@ -29,9 +29,10 @@ export async function selectCopyrightParticipantStatements(
     correspondence_id: string
     body_ciphertext: string
   }
-  const rows = await collectKeysetPages<StatementRow, string>(
+  const rows = await collectKeysetPages<StatementRow>(
     getCopyrightSweepLimits().batchSize,
-    async (afterId, limit) => {
+    async (after, limit) => {
+      const afterId = after?.id ?? null
       const { rows: page } =
         await transaction<StatementRow>(sql`/* selectCopyrightParticipantStatements */
         SELECT intent.id, intent.delivery_kind, intent.state, intent.sent_at, correspondence.id AS correspondence_id, correspondence.body_ciphertext
@@ -49,7 +50,6 @@ export async function selectCopyrightParticipantStatements(
       `)
       return page
     },
-    row => row.id,
   )
   return rows.map(row => ({
     id: row.id,

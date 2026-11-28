@@ -108,9 +108,10 @@ export async function recordTerritorialCopyrightRedressDecision(
   const deliveries: CopyrightStatementDeliveryInput[] = []
   let staydownImageIds: string[] = []
   if (disposition === 'revoke') {
-    const restrictions = await collectKeysetPages<{ id: string }, string>(
+    const restrictions = await collectKeysetPages<{ id: string }>(
       getCopyrightSweepLimits().batchSize,
-      async (afterId, limit) => {
+      async (after, limit) => {
+        const afterId = after?.id ?? null
         const { rows: page } = await transaction<{ id: string }>(sql`
           /* recordTerritorialCopyrightRedressDecision:restrictions */
           SELECT restriction.id
@@ -124,7 +125,6 @@ export async function recordTerritorialCopyrightRedressDecision(
         `)
         return page
       },
-      row => row.id,
     )
     for (const restriction of restrictions) {
       // oxlint-disable-next-line no-await-in-loop -- one transaction owns each durable restore intent.
