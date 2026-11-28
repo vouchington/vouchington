@@ -218,23 +218,26 @@ archives the data directory, and each parallel shard starts its own PostgreSQL o
 copy. Plans depend on the seeded server's physical state as much as its rows: page counts, the
 visibility map, index creation order (which breaks cost ties) and the statistics the seed collected
 on only the relations it fills. A `pg_dump` restore rebuilds all of that and flipped near-tie plans,
-so the shards never restore or re-analyze the corpus. The ordinary scenarios run in one fixed order
-because earlier runners mutate the shared corpus; `explain-shards.mts` and
-`run-ordered-scenarios.mts` cut that order into contiguous segments, one per ordinary shard. The
-first segment (`main`) owns every manifest scenario no other shard declares; the later segments list
-theirs in `explain-shard-scenario-ids.json`. A segment starts from the seeded corpus without the
-writes of the segments before it, so open one only at a runner that reads none of what earlier
-segments leave behind, and keep a runner with the predecessor whose writes its plan needs. A plan
-that changes because a shard lost a predecessor's writes is fixed by regrouping, never by loosening
-its contract. The partitioned comment fixture plus the pruning proof (`partition`) and the
-million-post Hacker News fixture (`hn-scale`) are additive, so no other scenario reads them and each
-has its own shard. Both load their posts on parallel connections, one monthly leaf per task, with a
+so the shards never restore or re-analyze the corpus. Each ordinary shard (`main`, `main-2`,
+`main-3` and `main-4`) owns whole domain files in `ORDINARY_SHARD_DOMAINS`
+(`run-ordered-scenarios.mts`), while `partition` (the partitioned comment fixture plus the pruning
+proof) and `hn-scale` (the million-post Hacker News fixture) own their fixed scenario sets in
+`explain-shards.mts`. Each domain file seeds any extra corpus it needs through idempotent helpers
+in `seed-data/` so it runs alone on a fresh seeded database (`EXPLAIN_DOMAIN=<domain>`), without
+relying on leftovers from earlier domains. Adding a scenario touches only its scenario file,
+`scenario-manifest.mts` and its domain's `run-ordered-scenarios-<domain>.mts` (plus registering the
+new domain in `EXPLAIN_DOMAINS` and assigning it to a shard in `ORDINARY_SHARD_DOMAINS` when adding
+a new domain). A plan that changes after moving a domain is
+fixed by seeding its required corpus, never by loosening its contract. Both `partition` and
+`hn-scale` are additive, so no other scenario reads them and each has its own shard. Both load
+their posts on parallel connections, one monthly leaf per task, with a
 single instant captured once for every timestamp, so row ids and values match a serial load and each
 leaf's rows go in the serial order; `EXPLAIN_FIXTURE_LOAD_WORKERS` overrides the worker count (1 is serial). Triggers, indexes
 and foreign keys stay enabled. Each phase commits, so a failed load leaves its leaves behind and the
-disposable database must be recreated. The late fixture writers that must follow every ordinary plan close the last
-ordinary segment. Size the segments from per-runner timings in a recent run so every shard job stays
-within the CI runtime budget in [CI](../../ci.md). A scenario listed in no shard or in two fails the manifest checks. The
+disposable database must be recreated. Balance ordinary shards by moving whole domain names in
+`ORDINARY_SHARD_DOMAINS` using measured per-domain wall times so every shard job stays
+within the CI runtime budget in [CI](../../ci.md). A scenario missing from all shards or duplicated
+across shards fails the merge manifest checks. The
 `explain-analyze-gates` job merges the shard artifacts, requires every manifest scenario once, and
 enforces the plan gates, baselines and native coverage over the merged results. It uploads them as
 `explain-analyze-results`; a failed shard leaves only its own `explain-analyze-results-<shard>`

@@ -15,6 +15,14 @@ export const CLAIMANT_MISUSE_NEAR_OLDEST_CURSOR_ID = seedUuid(1_900_000 + 1_000,
 
 /** A large filer and two small filers share one staff case page; repeated events stay one notice. */
 export async function seedClaimantMisuseWindows(): Promise<void> {
+  const existing = await write<{ exists: boolean }>(
+    `/* seedClaimantMisuseWindows:check */
+     SELECT EXISTS(
+       SELECT 1 FROM copyright_claimant_misuse_events WHERE id = $1::uuid
+     ) AS exists`,
+    [seedUuid(1_900_000 + 3_999, 'e8')],
+  )
+  if (existing.rows[0]?.exists) return
   await write(
     `/* seedClaimantMisuseWindows:users */
     INSERT INTO users (id, username)

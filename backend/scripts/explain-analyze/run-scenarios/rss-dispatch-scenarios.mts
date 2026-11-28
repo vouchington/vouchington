@@ -14,6 +14,7 @@ const SEED_UPPER_FEED_ID = seedUuid(2499, '08')
 const ANCHOR_MS = postSeedTimestampMs(0)
 
 export async function runRssDispatchScenarios(): Promise<void> {
+  registerRssDispatchContracts()
   const { rows: tierRows } = await read<{ crawl_tier: number }>(
     `/* explainRssDispatchTier */ SELECT crawl_tier FROM mv_rss_feed_crawl_tiers
      WHERE crawl_tier < 5 ORDER BY crawl_tier, rss_feed_id LIMIT 1`,
@@ -139,34 +140,36 @@ const FAILING_PAGE_EXPECTATIONS = makeIndexedLaneExpectations(
   'getRssFeedsFailing',
 )
 
-registerScenarioContract('rss-feeds-to-fetch-tiered', {
-  expectations: HEALTHY_PAGE_EXPECTATIONS,
-})
-registerScenarioContract('rss-feeds-to-fetch-fallback-page', {
-  expectations: HEALTHY_PAGE_EXPECTATIONS,
-})
-registerScenarioContract('rss-feeds-to-fetch-fallback-tail', {
-  expectations: HEALTHY_PAGE_EXPECTATIONS,
-})
-registerScenarioContract('rss-feeds-to-fetch-failing-page', {
-  expectations: FAILING_PAGE_EXPECTATIONS,
-})
-registerScenarioContract('rss-feeds-to-fetch-fallback-backfill', {
-  expectations: HEALTHY_PAGE_EXPECTATIONS,
-})
-registerScenarioContract('rss-feeds-to-fetch-full-dispatch', {
-  allowEmptyResult: true,
-  expectations: [
-    { kind: 'maxProcessedRows', relation: 'rss_feed_fetch_states', max: 128 },
-    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 128 },
-    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 128 },
-    { kind: 'maxProcessedRows', relation: 'urls', max: 128 },
-    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 128 },
-    {
-      kind: 'usesIndexes',
-      indexes: ['idx_rss_feed_fetch_states__healthy_fetch_due'],
-      noSort: true,
-      queryContains: 'getRssFeedsHealthy',
-    },
-  ],
-})
+function registerRssDispatchContracts(): void {
+  registerScenarioContract('rss-feeds-to-fetch-tiered', {
+    expectations: HEALTHY_PAGE_EXPECTATIONS,
+  })
+  registerScenarioContract('rss-feeds-to-fetch-fallback-page', {
+    expectations: HEALTHY_PAGE_EXPECTATIONS,
+  })
+  registerScenarioContract('rss-feeds-to-fetch-fallback-tail', {
+    expectations: HEALTHY_PAGE_EXPECTATIONS,
+  })
+  registerScenarioContract('rss-feeds-to-fetch-failing-page', {
+    expectations: FAILING_PAGE_EXPECTATIONS,
+  })
+  registerScenarioContract('rss-feeds-to-fetch-fallback-backfill', {
+    expectations: HEALTHY_PAGE_EXPECTATIONS,
+  })
+  registerScenarioContract('rss-feeds-to-fetch-full-dispatch', {
+    allowEmptyResult: true,
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'rss_feed_fetch_states', max: 128 },
+      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 128 },
+      { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 128 },
+      { kind: 'maxProcessedRows', relation: 'urls', max: 128 },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 128 },
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_rss_feed_fetch_states__healthy_fetch_due'],
+        noSort: true,
+        queryContains: 'getRssFeedsHealthy',
+      },
+    ],
+  })
+}

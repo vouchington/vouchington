@@ -18,6 +18,7 @@ import {
 import { crawlSeedUuid, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 
 export async function runHostnameCrawlSweepScenarios(): Promise<void> {
+  registerHostnameCrawlSweepContracts()
   await runHostnameFailureResetScenarios()
   await runAndCapture('crawl-hostname-threshold-seek', async () => {
     if ((await getNextCrawlHostnameBucket(1)) !== 7)
@@ -118,71 +119,73 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
   }
 }
 
-registerScenarioContract('boilerplate-removal-hostname-batch', {
-  seededRows: { crawls: 3_100 },
-  expectations: [
-    {
-      kind: 'usesIndexes',
-      indexes: ['url_hostnames_pkey'],
-      queryContains: 'listBoilerplateRemovalHostnameBatch',
-      noSort: true,
+function registerHostnameCrawlSweepContracts(): void {
+  registerScenarioContract('boilerplate-removal-hostname-batch', {
+    seededRows: { crawls: 3_100 },
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['url_hostnames_pkey'],
+        queryContains: 'listBoilerplateRemovalHostnameBatch',
+        noSort: true,
+      },
+      {
+        kind: 'noSeqScan',
+        relation: 'urls',
+        queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
+      },
+      {
+        kind: 'queryBinds',
+        token: 'ANY',
+        queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
+      },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 700 },
+      { kind: 'maxProcessedRows', relation: 'urls', max: 600 },
+      { kind: 'maxProcessedRows', relation: 'hostname_path_boilerplate_removals', max: 600 },
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_hostname_path_boilerplate_removals__hostname_path_id'],
+        queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
+      },
+    ],
+    crossPartition: {
+      crawls:
+        'The recent-HTML-crawl count probes each candidate url by url_id, and crawl ids are time-ordered so those rows span every crawls partition.',
     },
-    {
-      kind: 'noSeqScan',
-      relation: 'urls',
-      queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
-    },
-    {
-      kind: 'queryBinds',
-      token: 'ANY',
-      queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
-    },
-    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 700 },
-    { kind: 'maxProcessedRows', relation: 'urls', max: 600 },
-    { kind: 'maxProcessedRows', relation: 'hostname_path_boilerplate_removals', max: 600 },
-    {
-      kind: 'usesIndexes',
-      indexes: ['idx_hostname_path_boilerplate_removals__hostname_path_id'],
-      queryContains: 'searchParentPathsNeedingBoilerplateRemoval',
-    },
-  ],
-  crossPartition: {
-    crawls:
-      'The recent-HTML-crawl count probes each candidate url by url_id, and crawl ids are time-ordered so those rows span every crawls partition.',
-  },
-})
-registerScenarioContract('crawl-hostname-threshold-seek', {
-  expectations: [
-    {
-      kind: 'usesIndexes',
-      indexes: [
-        'idx_url_hostnames__crawl_due',
-        'idx_url_hostnames__age_threshold_days_id_crawlable',
-      ],
-      anyOf: true,
-      noSort: true,
-    },
-    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 2 },
-  ],
-})
-registerScenarioContract('crawl-hostnames-due', {
-  expectations: [
-    {
-      kind: 'usesIndexes',
-      indexes: ['idx_url_hostnames__age_threshold_days_id_crawlable'],
-      noSort: true,
-    },
-    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 20 },
-  ],
-})
+  })
+  registerScenarioContract('crawl-hostname-threshold-seek', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: [
+          'idx_url_hostnames__crawl_due',
+          'idx_url_hostnames__age_threshold_days_id_crawlable',
+        ],
+        anyOf: true,
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 2 },
+    ],
+  })
+  registerScenarioContract('crawl-hostnames-due', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_url_hostnames__age_threshold_days_id_crawlable'],
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 20 },
+    ],
+  })
 
-registerScenarioContract('crawl-hostnames-due-capped', {
-  expectations: [
-    {
-      kind: 'usesIndexes',
-      indexes: ['idx_url_hostnames__age_threshold_days_id_crawlable'],
-      noSort: true,
-    },
-    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 3 },
-  ],
-})
+  registerScenarioContract('crawl-hostnames-due-capped', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_url_hostnames__age_threshold_days_id_crawlable'],
+        noSort: true,
+      },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 3 },
+    ],
+  })
+}

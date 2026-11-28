@@ -5,6 +5,7 @@ import {
 } from './run-scenarios/topic-identity-capacity.mts'
 import { runTopHashtagCapacityScenario } from './run-scenarios/top-hashtag-capacity.mts'
 import { runTopicChildCapacityScenario } from './run-scenarios/topic-child-capacity.mts'
+import { seedCategoryProjectionFeedHistory } from './seed-data/category-projection.mts'
 import { runUrlEmbedCapacityScenario } from './run-scenarios/url-embed-capacity.mts'
 import {
   runReviewRatingWriteCapacity,
@@ -26,6 +27,8 @@ export const AFTER_TOPICS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCommunityAutoTaggerCatalogCapacity,
   runCommunityUrlFeedListCapacity,
   runModerationReportOrderCursorCapacity,
+  // URL embed capacity checks the latest item on the first feed URL, seeded by category projection.
+  seedCategoryProjectionFeedHistory,
   runUrlEmbedCapacityScenario,
   runReviewRatingWriteCapacity,
   runDataPointTopicInsertCapacity,

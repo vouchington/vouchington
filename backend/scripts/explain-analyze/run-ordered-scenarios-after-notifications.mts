@@ -15,6 +15,7 @@ import { runHackerNewsPostFlagPages } from './run-scenarios/hacker-news-post-fla
 import { runPrivatePostCollectionsCapacityScenarios } from './run-scenarios/private-post-collections-capacity.mts'
 import { runPostCreatedRecoveryCapacity } from './run-scenarios/post-created-recovery-capacity.mts'
 import { runModeratorWorkloadCapacity } from './run-scenarios/moderator-workload-capacity.mts'
+import { runNotificationUnreadCapacityScenario } from './run-scenarios/notification-unread-capacity.mts'
 
 export const AFTER_NOTIFICATIONS_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // These fixtures change crawler-table statistics; keep them after every existing plan.
@@ -34,4 +35,6 @@ export const AFTER_NOTIFICATIONS_RUNNERS: readonly (() => Promise<unknown>)[] = 
   runMessageNotificationWriteCapacity,
   runRelatedPostUrlCapacityScenario,
   runHackerNewsPostFlagPages,
+  // The mixed-recipient fixture updates notification statistics after other notification plans.
+  runNotificationUnreadCapacityScenario,
 ]

@@ -76,14 +76,8 @@ async function captureRecentFeedTypeFilter(feedCount: number): Promise<void> {
   )
   const missing = Array.from({ length: 100 }, (_, index) => seedUuid(10_000_000 + index, '08'))
   const podcastId = seedUuid(700 + articles.length, '08')
-  const {
-    rows: [deleted],
-  } = await write<{ id: string }>(sql`/* selectExplainRecentDeletedArticleFeed */
-    SELECT id FROM rss_feeds
-    WHERE feed_type = 'article' AND deleted_at IS NOT NULL
-    ORDER BY id LIMIT 1`)
-  assert.ok(deleted)
-  const ids = [...articles, ...missing, podcastId, deleted.id]
+  const deletedId = seedUuid(700 + articles.length + 1, '08')
+  const ids = [...articles, ...missing, podcastId, deletedId]
   assert.equal(new Set(ids).size, RECENTLY_VIEWED_ZSET_LIMIT)
   registerScenarioContract(scenario, {
     seededRows: { rss_feeds: feedCount },
@@ -93,11 +87,15 @@ async function captureRecentFeedTypeFilter(feedCount: number): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'rss_feeds', max: articles.length },
     ],
   })
-  const podcast = await write(sql`/* seedExplainRecentPodcastFeed */
-    UPDATE rss_feeds SET feed_type = 'podcast'
-    WHERE id = ${podcastId} AND feed_type = 'article' AND deleted_at IS NULL`)
-  assert.equal(podcast.rowCount, 1)
   try {
+    const podcast = await write(sql`/* seedExplainRecentPodcastFeed */
+      UPDATE rss_feeds SET feed_type = 'podcast'
+      WHERE id = ${podcastId} AND feed_type = 'article' AND deleted_at IS NULL`)
+    assert.equal(podcast.rowCount, 1)
+    const deleted = await write(sql`/* seedExplainRecentDeletedArticleFeed */
+      UPDATE rss_feeds SET deleted_at = CURRENT_TIMESTAMP
+      WHERE id = ${deletedId} AND feed_type = 'article' AND deleted_at IS NULL`)
+    assert.equal(deleted.rowCount, 1)
     await runAndCapture(
       scenario,
       async () => {
@@ -110,5 +108,7 @@ async function captureRecentFeedTypeFilter(feedCount: number): Promise<void> {
   } finally {
     await write(sql`/* restoreExplainRecentPodcastFeed */
       UPDATE rss_feeds SET feed_type = 'article' WHERE id = ${podcastId}`)
+    await write(sql`/* restoreExplainRecentDeletedArticleFeed */
+      UPDATE rss_feeds SET deleted_at = NULL WHERE id = ${deletedId}`)
   }
 }

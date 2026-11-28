@@ -1,3 +1,4 @@
+import { write } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
 import { getRssFeedItemFeedIds } from '../run-services.mts'
 import { runAndCapture } from '../run-support.mts'
@@ -18,6 +19,7 @@ const proxyViewer = {
 } as PrivateUser
 
 export async function runRssFeedWeeklyProxyScenario(): Promise<void> {
+  await write('/* analyzeRssFeedWeeklyProxy */ ANALYZE community_list_rss_feeds')
   registerScenarioContract(SCENARIO_ID, {
     expectations: [
       { kind: 'custom', name: 'rssFeedPageWorkload' },

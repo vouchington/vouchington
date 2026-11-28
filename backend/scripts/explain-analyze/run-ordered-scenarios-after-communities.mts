@@ -3,6 +3,11 @@ import { runCommunitySearchCapacityScenario } from './run-scenarios/community-se
 import { runCommunityMemberMetricPages } from './run-scenarios/community-member-metric-pages.mts'
 import { runCommunityMembershipReadCapacityScenarios } from './run-scenarios/community-membership-read-capacity.mts'
 import { runModerationReportListCapacity } from './run-scenarios/moderation-report-list-capacity.mts'
+import { runCommunityRosterReadCapacityScenario } from './run-scenarios/community-roster-read-capacity.mts'
+import { runCommunityHistoryReadScenarios } from './run-scenarios/community-history-reads.mts'
+import { runCommunityModerationListCapacityScenarios } from './run-scenarios/community-moderation-list-capacity.mts'
+import { runCommunityPublicationCapacityScenarios } from './run-scenarios/community-publication-capacity.mts'
+import { runCommunityModerationQueueCapacityScenarios } from './run-scenarios/community-moderation-queue-capacity.mts'
 
 export const AFTER_COMMUNITIES_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runConversationListCapacityScenario,
@@ -10,4 +15,9 @@ export const AFTER_COMMUNITIES_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCommunityMemberMetricPages,
   runCommunityMembershipReadCapacityScenarios,
   runModerationReportListCapacity,
+  runCommunityRosterReadCapacityScenario,
+  runCommunityHistoryReadScenarios,
+  runCommunityModerationListCapacityScenarios,
+  runCommunityPublicationCapacityScenarios,
+  runCommunityModerationQueueCapacityScenarios,
 ]

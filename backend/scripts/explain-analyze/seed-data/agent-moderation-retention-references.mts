@@ -120,3 +120,43 @@ export async function insertAgentModerationRetentionReferences(
     [ACTION_ID, reference.postId, reference.id],
   )
 }
+
+export async function isAgentModerationRetentionSeeded(
+  releasedNoiseCount: number,
+): Promise<boolean> {
+  const releasedDay = new Date(postSeedTimestampMs(0) - 120 * DAY_MS).toISOString().slice(0, 10)
+  const { rows } = await write<{ exists: boolean }>(
+    `/* seedAgentModerationRetention:check */
+     SELECT EXISTS(
+       SELECT 1 FROM moderation_transparency_released_daily_rollups
+       WHERE day = $1::date
+         AND community_id = $2::uuid
+         AND metric = 'automated_moderation'
+         AND category = 'agent_moderation'
+     ) AS exists`,
+    [releasedDay, seedUuid(releasedNoiseCount - 1, 'f5')],
+  )
+  return rows[0]?.exists ?? false
+}
+
+export async function seedAgentModerationRetentionReleasedNoise(
+  day: string,
+  occurredAt: Date,
+  releasedNoiseCount: number,
+): Promise<void> {
+  const communityIds = Array.from({ length: releasedNoiseCount }, (_, index) =>
+    seedUuid(index, 'f5'),
+  )
+  for (let start = 0; start < communityIds.length; start += BATCH_SIZE) {
+    const batch = communityIds.slice(start, start + BATCH_SIZE)
+    await write(
+      `/* seedAgentModerationRetentionReleasedNoise */
+       INSERT INTO moderation_transparency_released_daily_rollups
+         (day, community_id, metric, category, count, latest_occurred_at)
+       SELECT $1::date, community_id, 'automated_moderation', 'agent_moderation', 20, $2::timestamptz
+       FROM unnest($3::uuid[]) AS input(community_id)
+       ON CONFLICT ON CONSTRAINT moderation_transparency_released_daily_rollups_key DO NOTHING`,
+      [day, occurredAt, batch],
+    )
+  }
+}

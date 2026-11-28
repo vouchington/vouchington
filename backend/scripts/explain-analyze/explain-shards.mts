@@ -1,21 +1,15 @@
 import { COMMENT_PARTITIONED_SCENARIO_IDS } from './comment-scenario-ids.mts'
 import { CRITICAL_ALERT_SCENARIO_IDS } from './critical-alert-scenario-ids.mts'
 import { HACKER_NEWS_SCALE_SCENARIO_IDS } from './hacker-news-scale-scenario-ids.mts'
-import orderedShardScenarioIds from './explain-shard-scenario-ids.json' with { type: 'json' }
+import { assertScenarioManifest } from './scenario-manifest-check.mts'
 
-// The ordinary scenarios run in one fixed order (run-ordered-scenarios.mts) that is cut into
-// contiguous segments, one per ordinary shard. `main` is the first segment and owns every
-// manifest scenario no other shard declares. The JSON may also declare main ownership
-// explicitly; those entries must not overlap another shard.
+// Ordinary shards each own a set of whole domain files (ORDINARY_SHARD_DOMAINS in
+// run-ordered-scenarios.mts). Fixture shards (`partition`, `hn-scale`) own fixed scenario sets.
 export const ORDINARY_EXPLAIN_SHARDS = ['main', 'main-2', 'main-3', 'main-4'] as const
 export const EXPLAIN_SHARDS = [...ORDINARY_EXPLAIN_SHARDS, 'partition', 'hn-scale'] as const
 export type ExplainShard = (typeof EXPLAIN_SHARDS)[number]
 export type OrdinaryExplainShard = (typeof ORDINARY_EXPLAIN_SHARDS)[number]
-/** Shards that must declare their scenarios; main declarations are optional. */
-export type DeclaredExplainShard = Exclude<ExplainShard, 'main'>
-export type ShardDeclarations = Readonly<
-  Record<DeclaredExplainShard, readonly string[]> & { main?: readonly string[] }
->
+export type FixedExplainShard = Exclude<ExplainShard, OrdinaryExplainShard>
 
 // The partitioned comment fixture is additive: its monthly bounds start after the current UTC
 // month, so no other scenario reads it. runCommentDescendantPartitionedPages seeds and captures
@@ -30,8 +24,7 @@ export const PARTITION_SHARD_SCENARIO_IDS: readonly string[] = [
 // only its scenarios read it. It runs in its own job so its seeding time never extends `main`.
 export const HN_SCALE_SHARD_SCENARIO_IDS: readonly string[] = HACKER_NEWS_SCALE_SCENARIO_IDS
 
-export const SHARD_DECLARATIONS: ShardDeclarations = {
-  ...orderedShardScenarioIds,
+export const FIXED_SHARD_SCENARIO_IDS: Readonly<Record<FixedExplainShard, readonly string[]>> = {
   partition: PARTITION_SHARD_SCENARIO_IDS,
   'hn-scale': HN_SCALE_SHARD_SCENARIO_IDS,
 }
@@ -51,61 +44,61 @@ export function isOrdinaryExplainShard(
   return ORDINARY_EXPLAIN_SHARDS.some(ordinary => ordinary === shard)
 }
 
-/** The scenarios one shard must complete; no shard means the whole manifest. */
-export function getShardScenarioIds(
+/** Checks that the fixture shard scenario sets are unique, disjoint, and belong to the manifest. */
+export function assertFixedShardDeclarations(
+  manifest: readonly string[],
+  fixedShards: Readonly<Record<FixedExplainShard, readonly string[]>> = FIXED_SHARD_SCENARIO_IDS,
+): void {
+  const manifestSet = new Set(manifest)
+  const seen = new Map<string, FixedExplainShard[]>()
+  for (const [shard, ids] of Object.entries(fixedShards) as [
+    FixedExplainShard,
+    readonly string[],
+  ][]) {
+    const missing = ids.filter(id => !manifestSet.has(id))
+    if (ids.length === 0 || missing.length > 0 || new Set(ids).size !== ids.length)
+      throw new Error(
+        `EXPLAIN ${shard} shard declares unknown, empty, or duplicate ids [${missing.join(', ')}]`,
+      )
+    for (const id of ids) seen.set(id, [...(seen.get(id) ?? []), shard])
+  }
+  const both = [...seen].filter(([, shards]) => shards.length > 1).map(([id]) => id)
+  if (both.length > 0)
+    throw new Error(`EXPLAIN fixture shards overlap on scenarios [${both.join(', ')}]`)
+}
+
+/** Checks that a single ordinary shard or standalone domain completed only ordinary manifest ids. */
+export function assertOrdinaryCompletedScenarios(
+  completed: readonly string[],
+  manifest: readonly string[],
+  owner: string,
+  fixedShards: Readonly<Record<FixedExplainShard, readonly string[]>> = FIXED_SHARD_SCENARIO_IDS,
+): void {
+  if (completed.length === 0) throw new Error(`EXPLAIN ${owner} completed no scenarios`)
+  const fixedIds = new Set(Object.values(fixedShards).flat())
+  const ordinaryManifest = new Set(manifest.filter(id => !fixedIds.has(id)))
+  const unexpected = completed.filter(id => !ordinaryManifest.has(id))
+  const duplicates = completed.filter((id, index) => completed.indexOf(id) !== index)
+  if (unexpected.length > 0 || duplicates.length > 0)
+    throw new Error(
+      `EXPLAIN ${owner} scenario mismatch; unexpected=[${unexpected.join(', ')}] duplicates=[${[...new Set(duplicates)].join(', ')}]`,
+    )
+}
+
+/** Validates one shard's completed scenarios (or the whole manifest when unsharded). */
+export function assertShardCompletedScenarios(
+  completed: readonly string[],
   shard: ExplainShard | undefined,
   manifest: readonly string[],
-  declarations: ShardDeclarations = SHARD_DECLARATIONS,
-): readonly string[] {
-  if (shard === undefined) return manifest
-  if (shard === 'main') {
-    const declared = new Set(
-      Object.entries(declarations)
-        .filter(([owner]) => owner !== 'main')
-        .flatMap(([, ids]) => ids),
-    )
-    return manifest.filter(id => !declared.has(id))
-  }
-  const owned = new Set(declarations[shard])
-  return manifest.filter(id => owned.has(id))
-}
-
-/** Fails unless the shard subsets are disjoint and together equal the manifest. */
-export function assertShardsPartitionManifest(
-  manifest: readonly string[],
-  subsets: Readonly<Record<ExplainShard, readonly string[]>>,
+  fixedShards: Readonly<Record<FixedExplainShard, readonly string[]>> = FIXED_SHARD_SCENARIO_IDS,
 ): void {
-  const seen = new Map<string, ExplainShard[]>()
-  for (const shard of EXPLAIN_SHARDS)
-    for (const id of subsets[shard]) seen.set(id, [...(seen.get(id) ?? []), shard])
-  const manifestSet = new Set(manifest)
-  const neither = manifest.filter(id => !seen.has(id))
-  const both = [...seen].filter(([, shards]) => shards.length > 1).map(([id]) => id)
-  const unknown = [...seen.keys()].filter(id => !manifestSet.has(id))
-  if (neither.length > 0 || both.length > 0 || unknown.length > 0)
-    throw new Error(
-      `EXPLAIN shards must partition the scenario manifest; neither=[${neither.join(', ')}] both=[${both.join(', ')}] unknown=[${unknown.join(', ')}]`,
-    )
-}
-
-/** Checks the declared shard split against the manifest before a shard runs anything. */
-export function assertShardDeclarations(
-  manifest: readonly string[],
-  declarations: ShardDeclarations = SHARD_DECLARATIONS,
-): void {
-  const manifestSet = new Set(manifest)
-  const mainIds = new Set(getShardScenarioIds('main', manifest, declarations))
-  for (const [shard, ids] of Object.entries(declarations)) {
-    const missing = ids.filter(id => !manifestSet.has(id))
-    if (shard === 'main' && ids.some(id => manifestSet.has(id) && !mainIds.has(id)))
-      throw new Error('EXPLAIN main shard declares scenarios assigned to another shard')
-    if (missing.length > 0 || new Set(ids).size !== ids.length)
-      throw new Error(
-        `EXPLAIN ${shard} shard declares unknown or duplicate ids [${missing.join(', ')}]`,
-      )
+  if (shard === undefined) {
+    assertScenarioManifest(completed, manifest)
+    return
   }
-  const subsets = Object.fromEntries(
-    EXPLAIN_SHARDS.map(shard => [shard, getShardScenarioIds(shard, manifest, declarations)]),
-  ) as Record<ExplainShard, readonly string[]>
-  assertShardsPartitionManifest(manifest, subsets)
+  if (isOrdinaryExplainShard(shard)) {
+    assertOrdinaryCompletedScenarios(completed, manifest, shard, fixedShards)
+    return
+  }
+  assertScenarioManifest(completed, fixedShards[shard])
 }

@@ -1,4 +1,7 @@
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
+import { seedClaimantMisuseWindows } from './seed-data/claimant-misuse-windows.mts'
+import { seedMediaDeliveryReplay } from './seed-data/media-delivery-replay.mts'
+import { seedAndAnalyzeAgentModerationRetention } from './seed-data/agent-moderation-retention.mts'
 import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-dispatch.mts'
 import { runCopyrightSuspendedClaimantRecoveryCapacityScenarios } from './run-scenarios/copyright-suspended-claimant-recovery.mts'
 import { runCopyrightStatutoryRestorationCapacityScenarios } from './run-scenarios/copyright-statutory-restoration.mts'
@@ -18,6 +21,9 @@ export const RECOVERY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
   seedVoteWeightDispatch,
   runVoteWeightDispatchScenarios,
+  // Copyright recovery plans expect the copyright notice, submission, and target corpora.
+  seedClaimantMisuseWindows,
+  seedMediaDeliveryReplay,
   runCopyrightSuspendedClaimantRecoveryCapacityScenarios,
   runCopyrightStatutoryRestorationCapacityScenarios,
   runCopyrightPendingEnforcementScenarios,
@@ -27,8 +33,8 @@ export const RECOVERY_RUNNERS: readonly (() => Promise<unknown>)[] = [
   runCopyrightHoldRestoreRecoveryCapacityScenarios,
   runCopyrightFormReviewRecoveryScenarios,
   runCopyrightTrustedFlaggerCapacityScenarios,
-  // The actor probes read the agent moderation and report context corpora seeded earlier in this
-  // segment, so they stay in it, ahead of the hot publication fixtures.
+  // The actor probes read the agent moderation retention corpus; seed it when this domain runs alone.
+  seedAndAnalyzeAgentModerationRetention,
   runFkActorIndexScenarios,
   runPostCommunityHydrationCapacityScenario,
   // The staff-case fixture analyzes deadlines. Keep the recovery plans ahead of it.

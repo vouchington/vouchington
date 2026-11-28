@@ -1,35 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import {
   EXPLAIN_SHARDS,
+  FIXED_SHARD_SCENARIO_IDS,
+  HN_SCALE_SHARD_SCENARIO_IDS,
   ORDINARY_EXPLAIN_SHARDS,
   PARTITION_SHARD_SCENARIO_IDS,
-  SHARD_DECLARATIONS,
-  assertShardDeclarations,
-  assertShardsPartitionManifest,
-  getShardScenarioIds,
+  assertFixedShardDeclarations,
+  assertOrdinaryCompletedScenarios,
+  assertShardCompletedScenarios,
   isOrdinaryExplainShard,
   parseExplainShard,
-  type ExplainShard,
-  type ShardDeclarations,
+  type FixedExplainShard,
 } from './explain-shards.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 
 const manifest = ['a', 'b', 'c', 'd', 'p1', 'p2']
-const declarations: ShardDeclarations = {
-  'main-2': ['b'],
-  'main-3': ['c'],
-  'main-4': [],
+const fixedShards: Readonly<Record<FixedExplainShard, readonly string[]>> = {
   partition: ['p1', 'p2'],
   'hn-scale': ['d'],
-}
-
-function subsets(overrides: Partial<Record<ExplainShard, readonly string[]>> = {}) {
-  return Object.fromEntries(
-    EXPLAIN_SHARDS.map(shard => [
-      shard,
-      overrides[shard] ?? getShardScenarioIds(shard, manifest, declarations),
-    ]),
-  ) as Record<ExplainShard, readonly string[]>
 }
 
 describe('parseExplainShard', () => {
@@ -49,84 +37,61 @@ describe('parseExplainShard', () => {
   })
 })
 
-describe('getShardScenarioIds', () => {
-  it('gives each declared shard its ids, main the rest, and everything without a shard', () => {
-    expect(getShardScenarioIds('main', manifest, declarations)).toEqual(['a'])
-    expect(getShardScenarioIds('main-2', manifest, declarations)).toEqual(['b'])
-    expect(getShardScenarioIds('main-3', manifest, declarations)).toEqual(['c'])
-    expect(getShardScenarioIds('main-4', manifest, declarations)).toEqual([])
-    expect(getShardScenarioIds('hn-scale', manifest, declarations)).toEqual(['d'])
-    expect(getShardScenarioIds('partition', manifest, declarations)).toEqual(['p1', 'p2'])
-    expect(getShardScenarioIds(undefined, manifest, declarations)).toEqual(manifest)
-  })
-})
-
-describe('assertShardsPartitionManifest', () => {
-  it('accepts disjoint subsets whose union is the manifest', () => {
-    expect(() => assertShardsPartitionManifest(manifest, subsets())).not.toThrow()
+describe('assertFixedShardDeclarations', () => {
+  it('passes for the real manifest and its fixture shards', () => {
+    expect(() => assertFixedShardDeclarations(EXPLAIN_SCENARIO_MANIFEST)).not.toThrow()
+    expect(FIXED_SHARD_SCENARIO_IDS.partition).toEqual(PARTITION_SHARD_SCENARIO_IDS)
+    expect(FIXED_SHARD_SCENARIO_IDS['hn-scale']).toEqual(HN_SCALE_SHARD_SCENARIO_IDS)
+    expect(PARTITION_SHARD_SCENARIO_IDS.length).toBeGreaterThan(0)
+    expect(HN_SCALE_SHARD_SCENARIO_IDS.length).toBeGreaterThan(0)
   })
 
-  it('fails for a scenario in no shard, in two shards, or outside the manifest', () => {
-    expect(() => assertShardsPartitionManifest(manifest, subsets({ main: [] }))).toThrow(
-      'neither=[a]',
-    )
-    expect(() => assertShardsPartitionManifest(manifest, subsets({ main: ['a', 'p1'] }))).toThrow(
-      'both=[p1]',
+  it('rejects empty, unknown, duplicate, or overlapping fixture shard declarations', () => {
+    expect(() => assertFixedShardDeclarations(manifest, fixedShards)).not.toThrow()
+    expect(() => assertFixedShardDeclarations(manifest, { ...fixedShards, partition: [] })).toThrow(
+      'partition shard declares unknown, empty, or duplicate ids',
     )
     expect(() =>
-      assertShardsPartitionManifest(manifest, subsets({ main: ['a', 'ghost'] })),
-    ).toThrow('unknown=[ghost]')
-  })
-})
-
-describe('assertShardDeclarations', () => {
-  it('passes for the real manifest and its declared shards', () => {
-    expect(() => assertShardDeclarations(EXPLAIN_SCENARIO_MANIFEST)).not.toThrow()
-    // A shard keeps manifest order; only membership is declared.
-    expect(new Set(getShardScenarioIds('partition', EXPLAIN_SCENARIO_MANIFEST))).toEqual(
-      new Set(PARTITION_SHARD_SCENARIO_IDS),
-    )
-    for (const shard of EXPLAIN_SHARDS)
-      expect(getShardScenarioIds(shard, EXPLAIN_SCENARIO_MANIFEST).length).toBeGreaterThan(0)
-    expect(Object.keys(SHARD_DECLARATIONS).toSorted()).toEqual(EXPLAIN_SHARDS.toSorted())
-  })
-
-  it('accepts a complete split and fails when a declared id is unknown or repeated', () => {
-    expect(() => assertShardDeclarations(manifest, declarations)).not.toThrow()
+      assertFixedShardDeclarations(manifest, { ...fixedShards, partition: ['p1', 'gone'] }),
+    ).toThrow('partition shard declares unknown, empty, or duplicate ids [gone]')
     expect(() =>
-      assertShardDeclarations(manifest, { ...declarations, partition: ['p1', 'gone'] }),
-    ).toThrow('partition shard declares unknown or duplicate ids [gone]')
-    expect(() =>
-      assertShardDeclarations(manifest, { ...declarations, partition: ['p1', 'p1'] }),
+      assertFixedShardDeclarations(manifest, { ...fixedShards, partition: ['p1', 'p1'] }),
     ).toThrow('duplicate')
-  })
-
-  it('keeps explicit main entries and unassigned scenarios in manifest order', () => {
-    const explicit = { ...declarations, main: ['a'] }
-    expect(() => assertShardDeclarations([...manifest, 'unassigned'], explicit)).not.toThrow()
-    expect(getShardScenarioIds('main', ['unassigned', ...manifest], explicit)).toEqual([
-      'unassigned',
-      'a',
-    ])
-    expect(SHARD_DECLARATIONS.main).toContain('top-url-insert-batch')
-    expect(getShardScenarioIds('main', EXPLAIN_SCENARIO_MANIFEST)).toContain('top-url-insert-batch')
-  })
-
-  it('rejects explicit main duplicates, unknown ids, and ownership assigned elsewhere', () => {
-    expect(() => assertShardDeclarations(manifest, { ...declarations, main: ['a', 'a'] })).toThrow(
-      'duplicate',
-    )
-    expect(() => assertShardDeclarations(manifest, { ...declarations, main: ['ghost'] })).toThrow(
-      'unknown',
-    )
-    expect(() => assertShardDeclarations(manifest, { ...declarations, main: ['b'] })).toThrow(
-      'assigned to another shard',
-    )
-  })
-
-  it('fails when two shards declare the same scenario', () => {
     expect(() =>
-      assertShardDeclarations(manifest, { ...declarations, 'main-3': ['b', 'c'] }),
-    ).toThrow('both=[b]')
+      assertFixedShardDeclarations(manifest, { partition: ['p1', 'd'], 'hn-scale': ['d'] }),
+    ).toThrow('overlap on scenarios [d]')
+  })
+})
+
+describe('assertShardCompletedScenarios', () => {
+  it('checks ordinary shards against non-fixture manifest ids and fixture shards exactly', () => {
+    expect(() =>
+      assertShardCompletedScenarios(['a', 'b'], 'main', manifest, fixedShards),
+    ).not.toThrow()
+    expect(() =>
+      assertShardCompletedScenarios(['p1', 'p2'], 'partition', manifest, fixedShards),
+    ).not.toThrow()
+    expect(() =>
+      assertShardCompletedScenarios(['d'], 'hn-scale', manifest, fixedShards),
+    ).not.toThrow()
+    expect(() =>
+      assertShardCompletedScenarios(manifest, undefined, manifest, fixedShards),
+    ).not.toThrow()
+  })
+
+  it('rejects empty, duplicate, unknown, or fixture scenarios inside an ordinary shard or domain', () => {
+    expect(() => assertOrdinaryCompletedScenarios([], manifest, 'main', fixedShards)).toThrow(
+      'completed no scenarios',
+    )
+    expect(() =>
+      assertOrdinaryCompletedScenarios(['a', 'a'], manifest, 'main', fixedShards),
+    ).toThrow('duplicates=[a]')
+    expect(() =>
+      assertOrdinaryCompletedScenarios(['a', 'p1'], manifest, 'recovery', fixedShards),
+    ).toThrow('unexpected=[p1]')
+    expect(() =>
+      assertOrdinaryCompletedScenarios(['a', 'ghost'], manifest, 'main-2', fixedShards),
+    ).toThrow('unexpected=[ghost]')
+    expect(EXPLAIN_SHARDS).toEqual(['main', 'main-2', 'main-3', 'main-4', 'partition', 'hn-scale'])
   })
 })

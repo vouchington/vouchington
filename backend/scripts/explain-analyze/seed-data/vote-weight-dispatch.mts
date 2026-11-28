@@ -8,6 +8,11 @@ export const VOTE_WEIGHT_DISPATCH_WINDOW_START = new Date(VOTE_WEIGHT_DISPATCH_A
 export const VOTE_WEIGHT_DISPATCH_WINDOW_END = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS + 60_000)
 // Mixed 500-row family pages expose expensive post-scan source-kind filtering.
 export async function seedVoteWeightDispatch(): Promise<void> {
+  const existing = await write<{ exists: boolean }>(
+    `/* seedVoteWeightDispatch:check */ SELECT EXISTS(SELECT 1 FROM memberships WHERE id = $1::uuid) AS exists`,
+    [seedUuid(5, 'a7')],
+  )
+  if (existing.rows[0]?.exists) return
   await seedAgeMilestoneUsers()
   await seedVoteWeightDirtyMarkers()
   await seedMembershipSignals()
@@ -20,12 +25,10 @@ async function seedAgeMilestoneUsers(): Promise<void> {
   const values: unknown[] = []
   for (let index = 0; index < 240; index++) {
     const id = seedUuidAtTimestamp(VOTE_WEIGHT_DISPATCH_ANCHOR_MS + index * 100, 100_000 + index)
-    const removed = index % 6 === 0
-    const overridden = index % 6 === 1
     values.push(
       id,
-      removed ? VOTE_WEIGHT_DISPATCH_WINDOW_START : null,
-      overridden ? VOTE_WEIGHT_DISPATCH_WINDOW_START : null,
+      index % 6 === 0 ? VOTE_WEIGHT_DISPATCH_WINDOW_START : null,
+      index % 6 === 1 ? VOTE_WEIGHT_DISPATCH_WINDOW_START : null,
     )
     const offset = values.length - 2
     rows.push(`($${offset}::uuid, $${offset + 1}::timestamptz, $${offset + 2}::timestamptz)`)
@@ -38,34 +41,30 @@ async function seedAgeMilestoneUsers(): Promise<void> {
 }
 
 async function seedMembershipSignals(): Promise<void> {
-  const context = await write<{ id: string }>(
-    `/* seedVoteWeightDispatch */ SELECT fn_upsert_membership_provider_context_id('stripe', 'production', 'voucha-web') AS id`,
-  )
-  const contextId = context.rows[0]!.id
-  const product = await write<{ id: string; provider_product_id: string }>(
-    `/* seedVoteWeightDispatch */ SELECT product.id, provider_product.id AS provider_product_id
-     FROM membership_products product
-     JOIN membership_provider_products provider_product ON provider_product.membership_product_id = product.id
-     WHERE product.plan = 'plus' AND product.billing_interval = 'monthly'
-       AND product.retired_at IS NULL AND provider_product.membership_provider_context_id = $1::uuid
-     LIMIT 1`,
-    [contextId],
-  )
-  const productId = product.rows[0]!.id
-  const providerProductId = product.rows[0]!.provider_product_id
+  const { id: contextId } = (
+    await write<{ id: string }>(
+      `/* seedVoteWeightDispatch */ SELECT fn_upsert_membership_provider_context_id('stripe', 'production', 'voucha-web') AS id`,
+    )
+  ).rows[0]!
+  const { id: productId, provider_product_id: providerProductId } = (
+    await write<{ id: string; provider_product_id: string }>(
+      `/* seedVoteWeightDispatch */ SELECT product.id, provider_product.id AS provider_product_id
+       FROM membership_products product
+       JOIN membership_provider_products provider_product ON provider_product.membership_product_id = product.id
+       WHERE product.plan = 'plus' AND product.billing_interval = 'monthly'
+         AND product.retired_at IS NULL AND provider_product.membership_provider_context_id = $1::uuid
+       LIMIT 1`,
+      [contextId],
+    )
+  ).rows[0]!
   for (let start = 0; start < VOTE_WEIGHT_DISPATCH_SEED_COUNT; start += 200) {
     const rows: string[] = []
     const values: unknown[] = []
-    for (
-      let index = start;
-      index < Math.min(start + 200, VOTE_WEIGHT_DISPATCH_SEED_COUNT);
-      index++
-    ) {
-      const sourceKind = index % 2 === 0 ? 'family' : 'direct'
+    const end = Math.min(start + 200, VOTE_WEIGHT_DISPATCH_SEED_COUNT)
+    for (let index = start; index < end; index++) {
       const eventAt = new Date(
         VOTE_WEIGHT_DISPATCH_ANCHOR_MS + (index - VOTE_WEIGHT_DISPATCH_SEED_COUNT / 2) * 80,
       )
-      const effectiveAt = new Date(eventAt.getTime() - 1_000)
       values.push(
         seedUuid(index, 'a1'),
         seedUuid(index, 'a2'),
@@ -73,13 +72,13 @@ async function seedMembershipSignals(): Promise<void> {
         seedUuid(index, 'a4'),
         seedUuid(index, 'a5'),
         seedUuid(1_000 + index, '01'),
-        sourceKind,
-        effectiveAt,
+        index % 2 === 0 ? 'family' : 'direct',
+        new Date(eventAt.getTime() - 1_000),
         eventAt,
       )
-      const offset = values.length - 8
+      const o = values.length - 8
       rows.push(
-        `($${offset}::uuid, $${offset + 1}::uuid, $${offset + 2}::uuid, $${offset + 3}::uuid, $${offset + 4}::uuid, $${offset + 5}::uuid, $${offset + 6}::membership_source_kinds, $${offset + 7}::timestamptz, $${offset + 8}::timestamptz)`,
+        `($${o}::uuid, $${o + 1}::uuid, $${o + 2}::uuid, $${o + 3}::uuid, $${o + 4}::uuid, $${o + 5}::uuid, $${o + 6}::membership_source_kinds, $${o + 7}::timestamptz, $${o + 8}::timestamptz)`,
       )
     }
     await using transaction = await beginTransaction()
@@ -141,7 +140,8 @@ async function seedMembershipSignals(): Promise<void> {
       `/* seedVoteWeightDispatch */ ${requested}
        UPDATE membership_provider_evidence_records evidence
        SET verified_at = NULL, rejected_at = requested.event_at
-       FROM requested WHERE evidence.id = requested.evidence_id`,
+       FROM requested WHERE evidence.id = requested.evidence_id
+         AND evidence.rejected_at IS NULL`,
       values,
     )
     await transaction.commit()

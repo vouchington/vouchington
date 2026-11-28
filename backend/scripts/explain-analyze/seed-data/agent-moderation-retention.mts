@@ -9,6 +9,8 @@ import {
 import {
   insertAgentModerationRetentionReferenceNoise,
   insertAgentModerationRetentionReferences,
+  isAgentModerationRetentionSeeded,
+  seedAgentModerationRetentionReleasedNoise,
 } from './agent-moderation-retention-references.mts'
 
 export const AGENT_MODERATION_RETENTION_ROWS = 15_000 * 3 + 66 + 1_000
@@ -16,7 +18,6 @@ export const AGENT_MODERATION_RETENTION_RELEASED_NOISE = 1_000
 export const AGENT_MODERATION_RETENTION_REFERENCE_NOISE = 1_000
 
 const DAY_MS = 24 * 60 * 60 * 1_000
-const BATCH_SIZE = 2_000
 const RESTORE_PAGE_POSTS = 200
 const SYSTEM_USER_ID = seedUuid(2_000_000, '37')
 const BULK_AGENT_ID = seedUuid(2_000_000, '36')
@@ -66,14 +67,20 @@ export async function seedAgentModerationRetention(): Promise<void> {
     `/* seedAgentModerationRetentionReleasedCohort */
      INSERT INTO moderation_transparency_released_daily_rollups
        (day, community_id, metric, category, count, latest_occurred_at)
-     VALUES ($1::date, NULL, 'automated_moderation', 'agent_moderation', 20, $2::timestamptz)`,
+     VALUES ($1::date, NULL, 'automated_moderation', 'agent_moderation', 20, $2::timestamptz)
+     ON CONFLICT ON CONSTRAINT moderation_transparency_released_daily_rollups_key DO NOTHING`,
     [releasedDay, new Date(anchorMs - 2 * DAY_MS)],
   )
-  await seedReleasedCommunityNoise(releasedDay, new Date(oldMs))
+  await seedAgentModerationRetentionReleasedNoise(
+    releasedDay,
+    new Date(oldMs),
+    AGENT_MODERATION_RETENTION_RELEASED_NOISE,
+  )
 }
 
 /** Defer the large retention corpus until its own plans, then refresh only its statistics. */
 export async function seedAndAnalyzeAgentModerationRetention(): Promise<void> {
+  if (await isAgentModerationRetentionSeeded(AGENT_MODERATION_RETENTION_RELEASED_NOISE)) return
   await seedAgentModerationRetention()
   await write(`/* analyzeAgentModerationRetention */
     ANALYZE posts, agent_moderations, agent_moderation_votes,
@@ -177,23 +184,4 @@ async function insertModerationRows(
     BULK_AGENT_ID,
     BULK_PROMPT_IDS,
   )
-}
-
-async function seedReleasedCommunityNoise(day: string, occurredAt: Date): Promise<void> {
-  const communityIds = Array.from(
-    { length: AGENT_MODERATION_RETENTION_RELEASED_NOISE },
-    (_, index) => seedUuid(index, 'f5'),
-  )
-  for (let start = 0; start < communityIds.length; start += BATCH_SIZE) {
-    const batch = communityIds.slice(start, start + BATCH_SIZE)
-    await write(
-      `/* seedAgentModerationRetentionReleasedNoise */
-       INSERT INTO moderation_transparency_released_daily_rollups
-         (day, community_id, metric, category, count, latest_occurred_at)
-       SELECT $1::date, community_id, 'automated_moderation', 'agent_moderation', 20, $2::timestamptz
-       FROM unnest($3::uuid[]) AS input(community_id)
-       ON CONFLICT ON CONSTRAINT moderation_transparency_released_daily_rollups_key DO NOTHING`,
-      [day, occurredAt, batch],
-    )
-  }
 }

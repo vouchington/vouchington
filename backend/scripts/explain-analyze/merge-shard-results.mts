@@ -1,7 +1,11 @@
 import type { ExplainResult } from '@vouchington/explain-plan'
 import { copyFileSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { EXPLAIN_SHARDS, getShardScenarioIds, type ExplainShard } from './explain-shards.mts'
+import {
+  EXPLAIN_SHARDS,
+  assertShardCompletedScenarios,
+  type ExplainShard,
+} from './explain-shards.mts'
 import { loadLatestPairedResults } from './paired-results.mts'
 import { assertScenarioManifest } from './scenario-manifest-check.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
@@ -37,11 +41,7 @@ export function mergeShardResults(
     )
   const ordered = EXPLAIN_SHARDS.map(name => shards.find(shard => shard.shard === name)!)
   for (const shard of ordered)
-    assertScenarioManifest(
-      shard.completedScenarioIds,
-      getShardScenarioIds(shard.shard, manifest),
-      shard.shard,
-    )
+    assertShardCompletedScenarios(shard.completedScenarioIds, shard.shard, manifest)
   const completedScenarioIds = ordered.flatMap(shard => [...shard.completedScenarioIds])
   assertScenarioManifest(completedScenarioIds, manifest)
   return {

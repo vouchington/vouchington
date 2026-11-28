@@ -68,6 +68,10 @@ export async function runDispatchWorkPlanScenarios(): Promise<void> {
   )
 
   const referral = await prepareReferralCrawlScale()
+  registerScenarioContract('dispatch-referral-crawl-due-selectivity', {
+    seededRows: { user_referral_program_links: 10004 },
+    expectations: [{ kind: 'custom', name: 'dispatchReferralCrawlSelectivity' }],
+  })
   await runAndCapture(
     'dispatch-referral-crawl-due-selectivity',
     async () => {
@@ -91,6 +95,10 @@ export async function runDispatchWorkPlanScenarios(): Promise<void> {
   )
 
   const unfurl = await prepareReferralUnfurlScale()
+  registerScenarioContract('dispatch-referral-unfurl-due-selectivity', {
+    seededRows: { user_referral_program_links: 20014 },
+    expectations: [{ kind: 'custom', name: 'dispatchReferralUnfurlSelectivity' }],
+  })
   await runAndCapture(
     'dispatch-referral-unfurl-due-selectivity',
     async () => {
@@ -112,12 +120,3 @@ export async function runDispatchWorkPlanScenarios(): Promise<void> {
     'dispatchUnfurlReferralLinks',
   )
 }
-
-registerScenarioContract('dispatch-referral-crawl-due-selectivity', {
-  seededRows: { user_referral_program_links: 10004 },
-  expectations: [{ kind: 'custom', name: 'dispatchReferralCrawlSelectivity' }],
-})
-registerScenarioContract('dispatch-referral-unfurl-due-selectivity', {
-  seededRows: { user_referral_program_links: 20014 },
-  expectations: [{ kind: 'custom', name: 'dispatchReferralUnfurlSelectivity' }],
-})

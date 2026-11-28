@@ -5,8 +5,9 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   EXPLAIN_SHARDS,
+  HN_SCALE_SHARD_SCENARIO_IDS,
+  ORDINARY_EXPLAIN_SHARDS,
   PARTITION_SHARD_SCENARIO_IDS,
-  getShardScenarioIds,
   type ExplainShard,
 } from './explain-shards.mts'
 import {
@@ -16,7 +17,14 @@ import {
 } from './merge-shard-results.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 
-const manifest = ['a', 'b', ...PARTITION_SHARD_SCENARIO_IDS]
+const manifest = [
+  'a',
+  'b',
+  'c',
+  'd',
+  ...PARTITION_SHARD_SCENARIO_IDS,
+  ...HN_SCALE_SHARD_SCENARIO_IDS,
+]
 
 function result(name: string): ExplainResult {
   return { name } as ExplainResult
@@ -31,49 +39,59 @@ function shard(name: ExplainShard, ids: readonly string[]) {
   }
 }
 
-// The remaining shards complete nothing in a manifest that only names `main` and `partition`.
-function emptyShards(...except: readonly ExplainShard[]) {
-  return EXPLAIN_SHARDS.filter(name => !except.includes(name)).map(name => shard(name, []))
+function validShards() {
+  return [
+    shard('partition', PARTITION_SHARD_SCENARIO_IDS),
+    shard('main', ['a']),
+    shard('main-2', ['b']),
+    shard('main-3', ['c']),
+    shard('main-4', ['d']),
+    shard('hn-scale', HN_SCALE_SHARD_SCENARIO_IDS),
+  ]
 }
 
 describe('mergeShardResults', () => {
   it('concatenates complete shards in shard order', () => {
-    const merged = mergeShardResults(
-      [
-        shard('partition', PARTITION_SHARD_SCENARIO_IDS),
-        shard('main', getShardScenarioIds('main', manifest)),
-        ...emptyShards('main', 'partition'),
-      ],
-      manifest,
-    )
-    expect(merged.completedScenarioIds).toEqual(['a', 'b', ...PARTITION_SHARD_SCENARIO_IDS])
-    expect(merged.results.map(item => item.name).slice(0, 2)).toEqual(['a', 'b'])
-    expect(merged.repeatedResults.at(-1)?.name).toBe(
-      `${PARTITION_SHARD_SCENARIO_IDS.at(-1)}:repeat`,
-    )
+    const merged = mergeShardResults(validShards(), manifest)
+    expect(merged.completedScenarioIds).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+      ...PARTITION_SHARD_SCENARIO_IDS,
+      ...HN_SCALE_SHARD_SCENARIO_IDS,
+    ])
+    expect(merged.results.map(item => item.name).slice(0, 4)).toEqual(['a', 'b', 'c', 'd'])
+    expect(merged.repeatedResults.at(-1)?.name).toBe(`${HN_SCALE_SHARD_SCENARIO_IDS.at(-1)}:repeat`)
   })
 
-  it('fails when a shard misses or adds scenarios, or a shard is absent', () => {
+  it('fails when a shard misses, duplicates, or adds scenarios, or a shard is absent', () => {
     expect(() =>
       mergeShardResults(
         [
           shard('main', ['a']),
+          shard('main-2', ['b']),
+          shard('main-3', ['c']),
+          shard('main-4', ['a']),
           shard('partition', PARTITION_SHARD_SCENARIO_IDS),
-          ...emptyShards('main', 'partition'),
+          shard('hn-scale', HN_SCALE_SHARD_SCENARIO_IDS),
         ],
         manifest,
       ),
-    ).toThrow('missing=[b]')
+    ).toThrow('missing=[d]')
     expect(() =>
       mergeShardResults(
         [
-          shard('main', ['a', 'b', 'c']),
+          shard('main', ['a', 'ghost']),
+          shard('main-2', ['b']),
+          shard('main-3', ['c']),
+          shard('main-4', ['d']),
           shard('partition', PARTITION_SHARD_SCENARIO_IDS),
-          ...emptyShards('main', 'partition'),
+          shard('hn-scale', HN_SCALE_SHARD_SCENARIO_IDS),
         ],
         manifest,
       ),
-    ).toThrow('unexpected=[c]')
+    ).toThrow('unexpected=[ghost]')
     expect(() => mergeShardResults([shard('main', ['a', 'b'])], manifest)).toThrow(
       'one result set per shard',
     )
@@ -84,8 +102,19 @@ describe('mergeShardDirectories', () => {
   it('writes one results and repeat pair plus prefixed native coverage', () => {
     const root = mkdtempSync(join(tmpdir(), 'explain-shards-'))
     try {
+      const fixedIds = new Set([...PARTITION_SHARD_SCENARIO_IDS, ...HN_SCALE_SHARD_SCENARIO_IDS])
+      const ordinaryIds = EXPLAIN_SCENARIO_MANIFEST.filter(id => !fixedIds.has(id))
+      const byShard: Record<ExplainShard, readonly string[]> = {
+        main: ordinaryIds.slice(0, 1),
+        'main-2': ordinaryIds.slice(1, 2),
+        'main-3': ordinaryIds.slice(2, 3),
+        'main-4': ordinaryIds.slice(3),
+        partition: PARTITION_SHARD_SCENARIO_IDS,
+        'hn-scale': HN_SCALE_SHARD_SCENARIO_IDS,
+      }
+      expect(ORDINARY_EXPLAIN_SHARDS.every(name => byShard[name].length > 0)).toBe(true)
       for (const name of EXPLAIN_SHARDS) {
-        const ids = getShardScenarioIds(name, EXPLAIN_SCENARIO_MANIFEST)
+        const ids = byShard[name]
         const directory = join(root, 'shards', `${SHARD_ARTIFACT_PREFIX}${name}`)
         mkdirSync(join(directory, 'pruning-v8'), { recursive: true })
         writeFileSync(join(directory, 'pruning-v8', 'coverage-1.json'), name)

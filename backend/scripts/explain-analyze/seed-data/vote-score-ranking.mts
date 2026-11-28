@@ -9,11 +9,22 @@ const PUBLISHER_RELATION_SEED_BATCH_SIZE = 5_000
 
 /** Seed the publisher and post projection corpus before the separate hostname burst. */
 export async function seedVoteScorePublisherAndPostFixture(): Promise<void> {
-  console.log('Seeding 200k publisher relations and post related-topic rows...')
   const seedPostId = seedUuid(0, '05')
   const seedTopicId = seedUuid(0, '04')
   const seedUserId = seedUuid(0, '01')
   await using transaction = await beginTransaction()
+  const existing = await transaction<{ seeded: boolean }>(
+    `/* seedVoteScoreRankingFixture:check */
+     SELECT EXISTS(
+       SELECT 1 FROM relation__user__mute__topic WHERE subject_id = $1::uuid AND object_id = $2::uuid
+     ) AND EXISTS(
+       SELECT 1 FROM relation__topic__publisher_type__topic
+       WHERE subject_id = $3::uuid AND object_id = $2::uuid AND votes_score_up = 10
+     ) AS seeded`,
+    [seedUserId, seedTopicId, seedUuid(1, '04')],
+  )
+  if (existing.rows[0]?.seeded) return
+  console.log('Seeding 200k publisher relations and post related-topic rows...')
 
   for (
     let first = 1;

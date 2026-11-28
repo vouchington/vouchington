@@ -114,6 +114,7 @@ export const ANALYZE_TARGETS = [
     // rescans their aggregates for every trending community and its refresh times out.
     'relation__user__proxy_follow__community',
     'relation__user__proxy_mute__community',
+    'community_list_rss_feeds',
     // Triggers populate counts while the community seed runs; it has no direct row-count target.
     'community_search_counts',
   ]),

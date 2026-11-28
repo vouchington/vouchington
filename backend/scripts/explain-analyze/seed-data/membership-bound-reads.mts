@@ -47,6 +47,30 @@ export async function seedMembershipBoundReads(): Promise<Date> {
   const releasedAt = new Date(at.getTime() + 24 * 60 * 60 * 1_000)
   const { rows: contexts } = await query<{ id: string }>(sql`/* seedMembershipBoundReads:context */
     SELECT fn_upsert_membership_provider_context_id('stripe', 'test', ${membershipBoundReadFixture.applicationId}) AS id`)
+  // Keep provider-context and lineage-binding lookups indexed when running without reversal noise.
+  const { rows: bindingCounts } = await query<{ count: number }>(
+    sql`/* seedMembershipBoundReads:bindingCount */ SELECT count(*)::int AS count FROM membership_lineage_bindings`,
+  )
+  if ((bindingCounts[0]?.count ?? 0) < 1_000) {
+    await query(sql`/* seedMembershipBoundReads:contextAndBindingNoise */
+      WITH fixture AS (
+        SELECT n, 'explain-bound-read-context-' || n AS name FROM generate_series(1, 1000) AS n
+      ), lineages AS (
+        INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id)
+        SELECT fn_upsert_membership_provider_context_id('stripe', 'test', name), name FROM fixture
+        ON CONFLICT DO NOTHING
+        RETURNING id
+      ), sources AS (
+        INSERT INTO membership_sources (user_id, source_kind, membership_provider_lineage_id)
+        SELECT ${membershipBoundReadFixture.grantUserId}, 'direct', id FROM lineages
+        ON CONFLICT DO NOTHING
+        RETURNING membership_provider_lineage_id
+      )
+      INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id, source_kind)
+      SELECT membership_provider_lineage_id, ${membershipBoundReadFixture.grantUserId}, 'direct'
+      FROM sources
+      ON CONFLICT DO NOTHING`)
+  }
   await seedRefundTargetCase(
     query,
     0,

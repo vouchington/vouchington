@@ -30,10 +30,13 @@ export async function getPostIdsByUrlIds(
 
   const query = sql`/* getPostIdsByUrlIds */
     WITH canonical_urls AS (
-      SELECT id AS origin_url_id, id FROM urls WHERE id = ANY(${urlIds})
+      SELECT DISTINCT input.id AS origin_url_id, input.id
+      FROM unnest(${urlIds}::uuid[]) AS input(id)
       UNION ALL
       SELECT id AS origin_url_id, canonical_url_id AS id
-      FROM urls WHERE id = ANY(${urlIds}) AND canonical_url_id IS NOT NULL
+      FROM urls
+      WHERE id = ANY(${urlIds}::uuid[])
+        AND canonical_url_id IS NOT NULL
     ),
     relation_posts AS (
       SELECT
