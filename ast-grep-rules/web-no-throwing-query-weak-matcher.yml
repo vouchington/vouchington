@@ -1,6 +1,9 @@
 # Temporary local copy of the no-mistakes rule `throwing-query`
 # (jongleberry/no-mistakes#4812, https://github.com/jongleberry/no-mistakes/issues/4812).
 # Delete this file once no-mistakes ships that rule and this repository enables it.
+# It is syntactic: it sees a query only when expect() wraps the call directly. A query
+# bound to a variable first (const el = screen.getByRole(...); expect(el).toBeDefined())
+# is not reported; the type-aware no-mistakes rule covers that.
 id: web-no-throwing-query-weak-matcher
 language: Tsx
 severity: error
@@ -59,5 +62,8 @@ examples:
     isValid: true
     file: web/components/a.test.tsx
   - code: expect(screen.getByRole('button').textContent).toBeDefined()
+    isValid: true
+    file: web/components/a.test.tsx
+  - code: "const el = screen.getByRole('button'); expect(el).toBeDefined()"
     isValid: true
     file: web/components/a.test.tsx
