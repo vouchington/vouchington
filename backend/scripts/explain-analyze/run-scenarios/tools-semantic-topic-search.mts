@@ -1,7 +1,5 @@
-import {
-  TOOLS_SEMANTIC_TOPIC_SEARCH_SETTINGS,
-  toolsSearchTopicsByEmbedding,
-} from '@services/topics/tools/semantic'
+import { HNSW_SEARCH_DEFAULT_SETTINGS } from '@data-stores/psql'
+import { toolsSearchTopicsByEmbedding } from '@services/topics/tools/semantic'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 
@@ -21,6 +19,6 @@ export async function runToolsSemanticTopicSearchScenario(): Promise<void> {
     },
     undefined,
     'toolsSearchTopicsSemantic',
-    { localSettings: TOOLS_SEMANTIC_TOPIC_SEARCH_SETTINGS },
+    { localSettings: HNSW_SEARCH_DEFAULT_SETTINGS },
   )
 }

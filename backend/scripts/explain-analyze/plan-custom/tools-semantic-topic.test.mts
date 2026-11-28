@@ -1,6 +1,8 @@
 import type { ExplainResult } from '@vouchington/explain-plan'
+import { SEMANTIC_RSS_ITEM_CANDIDATE_LIMIT } from '@services/rss-feed-items/work-limits'
 import { TOOLS_SEMANTIC_TOPIC_CANDIDATE_LIMIT } from '@services/topics/work-limits'
 import { describe, expect, it } from 'vitest'
+import { assertSemanticRssSearchPlan } from './semantic-rss.mts'
 import { assertToolsSemanticTopicSearchPlan } from './tools-semantic-topic.mts'
 
 function buildPlanResult(
@@ -162,5 +164,31 @@ describe('tools semantic topic search plan gate', () => {
         }),
       ),
     ).toThrow('rows from topics')
+  })
+
+  it('delegates semantic RSS plan validation through the shared semantic_nearest gate', () => {
+    const validRss = buildPlanResult({
+      scenarioId: 'rss-feed-items-search-semantic-cursor',
+      candidateNode: { 'Actual Rows': SEMANTIC_RSS_ITEM_CANDIDATE_LIMIT },
+      scanNode: {
+        'Relation Name': 'rss_feed_items',
+        'Index Name': 'idx_rss_feed_items__bedrock_nova_multimodal_v1_embedding',
+        'Actual Rows': SEMANTIC_RSS_ITEM_CANDIDATE_LIMIT,
+      },
+    })
+    expect(() => assertSemanticRssSearchPlan(validRss)).not.toThrow()
+    expect(() =>
+      assertSemanticRssSearchPlan(
+        buildPlanResult({
+          scenarioId: 'rss-feed-items-search-semantic-cursor',
+          candidateNode: { 'Actual Rows': SEMANTIC_RSS_ITEM_CANDIDATE_LIMIT },
+          scanNode: {
+            'Relation Name': 'rss_feed_items',
+            'Index Name': 'idx_rss_feed_items__bedrock_nova_multimodal_v1_embedding',
+            'Actual Rows': SEMANTIC_RSS_ITEM_CANDIDATE_LIMIT + 1,
+          },
+        }),
+      ),
+    ).toThrow(`processed ${SEMANTIC_RSS_ITEM_CANDIDATE_LIMIT + 1} rows from rss_feed_items`)
   })
 })
