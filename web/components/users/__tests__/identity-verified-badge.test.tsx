@@ -38,6 +38,6 @@ describe('IdentityVerifiedBadge', () => {
 
   it('applies custom className to the badge trigger', () => {
     const { container } = render(<IdentityVerifiedBadge className='custom-class' />)
-    expect(container.querySelector('.custom-class')).toBeDefined()
+    expect(container.querySelector('.custom-class')).toBeInTheDocument()
   })
 })

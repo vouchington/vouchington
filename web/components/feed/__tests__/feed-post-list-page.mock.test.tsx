@@ -84,7 +84,7 @@ describe('FeedPostListPage', () => {
         sort: 'new',
       },
     })
-    expect(screen.queryByText('feed top section')).toBeDefined()
+    expect(screen.queryByText('feed top section')).toBeInTheDocument()
   })
 
   it('does not pass community scope to topic posts', async () => {

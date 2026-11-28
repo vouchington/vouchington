@@ -205,7 +205,7 @@ describe('SettingsNav', () => {
     render(<SettingsNav />)
 
     const moderationGroup = screen.getByRole('menubar').querySelector('[data-key="moderation"]')
-    expect(moderationGroup?.querySelector('a[href="/moderation-transparency"]')).toBeDefined()
+    expect(moderationGroup?.querySelector('a[href="/moderation-transparency"]')).toBeInTheDocument()
     expect(getActiveGroup(screen.getByRole('menubar'))).toBe('moderation')
   })
 
