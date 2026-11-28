@@ -30,7 +30,6 @@ export function postEmbeddingBanEvasionFixture(pendingCount: number) {
     allPostIds,
     markedNoiseIds,
     hashHex: hash.toString('hex'),
-    sharedHashRows: pendingIds.length + 2 * markedNoiseIds.length,
     async seed() {
       await write(
         `/* seedPostEmbeddingRecoveryUsers */

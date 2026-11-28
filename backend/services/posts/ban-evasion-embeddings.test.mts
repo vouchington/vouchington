@@ -1,13 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { randomBytes } from 'node:crypto'
-import { beginTransaction, setPostEmbeddingContentOnlySha256 } from '@voucha/test-helpers'
-import { getPostEmbeddingData } from '@voucha/test-helpers/entities/posts-embeddings'
+import { randomBytes, randomUUID } from 'node:crypto'
+import {
+  beginTransaction,
+  createTestUser,
+  insertTestCommunity,
+  insertTestPost,
+  makeRandomEmbedding,
+  setPostEmbeddingContentOnlySha256,
+} from '@voucha/test-helpers'
+import {
+  getPostEmbeddingData,
+  updatePostEmbeddingData,
+} from '@voucha/test-helpers/entities/posts-embeddings'
 import {
   anonymizeTestAuthorPostBatch,
   createTestBanEvasionEmbeddingChain,
   deleteTestPostAfterBanEvasionMarkerWait,
 } from '@voucha/test-helpers/post-ban-evasion-embeddings'
-import { markSkippedPostBanEvasionEmbeddings } from './ban-evasion-embeddings.mts'
+import {
+  markEnqueuedPostBanEvasionEmbeddings,
+  markSkippedPostBanEvasionEmbeddings,
+} from './ban-evasion-embeddings.mts'
 import { deletePost } from './delete.mts'
 import { getPostByAny } from './get.mts'
 
@@ -69,6 +82,74 @@ describe('skipped post ban-evasion embeddings', () => {
     })
     await expect(getPostEmbeddingData(fixture.skipped[1]!.id)).resolves.toMatchObject({
       ban_evasion_post_embedding_input_sha: fixture.skipped[1]!.input_sha256,
+    })
+  })
+})
+
+describe('enqueued post ban-evasion embeddings', () => {
+  it('marks only requested posts when multiple posts share the same embedding hash and enforces both hash guards', async () => {
+    const author = await createTestUser()
+    const community = await insertTestCommunity({ createdById: author.id, visibility: 'public' })
+    const sharedHash = randomBytes(32)
+    const embedding = makeRandomEmbedding()
+    const createEmbeddedPost = async () => {
+      const postId = await insertTestPost({
+        title: 'Shared hash ban-evasion post',
+        slug: `shared-hash-${randomUUID()}`,
+        markdown: 'Shared hash fixture',
+        createdById: author.id,
+        communityId: community.id,
+        postType: 'article',
+      })
+      await setPostEmbeddingContentOnlySha256(postId, sharedHash)
+      await updatePostEmbeddingData({
+        postId,
+        inputSha256: sharedHash,
+        embedding,
+        tokens: 1,
+      })
+      return postId
+    }
+
+    const [matchingIdA, matchingIdB, unrequestedSiblingId, staleContentId, staleInputId] =
+      await Promise.all([
+        createEmbeddedPost(),
+        createEmbeddedPost(),
+        createEmbeddedPost(),
+        createEmbeddedPost(),
+        createEmbeddedPost(),
+      ])
+
+    await setPostEmbeddingContentOnlySha256(staleContentId, randomBytes(32))
+    await updatePostEmbeddingData({
+      postId: staleInputId,
+      inputSha256: randomBytes(32),
+      embedding,
+      tokens: 1,
+    })
+
+    await markEnqueuedPostBanEvasionEmbeddings([])
+    await markEnqueuedPostBanEvasionEmbeddings([
+      { post_id: staleInputId, input_sha256: sharedHash },
+      { post_id: matchingIdB, input_sha256: sharedHash },
+      { post_id: staleContentId, input_sha256: sharedHash },
+      { post_id: matchingIdA, input_sha256: sharedHash },
+    ])
+
+    await expect(getPostEmbeddingData(matchingIdA)).resolves.toMatchObject({
+      ban_evasion_post_embedding_input_sha: sharedHash,
+    })
+    await expect(getPostEmbeddingData(matchingIdB)).resolves.toMatchObject({
+      ban_evasion_post_embedding_input_sha: sharedHash,
+    })
+    await expect(getPostEmbeddingData(unrequestedSiblingId)).resolves.toMatchObject({
+      ban_evasion_post_embedding_input_sha: null,
+    })
+    await expect(getPostEmbeddingData(staleContentId)).resolves.toMatchObject({
+      ban_evasion_post_embedding_input_sha: null,
+    })
+    await expect(getPostEmbeddingData(staleInputId)).resolves.toMatchObject({
+      ban_evasion_post_embedding_input_sha: null,
     })
   })
 })
