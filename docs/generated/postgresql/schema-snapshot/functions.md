@@ -284,15 +284,6 @@ CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fi
  IMMUTABLE
 ```
 
-## `fn_immutable_array_to_string(p_array text[], p_delimiter text)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p_delimiter text)
- RETURNS text
- LANGUAGE sql
- IMMUTABLE
-```
-
 ## `fn_lock_active_user_for_mutation(target_user_id uuid, for_update boolean)`
 
 ```sql

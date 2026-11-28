@@ -429,21 +429,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- array_to_string(anyarray, text) is cataloged STABLE (not IMMUTABLE) because it is polymorphic
--- over anyarray and Postgres can't prove every possible element type's output function is
--- immutable. For the concrete TEXT[] columns this codebase joins into search vectors, that
--- concern doesn't apply, so this wrapper narrows the signature and re-asserts immutability —
--- same precedent as fn_reverse_hostname_labels. Needed so array_to_string can appear inside a
--- GENERATED ALWAYS AS (...) STORED expression.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_immutable_array_to_string(p_array TEXT[], p_delimiter TEXT)
-RETURNS TEXT
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT array_to_string(p_array, p_delimiter)
-$$;
-
 -- ============================================================================
 -- Countries
 -- ============================================================================

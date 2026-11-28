@@ -16,6 +16,7 @@ export const CORE_SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   follower_distribution_deliveries: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   user_email_addresses: 40_000,
   oauth_clients: 26_000,
+  // ~781 dev-seed/migration topics + ~1,504 non-corpus EXPLAIN fixture topics (42,285 total at 40k).
   topics: 2_300 + Math.max(TOPIC_SEED_COUNT, rss.RSS_FEED_WEEKLY_PROXY_LISTED_TOPIC_COUNT),
   individual_cards: 10_000,
   individual_rewards_program_point_valuations: 10_000,
