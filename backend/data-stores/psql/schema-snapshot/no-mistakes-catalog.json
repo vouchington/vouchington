@@ -145589,19 +145589,19 @@
       },
       "hasDescendants": false,
       "indexes": {
-        "idx_topic_aliases__alias__text_pattern_ops": {
+        "idx_topic_aliases__alias_c": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_aliases__alias__text_pattern_ops ON public.topic_aliases USING btree (alias text_pattern_ops)",
+          "definition": "CREATE INDEX idx_topic_aliases__alias_c ON public.topic_aliases USING btree (alias COLLATE \"C\")",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": "pg_catalog.\"C\"",
               "column": "alias",
               "descending": false,
               "expression": "alias",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_pattern_ops",
+              "opclass": "pg_catalog.text_ops",
               "orderingSupported": false
             }
           ],

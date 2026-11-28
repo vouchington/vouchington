@@ -734,9 +734,10 @@ CREATE INDEX IF NOT EXISTS idx_topic_aliases__topic_id
 ON topic_aliases (topic_id, alias)
 WHERE topic_id IS NOT NULL;
 
--- search by prefix for searching aliases (CHECK (alias = LOWER(alias)) keeps alias lowercase)
-CREATE INDEX IF NOT EXISTS idx_topic_aliases__alias__text_pattern_ops
-ON topic_aliases (alias text_pattern_ops);
+-- prefix range, ordering, and keyset cursor for alias autocomplete in byte order
+-- (CHECK (alias = LOWER(alias)) keeps alias lowercase; topic_aliases_alias_key enforces uniqueness)
+CREATE INDEX IF NOT EXISTS idx_topic_aliases__alias_c
+ON topic_aliases (alias COLLATE "C");
 
 -- full text search for aliases
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__search_vector

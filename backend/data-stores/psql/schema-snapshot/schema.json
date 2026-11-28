@@ -135688,10 +135688,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_topic_aliases__alias__text_pattern_ops": {
+        "idx_topic_aliases__alias_c": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topic_aliases__alias__text_pattern_ops ON public.topic_aliases USING btree (alias text_pattern_ops)",
+          "definition": "CREATE INDEX idx_topic_aliases__alias_c ON public.topic_aliases USING btree (alias COLLATE \"C\")",
           "includedColumns": [],
           "keys": [
             {
@@ -135699,7 +135699,7 @@
               "descending": false,
               "expression": "alias",
               "nullsFirst": false,
-              "opclass": "text_pattern_ops"
+              "opclass": "text_ops"
             }
           ],
           "predicate": null,

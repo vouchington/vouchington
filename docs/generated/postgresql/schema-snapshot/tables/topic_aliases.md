@@ -42,7 +42,7 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `idx_topic_aliases__alias__text_pattern_ops`: `CREATE INDEX idx_topic_aliases__alias__text_pattern_ops ON public.topic_aliases USING btree (alias text_pattern_ops)`
+- `idx_topic_aliases__alias_c`: `CREATE INDEX idx_topic_aliases__alias_c ON public.topic_aliases USING btree (alias COLLATE "C")`
 - `idx_topic_aliases__created_by_id`: `CREATE INDEX idx_topic_aliases__created_by_id ON public.topic_aliases USING btree (created_by_id)`
 - `idx_topic_aliases__search_vector`: `CREATE INDEX idx_topic_aliases__search_vector ON public.topic_aliases USING gin (search_vector)`
 - `idx_topic_aliases__topic_id`: `CREATE INDEX idx_topic_aliases__topic_id ON public.topic_aliases USING btree (topic_id, alias) WHERE (topic_id IS NOT NULL)`

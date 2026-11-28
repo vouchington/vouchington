@@ -105,6 +105,25 @@ describe('searchTopicAliases - merged topic filter', () => {
     expect(dottedIResults.map(result => result.alias)).toEqual([dottedI])
   })
 
+  it('orders prefix matches by code point (COLLATE "C") across hyphens and accented letters', async () => {
+    const topic = await createTestTopic()
+    const key = `byteord-${crypto.randomUUID()}`
+    const expected = [`${key}-a-b`, `${key}-ab`, `${key}-z`, `${key}-é`]
+    await createTopicAliases(topic.id, expected.toReversed())
+
+    const page1 = await searchTopicAliases({ prefixQuery: key, limit: 2 })
+    expect(page1.results.map(result => result.alias)).toEqual(expected.slice(0, 2))
+    expect(page1.hasNextPage).toBe(true)
+
+    const page2 = await searchTopicAliases({
+      prefixQuery: key,
+      limit: 2,
+      after: page1.endAlias!,
+    })
+    expect(page2.results.map(result => result.alias)).toEqual(expected.slice(2))
+    expect(page2.hasNextPage).toBe(false)
+  })
+
   it('returns aliases for active topics', async () => {
     const user = await createTestUser()
     const r = Math.random().toString(36).slice(2, 10)
