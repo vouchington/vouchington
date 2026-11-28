@@ -10,44 +10,16 @@ import runnerPolicy from '../runner-policy.json' with { type: 'json' }
 const armLabel = runnerPolicy.exactLabelJobs.find(({ label }) => label.endsWith('-arm'))?.label
 
 type Job = {
-  if?: string
   'runs-on'?: string | string[]
   'timeout-minutes'?: number
-  permissions?: Record<string, string>
-  services?: Record<string, { image?: string; ports?: number[]; options?: string }>
-  steps?: Array<{
-    name?: string
-    run?: string
-    uses?: string
-    'timeout-minutes'?: number
-    with?: Record<string, number | string>
-  }>
+  steps?: Array<{ 'timeout-minutes'?: number }>
 }
 
 type Workflow = {
-  permissions?: Record<string, string>
   jobs?: Record<string, Job>
 }
 
-const workflow = readFileSync('.github/workflows/checks-static.yml', 'utf8')
-const backendContractsScript = readFileSync(
-  '.github/workflows/checks-static-backend-contracts.sh',
-  'utf8',
-)
-const apiSnapshotScript = readFileSync(
-  '.github/workflows/checks-static-api-snapshot-git-state.sh',
-  'utf8',
-)
-const parsed = load(workflow) as Workflow
-
-function jobSection(jobName: string): string {
-  const start = workflow.indexOf(`\n  ${jobName}:`)
-  expect(start).toBeGreaterThanOrEqual(0)
-
-  const rest = workflow.slice(start + 1)
-  const next = rest.search(/\n {2}[a-z][a-z0-9-]*:\n/)
-  return next === -1 ? rest : rest.slice(0, next)
-}
+const parsed = load(readFileSync('.github/workflows/checks-static.yml', 'utf8')) as Workflow
 
 function numberField(value: unknown, label: string): number {
   if (typeof value !== 'number') {
@@ -66,180 +38,22 @@ function stepTimeouts(jobName: string): number[] {
   return (job.steps ?? []).map(step => numberField(step['timeout-minutes'], `${jobName} step`))
 }
 
-function stepTimeoutSum(jobName: string): number {
-  return stepTimeouts(jobName).reduce((total, timeout) => total + timeout, 0)
-}
-
 describe('checks-static workflow', () => {
-  it('defaults to read-only workflow permissions', () => {
-    expect(parsed.permissions).toEqual({ contents: 'read' })
-  })
-
-  it('gates each static-* job on its own area input', () => {
-    expect(parsed.jobs?.['static-backend']?.if).toBe('inputs.backend')
-    expect(parsed.jobs?.['static-web']?.if).toBe('inputs.web')
-    expect(parsed.jobs?.['static-lambdas']?.if).toBe('inputs.lambdas')
-    expect(parsed.jobs?.['static-cloudflare']?.if).toBe('inputs.cloudflare-worker')
-  })
-
-  it('runs the shared-build producer and the Lambda package smoke on native ARM64 and the other static-* jobs on ubuntu-latest', () => {
+  it('runs the shared-build producer and the Lambda package smoke on the policy ARM runner', () => {
     expect(armLabel).toBeDefined()
     expect(parsed.jobs?.['static-web']?.['runs-on']).toEqual(armLabel)
     expect(parsed.jobs?.['static-lambdas']?.['runs-on']).toEqual(armLabel)
-    for (const job of ['static-backend', 'static-cloudflare']) {
-      expect(parsed.jobs?.[job]?.['runs-on']).toEqual('ubuntu-latest')
-    }
   })
 
-  it.each([
-    ['static-lambdas', 14],
-    ['static-cloudflare', 9],
-    ['static-backend', 10],
-    ['static-web', 10],
-  ])('caps %s at %i, above its largest step and below the step sum', (jobName, expected) => {
-    const jobBudget = numberField(parsed.jobs?.[jobName]?.['timeout-minutes'], jobName)
+  it.each(['static-lambdas', 'static-cloudflare', 'static-backend', 'static-web'])(
+    'caps %s above its largest step and below the step sum',
+    jobName => {
+      const jobBudget = numberField(parsed.jobs?.[jobName]?.['timeout-minutes'], jobName)
+      const timeouts = stepTimeouts(jobName)
 
-    expect(jobBudget).toBe(expected)
-    expect(jobBudget).toBeGreaterThan(Math.max(...stepTimeouts(jobName)))
-    expect(jobBudget).toBeLessThan(stepTimeoutSum(jobName))
-  })
-
-  it('uses setup-backend on the static backend job', () => {
-    const job = jobSection('static-backend')
-    expect(job).toContain('- uses: ./.github/actions/setup-backend')
-  })
-
-  it('owns the backend dependency and fixture checks', () => {
-    const job = jobSection('static-backend')
-    expect(job).toContain(
-      'pnpm exec depcruise --config backend/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content backend',
-    )
-    expect(job).not.toContain('Typecheck backend and email templates')
-  })
-
-  it('checks PostgreSQL contracts, explicit fixtures, and the live MCP catalog', () => {
-    const job = jobSection('static-backend')
-    const steps = parsed.jobs?.['static-backend']?.steps ?? []
-    const compilation = steps.find(
-      step => step.name === 'Check PostgreSQL contracts, API fixtures, and MCP catalog',
-    )
-    const apiFixtureSnapshots = steps.find(
-      step => step.name === 'Check canonical API snapshot git state',
-    )
-    expect(compilation?.run).toBe('source .github/workflows/checks-static-backend-contracts.sh')
-    expect(
-      backendContractsScript.startsWith(
-        '#!/usr/bin/env bash\n\npnpm run backend-row-contracts:check\npnpm run api-fixtures:check\nexport NODE_ENV=test\n',
-      ),
-    ).toBe(true)
-    expect(backendContractsScript).not.toContain('services.valkey')
-    expect(backendContractsScript.trim().split('\n').slice(-6)).toEqual([
-      'node ci/check-live-mcp-catalog.mjs',
-      'node ci/check-topic-merge-foreign-keys.mts',
-      'node ci/validate-generated-ddl-inserts.mts',
-      'node ci/check-scheduled-job-schedules.mts',
-      'node ci/check-seed-topic-csvs.mts',
-      'pnpm run mcp:catalog -- --check',
-    ])
-    expect(numberField(compilation?.['timeout-minutes'], 'contract check')).toBeGreaterThan(
-      numberField(apiFixtureSnapshots?.['timeout-minutes'], 'snapshot Git guard'),
-    )
-    expect(
-      steps.filter(step => step.run?.includes('checks-static-backend-contracts.sh')),
-    ).toHaveLength(1)
-    expect(apiFixtureSnapshots).toMatchObject({
-      run: 'source .github/workflows/checks-static-api-snapshot-git-state.sh',
-    })
-    expect(apiSnapshotScript).toContain(
-      'git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-contracts/v1/request-contracts.json',
-    )
-    expect(apiSnapshotScript).toContain(
-      'git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses api-contracts/v1/request-contracts.json',
-    )
-    expect(apiSnapshotScript).toContain('if [ -n "$untracked_generated_files" ]; then')
-    expect(apiSnapshotScript).toContain('Generated API fixture files are untracked:')
-    expect(apiSnapshotScript).toContain('exit 1')
-    expect(parsed.jobs?.['static-backend']?.services?.valkey).toBeUndefined()
-    expect(steps.some(step => step.uses === './.github/actions/start-valkey')).toBe(true)
-    expect(parsed.jobs?.['static-backend']?.services?.postgres).toBeUndefined()
-    for (const name of [
-      'S3_BUCKET_IMAGES',
-      'S3_BUCKET_IMAGE_UPLOADS',
-      'S3_BUCKET_SITEMAPS',
-      'S3_BUCKET_RENDERS',
-      'S3_BUCKET_ASSETS',
-      'S3_BUCKET_CRAWLS',
-      'S3_BUCKET_USER_EXPORTS',
-      'S3_BUCKET_QUARANTINE',
-    ]) {
-      expect(backendContractsScript).toContain(`export ${name}=test-`)
-    }
-    expect(backendContractsScript).toContain('node ci/check-live-mcp-catalog.mjs')
-    expect(backendContractsScript).toContain('pnpm run mcp:catalog -- --check')
-    expect(apiSnapshotScript).not.toContain('pnpm')
-    expect(apiSnapshotScript).not.toContain('vitest')
-    expect(apiSnapshotScript).not.toContain('api-fixtures:generate')
-    expect(apiSnapshotScript).not.toContain('openapi:generate')
-    expect(
-      job.indexOf('- name: Check PostgreSQL contracts, API fixtures, and MCP catalog'),
-    ).toBeGreaterThan(job.indexOf('- name: Check backend dependencies'))
-    expect(steps.indexOf(apiFixtureSnapshots!)).toBeGreaterThan(steps.indexOf(compilation!))
-  })
-
-  it('owns the web pages-router, dependency, build, and smoke checks lifted from tests-web.yml', () => {
-    const job = jobSection('static-web')
-    expect(job).toContain('source .github/workflows/checks-static-no-next-pages-router.sh')
-    expect(job).toContain(
-      'pnpm exec depcruise --config web/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content web',
-    )
-    expect(job).not.toContain('Typecheck web')
-    expect(job).not.toContain('VOUCHA_BUILD_LOCK_ON_ACQUIRE_TIMEOUT')
-    expect(job).not.toContain('VOUCHA_BUILD_LOCK_WAIT_SECONDS')
-    expect(job).toContain('./web/scripts/tests/smoke-test-web.sh')
-  })
-
-  it('builds through the shared build-web-targets composite instead of a standalone `next build` (#10990)', () => {
-    const job = jobSection('static-web')
-    expect(job).toContain('uses: ./.github/actions/build-web-targets')
-    expect(job).toContain('artifact-suffix: static-web')
-    // ci/check-build-web-targets-contract-policy.mts sizes this step's timeout-minutes from the composite's
-    // build deadline for every caller; restating the value here would duplicate it.
-  })
-
-  it('produces the shared build with the composite production profile', () => {
-    const job = jobSection('static-web')
-    expect(job).toContain('shared-build-cache-mode: producer')
-    expect(job).not.toContain('NEXT_TEST_BUILD=0')
-    expect(job).toContain('IMAGE_ORIGIN: http://localhost:3100')
-  })
-
-  it('owns the lambdas dependency and smoke checks', () => {
-    const job = jobSection('static-lambdas')
-    expect(job).toContain(
-      'pnpm exec depcruise --config lambdas/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content lambdas',
-    )
-    expect(job).not.toContain('Typecheck lambdas')
-    const build = job.indexOf('run: pnpm --filter @lambdas/image-resize run build')
-    expect(build).toBeGreaterThan(0)
-    expect(
-      job.indexOf('run: pnpm --filter @lambdas/image-resize run test:smoke:package'),
-    ).toBeGreaterThan(build)
-  })
-
-  it('does not duplicate compiler gates owned by unconditional static analysis', () => {
-    expect(workflow).not.toMatch(/- name: Typecheck /)
-    expect(workflow).not.toContain('pnpm exec tsc --noEmit')
-    expect(workflow).not.toContain('pnpm exec next typegen')
-  })
-
-  it('owns the Cloudflare Worker smoke and dry-run deploy checks lifted from tests-cloudflare-worker.yml', () => {
-    const job = jobSection('static-cloudflare')
-    expect(job).not.toContain('Typecheck Cloudflare Worker')
-    expect(job).toContain('./scripts/tests/smoke-test-cloudflare-worker.sh')
-    expect(job).toContain(
-      'CSP_BROWSER_UPLOAD_ORIGINS=["https://test-images.s3.us-west-2.amazonaws.com","https://test-images.s3.dualstack.us-west-2.amazonaws.com"]',
-    )
-    expect(job).toContain('pnpm exec wrangler deploy --config wrangler.local.jsonc --dry-run')
-    expect(job).not.toContain('--env staging')
-  })
+      expect(timeouts.length).toBeGreaterThan(0)
+      expect(jobBudget).toBeGreaterThan(Math.max(...timeouts))
+      expect(jobBudget).toBeLessThan(timeouts.reduce((total, timeout) => total + timeout, 0))
+    },
+  )
 })

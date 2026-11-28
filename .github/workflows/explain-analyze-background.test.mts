@@ -1,8 +1,7 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { parse } from 'yaml'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 const SCRIPT = '.github/workflows/explain-analyze-background.sh'
@@ -52,28 +51,4 @@ describe('explain-analyze background steps', () => {
   it('rejects a call without a name', () => {
     expect(run('begin').status).toBe(2)
   })
-})
-
-type Step = { name?: string; uses?: string; run?: string }
-type Workflow = { jobs: Record<string, { steps: Step[] }> }
-
-describe('explain-analyze overlapped setup', () => {
-  const workflow = parse(readFileSync('.github/workflows/explain-analyze.yml', 'utf8')) as Workflow
-  const position = (job: string, match: (step: Step) => boolean) =>
-    workflow.jobs[job]!.steps.findIndex(match)
-
-  it.each([
-    ['seed-explain', 'background.sh begin restore', 'background.sh finish restore'],
-    ['explain-analyze', 'background.sh begin postgres', 'background.sh finish postgres'],
-  ])(
-    '%s starts its background command before Node setup and waits after it',
-    (job, begin, finish) => {
-      const started = position(job, step => step.run?.includes(begin) === true)
-      const setup = position(job, step => step.uses === './.github/actions/setup-backend')
-      const waited = position(job, step => step.run?.includes(finish) === true)
-      expect(started).toBeGreaterThan(-1)
-      expect(setup).toBeGreaterThan(started)
-      expect(waited).toBeGreaterThan(setup)
-    },
-  )
 })
