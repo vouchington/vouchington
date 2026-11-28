@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
@@ -98,11 +98,25 @@ export async function getTestCopyrightRepeatInfringerReview(reviewId: string) {
 }
 
 export async function readTestRepeatInfringerOpenReviewIds(accountId: string): Promise<string[]> {
-  const { rows } = await read<{ id: string }>(
+  const { rows } = await write<{ id: string }>(
     sql`/* readTestRepeatInfringerOpenReviewIds */
     SELECT current_open_review_identity_id AS id
     FROM copyright_repeat_infringer_account_states
     WHERE account_user_id = ${accountId} AND current_open_review_identity_id IS NOT NULL
+  `,
+  )
+  return rows.map(row => row.id)
+}
+
+export async function readTestRepeatInfringerReviewIdentityIds(
+  accountId: string,
+): Promise<string[]> {
+  const { rows } = await write<{ id: string }>(
+    sql`/* readTestRepeatInfringerReviewIdentityIds */
+    SELECT id
+    FROM copyright_repeat_infringer_review_identities
+    WHERE account_user_id = ${accountId}
+    ORDER BY id
   `,
   )
   return rows.map(row => row.id)

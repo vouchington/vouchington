@@ -9,6 +9,7 @@ import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { lockCopyrightRepeatInfringerNoticeAccounts } from './repeat-infringer-locks.mts'
+import { hasTwoOperativeRepeatInfringerIncidentsSql } from './repeat-infringer-threshold-sql.mts'
 import {
   anyReversalSourceSql,
   statutoryRestorationSourceSql,
@@ -106,34 +107,31 @@ export async function syncCopyrightRepeatInfringerIncidents(
   )
   await recordCopyrightRepeatInfringerTargetProvenance(noticeId, transaction)
   if (accountIds.length === 0) return
-  await transaction(sql`
+  const openReview = sql`
     /* syncCopyrightRepeatInfringerIncidents:openReview */
     WITH eligible AS (
-      SELECT incident.account_user_id
-      FROM copyright_repeat_infringer_incidents incident
-      JOIN users live_account
-        ON live_account.id = incident.account_user_id AND live_account.deleted_at IS NULL
-      JOIN UNNEST(${accountIds}::uuid[]) AS candidate(id)
-        ON incident.account_user_id = candidate.id
+      SELECT candidate.id AS account_user_id, uuidv7() AS review_identity_id
+      FROM UNNEST(${accountIds}::uuid[]) AS candidate(id)
+      JOIN users live_account ON live_account.id = candidate.id AND live_account.deleted_at IS NULL
       LEFT JOIN copyright_repeat_infringer_account_states account_state
-        ON account_state.account_user_id = incident.account_user_id
-      WHERE incident.is_operative AND account_state.current_open_review_identity_id IS NULL
-      GROUP BY incident.account_user_id
-      HAVING count(*) >= 2
-    ), identities AS (
-      INSERT INTO copyright_repeat_infringer_review_identities (account_user_id)
-      SELECT account_user_id FROM eligible
-      RETURNING id, account_user_id
+        ON account_state.account_user_id = candidate.id
+      WHERE account_state.current_open_review_identity_id IS NULL AND `
+  openReview.append(hasTwoOperativeRepeatInfringerIncidentsSql(sql`candidate.id`)).append(sql`
+      ORDER BY candidate.id
     ), opened AS (
-      INSERT INTO copyright_repeat_infringer_account_states (
-        account_user_id, current_open_review_identity_id
-      ) SELECT account_user_id, id FROM identities
+      INSERT INTO copyright_repeat_infringer_account_states (account_user_id, current_open_review_identity_id)
+      SELECT account_user_id, review_identity_id FROM eligible ORDER BY account_user_id
       ON CONFLICT (account_user_id) DO UPDATE
       SET current_open_review_identity_id = EXCLUDED.current_open_review_identity_id
       WHERE copyright_repeat_infringer_account_states.current_open_review_identity_id IS NULL
       RETURNING account_user_id, current_open_review_identity_id
-    ) SELECT count(*) FROM opened
+    ), identities AS (
+      INSERT INTO copyright_repeat_infringer_review_identities (id, account_user_id)
+      SELECT current_open_review_identity_id, account_user_id FROM opened ORDER BY account_user_id
+      RETURNING id
+    ) SELECT count(*) FROM identities
   `)
+  await transaction(openReview)
 }
 
 export async function recordCopyrightRepeatInfringerDisposition(input: {

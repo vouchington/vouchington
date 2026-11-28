@@ -19,6 +19,7 @@ import {
   recordCopyrightRepeatInfringerDisposition,
   type CopyrightRepeatInfringerDisposition,
 } from './repeat-infringer-incidents.mts'
+import { hasTwoOperativeRepeatInfringerIncidentsSql } from './repeat-infringer-threshold-sql.mts'
 
 type ReviewDecision = 'warning' | 'no_action' | 'restrict' | 'terminate'
 
@@ -99,7 +100,7 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
     input.rationale,
     `copyright-repeat-infringer-review:${input.reviewId}`,
   )
-  const { rows: updated } = await transaction<{ account_is_active: boolean }>(sql`
+  const updateCurrent = sql`
     /* recordCopyrightRepeatInfringerReviewOutcome:current */
     UPDATE copyright_repeat_infringer_account_states
     SET current_open_review_identity_id = NULL,
@@ -131,18 +132,15 @@ async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
     WHERE account_user_id = ${review.account_user_id}
       AND current_open_review_identity_id = ${input.reviewId}
       AND (
-        ${suspendingOutcome === null} OR (
-          SELECT COUNT(*) FROM (
-            SELECT 1 FROM copyright_repeat_infringer_incidents
-            WHERE account_user_id = ${review.account_user_id} AND is_operative
-            LIMIT 2
-          ) operative_incidents
-        ) = 2
+        ${suspendingOutcome === null} OR `
+  updateCurrent.append(hasTwoOperativeRepeatInfringerIncidentsSql(sql`${review.account_user_id}`))
+    .append(sql`
       )
     RETURNING EXISTS (
       SELECT 1 FROM users WHERE id = ${review.account_user_id} AND deleted_at IS NULL
     ) AS account_is_active
   `)
+  const { rows: updated } = await transaction<{ account_is_active: boolean }>(updateCurrent)
   const current = updated[0]
   assert(current, 409, 'Restrict and terminate require two is_operative incidents')
   const { rows: history } = await transaction<{ account_user_id: string }>(sql`

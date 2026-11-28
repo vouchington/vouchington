@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
+  createTestRepeatInfringerNotice,
   readTestRepeatInfringerAccountState,
   readTestRepeatInfringerDisposition,
   readTestRepeatInfringerIncidents,
   readTestRepeatInfringerOpenReviewIds,
+  readTestRepeatInfringerReviewIdentityIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
+import { raceConcurrentRepeatInfringerOpenReviewsForTest } from '@voucha/test-helpers/copyright-repeat-infringer-race'
 import {
   beforePostgresTransactionQueryForTest,
   rewritePostgresTransactionRowsForTest,
 } from '@voucha/test-helpers/injected-postgres-transactions'
 import { observeTestPostgresClientQueries } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
+import { completeCopyrightMandatoryHumanReview } from './human-review.mts'
 import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-incidents.mts'
 import {
   recordCopyrightRepeatInfringerReinstatement,
@@ -166,5 +170,99 @@ describe('repeat-infringer conditional decision writes', () => {
       is_termination_in_effect: false,
       current_outcome: 'reinstatement',
     })
+  })
+
+  it('opens one review and leaves one identity row when two syncs race on a new account state', async () => {
+    const [poster, moderator] = await Promise.all([
+      createTestUser(),
+      createTestUser({ extraRoles: ['moderator'] }),
+    ])
+    await confirmTestRepeatInfringerNotice(poster.id, moderator)
+    const [secondNotice, thirdNotice] = await Promise.all([
+      createTestRepeatInfringerNotice([poster.id], moderator),
+      createTestRepeatInfringerNotice([poster.id], moderator),
+    ])
+    const confirm = (notice: { noticeId: string; restrictions: Array<{ id: string }> }) =>
+      completeCopyrightMandatoryHumanReview({
+        noticeId: notice.noticeId,
+        restrictionId: notice.restrictions[0]!.id,
+        currentUser: moderator,
+        action: 'confirm',
+        rationale: 'Confirmed restriction triggers repeat-infringer review sync.',
+        reviewedAt: new Date(),
+      })
+
+    await raceConcurrentRepeatInfringerOpenReviewsForTest(
+      poster.id,
+      () => confirm(secondNotice),
+      () => confirm(thirdNotice),
+    )
+
+    const openReviewIds = await readTestRepeatInfringerOpenReviewIds(poster.id)
+    expect(openReviewIds).toHaveLength(1)
+    expect(await readTestRepeatInfringerReviewIdentityIds(poster.id)).toEqual(openReviewIds)
+  })
+
+  it('opens one review and leaves no orphan identity when two syncs race after a decided review', async () => {
+    const [poster, moderator] = await Promise.all([
+      createTestUser(),
+      createTestUser({ extraRoles: ['moderator'] }),
+    ])
+    await confirmTestRepeatInfringerNotice(poster.id, moderator)
+    await confirmTestRepeatInfringerNotice(poster.id, moderator)
+    const [firstReviewId] = await readTestRepeatInfringerOpenReviewIds(poster.id)
+    if (!firstReviewId) throw new Error('Expected an open repeat-infringer review')
+    await recordCopyrightRepeatInfringerReviewOutcome({
+      currentUser: moderator,
+      reviewId: firstReviewId,
+      outcome: 'warning',
+      rationale: 'Warned account remains eligible if later syncs run.',
+      recordedAt: new Date(),
+    })
+
+    const [thirdNotice, fourthNotice] = await Promise.all([
+      createTestRepeatInfringerNotice([poster.id], moderator),
+      createTestRepeatInfringerNotice([poster.id], moderator),
+    ])
+    const confirm = (notice: { noticeId: string; restrictions: Array<{ id: string }> }) =>
+      completeCopyrightMandatoryHumanReview({
+        noticeId: notice.noticeId,
+        restrictionId: notice.restrictions[0]!.id,
+        currentUser: moderator,
+        action: 'confirm',
+        rationale: 'Confirmed restriction triggers repeat-infringer review sync.',
+        reviewedAt: new Date(),
+      })
+
+    await raceConcurrentRepeatInfringerOpenReviewsForTest(
+      poster.id,
+      () => confirm(thirdNotice),
+      () => confirm(fourthNotice),
+    )
+
+    const openReviewIds = await readTestRepeatInfringerOpenReviewIds(poster.id)
+    expect(openReviewIds).toHaveLength(1)
+    expect(await readTestRepeatInfringerReviewIdentityIds(poster.id)).toEqual(
+      [firstReviewId, openReviewIds[0]!].toSorted(),
+    )
+  })
+
+  it('opens nothing at one operative incident, opens at two, and does not reopen an open review', async () => {
+    const [poster, moderator] = await Promise.all([
+      createTestUser(),
+      createTestUser({ extraRoles: ['moderator'] }),
+    ])
+    await confirmTestRepeatInfringerNotice(poster.id, moderator)
+    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([])
+    expect(await readTestRepeatInfringerReviewIdentityIds(poster.id)).toEqual([])
+
+    await confirmTestRepeatInfringerNotice(poster.id, moderator)
+    const openAfterSecond = await readTestRepeatInfringerOpenReviewIds(poster.id)
+    expect(openAfterSecond).toHaveLength(1)
+    expect(await readTestRepeatInfringerReviewIdentityIds(poster.id)).toEqual(openAfterSecond)
+
+    await confirmTestRepeatInfringerNotice(poster.id, moderator)
+    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual(openAfterSecond)
+    expect(await readTestRepeatInfringerReviewIdentityIds(poster.id)).toEqual(openAfterSecond)
   })
 })
