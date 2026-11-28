@@ -25,12 +25,13 @@ export async function getHighestPriorityFallbackSource(
   membershipSourceId?: string,
 ): Promise<ValidFallbackSource | undefined> {
   const { batchSize } = getMembershipWorkLimits()
-  const candidates: ValidFallbackSource[] = []
+  let bestNonQueued: ValidFallbackSource | undefined
+  let oldestQueuedByPlan: ValidFallbackSource[] = []
   let afterSourceId: string | null = null
   while (true) {
     const cursorSourceId: string | null = afterSourceId
     // oxlint-disable-next-line no-await-in-loop -- keyset page advances sequentially through this user's fallback sources
-    const result: { rows: ValidFallbackSource[] } = await query<ValidFallbackSource>( // no-mistakes-disable-line query-reached-per-item: keyset pagination over one user's fallback sources in DynamicConfig batchSize pages (hard max 5000)
+    const result: { rows: ValidFallbackSource[] } = await query<ValidFallbackSource>( // no-mistakes-disable-line query-reached-per-item: keyset pagination bounds each statement to DynamicConfig batchSize (hard max 5000), not total sources, and folds each page into bestNonQueued plus oldest queued grant per plan
       sql`/* restoreFallbackAfterCurrentAccessEnds: sources */
         SELECT source.id AS membership_source_id, source_state.membership_product_id,
           source.source_kind, source_state.should_auto_renew, source_state.effective_at,
@@ -77,9 +78,22 @@ export async function getHighestPriorityFallbackSource(
         LIMIT ${batchSize}
       `,
     )
-    candidates.push(...result.rows)
+    const pageNonQueued: ValidFallbackSource[] = []
+    const pageQueued: ValidFallbackSource[] = []
+    for (const row of result.rows) {
+      if (row.source_kind === 'admin_grant' && !row.has_open_grant_activation) pageQueued.push(row)
+      else pageNonQueued.push(row)
+    }
+    bestNonQueued = selectHighestPriorityMembershipSource(
+      bestNonQueued ? [bestNonQueued, ...pageNonQueued] : pageNonQueued,
+    )
+    if (pageQueued.length > 0) {
+      oldestQueuedByPlan = retainOldestQueuedGrantPerPlan([...oldestQueuedByPlan, ...pageQueued])
+    }
     if (result.rows.length < batchSize) break
     afterSourceId = result.rows.at(-1)!.membership_source_id
   }
-  return selectHighestPriorityMembershipSource(retainOldestQueuedGrantPerPlan(candidates))
+  return selectHighestPriorityMembershipSource(
+    bestNonQueued ? [bestNonQueued, ...oldestQueuedByPlan] : oldestQueuedByPlan,
+  )
 }
