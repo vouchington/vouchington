@@ -231,4 +231,61 @@ describe('get-to-fetch', () => {
       expect(page3.rawRowsRead).toBe(1)
     },
   )
+
+  it.each([
+    { lane: 5, label: 'healthy' },
+    { lane: FAILING_DISPATCH_LANE, label: 'failing' },
+  ] as const)(
+    'counts trailing blocked rows in rawRowsRead and resumes past them on short $label pages',
+    async ({ lane }) => {
+      const feeds = await Promise.all(Array.from({ length: 5 }, () => insertTestRssFeedDirect({})))
+      const ids = feeds.map(feed => feed.id).toSorted()
+      onTestFinished(() => deleteRssFeedsByIds(ids))
+      const asOf = new Date('2012-06-02T00:00:00.000Z')
+      const baseMs = asOf.getTime() - 48 * 60 * 60_000
+      const stamp = lane === 5 ? updateRssFeedTiming : updateRssFeedFailedTiming
+      await Promise.all(ids.map((id, i) => stamp(id, new Date(baseMs + i * 1000))))
+      const blocked = ids.slice(1, 4)
+      const blockedRows = await Promise.all(
+        blocked.map(id => getRssFeedByIdToFetch(id, { ttl: 0 })),
+      )
+      await Promise.all(
+        blockedRows.map(row =>
+          setTestHostnameRateLimitedUntil(row!.url_hostname_id, new Date(Date.now() + 60_000)),
+        ),
+      )
+
+      const startTs = new Date(baseMs - 1000).toISOString()
+      const startCursor =
+        lane === 5
+          ? {
+              lane,
+              afterLastSucceededAt: startTs,
+              afterId: uuidBefore(ids[0]!),
+              throughId: ids[4]!,
+            }
+          : {
+              lane,
+              afterLastFailedAt: startTs,
+              afterId: uuidBefore(ids[0]!),
+              throughId: ids[4]!,
+            }
+
+      const page1 = await getRssFeedsToFetch({ limit: 5, rawBudget: 4, asOf, cursor: startCursor })
+      expect(page1.feeds.map(row => row.id)).toEqual([ids[0]])
+      expect(page1.rawRowsRead).toBe(4)
+      expect(page1.nextCursor?.lane).toBe(lane)
+      expect(page1.nextCursor?.afterId).toBe(blocked[2])
+
+      const page2 = await getRssFeedsToFetch({
+        limit: 5,
+        rawBudget: 4,
+        asOf,
+        cursor: page1.nextCursor,
+      })
+      expect(page2.feeds.map(row => row.id)).toEqual([ids[4]])
+      expect(page2.rawRowsRead).toBe(1)
+      expect(page2.nextCursor?.lane).toBe(lane + 1)
+    },
+  )
 })

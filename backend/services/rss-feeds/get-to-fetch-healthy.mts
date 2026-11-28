@@ -1,26 +1,26 @@
 import { read } from '@data-stores/psql'
+import * as crawlConfig from './crawl-config.mts'
+import type { RssFeedCrawlTier } from './crawl-config.mts'
 import type {
   RssFeedDispatchCursor,
   RssFeedDispatchPage,
   RssFeedToFetch,
 } from './get-to-fetch-types.mts'
-import * as crawlConfig from './crawl-config.mts'
-import type { RssFeedCrawlTier } from './crawl-config.mts'
 
 const NIL_UUID = '00000000-0000-0000-0000-000000000000'
 const MAX_UUID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+const HEALTHY_WALK_ORDER = `COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) ASC, s.rss_feed_id ASC`
+const HEALTHY_WALK_WHERE = `s.crawl_tier = $1::smallint
+  AND (s.last_fetch_failed_at IS NULL OR s.last_fetch_failed_at < s.last_fetch_succeeded_at)
+  AND COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) <= $2::timestamptz
+  AND (COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz), s.rss_feed_id) > ($3::timestamptz, $4::uuid)
+  AND s.rss_feed_id <= $5::uuid`
 
 type HealthyRawRow = RssFeedToFetch & {
   dispatch_lane: number
   raw_pos: number
   raw_id: string
   raw_last_fetch_succeeded_at: string | null
-}
-
-function extractSubMsMicros(iso: string): number {
-  const match = /\.(\d{4,6})/.exec(iso)
-  if (!match) return 0
-  return Number(match[1]!.slice(3).padEnd(3, '0'))
 }
 
 function resolveHealthyBounds(
@@ -41,10 +41,11 @@ function resolveHealthyBounds(
   if (dueCutoff.getTime() >= backfillCutoff.getTime()) return null
   const afterTs = cursor?.afterLastSucceededAt
   const afterMs = typeof afterTs === 'string' ? Date.parse(afterTs) : Number.NaN
+  const subMs = typeof afterTs === 'string' ? /\.(\d{4,6})/.exec(afterTs)?.[1] : undefined
   const useCursor =
     typeof afterTs === 'string' &&
     (afterMs > dueCutoff.getTime() ||
-      (afterMs === dueCutoff.getTime() && extractSubMsMicros(afterTs) > 0))
+      (afterMs === dueCutoff.getTime() && Number(subMs?.slice(3).padEnd(3, '0') ?? 0) > 0))
   return {
     lowerLastSucceededAt: useCursor ? afterTs : dueCutoff,
     lowerId: useCursor ? (cursor?.afterId ?? NIL_UUID) : MAX_UUID,
@@ -71,21 +72,14 @@ export async function getRssFeedsHealthy(
   const query = `/* getRssFeedsHealthy */
     WITH bounded_walk AS NOT MATERIALIZED (
       SELECT
-        ROW_NUMBER() OVER (ORDER BY COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) ASC, s.rss_feed_id ASC)::int AS raw_pos,
+        ROW_NUMBER() OVER (ORDER BY ${HEALTHY_WALK_ORDER})::int AS raw_pos,
         s.rss_feed_id AS raw_id,
         COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) AS sort_last_fetch_succeeded_at,
         to_char(s.last_fetch_succeeded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS raw_last_fetch_succeeded_at,
-        s.last_fetch_succeeded_at,
-        s.last_fetch_failed_at,
-        s.crawl_tier
+        s.last_fetch_succeeded_at, s.last_fetch_failed_at, s.crawl_tier
       FROM rss_feed_fetch_states s
-      WHERE s.crawl_tier = $1::smallint
-        AND (s.last_fetch_failed_at IS NULL
-          OR s.last_fetch_failed_at < s.last_fetch_succeeded_at)
-        AND COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) <= $2::timestamptz
-        AND (COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz), s.rss_feed_id) > ($3::timestamptz, $4::uuid)
-        AND s.rss_feed_id <= $5::uuid
-      ORDER BY COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) ASC, s.rss_feed_id ASC
+      WHERE ${HEALTHY_WALK_WHERE}
+      ORDER BY ${HEALTHY_WALK_ORDER}
       LIMIT $6::int
     )
     SELECT
@@ -113,10 +107,8 @@ export async function getRssFeedsHealthy(
       JOIN url_hostnames ON url_hostnames.id = urls.hostname_id
       LEFT JOIN mv_rss_feed_crawl_tiers t ON t.rss_feed_id = rss_feeds.id
       WHERE rss_feeds.id = bw.raw_id
-        AND (url_hostnames.network_backoff_ends_at IS NULL
-          OR url_hostnames.network_backoff_ends_at <= CURRENT_TIMESTAMP)
-        AND (url_hostnames.rate_limit_ends_at IS NULL
-          OR url_hostnames.rate_limit_ends_at <= CURRENT_TIMESTAMP)
+        AND (url_hostnames.network_backoff_ends_at IS NULL OR url_hostnames.network_backoff_ends_at <= CURRENT_TIMESTAMP)
+        AND (url_hostnames.rate_limit_ends_at IS NULL OR url_hostnames.rate_limit_ends_at <= CURRENT_TIMESTAMP)
       LIMIT 1
     ) feed ON TRUE
     ORDER BY bw.sort_last_fetch_succeeded_at ASC, bw.raw_id ASC
@@ -133,55 +125,65 @@ export async function getRssFeedsHealthy(
     lane,
     eligibleLimit,
   ])
-  if (rows.length === 0) {
-    const { rows: skippedRows } = await read<{
-      scanned: number
-      raw_id: string
-      raw_last_fetch_succeeded_at: string | null
-    }>(
-      `/* countSkippedHealthyRssFeeds */
-      WITH skipped AS (
-        SELECT
-          ROW_NUMBER() OVER (ORDER BY COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) ASC, s.rss_feed_id ASC)::int AS raw_pos,
-          s.rss_feed_id AS raw_id,
-          to_char(s.last_fetch_succeeded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS raw_last_fetch_succeeded_at
-        FROM rss_feed_fetch_states s
-        WHERE s.crawl_tier = $1::smallint
-          AND (s.last_fetch_failed_at IS NULL OR s.last_fetch_failed_at < s.last_fetch_succeeded_at)
-          AND COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) <= $2::timestamptz
-          AND (COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz), s.rss_feed_id) > ($3::timestamptz, $4::uuid)
-          AND s.rss_feed_id <= $5::uuid
-        ORDER BY COALESCE(s.last_fetch_succeeded_at, '-infinity'::timestamptz) ASC, s.rss_feed_id ASC
-        LIMIT $6::int
-      )
-      SELECT raw_pos AS scanned, raw_id, raw_last_fetch_succeeded_at
-      FROM skipped ORDER BY raw_pos DESC LIMIT 1`,
-      [tier, upperLastSucceededAt, lowerLastSucceededAt, lowerId, throughId, rawBudget],
-    )
-    const lastSkipped = skippedRows[0]
-    const scanned = lastSkipped?.scanned ?? 0
+  if (rows.length < eligibleLimit) {
+    const lastRow = rows.at(-1)
+    const remainingRaw = rawBudget - (lastRow?.raw_pos ?? 0)
+    const lastSkipped =
+      remainingRaw > 0
+        ? await countSkippedHealthyRssFeeds([
+            tier,
+            upperLastSucceededAt,
+            lastRow ? (lastRow.raw_last_fetch_succeeded_at ?? '-infinity') : lowerLastSucceededAt,
+            lastRow ? lastRow.raw_id : lowerId,
+            throughId,
+            remainingRaw,
+          ])
+        : undefined
+    const rawRowsRead = (lastRow?.raw_pos ?? 0) + (lastSkipped?.scanned ?? 0)
+    const resumeRow = lastSkipped ?? lastRow
     return {
-      feeds: [],
-      rawRowsRead: scanned,
-      ...(scanned < rawBudget
+      feeds: rows.map(stripHealthyMeta),
+      rawRowsRead,
+      ...(rawRowsRead < rawBudget
         ? nextLaneCursor
-        : lastSkipped
-          ? { nextCursor: buildHealthyCursor(lane, lastSkipped, throughId) }
+        : resumeRow
+          ? { nextCursor: buildHealthyCursor(lane, resumeRow, throughId) }
           : {}),
     }
   }
   const consumed = rows.slice(0, limit)
-  const hasMoreInLane = rows.length > limit || (rawBudget <= limit && rows.length === limit)
-  const lastConsumed = consumed.at(-1)
   return {
-    feeds: consumed.map(
-      ({ raw_pos: _p, raw_id: _i, raw_last_fetch_succeeded_at: _s, ...feed }) => feed,
-    ),
+    feeds: consumed.map(stripHealthyMeta),
     rawRowsRead: rows.at(-1)?.raw_pos ?? rows.length,
-    ...(hasMoreInLane && lastConsumed
-      ? { nextCursor: buildHealthyCursor(lane, lastConsumed, throughId) }
-      : nextLaneCursor),
+    nextCursor: buildHealthyCursor(lane, consumed.at(-1)!, throughId),
   }
+}
+
+type SkippedHealthyRow = {
+  scanned: number
+  raw_id: string
+  raw_last_fetch_succeeded_at: string | null
+}
+
+async function countSkippedHealthyRssFeeds(
+  params: unknown[],
+): Promise<SkippedHealthyRow | undefined> {
+  const { rows } = await read<SkippedHealthyRow>(
+    `/* countSkippedHealthyRssFeeds */
+    WITH skipped AS (
+      SELECT ROW_NUMBER() OVER (ORDER BY ${HEALTHY_WALK_ORDER})::int AS raw_pos, s.rss_feed_id AS raw_id,
+        to_char(s.last_fetch_succeeded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS raw_last_fetch_succeeded_at
+      FROM rss_feed_fetch_states s WHERE ${HEALTHY_WALK_WHERE} ORDER BY ${HEALTHY_WALK_ORDER} LIMIT $6::int
+    )
+    SELECT raw_pos AS scanned, raw_id, raw_last_fetch_succeeded_at FROM skipped ORDER BY raw_pos DESC LIMIT 1`,
+    params,
+  )
+  return rows[0]
+}
+
+function stripHealthyMeta(row: HealthyRawRow) {
+  const { raw_pos: _p, raw_id: _i, raw_last_fetch_succeeded_at: _s, ...feed } = row
+  return feed
 }
 
 function buildHealthyCursor(

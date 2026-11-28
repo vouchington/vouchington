@@ -101,83 +101,100 @@ export async function getRssFeedsFailing(
   const nextLaneCursor = {
     nextCursor: { lane: FAILING_DISPATCH_LANE + 1, afterId: NIL_UUID, throughId },
   }
-  if (rows.length === 0) {
-    const skippedCursorPredicate = hasTimestampCursor
-      ? `AND (s.last_fetch_failed_at, s.rss_feed_id) > ($4::timestamptz, $5::uuid)`
-      : ''
-    const { rows: skippedRows } = await read<{
-      scanned: number
-      raw_id: string
-      raw_last_fetch_failed_at: string
-    }>(
-      `/* countSkippedFailingRssFeeds */
-      WITH skipped AS (
-        SELECT
-          ROW_NUMBER() OVER (ORDER BY s.last_fetch_failed_at ASC, s.rss_feed_id ASC)::int AS raw_pos,
-          s.rss_feed_id AS raw_id,
-          to_char(s.last_fetch_failed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS raw_last_fetch_failed_at
-        FROM rss_feed_fetch_states s
-        WHERE s.last_fetch_failed_at IS NOT NULL
-          AND (s.last_fetch_succeeded_at IS NULL
-            OR s.last_fetch_failed_at >= s.last_fetch_succeeded_at)
-          AND s.last_fetch_failed_at <= $1::timestamptz
-          ${skippedCursorPredicate}
-          AND s.rss_feed_id <= $2::uuid
-        ORDER BY s.last_fetch_failed_at ASC, s.rss_feed_id ASC
-        LIMIT $3::int
-      )
-      SELECT raw_pos AS scanned, raw_id, raw_last_fetch_failed_at
-      FROM skipped ORDER BY raw_pos DESC LIMIT 1`,
-      [
-        retryCutoff,
-        throughId,
-        rawBudget,
-        ...(hasTimestampCursor ? [cursor.afterLastFailedAt, cursor.afterId ?? NIL_UUID] : []),
-      ],
-    )
-    const lastSkipped = skippedRows[0]
-    const scanned = lastSkipped?.scanned ?? 0
+  if (rows.length < eligibleLimit) {
+    const lastRow = rows.at(-1)
+    const remainingRaw = rawBudget - (lastRow?.raw_pos ?? 0)
+    const lastSkipped =
+      remainingRaw > 0
+        ? await countSkippedFailingRssFeeds(
+            retryCutoff,
+            throughId,
+            remainingRaw,
+            lastRow
+              ? { afterLastFailedAt: lastRow.raw_last_fetch_failed_at, afterId: lastRow.raw_id }
+              : hasTimestampCursor
+                ? {
+                    afterLastFailedAt: cursor.afterLastFailedAt!,
+                    afterId: cursor.afterId ?? NIL_UUID,
+                  }
+                : undefined,
+          )
+        : undefined
+    const rawRowsRead = (lastRow?.raw_pos ?? 0) + (lastSkipped?.scanned ?? 0)
+    const resumeRow = lastSkipped ?? lastRow
     return {
-      feeds: [],
-      rawRowsRead: scanned,
-      ...(scanned < rawBudget
+      feeds: rows.map(stripFailingMeta),
+      rawRowsRead,
+      ...(rawRowsRead < rawBudget
         ? nextLaneCursor
-        : lastSkipped
-          ? {
-              nextCursor: {
-                lane: FAILING_DISPATCH_LANE,
-                afterId: lastSkipped.raw_id,
-                afterLastFailedAt: lastSkipped.raw_last_fetch_failed_at,
-                throughId,
-              },
-            }
+        : resumeRow
+          ? { nextCursor: buildFailingCursor(resumeRow, throughId) }
           : {}),
     }
   }
   const consumed = rows.slice(0, limit)
-  const hasMoreInLane = rows.length > limit || (rawBudget <= limit && rows.length === limit)
-  const lastConsumed = consumed.at(-1)
-  const rawRowsRead = rows.at(-1)?.raw_pos ?? rows.length
+  const lastConsumed = consumed.at(-1)!
   return {
-    feeds: consumed.map(row => {
-      const {
-        raw_pos: _rawPos,
-        raw_id: _rawId,
-        raw_last_fetch_failed_at: _rawFailedAt,
-        ...feed
-      } = row
-      return feed
-    }),
-    rawRowsRead,
-    ...(hasMoreInLane && lastConsumed
-      ? {
-          nextCursor: {
-            lane: FAILING_DISPATCH_LANE,
-            afterId: lastConsumed.raw_id,
-            afterLastFailedAt: lastConsumed.raw_last_fetch_failed_at,
-            throughId,
-          },
-        }
-      : nextLaneCursor),
+    feeds: consumed.map(stripFailingMeta),
+    rawRowsRead: rows.at(-1)?.raw_pos ?? rows.length,
+    nextCursor: buildFailingCursor(lastConsumed, throughId),
   }
+}
+
+async function countSkippedFailingRssFeeds(
+  retryCutoff: Date,
+  throughId: string,
+  rawLimit: number,
+  after?: { afterLastFailedAt: string; afterId: string },
+) {
+  const skippedCursorPredicate = after
+    ? `AND (s.last_fetch_failed_at, s.rss_feed_id) > ($4::timestamptz, $5::uuid)`
+    : ''
+  const { rows } = await read<{
+    scanned: number
+    raw_id: string
+    raw_last_fetch_failed_at: string
+  }>(
+    `/* countSkippedFailingRssFeeds */
+    WITH skipped AS (
+      SELECT
+        ROW_NUMBER() OVER (ORDER BY s.last_fetch_failed_at ASC, s.rss_feed_id ASC)::int AS raw_pos,
+        s.rss_feed_id AS raw_id,
+        to_char(s.last_fetch_failed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS raw_last_fetch_failed_at
+      FROM rss_feed_fetch_states s
+      WHERE s.last_fetch_failed_at IS NOT NULL
+        AND (s.last_fetch_succeeded_at IS NULL
+          OR s.last_fetch_failed_at >= s.last_fetch_succeeded_at)
+        AND s.last_fetch_failed_at <= $1::timestamptz
+        ${skippedCursorPredicate}
+        AND s.rss_feed_id <= $2::uuid
+      ORDER BY s.last_fetch_failed_at ASC, s.rss_feed_id ASC
+      LIMIT $3::int
+    )
+    SELECT raw_pos AS scanned, raw_id, raw_last_fetch_failed_at
+    FROM skipped ORDER BY raw_pos DESC LIMIT 1`,
+    [retryCutoff, throughId, rawLimit, ...(after ? [after.afterLastFailedAt, after.afterId] : [])],
+  )
+  return rows[0]
+}
+
+function buildFailingCursor(
+  row: { raw_id: string; raw_last_fetch_failed_at: string },
+  throughId: string,
+): RssFeedDispatchCursor {
+  return {
+    lane: FAILING_DISPATCH_LANE,
+    afterId: row.raw_id,
+    afterLastFailedAt: row.raw_last_fetch_failed_at,
+    throughId,
+  }
+}
+
+function stripFailingMeta({
+  raw_pos: _p,
+  raw_id: _i,
+  raw_last_fetch_failed_at: _f,
+  ...feed
+}: FailingRawRow) {
+  return feed
 }
