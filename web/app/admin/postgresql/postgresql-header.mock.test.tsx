@@ -42,8 +42,8 @@ describe('PostgreSQLHeader', () => {
         loading={false}
       />,
     )
-    expect(screen.getByRole('heading', { level: 1, name: 'PostgreSQL' })).toBeDefined()
-    expect(screen.getByText('Database migrations and management')).toBeDefined()
+    expect(screen.getByRole('heading', { level: 1, name: 'PostgreSQL' })).toBeInTheDocument()
+    expect(screen.getByText('Database migrations and management')).toBeInTheDocument()
   })
 
   it('renders the refresh button in loading state', () => {

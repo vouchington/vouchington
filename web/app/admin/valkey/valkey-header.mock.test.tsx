@@ -42,8 +42,8 @@ describe('ValkeyHeader', () => {
         loading={false}
       />,
     )
-    expect(screen.getByRole('heading', { level: 1, name: 'Valkey' })).toBeDefined()
-    expect(screen.getByText('Bloom filter rebuilds and cache management')).toBeDefined()
+    expect(screen.getByRole('heading', { level: 1, name: 'Valkey' })).toBeInTheDocument()
+    expect(screen.getByText('Bloom filter rebuilds and cache management')).toBeInTheDocument()
   })
 
   it('renders the refresh button in loading state', () => {
