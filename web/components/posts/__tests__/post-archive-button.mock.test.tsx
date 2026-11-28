@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { render } from '@testing-library/react'
+import { describe, vi } from 'vitest'
 import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { registerPostActionButtonTests } from '@/test-helpers/components/posts/post-action-button-tests'
 import { PostArchiveButton } from '../post-form/post-archive-button'

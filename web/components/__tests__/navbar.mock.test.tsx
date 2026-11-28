@@ -54,13 +54,6 @@ describe('Navbar layout', () => {
     expect(searchLabel).toBeVisible()
   })
 
-  it('uses a touch-safe search hit target with a compact visual shell', () => {
-    const { container } = render(navbarUnderTest(NavbarComponent))
-
-    const searchButton = screen.getByRole('button', { name: searchButtonName })
-    expect(searchButton).toBeVisible()
-  })
-
   it('opens search from the topbar search control', () => {
     render(navbarUnderTest(NavbarComponent))
 

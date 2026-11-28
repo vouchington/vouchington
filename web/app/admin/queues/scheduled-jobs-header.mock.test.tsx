@@ -42,7 +42,7 @@ describe('ScheduledJobsHeader', () => {
         onRefresh={vi.fn<() => void>()}
       />,
     )
-    const heading = screen.getByRole('heading', { level: 1, name: 'Queues' })
+    expect(screen.getByRole('heading', { level: 1, name: 'Queues' })).toBeInTheDocument()
     expect(screen.getByText('glide-mq job queue management')).toBeInTheDocument()
     expect(screen.getByText('Open GlideMQ Dashboard')).toBeInTheDocument()
   })

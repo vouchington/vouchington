@@ -123,7 +123,7 @@ describe('VoteIntegrityFlagsClient', () => {
   })
 
   it('updates the status selector immediately when changing filters', async () => {
-    const { container } = render(
+    render(
       <VoteIntegrityFlagsClient
         initialData={initialData}
         initialStatus='pending'

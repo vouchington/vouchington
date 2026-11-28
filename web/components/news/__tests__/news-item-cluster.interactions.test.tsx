@@ -87,7 +87,7 @@ describe('NewsItemCluster story expand/collapse interactions', () => {
       votes_count_up: 7,
       votes_count_down: 2,
     }
-    const { container } = render(
+    render(
       <NewsItemCluster
         primary={primary}
         primaryElection={primaryElection}

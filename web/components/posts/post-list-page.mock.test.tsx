@@ -1,7 +1,6 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { render } from '@testing-library/react'
 import { PostListPage } from './post-list-page'
 
 vi.mock(import('@/lib/api/server/hacker-news-config'), () => ({

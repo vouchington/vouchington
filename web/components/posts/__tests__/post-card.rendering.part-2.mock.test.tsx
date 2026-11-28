@@ -11,7 +11,7 @@ import { PostCard } from '../post-card'
 
 import type { Post, PostElection } from '@/types/posts'
 
-import type { PublicUser, User } from '@/types/user'
+import type { User } from '@/types/user'
 
 vi.mock(
   import('@/lib/auth/context'),

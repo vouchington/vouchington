@@ -42,7 +42,7 @@ describe('PostgreSQLHeader', () => {
         loading={false}
       />,
     )
-    const heading = screen.getByRole('heading', { level: 1, name: 'PostgreSQL' })
+    expect(screen.getByRole('heading', { level: 1, name: 'PostgreSQL' })).toBeDefined()
     expect(screen.getByText('Database migrations and management')).toBeDefined()
   })
 

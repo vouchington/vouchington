@@ -42,7 +42,7 @@ describe('ValkeyHeader', () => {
         loading={false}
       />,
     )
-    const heading = screen.getByRole('heading', { level: 1, name: 'Valkey' })
+    expect(screen.getByRole('heading', { level: 1, name: 'Valkey' })).toBeDefined()
     expect(screen.getByText('Bloom filter rebuilds and cache management')).toBeDefined()
   })
 
