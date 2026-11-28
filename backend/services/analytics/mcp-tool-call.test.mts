@@ -3,7 +3,11 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import {
+  queryTestAnalyticsApiUsageByUserId,
+  queryTestAnalyticsMcpToolCallsByRequestEventId,
+  queryTestAnalyticsMcpToolCallsByUserId,
+} from '@voucha/test-helpers/data-stores/analytics/queries'
 import { trackApiUsage } from './api-usage.mts'
 import {
   createMcpToolCallAnalytics,
@@ -61,9 +65,7 @@ function event(overrides: Partial<McpToolCallPlanEvent> = {}): McpToolCallPlanEv
 
 async function rows(requestEventId: string): Promise<Record<string, unknown>[]> {
   await flush()
-  const found = await query(
-    `SELECT * FROM mcp_tool_call WHERE request_event_id = '${requestEventId}'`,
-  )
+  const found = await queryTestAnalyticsMcpToolCallsByRequestEventId(requestEventId)
   return found.toSorted((left, right) => Number(left.batch_index) - Number(right.batch_index))
 }
 
@@ -113,7 +115,7 @@ describe('mcp_tool_call', () => {
     trackMcpToolCall({ ...call, authorization: `Bearer ${BEARER_TOKEN}` } as McpToolCall)
     await flush()
 
-    const [row] = await query(`SELECT * FROM mcp_tool_call WHERE user_id = '${call.user_id}'`)
+    const [row] = await queryTestAnalyticsMcpToolCallsByUserId(call.user_id)
 
     expect(Object.keys(row!).toSorted()).toEqual(
       [
@@ -252,7 +254,7 @@ describe('mcp_tool_call', () => {
     )
 
     const recorded = await rows(analytics.requestEventId)
-    const [usage] = await query(`SELECT * FROM api_usage WHERE user_id = '${owner.userId}'`)
+    const [usage] = await queryTestAnalyticsApiUsageByUserId(owner.userId)
 
     expect(recorded.map(row => Number(row.batch_index))).toEqual([0, 1, 2])
     expect(new Set(recorded.map(row => row.request_event_id)).size).toBe(1)

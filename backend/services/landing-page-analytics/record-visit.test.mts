@@ -3,7 +3,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import { queryTestAnalyticsWebPageViews } from '@voucha/test-helpers/data-stores/analytics/queries'
 import { recordLandingPageVisit } from './record-visit.mts'
 import { createTestUserDirect, createTestLandingPage } from '@voucha/test-helpers'
 
@@ -31,9 +31,11 @@ describe('record-visit', () => {
       await recordLandingPageVisit({ landingPageId, sessionId })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM web_page_view WHERE page_kind = 'landing_page' AND page_id = '${landingPageId}' AND session_id = '${sessionId}'`,
-      )
+      const rows = await queryTestAnalyticsWebPageViews({
+        pageKind: 'landing_page',
+        pageId: landingPageId,
+        sessionId,
+      })
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.page_kind).toBe('landing_page')
       expect(rows[0]!.page_id).toBe(landingPageId)
@@ -50,9 +52,11 @@ describe('record-visit', () => {
       })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM web_page_view WHERE page_kind = 'landing_page' AND page_id = '${landingPageId}' AND session_id = '${sessionId}'`,
-      )
+      const rows = await queryTestAnalyticsWebPageViews({
+        pageKind: 'landing_page',
+        pageId: landingPageId,
+        sessionId,
+      })
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.referrer).toBe('https://instagram.com')
       expect(rows[0]!.utm_source).toBe('instagram')
@@ -65,9 +69,10 @@ describe('record-visit', () => {
       await recordLandingPageVisit({ landingPageId: fakeLandingPageId, sessionId })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM web_page_view WHERE page_kind = 'landing_page' AND page_id = '${fakeLandingPageId}'`,
-      )
+      const rows = await queryTestAnalyticsWebPageViews({
+        pageKind: 'landing_page',
+        pageId: fakeLandingPageId,
+      })
       expect(rows).toHaveLength(0)
     })
   })

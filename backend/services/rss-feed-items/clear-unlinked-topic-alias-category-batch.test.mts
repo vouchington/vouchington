@@ -19,6 +19,7 @@ import {
 import {
   countTestRssFeedItemAliasCategoryBindings,
   getTestRssFeedItemCategories,
+  lockTestRssFeedItemForNoKeyUpdate,
 } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getTopicAliasCategoryMappingDirtyRowForTest } from '@voucha/test-helpers/entities/topic-alias-category-mappings'
@@ -85,11 +86,7 @@ describe('topic alias unlink category page', () => {
 
     await using holder = await beginTransaction()
     // This conflicts with the removed item FOR UPDATE read lock but allows FK KEY SHARE checks.
-    await holder(
-      `/* holdReadOnlyRssItemForAliasClear */
-       SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR NO KEY UPDATE`,
-      [item.id],
-    )
+    await lockTestRssFeedItemForNoKeyUpdate(holder, item.id)
     await expect(processReconcileTopicAliasCategoryMappings(1, [alias.id])).resolves.toMatchObject({
       updated: 1,
       hasMore: true,

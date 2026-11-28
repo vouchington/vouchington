@@ -2,7 +2,7 @@ import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/com
 import { MODERATION_SYSTEM_USERNAME } from '@voucha/types/entities/user-constants'
 import { describe, expect, it } from 'vitest'
 import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
-import { beginTransaction } from '../../setup.mts'
+import { beginTransaction } from '@voucha/test-helpers'
 import { getLocalClassifierSeedFacts } from '../../../../test-helpers/data-stores/psql/classifiers-seed.mts'
 import generateSeedCommunityModerationClassifierSQL from '../0635-00-04-seed-community-moderation-classifier.mts'
 

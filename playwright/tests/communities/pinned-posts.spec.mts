@@ -7,7 +7,7 @@ import {
 } from '../../../backend/test-helpers/entities/communities.mts'
 import { insertTestCommunityPostReview } from '../../../backend/test-helpers/entities/community-post-reviews.mts'
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import { pinTestCommunityPost } from '../../helpers/community-fixtures.mts'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
 
 let COMMUNITY_SLUG = ''
@@ -66,12 +66,11 @@ test.describe('Community Pinned Posts', () => {
       postId: availablePostId,
       submittedById: TEST_USER_ID,
     })
-    await write(
-      `/* community-pinned-posts-spec pinPost */
-      INSERT INTO community_pinned_posts (community_id, post_id, order_index, pinned_by_id)
-      VALUES ($1, $2, 0, $3)`,
-      [community.id, postId, TEST_USER_ID],
-    )
+    await pinTestCommunityPost({
+      communityId: community.id,
+      postId,
+      pinnedById: TEST_USER_ID,
+    })
   })
 
   test('shows pinned posts section at top of feed', async ({ page }) => {

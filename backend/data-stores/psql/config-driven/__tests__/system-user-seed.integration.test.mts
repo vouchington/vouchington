@@ -14,7 +14,7 @@ import {
   countLocalEmailsForUser,
 } from '../../../../test-helpers/data-stores/psql/email-addresses.mts'
 import { runConfigDrivenStatementsInTransaction } from '@vouchington/postgres'
-import { beginTransaction } from '../../setup.mts'
+import { beginTransaction } from '@voucha/test-helpers'
 import { buildSystemUserUpsertSQL, buildSeedAdminUserSQL } from '../utils/system-user-seed.mts'
 import generateSeedAdminUserSQL from '../0010-00-02-seed-admin-user.mts'
 

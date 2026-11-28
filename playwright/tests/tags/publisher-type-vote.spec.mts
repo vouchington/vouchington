@@ -3,8 +3,7 @@ import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { addRssFeedTopicPublisherType } from '../../../backend/test-helpers/entities/rss-feeds.mts'
-import { beginTransaction } from '../../../backend/data-stores/psql/index.mts'
-import { seedPlaywrightPublisherTypeTopics } from '../../../backend/test-helpers/playwright-seed-publisher-type-topics.mts'
+import { seedPublisherTypeTopicsForPlaywright } from '../../helpers/topic-fixtures.mts'
 import { getPublisherTypeTopics } from '../../../backend/services/topics/publisher-type-topics.mts'
 import { voteBinaryChoice } from '../../helpers/semantic-vote.mts'
 
@@ -16,9 +15,7 @@ test.describe('Publisher Type vote persistence', () => {
 
   test.beforeAll(async () => {
     protectPlaywrightHookTimeouts(test.info())
-    await using transaction = await beginTransaction()
-    await seedPlaywrightPublisherTypeTopics(transaction)
-    await transaction.commit()
+    await seedPublisherTypeTopicsForPlaywright()
     const blogPublisherTypeTopicId = (await getPublisherTypeTopics()).find(
       topic => topic.slug === 'blog',
     )?.id

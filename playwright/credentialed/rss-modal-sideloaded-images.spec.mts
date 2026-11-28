@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@vouchington/postgres'
 // Sideload pipeline test. The image lambda serves the reserved Playwright cover locally, so CI
 // does not fetch an external host. Runs only in the credentialed Playwright workflow, which
 // provides AWS credentials and the image buckets. A missing credential fails the test.
@@ -7,7 +6,7 @@ import { test, expect, type Request } from '../helpers/test.mts'
 import { installImageResponseGuard, navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { insertTestTopic } from '../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../helpers/insert-test-rss-feed.mts'
-import { write } from '../../backend/data-stores/psql/clients.mts'
+import { cleanupTestRssFeedFixture, upsertTestArticleUrl } from '../helpers/rss-article-fixture.mts'
 import { insertTestRssFeedItem } from '../../backend/test-helpers/entities/rss-feed-items.mts'
 import { parseSigningKeys, signPath } from '@vouchington/server-utils/url-signing'
 import { SIDELOAD_SIGNING_KEYS_ENV } from '../../ts-shared/url-signing/index.mts'
@@ -39,15 +38,11 @@ test.describe('sideloaded images in RSS item modal', () => {
     const { hostname, hostnameId } = feed
 
     const articleUrl = `https://${hostname}/test-sideload-${suffix}`
-    const urlResult = await write(
-      `/* rss-modal-sideloaded-images.spec insert article url */
-       INSERT INTO urls (url, hostname_id, pathname, search_params)
-       VALUES ($1, $2, $3, '{}'::JSONB)
-       ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
-       RETURNING id`,
-      [articleUrl, hostnameId, `/test-sideload-${suffix}`],
-    )
-    const urlId = urlResult.rows[0].id as string
+    const urlId = await upsertTestArticleUrl({
+      url: articleUrl,
+      hostnameId,
+      pathname: `/test-sideload-${suffix}`,
+    })
 
     // Insert the RSS item whose description contains an external image.
     // The backend sanitizer rewrites the src to an absolute image-origin
@@ -77,33 +72,12 @@ test.describe('sideloaded images in RSS item modal', () => {
     // is independent and must be deleted explicitly. Each delete is independent so a
     // failure in one step (e.g. transient DB error) does not leave the remainder orphaned
     // and blocking future seed runs.
-    const errors: unknown[] = []
-    if (feedId) {
-      try {
-        await write(allowUnannotatedQuery(`DELETE FROM rss_feeds WHERE id = $1`), [feedId])
-      } catch (err) {
-        errors.push(err)
-      }
-    }
-    if (rssItemId) {
-      try {
-        await write(allowUnannotatedQuery(`DELETE FROM rss_feed_item_guids WHERE id = $1`), [
-          rssItemId,
-        ])
-      } catch (err) {
-        errors.push(err)
-      }
-    }
-    if (topicId) {
-      try {
-        await write(allowUnannotatedQuery(`DELETE FROM topics WHERE id = $1`), [topicId])
-      } catch (err) {
-        errors.push(err)
-      }
-    }
-    if (errors.length > 0) {
-      throw new AggregateError(errors, 'rss-modal-sideloaded-images cleanup failed')
-    }
+    await cleanupTestRssFeedFixture({
+      feedId,
+      rssItemId,
+      topicId,
+      errorContext: 'rss-modal-sideloaded-images cleanup failed',
+    })
   })
 
   test('sideloaded images in RSS modal body load successfully', async ({ page }) => {

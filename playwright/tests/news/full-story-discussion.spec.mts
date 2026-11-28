@@ -7,7 +7,7 @@ import {
 } from '../../../backend/test-helpers/entities/stories.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import { upsertTestArticleUrl } from '../../helpers/rss-article-fixture.mts'
 import { insertTestRssFeedItem } from '../../../backend/test-helpers/entities/rss-feed-items.mts'
 
 test.describe('News full-story discussion CTA', () => {
@@ -26,15 +26,11 @@ test.describe('News full-story discussion CTA', () => {
 
     for (const index of [1, 2]) {
       const articleUrl = `https://${feed.hostname}/full-story-discussion-${suffix}-${index}`
-      const urlResult = await write(
-        `/* full-story-discussion.spec insert url */
-         INSERT INTO urls (url, hostname_id, pathname, search_params)
-         VALUES ($1, $2, $3, '{}'::JSONB)
-         ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
-         RETURNING id`,
-        [articleUrl, feed.hostnameId, `/full-story-discussion-${suffix}-${index}`],
-      )
-      const urlId = urlResult.rows[0].id as string
+      const urlId = await upsertTestArticleUrl({
+        url: articleUrl,
+        hostnameId: feed.hostnameId,
+        pathname: `/full-story-discussion-${suffix}-${index}`,
+      })
       const itemId = await insertTestRssFeedItem({
         rssFeedId: feed.id,
         urlId,

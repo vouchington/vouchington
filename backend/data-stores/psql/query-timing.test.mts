@@ -4,7 +4,7 @@ import os from 'node:os'
 import fs from 'node:fs'
 import * as analytics from '@data-stores/analytics'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import { queryTestAnalyticsPgQueryTiming } from '@voucha/test-helpers/data-stores/analytics/queries'
 import { recordQueryTiming } from './query-timing.mts'
 
 const uid = () => crypto.randomUUID()
@@ -50,7 +50,7 @@ function timingRowCount(timing: object): number | undefined {
 
 async function readTimingRow(annotation: string): Promise<Record<string, unknown>> {
   await flush()
-  const rows = await query(`SELECT * FROM pg_query_timing WHERE annotation = '${annotation}'`)
+  const rows = await queryTestAnalyticsPgQueryTiming({ annotation })
   const row = rows[0]
   if (row === undefined) throw new Error(`pg_query_timing did not record ${annotation}`)
   return row
@@ -58,7 +58,7 @@ async function readTimingRow(annotation: string): Promise<Record<string, unknown
 
 async function countRows(annotation: string): Promise<number> {
   await flush()
-  const rows = await query(`SELECT * FROM pg_query_timing WHERE annotation = '${annotation}'`)
+  const rows = await queryTestAnalyticsPgQueryTiming({ annotation })
   return rows.length
 }
 
@@ -139,9 +139,11 @@ describe('recordQueryTiming', () => {
     record(null, { pool: 'client', rowCount: 3, error: false, durationMs: 5 })
     await emitted
     await flush()
-    const rows = await query(
-      `SELECT * FROM pg_query_timing WHERE annotation = 'unannotated' AND row_count = 3 AND pool = 'client'`,
-    )
+    const rows = await queryTestAnalyticsPgQueryTiming({
+      annotation: 'unannotated',
+      rowCount: 3,
+      pool: 'client',
+    })
     const row = rows[0]
     if (row === undefined) throw new Error('pg_query_timing did not record unannotated')
     expect(row.annotation).toBe('unannotated')

@@ -6,6 +6,7 @@ import {
 } from '@vouchington/postgres/partitions'
 import {
   acquireTestModerationTransparencyDateReservation,
+  beginTransaction,
   createTestUser,
   getTestReleasedModerationTransparencyRollupCount,
   insertTestPostClearanceChange,
@@ -19,7 +20,6 @@ import {
   recordFeedbackDuringClearancePartitionCreation,
 } from '@voucha/test-helpers/clearance-partition-feedback-race'
 import { PARTITION_DROP_POLICIES } from '../config-driven/utils/partition-drop-policies.mts'
-import { beginTransaction } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { guardAndRetireMonthlyPartition } from './guard-and-retire-monthly-partition.mts'
 import { createPostClearancePartitions } from './create-post-clearance-partitions.mts'

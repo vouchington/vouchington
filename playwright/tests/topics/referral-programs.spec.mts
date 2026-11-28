@@ -1,10 +1,9 @@
-import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { voteTrigger } from '../../helpers/semantic-vote.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import { insertSemanticTopicLikeVote } from '../../helpers/topic-fixtures.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
@@ -49,11 +48,7 @@ test.describe('Referral Programs Page', () => {
 
     // Insert a semantic Like (+1) for the test user on this topic.
     // topic_votes is an append-only log table with no unique constraint on (user_id, topic_id)
-    await write(
-      allowUnannotatedQuery(`INSERT INTO topic_votes (user_id, topic_id, score, score_is_semantic)
-       VALUES ($1, $2, 1, TRUE)`),
-      [contributorId, topicId],
-    )
+    await insertSemanticTopicLikeVote(contributorId, topicId)
 
     await navigateTo(page, `/referral-programs?q=Playwright+Referral+Test+${suffix}`)
 

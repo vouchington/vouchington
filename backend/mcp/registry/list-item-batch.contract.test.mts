@@ -8,12 +8,12 @@ import {
   archiveTestCommunity,
   createTestPost,
   createTestUser,
-  deleteForeignKeyTargetDuringInsertForTest,
   insertTestCommunity,
   insertTestCommunityPostReview,
   insertTestCommunityListItem,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { deleteUserListDuringInsertForTest } from '@voucha/test-helpers/postgres-fk-target-race'
 import { createOwnedList, searchListItems } from '@services/lists'
 import { archivePost } from '@services/posts/archive'
 import { addVisibleListItems } from '../add-list-items.mts'
@@ -46,19 +46,9 @@ describe('add_list_item batch — real DB', () => {
     const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
     const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Deleted list race' })
     const post = await createTestPost({ user: caller })
-    const outcome = await deleteForeignKeyTargetDuringInsertForTest({
-      queryMarker: '/* addListItem */',
-      lockTarget: async query => {
-        await query('/* lockTestUserList */ SELECT id FROM user_lists WHERE id = $1 FOR UPDATE', [
-          list.id,
-        ])
-      },
-      deleteTarget: async query => {
-        await query('/* deleteTestUserList */ DELETE FROM user_lists WHERE id = $1', [list.id])
-      },
-      operation: () =>
-        addVisibleListItems(caller, null, list.id, [{ item_type: 'post', entity: post.id }]),
-    })
+    const outcome = await deleteUserListDuringInsertForTest(list.id, () =>
+      addVisibleListItems(caller, null, list.id, [{ item_type: 'post', entity: post.id }]),
+    )
 
     expect(outcome).toMatchObject({
       value: [

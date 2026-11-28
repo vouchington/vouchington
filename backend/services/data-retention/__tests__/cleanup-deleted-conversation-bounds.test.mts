@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  deleteLockedConversationAndUserForTest,
+  lockDeletedConversationIntentForTest,
+  lockDeletedConversationNotificationForTest,
+} from '@voucha/test-helpers/deleted-conversation-retention-locks'
+import {
   beginTransaction,
   attemptNotificationPushIntentConversationChangeForTest,
   createTestExpiryWindow,
@@ -229,18 +234,16 @@ describe('bounded deleted conversation retention', () => {
       await using blocker = await beginTransaction()
       try {
         if (lockedTable === 'intent') {
-          await blocker(
-            `/* lockDeletedConversationIntentForTest */
-             SELECT 1 FROM notification_push_intents
-             WHERE user_id = $1::uuid AND notification_id = $2::uuid FOR UPDATE`,
-            [conversation.userId, conversation.notificationId],
+          await lockDeletedConversationIntentForTest(
+            blocker,
+            conversation.userId,
+            conversation.notificationId!,
           )
         } else {
-          await blocker(
-            `/* lockDeletedConversationNotificationForTest */
-             SELECT 1 FROM notifications
-             WHERE user_id = $1::uuid AND id = $2::uuid FOR UPDATE`,
-            [conversation.userId, conversation.notificationId],
+          await lockDeletedConversationNotificationForTest(
+            blocker,
+            conversation.userId,
+            conversation.notificationId!,
           )
         }
         const descendants = await getDeletedConversationDescendantCountsForTest(
@@ -265,14 +268,7 @@ describe('bounded deleted conversation retention', () => {
       } finally {
         await blocker.commit()
         await using cleanup = await beginTransaction()
-        await cleanup(
-          '/* deleteLockedConversationForTest */ DELETE FROM conversations WHERE id = $1::uuid',
-          [conversation.id],
-        )
-        await cleanup(
-          '/* deleteLockedConversationUserForTest */ DELETE FROM users WHERE id = $1::uuid',
-          [conversation.userId],
-        )
+        await deleteLockedConversationAndUserForTest(cleanup, conversation.id, conversation.userId)
         await cleanup.commit()
       }
     },

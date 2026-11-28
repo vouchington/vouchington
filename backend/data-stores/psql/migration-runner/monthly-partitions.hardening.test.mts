@@ -13,7 +13,6 @@ import {
   readTestPostClearanceChild,
 } from '@voucha/test-helpers/partition-monthly-decision-history'
 import { createCopyrightPartitionRetirementRecorder } from '@voucha/test-helpers/partition-retirement-failure'
-import { write } from '../setup.mts'
 import { COPYRIGHT_HISTORY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
 import { listTestMonthlyDropCandidates } from '@voucha/test-helpers/monthly-partition-candidates'
 import {
@@ -106,7 +105,7 @@ describe('monthly decision history lifecycle', () => {
 describe('copyright monthly partition retirement', () => {
   it('discovers bootstrapped copyright monthly children and preserves all ten inside six years', async () => {
     const tables = COPYRIGHT_HISTORY_PARTITION_TABLES.map(config => config.table)
-    const candidates = await listTestMonthlyDropCandidates(write)
+    const candidates = await listTestMonthlyDropCandidates()
     const copyright = candidates.filter(candidate => tables.includes(candidate.table))
     expect(new Set(copyright.map(candidate => candidate.table))).toEqual(new Set(tables))
     expect(copyright.every(candidate => candidate.upperBound instanceof Date)).toBe(true)

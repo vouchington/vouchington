@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import { queryTestAnalyticsCrawlerRequests } from '@voucha/test-helpers/data-stores/analytics/queries'
 import {
   changeTestBackoffDuringReset,
   expireTestHostnameNetworkBackoff,
@@ -56,7 +56,7 @@ describe('network-backoff', () => {
 
   async function backoffEvents(hostname: string) {
     await flush()
-    const events = await query(`SELECT * FROM crawler_requests WHERE domain = '${hostname}'`)
+    const events = await queryTestAnalyticsCrawlerRequests({ domain: hostname })
     return events.toSorted(
       (a, b) =>
         new Date(a.event_time as string).getTime() - new Date(b.event_time as string).getTime(),

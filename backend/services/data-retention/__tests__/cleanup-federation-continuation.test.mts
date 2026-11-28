@@ -11,6 +11,10 @@ import {
   cleanupActivityPubReplayLedgerForTest,
   cleanupFollowerRetentionForTest,
 } from '@voucha/test-helpers/federation-retention-scopes'
+import {
+  removeNextFollowerRetentionCandidateForTest,
+  removeNextInboxReplayCandidateForTest,
+} from '@voucha/test-helpers/federation-retention'
 
 describe('federation retention continuation', () => {
   it('finds no unscoped terminal follower candidates before the UUIDv7 epoch', async () => {
@@ -60,10 +64,9 @@ describe('federation retention continuation', () => {
         hasMore: true,
         continuationPosition: { id: ids.expiredFollowerDistributionIds[0] },
       })
-      await query(
-        `/* removeNextFollowerRetentionCandidateForTest */
-         DELETE FROM follower_distributions WHERE id = $1::uuid`,
-        [ids.expiredFollowerDistributionIds[1]],
+      await removeNextFollowerRetentionCandidateForTest(
+        query,
+        ids.expiredFollowerDistributionIds[1]!,
       )
       const second = await cleanupFollowerRetentionForTest(
         { batchSize: 1, maxBatches: 1, now, scope },
@@ -107,11 +110,7 @@ describe('federation retention continuation', () => {
         scope,
       })
       expect(first).toMatchObject({ deleted: 1, hasMore: true })
-      await query(
-        `/* removeNextInboxReplayCandidateForTest */
-         DELETE FROM activitypub_inbox_activities WHERE id = $1::uuid`,
-        [ids.expiredInboxActivityIds[1]],
-      )
+      await removeNextInboxReplayCandidateForTest(query, ids.expiredInboxActivityIds[1]!)
       const second = await cleanupActivityPubReplayLedgerForTest({
         batchSize: 1,
         maxBatches: 1,

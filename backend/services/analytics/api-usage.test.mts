@@ -3,7 +3,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import { queryTestAnalyticsApiUsageByUserId } from '@voucha/test-helpers/data-stores/analytics/queries'
 import { trackApiUsage, type ApiUsage } from './api-usage.mts'
 
 const BEARER_TOKEN = 'vch_secret_bearer_token_that_must_never_be_stored'
@@ -44,7 +44,7 @@ describe('api-usage', () => {
       trackApiUsage(request)
       await flush()
 
-      const rows = await query(`SELECT * FROM api_usage WHERE user_id = '${request.user_id}'`)
+      const rows = await queryTestAnalyticsApiUsageByUserId(request.user_id!)
 
       expect(rows).toHaveLength(1)
       const [row] = rows
@@ -80,7 +80,7 @@ describe('api-usage', () => {
       trackApiUsage(request)
       await flush()
 
-      const [row] = await query(`SELECT * FROM api_usage WHERE user_id = '${request.user_id}'`)
+      const [row] = await queryTestAnalyticsApiUsageByUserId(request.user_id!)
 
       expect(row).toMatchObject({
         surface: 'mcp_admin',
@@ -99,7 +99,7 @@ describe('api-usage', () => {
       trackApiUsage({ ...request, authorization: `Bearer ${BEARER_TOKEN}` } as ApiUsage)
       await flush()
 
-      const [row] = await query(`SELECT * FROM api_usage WHERE user_id = '${request.user_id}'`)
+      const [row] = await queryTestAnalyticsApiUsageByUserId(request.user_id!)
 
       expect(Object.keys(row!).toSorted()).toEqual(
         [
@@ -133,7 +133,7 @@ describe('api-usage', () => {
       trackApiUsage(request, eventId)
       await flush()
 
-      const [row] = await query(`SELECT * FROM api_usage WHERE user_id = '${request.user_id}'`)
+      const [row] = await queryTestAnalyticsApiUsageByUserId(request.user_id!)
 
       expect(row!.event_id).toBe(eventId)
     })

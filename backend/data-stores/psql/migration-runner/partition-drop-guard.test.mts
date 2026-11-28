@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { beginTransaction } from '@voucha/test-helpers'
 import { listTestMonthlyDropCandidates } from '@voucha/test-helpers/monthly-partition-candidates'
-import { write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
   getMonthlyPartitionUpperBound,
@@ -33,14 +33,16 @@ describe('partition drop guard', () => {
   })
 
   it('rejects an invalid status probe limit', async () => {
-    await expect(getPartitionDropStatusRefusals(write, [], {}, now, 0)).rejects.toThrow(
+    await using query = await beginTransaction()
+    await expect(getPartitionDropStatusRefusals(query, [], {}, now, 0)).rejects.toThrow(
       'maxProbes must be a positive safe integer',
     )
   })
 
   it('reports age refusal or an eligible child without probes when policy has no row checks', async () => {
+    await using query = await beginTransaction()
     const statuses = await getPartitionDropStatusRefusals(
-      write,
+      query,
       [
         {
           ...candidate,
@@ -59,21 +61,22 @@ describe('partition drop guard', () => {
   })
 
   it('agrees between the live batch preview and direct legal-hold recheck', async () => {
-    const monthly = (await listTestMonthlyDropCandidates(write)).find(
+    const monthly = (await listTestMonthlyDropCandidates()).find(
       entry => entry.table === 'rss_feed_crawls',
     )
     expect(monthly).toBeDefined()
     const policy = { minimumRetentionDays: 0, legalHoldAccountColumn: 'id' }
     const referenceDate = new Date('2100-01-01T00:00:00.000Z')
 
+    await using query = await beginTransaction()
     const status = await getPartitionDropStatusRefusals(
-      write,
+      query,
       [monthly!],
       { rss_feed_crawls: policy },
       referenceDate,
       1,
     )
-    const direct = await getPartitionDropRefusal(write, monthly!, policy, referenceDate)
+    const direct = await getPartitionDropRefusal(query, monthly!, policy, referenceDate)
     expect(status.get(monthly!.partition)).toBe(direct)
   })
 

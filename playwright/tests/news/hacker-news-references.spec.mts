@@ -1,5 +1,3 @@
-import { allowUnannotatedQuery } from '@vouchington/postgres'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
 import {
   insertHackerNewsReferencesForTest,
   setHackerNewsReferenceFlagsForTest,
@@ -9,6 +7,10 @@ import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
+import {
+  cleanupTestRssFeedFixture,
+  upsertTestArticleUrl,
+} from '../../helpers/rss-article-fixture.mts'
 import { expect, test } from '../../helpers/test.mts'
 
 test.describe('Hacker News references', () => {
@@ -24,15 +26,11 @@ test.describe('Hacker News references', () => {
     const feed = await insertTestRssFeed(topicId, suffix)
     feedId = feed.id
     const articleUrl = `https://${feed.hostname}/hn-refs-${suffix}`
-    const urlResult = await write(
-      `/* hacker-news-references.spec insert article url */
-       INSERT INTO urls (url, hostname_id, pathname, search_params)
-       VALUES ($1, $2, $3, '{}'::JSONB)
-       ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
-       RETURNING id`,
-      [articleUrl, feed.hostnameId, `/hn-refs-${suffix}`],
-    )
-    const urlId = urlResult.rows[0].id as string
+    const urlId = await upsertTestArticleUrl({
+      url: articleUrl,
+      hostnameId: feed.hostnameId,
+      pathname: `/hn-refs-${suffix}`,
+    })
     rssItemId = await insertTestRssFeedItem({
       rssFeedId: feedId,
       urlId,
@@ -70,21 +68,12 @@ test.describe('Hacker News references', () => {
   })
 
   test.afterEach(async () => {
-    const errors: unknown[] = []
-    for (const [statement, id] of [
-      ['DELETE FROM rss_feeds WHERE id = $1', feedId],
-      ['DELETE FROM rss_feed_item_guids WHERE id = $1', rssItemId],
-      ['DELETE FROM topics WHERE id = $1', topicId],
-    ] as const) {
-      try {
-        await write(allowUnannotatedQuery(statement), [id])
-      } catch (err) {
-        errors.push(err)
-      }
-    }
-    if (errors.length > 0) {
-      throw new AggregateError(errors, 'hacker-news-references cleanup failed')
-    }
+    await cleanupTestRssFeedFixture({
+      feedId,
+      rssItemId,
+      topicId,
+      errorContext: 'hacker-news-references cleanup failed',
+    })
   })
 
   test('links the stored threads in the RSS item modal', async ({ page }) => {

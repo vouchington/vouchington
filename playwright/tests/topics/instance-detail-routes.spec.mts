@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@vouchington/postgres'
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
@@ -6,7 +5,7 @@ import { setFeatureFlags } from '../../helpers/feature-flags.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { linkTopicHostname } from '../../helpers/link-topic-hostname.mts'
 import { insertTestReferralProgram } from '../../helpers/insert-test-referral-program.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import { linkTopicToReferralProgram } from '../../helpers/topic-fixtures.mts'
 import { insertTestFediverseInstanceMetadata } from '../../helpers/insert-test-fediverse-instance.mts'
 
 test.describe('Instance Detail Routes', () => {
@@ -45,10 +44,7 @@ test.describe('Instance Detail Routes', () => {
     referralTopicId = referralTopic.id
     await linkTopicHostname(referralTopicId, referralHostname)
     const { referralProgramTopicId } = await insertTestReferralProgram(referralSuffix)
-    await write(
-      allowUnannotatedQuery('UPDATE topics SET referral_program_topic_id = $1 WHERE id = $2'),
-      [referralProgramTopicId, referralTopicId],
-    )
+    await linkTopicToReferralProgram(referralTopicId, referralProgramTopicId)
   })
 
   test.beforeEach(async ({ page }) => {

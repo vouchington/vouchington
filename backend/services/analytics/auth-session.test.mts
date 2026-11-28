@@ -3,7 +3,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
-import { query } from '@data-stores/analytics/query'
+import { queryTestAnalyticsAuthSessions } from '@voucha/test-helpers/data-stores/analytics/queries'
 import { trackAuthSessionEvent } from './auth-session.mts'
 
 describe('auth-session', () => {
@@ -41,9 +41,7 @@ describe('auth-session', () => {
       trackAuthSessionEvent({ did, sid, uid: null, eventType: 'created' })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM auth_sessions WHERE device_id = '${did}' AND session_id = '${sid}'`,
-      )
+      const rows = await queryTestAnalyticsAuthSessions(did, sid)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.event_type).toBe('created')
       expect(String(rows[0]!.authenticated)).toBe('false')
@@ -57,9 +55,7 @@ describe('auth-session', () => {
       trackAuthSessionEvent({ did, sid, uid, eventType: 'created' })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM auth_sessions WHERE device_id = '${did}' AND session_id = '${sid}'`,
-      )
+      const rows = await queryTestAnalyticsAuthSessions(did, sid)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.event_type).toBe('created')
       expect(String(rows[0]!.authenticated)).toBe('true')
@@ -72,9 +68,7 @@ describe('auth-session', () => {
       trackAuthSessionEvent({ did, sid, uid: null, eventType: 'refreshed_anonymous' })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM auth_sessions WHERE device_id = '${did}' AND session_id = '${sid}'`,
-      )
+      const rows = await queryTestAnalyticsAuthSessions(did, sid)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.event_type).toBe('refreshed_anonymous')
       expect(String(rows[0]!.authenticated)).toBe('false')
@@ -88,9 +82,7 @@ describe('auth-session', () => {
       trackAuthSessionEvent({ did, sid, uid, eventType: 'refreshed_authenticated' })
       await flush()
 
-      const rows = await query(
-        `SELECT * FROM auth_sessions WHERE device_id = '${did}' AND session_id = '${sid}'`,
-      )
+      const rows = await queryTestAnalyticsAuthSessions(did, sid)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.event_type).toBe('refreshed_authenticated')
       expect(String(rows[0]!.authenticated)).toBe('true')
@@ -114,9 +106,7 @@ describe('auth-session', () => {
         }
       }
 
-      const rows = await query(
-        `SELECT * FROM auth_sessions WHERE device_id = '${did}' AND session_id = '${sid}'`,
-      )
+      const rows = await queryTestAnalyticsAuthSessions(did, sid)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.env).toBe('development')
     })

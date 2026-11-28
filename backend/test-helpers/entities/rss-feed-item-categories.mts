@@ -1,4 +1,4 @@
-import { read, write, type QueryExecutor } from '@data-stores/psql'
+import { read, write, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function setTestRssFeedItemCategoryTopicId(
@@ -58,4 +58,15 @@ export async function getTestRssFeedItemCategoryAliasIds(
     [rssFeedItemId],
   )
   return rows
+}
+
+export async function lockTestRssFeedItemForNoKeyUpdate(
+  query: TransactionQuery,
+  itemId: string,
+): Promise<void> {
+  await query(
+    `/* holdReadOnlyRssItemForAliasClear */
+     SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR NO KEY UPDATE`,
+    [itemId],
+  )
 }
