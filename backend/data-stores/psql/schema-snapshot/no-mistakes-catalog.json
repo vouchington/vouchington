@@ -72332,6 +72332,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_membership_operations__source_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_operations__source_pending ON public.membership_operations USING btree (membership_source_id, id DESC) WHERE (completed_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "membership_source_id",
+              "descending": false,
+              "expression": "membership_source_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(completed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "membership_operations_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,

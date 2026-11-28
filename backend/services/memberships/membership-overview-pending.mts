@@ -48,12 +48,21 @@ export async function getMembershipPendingState(userId: string) {
         | 'collision_resolution'
       status: 'pending' | 'failed'
     }>(sql`/* getMembershipPendingState.operations */
+      WITH member_operations AS MATERIALIZED (
+        SELECT operation.id, operation.membership_provider_context_id,
+          operation.operation_kind, operation.failed_at
+        FROM membership_operations operation
+        WHERE operation.completed_at IS NULL
+          AND operation.membership_source_id = ANY(ARRAY(
+            SELECT source.id FROM membership_sources source
+            WHERE source.user_id = ${userId}
+          ))
+      )
       SELECT operation.id, provider_context.provider, operation.operation_kind AS kind,
         CASE WHEN operation.failed_at IS NULL THEN 'pending' ELSE 'failed' END AS status
-      FROM membership_operations operation
-      INNER JOIN membership_provider_contexts provider_context ON provider_context.id = operation.membership_provider_context_id
-      INNER JOIN membership_sources source ON source.id = operation.membership_source_id
-      WHERE source.user_id = ${userId} AND operation.completed_at IS NULL
+      FROM member_operations operation
+      INNER JOIN membership_provider_contexts provider_context
+        ON provider_context.id = operation.membership_provider_context_id
       ORDER BY operation.id DESC
       LIMIT ${operationPageSize}`),
   ])

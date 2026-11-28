@@ -82,6 +82,7 @@ _none_
 - `idx_membership_operations__provider_payment`: `CREATE INDEX idx_membership_operations__provider_payment ON public.membership_operations USING btree (membership_provider_context_id, provider_charge_id, id) WHERE (provider_charge_id IS NOT NULL)`
 - `idx_membership_operations__provider_refund`: `CREATE UNIQUE INDEX idx_membership_operations__provider_refund ON public.membership_operations USING btree (membership_provider_context_id, provider_refund_id) WHERE (provider_refund_id IS NOT NULL)`
 - `idx_membership_operations__source_id`: `CREATE INDEX idx_membership_operations__source_id ON public.membership_operations USING btree (membership_source_id, id DESC)`
+- `idx_membership_operations__source_pending`: `CREATE INDEX idx_membership_operations__source_pending ON public.membership_operations USING btree (membership_source_id, id DESC) WHERE (completed_at IS NULL)`
 - `membership_operations_pkey`: `CREATE UNIQUE INDEX membership_operations_pkey ON public.membership_operations USING btree (id)`
 
 **Triggers:**

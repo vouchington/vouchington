@@ -559,6 +559,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_idempotenc
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__id_context ON membership_operations (id, membership_provider_context_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__id_source ON membership_operations (id, membership_source_id);
 CREATE INDEX IF NOT EXISTS idx_membership_operations__source_id ON membership_operations (membership_source_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_membership_operations__source_pending ON membership_operations (membership_source_id, id DESC) WHERE completed_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_membership_operations__lineage_id ON membership_operations (membership_provider_lineage_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_membership_operations__binding_id ON membership_operations (membership_lineage_binding_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_membership_operations__provider_payment ON membership_operations (membership_provider_context_id, provider_charge_id, id) WHERE provider_charge_id IS NOT NULL;

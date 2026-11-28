@@ -27,10 +27,20 @@ export async function runMembershipPendingStateCapacity(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'membership_grants', max: 100, captureIndex: 0 },
       { kind: 'maxFunctionCalls', function: 'fn_membership_grant_remaining_duration', max: 100 },
       { kind: 'maxProcessedRows', relation: 'membership_verifications', max: 64, captureIndex: 1 },
-      // Main scans the operation corpus before isolating one member. Tighten after #6585.
-      { kind: 'maxProcessedRows', relation: 'membership_operations', max: 7_664, captureIndex: 2 },
+      {
+        kind: 'noSeqScan',
+        relation: 'membership_operations',
+        queryContains: 'getMembershipPendingState.operations',
+      },
+      {
+        kind: 'usesIndexes',
+        indexes: ['idx_membership_operations__source_pending', 'idx_membership_sources__user_id'],
+        queryContains: 'getMembershipPendingState.operations',
+      },
+      { kind: 'maxProcessedRows', relation: 'membership_operations', max: 55, captureIndex: 2 },
       { kind: 'maxProcessedRows', relation: 'membership_sources', max: 164, captureIndex: 2 },
       { kind: 'maxInputRows', nodeType: 'Sort', max: 64 },
+      { kind: 'maxInputRows', nodeType: 'Sort', max: 55, captureIndex: 2 },
     ],
   })
   await runAndCapture(
