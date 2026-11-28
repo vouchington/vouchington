@@ -11,7 +11,7 @@ export function buildSearchUrlHostnamesQueryBody(options: SearchUrlHostnamesOpti
   const effectiveTopicIds = Array.from(new Set(topic_id ? [topic_id] : topic_ids))
   const textQuery = options.query || options.hostname
   const walkTopics = effectiveTopicIds.length > 0 && include_descendants && !textQuery
-  const filters = buildSearchFilters(options, effectiveTopicIds, walkTopics)
+  const filters = buildSearchFilters(options, effectiveTopicIds, walkTopics, textQuery)
   const searchQuery = sql``
 
   if (effectiveTopicIds.length > 0 && include_descendants) {
@@ -19,13 +19,6 @@ export function buildSearchUrlHostnamesQueryBody(options: SearchUrlHostnamesOpti
     appendTopicDescendantsCte(searchQuery, effectiveTopicIds)
   } else {
     searchQuery.append(sql`WITH `)
-  }
-
-  if (typeof textQuery === 'string' && textQuery) {
-    searchQuery.append(sql`text_match_ids AS MATERIALIZED (
-      SELECT id FROM url_hostnames
-      WHERE hostname ILIKE ${`%${escapeLikePattern(textQuery.toLowerCase())}%`} ESCAPE '\\'
-    ), `)
   }
 
   const order =
@@ -41,15 +34,10 @@ export function buildSearchUrlHostnamesQueryBody(options: SearchUrlHostnamesOpti
     appendDescendantRootFilter(searchQuery, options, effectiveTopicIds)
     searchQuery.append(sql`) matched_topic
       JOIN LATERAL (
-        SELECT h.* FROM url_hostnames h`)
+        SELECT h.id, h.hostname, h.votes_score_sort FROM url_hostnames h`)
     appendWhereClause(searchQuery, [sql`h.topic_id = matched_topic.topic_id`, ...filters])
     searchQuery.append(sql` ORDER BY `).append(order)
     searchQuery.append(sql` LIMIT ${effectiveLimit + 1}
-      ) h ON true`)
-  } else if (typeof textQuery === 'string' && textQuery) {
-    searchQuery.append(sql`FROM text_match_ids text_match
-      JOIN LATERAL (
-        SELECT * FROM url_hostnames WHERE id = text_match.id LIMIT 1
       ) h ON true`)
   } else {
     searchQuery.append(sql`FROM url_hostnames h`)
@@ -79,9 +67,13 @@ function buildSearchFilters(
   options: SearchUrlHostnamesOptions,
   effectiveTopicIds: string[],
   walkTopics: boolean,
+  textQuery: string | undefined,
 ): ReturnType<typeof sql>[] {
   return [
-    ...(options.includePrivate ? [] : [sql`publicly_introduced_at IS NOT NULL`]),
+    ...(typeof textQuery === 'string' && textQuery
+      ? [sql`h.hostname ILIKE ${`%${escapeLikePattern(textQuery.toLowerCase())}%`} ESCAPE '\\'`]
+      : []),
+    ...(options.includePrivate ? [] : [sql`h.publicly_introduced_at IS NOT NULL`]),
     ...booleanFilter('is_blocked', options.is_blocked),
     ...booleanFilter('is_crawlable', options.is_crawlable),
     ...(walkTopics ? [] : topicFilters(options, effectiveTopicIds)),
@@ -94,9 +86,9 @@ function booleanFilter(
   value: SearchUrlHostnamesOptions['is_blocked'],
 ): ReturnType<typeof sql>[] {
   if (value === true || value === 1 || value === '1') {
-    return [field === 'is_blocked' ? sql`is_blocked` : sql`is_crawlable`]
+    return [field === 'is_blocked' ? sql`h.is_blocked` : sql`h.is_crawlable`]
   } else if (value === false || value === 0 || value === '0') {
-    return [field === 'is_blocked' ? sql`(NOT is_blocked)` : sql`NOT is_crawlable`]
+    return [field === 'is_blocked' ? sql`(NOT h.is_blocked)` : sql`NOT h.is_crawlable`]
   }
   return []
 }
@@ -116,9 +108,7 @@ function cursorFilter({ after, sort }: SearchUrlHostnamesOptions): ReturnType<ty
     isNameCursor,
     'Invalid cursor format: expected name cursor',
   )
-  return [
-    sql`(h.hostname > ${cursor.name} OR (h.hostname = ${cursor.name} AND h.id > ${cursor.id}))`,
-  ]
+  return [sql`(h.hostname, h.id) > (${cursor.name}, ${cursor.id})`]
 }
 
 function appendWhereClause(query: ReturnType<typeof sql>, filters: ReturnType<typeof sql>[]): void {

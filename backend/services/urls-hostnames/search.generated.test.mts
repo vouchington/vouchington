@@ -1,4 +1,5 @@
 import { it, expect, describe } from 'vitest'
+import { encodeCursor } from '@modules/pagination'
 import { searchUrlHostnames } from './search.mts'
 import { upsertUrlHostnames } from './upsert.mts'
 import {
@@ -60,6 +61,47 @@ describe('search.generated', () => {
 
     const second = await searchUrlHostnames({ query, limit: 2, after: first.page_info.end_cursor! })
     expect(second.results.map(row => row.hostname)).toEqual(hostnames.slice(2))
+  })
+
+  it('pages through a low-selectivity search with blocked and private hostnames filtered in order', async () => {
+    const prefix = `00lowsel-${suffix}`
+    const visibleHostnames = Array.from({ length: 7 }, (_, i) => `${prefix}-${i}.com`)
+    const blockedHostname = `${prefix}-blocked.com`
+    const privateHostname = `${prefix}-private.com`
+    const nonMatchingHostname = `${prefix}-other.org`
+    const map = await upsertUrlHostnames(null, [
+      ...visibleHostnames,
+      blockedHostname,
+      nonMatchingHostname,
+    ])
+    await updateUrlHostnameBlocked(map.get(blockedHostname)!, true)
+    await upsertUrlHostnames(null, [privateHostname], {}, 'private_email')
+
+    // Start from a name cursor right before our owned prefix so a low-selectivity "com" query
+    // walks through our fixture slice deterministically on the shared dirty database.
+    const startCursor = encodeCursor({
+      name: `${prefix}-`,
+      id: '00000000-0000-7000-8000-000000000000',
+    })
+    const seen: string[] = []
+    let cursor: string | undefined = startCursor
+    for (let pageIndex = 0; pageIndex < 6; pageIndex++) {
+      const page = await searchUrlHostnames({
+        query: 'com',
+        is_blocked: false,
+        limit: 3,
+        after: cursor,
+      })
+      const inFixture = page.results.filter(row => row.hostname.startsWith(`${prefix}-`))
+      seen.push(...inFixture.map(row => row.hostname))
+      if (inFixture.length < page.results.length || !page.page_info.has_next_page) break
+      cursor = page.page_info.end_cursor ?? undefined
+    }
+
+    expect(seen).toEqual(visibleHostnames)
+    expect(seen).not.toContain(blockedHostname)
+    expect(seen).not.toContain(privateHostname)
+    expect(seen).not.toContain(nonMatchingHostname)
   })
 
   it('searchUrlHostnames returns empty array when no matches', async () => {
