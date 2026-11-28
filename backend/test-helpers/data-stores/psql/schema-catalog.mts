@@ -1,5 +1,4 @@
 import { read } from '@data-stores/psql'
-import { allowUnannotatedQuery } from '@vouchington/postgres'
 
 export type ExtensionTableColumn = {
   column_name: string
@@ -11,7 +10,7 @@ export async function readExtensionTableColumns(
   tableName: string,
 ): Promise<ExtensionTableColumn[]> {
   const { rows } = await read<ExtensionTableColumn>(
-    allowUnannotatedQuery(`
+    `/* readExtensionTableColumns */
       SELECT
         column_name,
         is_generated,
@@ -19,8 +18,7 @@ export async function readExtensionTableColumns(
       FROM information_schema.columns
       WHERE table_schema = 'public'
         AND table_name = $1
-        AND column_name = ANY($2::TEXT[])
-    `),
+        AND column_name = ANY($2::TEXT[])`,
     [tableName, ['id', 'post_id', 'topic_id', 'created_at', 'status']],
   )
   return rows
@@ -106,7 +104,10 @@ export async function readPublicTriggerDefinition(
         pg_get_triggerdef(trigger_definition.oid) AS definition,
         pg_get_functiondef(trigger_definition.tgfoid) AS function_definition
       FROM pg_trigger trigger_definition
-      WHERE trigger_definition.tgrelid = $1::regclass
+      JOIN pg_class relation ON relation.oid = trigger_definition.tgrelid
+      JOIN pg_namespace namespace ON namespace.oid = relation.relnamespace
+      WHERE namespace.nspname = 'public'
+        AND trigger_definition.tgrelid = $1::regclass
         AND trigger_definition.tgname = $2
         AND NOT trigger_definition.tgisinternal`,
     [tableName, triggerName],
@@ -124,9 +125,15 @@ export async function readPublicNonInternalTriggers(
 ): Promise<PublicTriggerSummary[]> {
   const { rows } = await read<PublicTriggerSummary>(
     `/* readPublicNonInternalTriggers */
-      SELECT tgrelid::regclass::text AS owner, tgname AS trigger_name
-      FROM pg_trigger
-      WHERE NOT tgisinternal AND tgrelid = ANY($1::regclass[])`,
+      SELECT
+        trigger_definition.tgrelid::regclass::text AS owner,
+        trigger_definition.tgname AS trigger_name
+      FROM pg_trigger trigger_definition
+      JOIN pg_class relation ON relation.oid = trigger_definition.tgrelid
+      JOIN pg_namespace namespace ON namespace.oid = relation.relnamespace
+      WHERE namespace.nspname = 'public'
+        AND NOT trigger_definition.tgisinternal
+        AND trigger_definition.tgrelid = ANY($1::regclass[])`,
     [[...tableNames]],
   )
   return rows

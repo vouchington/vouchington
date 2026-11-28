@@ -30,11 +30,10 @@ describe('concrete retained media identities', () => {
       ]),
     )
     const triggers = await readPublicNonInternalTriggers(['retained_image_placement_bindings'])
-    expect(triggers).toContainEqual(
-      expect.objectContaining({
-        trigger_name: 'trigger_guard_retained_image_placement_binding',
-      }),
-    )
+    expect(triggers).toContainEqual({
+      owner: 'retained_image_placement_bindings',
+      trigger_name: 'trigger_guard_retained_image_placement_binding',
+    })
   })
 
   it('constrains live children and registry to the exact retained pair', async () => {
