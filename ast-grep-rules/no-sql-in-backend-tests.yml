@@ -95,7 +95,7 @@ rule:
         - kind: call_expression
         - regex: '^(?:require|import)\s*\(\s*[''"](?:@data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?|(?:\.\.?/)+[^''"]*data-stores/psql(?:/(?:index|clients|setup|transactions|migrate)(?:\.mts)?)?|@data-stores/analytics/query(?:\.mts)?|(?:\.\.?/)+[^''"]*data-stores/analytics/query(?:\.mts)?|(?:\.\.?/)+(?:clients|setup|transactions|migrate|query)(?:\.mts)?|sql-template-strings)[''"]\s*\)$'
     - pattern: 'sql`$$$`'
-    # Raw SQL string or template literal passed as first argument to a query-like call (including multi-level receivers)
+    # Raw SQL string, template literal (including interpolated prefix), or concatenated string passed as first argument to a query-like call (including multi-level receivers)
     - all:
         - kind: call_expression
         - regex: '^(?:[\w$]+\.)*(?:query|read|write|tx|transaction|exec|execute|runQuery|allowUnannotatedQuery)(?:<[\s\S]*?>)?\s*\('
@@ -107,7 +107,15 @@ rule:
                 - kind: string
                   regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
                 - kind: template_string
-                  regex: '^`\s*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
+                  regex: '^`\s*(?:\$\{[^}]*\}\s*)*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
+                - kind: binary_expression
+                  has:
+                    stopBy: end
+                    any:
+                      - kind: string
+                        regex: '^[''"]\s*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
+                      - kind: template_string
+                        regex: '^`\s*(?:\$\{[^}]*\}\s*)*(?:/\*[\s\S]*?\*/\s*)*(?i:\b(?:SELECT|INSERT|UPDATE|DELETE|WITH|TRUNCATE|ALTER|CREATE|DROP|SET|LOCK|REFRESH|EXPLAIN|VACUUM|ANALYZE|BEGIN)\b)'
     # Raw SQL statement (uppercase SQL keywords) passed as first argument to any non-assertion call, awaited or not (catches TransactionQuery variables like setup/blocker/cleanup and Promise.all([...]) without flagging sentence-case Playwright UI text)
     - all:
         - kind: call_expression
@@ -256,6 +264,12 @@ examples:
     isValid: false
     file: 'backend/mcp/registry/list-item-batch.contract.test.mts'
   - code: "await ctx.pool.query('SELECT id FROM users WHERE id = $1', [id])"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "await write('SELECT ' + cols + ' FROM users')"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: 'await query(`${prefix} SELECT id FROM users`)'
     isValid: false
     file: 'backend/services/auth/auth.test.mts'
   - code: 'await query(`/* removeFixture */ DELETE FROM follower_distributions WHERE id = $1`, [id])'
