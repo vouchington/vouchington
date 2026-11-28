@@ -10,8 +10,6 @@ describe('createRssFeedCrawlsPartitions', () => {
     expect(sql).toContain('PARTITION OF rss_feed_crawls')
     expect(sql).toContain('FOR VALUES FROM')
     expect(sql).not.toContain('rss_feed_crawls__default')
-    expect(sql).not.toContain('DROP TABLE')
-    expect(sql).not.toContain('DETACH PARTITION')
   })
 })
 

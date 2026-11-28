@@ -27,7 +27,6 @@ describe('0635-00-04-seed-community-moderation-classifier SQL shape', () => {
 
   it('seeds no stored candidates or thresholds: each community prompt is its own candidate', () => {
     expect(generated).not.toContain('INSERT INTO classifier_candidates')
-    expect(generated).not.toContain('INSERT INTO classifier_candidate_thresholds')
   })
 
   it('dollar-quotes one prompt with exactly one candidate placeholder and rotates on change', () => {

@@ -129,7 +129,7 @@ describe('CommentNodeEditForm', () => {
         onCancel={vi.fn<VitestLooseMock>()}
       />,
     )
-    expect(container.querySelector('[data-pw="comment-edit-form"]')).toBeDefined()
+    expect(container.querySelector('[data-pw="comment-edit-form"]')).toBeInTheDocument()
   })
 
   it('shows success toast and calls onSave when submission succeeds', async () => {
