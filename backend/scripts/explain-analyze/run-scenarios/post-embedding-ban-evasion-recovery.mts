@@ -5,6 +5,7 @@ import { background } from '@queues/background/queues'
 import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
 import { getCommunitiesWorkLimit } from '@services/communities/work-limits'
 import { enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts } from '@services/posts/ban-evasion-embedding-enqueues'
+import { partitionIndexLeaves } from '../partition-index-leaves.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import { postEmbeddingBanEvasionFixture } from '../seed-data/post-embedding-ban-evasion-recovery.mts'
@@ -33,21 +34,28 @@ export async function runPostEmbeddingBanEvasionRecovery(): Promise<void> {
 }
 
 async function captureRecoveryPages(fixture: ReturnType<typeof postEmbeddingBanEvasionFixture>) {
-  // https://github.com/vouchington/vouchington/issues/6595 tracks replacing hash-bucket
-  // probes with ID lookups. Tuple order varies. Cap main at one bucket per enqueued ID.
-  const markerVisits = (PAGE_SIZE / 2) * fixture.sharedHashRows
+  const postPrimaryKeyLeaves = await partitionIndexLeaves('posts_pkey')
+  const markerVisits = PAGE_SIZE / 2
   const pageVisits = [2 * PAGE_SIZE, PAGE_SIZE + 1, PAGE_SIZE, markerVisits]
   registerScenarioContract(SCENARIO, {
     allowEmptyResult: true,
     crossPartition: {
       posts: 'Pending recovery and first-post eligibility span retained post history.',
     },
-    expectations: [...pageVisits, ...pageVisits].map((max, captureIndex) => ({
-      kind: 'maxProcessedRows',
-      relation: 'posts',
-      max,
-      captureIndex,
-    })),
+    expectations: [
+      ...[...pageVisits, ...pageVisits].map((max, captureIndex) => ({
+        kind: 'maxProcessedRows' as const,
+        relation: 'posts',
+        max,
+        captureIndex,
+      })),
+      {
+        kind: 'usesIndexes',
+        indexes: postPrimaryKeyLeaves,
+        anyOf: true,
+        queryContains: 'markEnqueuedPostBanEvasionEmbeddings',
+      },
+    ],
   })
   let terminalCursor: string | undefined
   await runAndCapture(

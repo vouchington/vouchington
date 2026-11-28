@@ -103,20 +103,22 @@ export async function rearmNextPostBanEvasionEmbedding(
 export async function markEnqueuedPostBanEvasionEmbeddings(
   rows: Array<{ post_id: string; input_sha256: Buffer }>,
 ): Promise<void> {
-  const updates = sql``
-  rows.forEach((row, index) => {
-    if (index > 0) updates.append(sql`, `)
-    updates.append(sql`(${row.post_id}::uuid, ${row.input_sha256}::bytea)`)
-  })
+  if (rows.length === 0) return
+  const ordered = rows.toSorted((a, b) =>
+    a.post_id < b.post_id ? -1 : a.post_id > b.post_id ? 1 : 0,
+  )
+  const postIds = ordered.map(row => row.post_id)
+  const inputSha256s = ordered.map(row => row.input_sha256)
 
   await write(
     sql`/* markEnqueuedPostBanEvasionEmbeddings */
     UPDATE posts p
     SET ban_evasion_post_embedding_input_sha256 = enqueued.input_sha256
-    FROM (VALUES `.append(updates).append(sql`) AS enqueued(post_id, input_sha256)
+    FROM unnest(${postIds}::uuid[], ${inputSha256s}::bytea[]) AS enqueued(post_id, input_sha256)
     WHERE p.id = enqueued.post_id
-      AND p.bedrock_nova_multimodal_v1_input_sha256 = enqueued.input_sha256
+      AND p.id = ANY(${postIds}::uuid[])
+      AND p.bedrock_nova_multimodal_v1_input_sha256 IS NOT DISTINCT FROM enqueued.input_sha256
       AND p.bedrock_nova_multimodal_v1_content_sha256 = enqueued.input_sha256
-  `),
+  `,
   )
 }
