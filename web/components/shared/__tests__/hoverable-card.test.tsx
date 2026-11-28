@@ -37,6 +37,7 @@ describe('HoverableCard', () => {
 
     const link = screen.getByRole('link', { name: 'Topics' })
     expect(link.getAttribute('href')).toBe('/topics')
+    expect(link.getAttribute('data-pw')).toBe('hoverable-card')
   })
 
   it('forwards refs to the rendered element', () => {
