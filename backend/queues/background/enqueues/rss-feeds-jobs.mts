@@ -21,12 +21,15 @@ type RssFeedsDispatchData = {
   cursor?: {
     lane: number
     afterId: string
-    afterLastFetchedAt?: string | null
+    afterLastSucceededAt?: string | null
+    afterLastFailedAt?: string
     throughId?: string
   }
   asOf?: string
-  /** Feed admissions left in this sweep; each continuation reads one bounded raw page. */
+  /** Feed admissions left in this sweep; each continuation reads one bounded page. */
   remainingBudget?: number
+  /** Raw state-table rows left to scan across continuations in this sweep. */
+  remainingRawBudget?: number
 }
 
 export const RSS_FEEDS_FETCH_JOB = defineBackgroundJob<RssFeedFetchData>(RSS_FEEDS_DOMAIN, {

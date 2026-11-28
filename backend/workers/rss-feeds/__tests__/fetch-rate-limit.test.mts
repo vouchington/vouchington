@@ -6,6 +6,7 @@ import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
 import { background } from '@queues/background/queues'
 import {
   FAILING_DISPATCH_LANE,
+  fetchRssFeed,
   getRssFeedById,
   getRssFeedByIdToFetch,
   getRssFeedsToFetch,
@@ -98,11 +99,11 @@ describe('RSS fetch worker rate-limit and final-attempt outcomes', () => {
 
     const cursor = {
       lane: 5,
-      afterLastFetchedAt: null,
+      afterLastSucceededAt: null,
       afterId: uuidBefore(id),
       throughId: id,
     }
-    expect((await getRssFeedsToFetch({ cursor })).feeds).toEqual([])
+    expect((await getRssFeedsToFetch({ cursor })).feeds.map(f => f.id)).not.toContain(id)
 
     // A second job while the Valkey lock is active also ends cleanly without hitting the network
     // and refreshes rate_limit_ends_at without stamping the feed.
@@ -117,7 +118,7 @@ describe('RSS fetch worker rate-limit and final-attempt outcomes', () => {
     })
 
     await setTestHostnameRateLimitedUntil(hostnameId, new Date(Date.now() - 1000))
-    expect((await getRssFeedsToFetch({ cursor })).feeds.map(f => f.id)).toEqual([id])
+    expect((await getRssFeedsToFetch({ cursor })).feeds.map(f => f.id)).toContain(id)
   })
 
   it('stamps last_fetch_failed_at only on the final job attempt and never moves API last_fetched_at', async () => {
@@ -187,7 +188,7 @@ describe('RSS fetch worker rate-limit and final-attempt outcomes', () => {
     const result = await processRssFeedsDispatcher({
       cursor: {
         lane: FAILING_DISPATCH_LANE,
-        afterLastFetchedAt: new Date(failedAt.getTime() - 1000).toISOString(),
+        afterLastFailedAt: new Date(failedAt.getTime() - 1000).toISOString(),
         afterId: uuidBefore(id),
         throughId: id,
       },
@@ -202,5 +203,53 @@ describe('RSS fetch worker rate-limit and final-attempt outcomes', () => {
         (job.data as { rssFeedId: string }).rssFeedId === id,
     )
     expect(jobs.map(job => job.data)).toEqual([{ rssFeedId: id, ttl: retryIntervalMs }])
+  })
+
+  it('stamps last_fetch_failed_at on the final attempt when upsertRssFeedItems keeps throwing', async () => {
+    const { id, hostname } = await createOwnedFeed('upsert-throws')
+    const mockCrawler = vi.fn<VitestLooseMock>().mockResolvedValue({
+      responseCode: 200,
+      feed: {
+        title: 'Upsert Throwing Feed',
+        items: [
+          {
+            title: 'Item 1',
+            link: `https://${hostname}/item-1`,
+            guid: `${hostname}-item-1`,
+          },
+        ],
+      },
+      contentSha256: Buffer.alloc(32, 7),
+      headers: { etag: null, lastModified: null },
+    })
+    const mockUpsert = vi
+      .fn<VitestLooseMock>()
+      .mockRejectedValue(new Error('simulated upsert failure'))
+    const deps = {
+      crawlerRss: mockCrawler,
+      checkRssFeedCrawlable: vi.fn<VitestLooseMock>().mockResolvedValue(true),
+      upsertRssFeedItems: mockUpsert,
+    }
+
+    await expect(fetchRssFeed(id, 0, null, 0, deps, { isFinalAttempt: false })).rejects.toThrow(
+      'simulated upsert failure',
+    )
+    expect(await getTestRssFeedFetchTimestamps(id)).toEqual({
+      last_fetch_succeeded_at: null,
+      last_fetch_failed_at: null,
+    })
+
+    await expect(fetchRssFeed(id, 0, null, 0, deps, { isFinalAttempt: true })).rejects.toThrow(
+      'simulated upsert failure',
+    )
+    const timestamps = await getTestRssFeedFetchTimestamps(id)
+    expect(timestamps?.last_fetch_succeeded_at).toBeNull()
+    expect(timestamps?.last_fetch_failed_at).toBeInstanceOf(Date)
+    expect((await getRssFeedById(id)).last_fetched_at).toBeNull()
+
+    const healthyPage = await getRssFeedsToFetch({
+      cursor: { lane: 5, afterLastSucceededAt: null, afterId: uuidBefore(id), throughId: id },
+    })
+    expect(healthyPage.feeds.map(f => f.id)).not.toContain(id)
   })
 })

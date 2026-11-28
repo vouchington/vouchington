@@ -1,5 +1,6 @@
 import { upsertRssFeedItems } from '@services/rss-feed-items'
 import { resolveFetchOutcomeAction, type FetchOutcome } from '@services/crawls/fetch-outcome'
+import onError from '@modules/on-error'
 import { stampRssFeedFetchFailedAt } from './fetch-state.mts'
 import { reclassifyRssFeedTypeIfNeeded } from './reclassify-feed-type.mts'
 import {
@@ -28,6 +29,7 @@ type FetchRssFeedDependencies = {
   checkRssFeedCrawlable: typeof checkRssFeedCrawlable
   crawlerRss: typeof CrawlerRss
   resolveDnsCanary: () => Promise<void>
+  upsertRssFeedItems: typeof upsertRssFeedItems
 }
 type FetchRssFeedOptions = { isFinalAttempt?: boolean }
 
@@ -48,6 +50,7 @@ export async function fetchRssFeed(
   const isFinalAttempt = fetchOptions.isFinalAttempt ?? true
   const crawlableCheck = dependencies.checkRssFeedCrawlable ?? checkRssFeedCrawlable
   const fetchCrawlerRss = dependencies.crawlerRss ?? CrawlerRss
+  const upsertItems = dependencies.upsertRssFeedItems ?? upsertRssFeedItems
   const rssFeed = await getRssFeedByIdToFetch(rssFeedId, { ttl })
   if (!rssFeed) return []
   const feedUrl = overrideUrl ?? rssFeed.url
@@ -55,131 +58,139 @@ export async function fetchRssFeed(
     await stampFetchOutcome(rssFeedId, { kind: 'skipped' })
     return []
   }
-  const fetchHostnameId = await getFetchHostnameId(rssFeed.url_hostname_id, rssFeed.url, feedUrl)
-  const networkBackoff = await loadRssFetchPreflightHealth(fetchHostnameId, feedUrl)
-  if (!networkBackoff || networkBackoff.isOpen) return []
+  let skipFinalFailureStamp = false
   try {
-    await assertUrlAllowedByWebRisk(feedUrl)
-  } catch (err) {
-    if (isHttpError(err) && err.status === 400) {
+    const fetchHostnameId = await getFetchHostnameId(rssFeed.url_hostname_id, rssFeed.url, feedUrl)
+    const networkBackoff = await loadRssFetchPreflightHealth(fetchHostnameId, feedUrl)
+    if (!networkBackoff || networkBackoff.isOpen) return []
+    try {
+      await assertUrlAllowedByWebRisk(feedUrl)
+    } catch (err) {
+      if (isHttpError(err) && err.status === 400) {
+        await stampFetchOutcome(rssFeedId, { kind: 'skipped' })
+        return []
+      }
+      throw err
+    }
+    if (!(await crawlableCheck(feedUrl, rssFeed))) {
       await stampFetchOutcome(rssFeedId, { kind: 'skipped' })
       return []
     }
-    await stampFetchOutcome(rssFeedId, { kind: 'error', isFinalAttempt })
-    throw err
-  }
-  if (!(await crawlableCheck(feedUrl, rssFeed))) {
-    await stampFetchOutcome(rssFeedId, { kind: 'skipped' })
-    return []
-  }
-  if (!(await networkBackoff.claimProbe())) return []
-  const latestCrawlSummary = await getLatestRssFeedCrawlForFeedWithOptions(rssFeedId, {
-    includeFeedData: false,
-  })
-  const options = buildRssFetchOptions(rssFeed, ttl, {
-    canReplayFeedBody: latestCrawlSummary?.feed_data_sha256 != null,
-  })
-  let data: Awaited<ReturnType<typeof fetchCrawlerRss>>
-  try {
-    data = await fetchCrawlerRss(feedUrl, options)
-    await recordRssFetchHostnameSuccess(fetchHostnameId)
-  } catch (err) {
-    if (await handleRssFetchRateLimitError(err, fetchHostnameId, feedUrl)) return []
-    await recordRssFetchHostnameFailure(err, fetchHostnameId, dependencies.resolveDnsCanary)
-    const softDeleted = await fetchFailures.maybeSoftDeletePermanentFetchErrorForFetch({
-      error: err,
-      feedUrl,
-      rssFeedId,
-      policy: rssFeed,
-      fetchHostnameId,
+    if (!(await networkBackoff.claimProbe())) return []
+    const latestCrawlSummary = await getLatestRssFeedCrawlForFeedWithOptions(rssFeedId, {
+      includeFeedData: false,
     })
-    if (!softDeleted) await stampFetchOutcome(rssFeedId, { kind: 'error', isFinalAttempt })
-    throw err
-  }
-  const persistFetchResult = (params: {
-    responseCode: number
-    headers: { etag: string | null; lastModified: string | null }
-    feedData?: Record<string, unknown> | null
-    feedDataSha256?: Buffer | null
-    redirectUrlId?: string | null
-    outcome?: FetchOutcome
-  }) =>
-    persistRssFeedCrawlAndMetadata({
-      rssFeedId,
-      currentMetadata: { etag: rssFeed.etag, lastModifiedAt: rssFeed.last_modified_at },
-      ...params,
+    const options = buildRssFetchOptions(rssFeed, ttl, {
+      canReplayFeedBody: latestCrawlSummary?.feed_data_sha256 != null,
     })
-  if ('redirect' in data && data.redirect) {
-    const action = await handleRssFeedRedirect({
-      rssFeedId,
-      rssFeed: rssFeed as RssFeedToFetch,
-      data,
-      hopCount,
-      maxHops: MAX_REDIRECT_HOPS,
-      persistFetchResult,
-    })
-    if (action.type === 'follow') {
-      return fetchRssFeed(rssFeedId, 0, action.url, hopCount + 1, dependencies, fetchOptions)
+    let data: Awaited<ReturnType<typeof fetchCrawlerRss>>
+    try {
+      data = await fetchCrawlerRss(feedUrl, options)
+      await recordRssFetchHostnameSuccess(fetchHostnameId)
+    } catch (err) {
+      if (await handleRssFetchRateLimitError(err, fetchHostnameId, feedUrl)) return []
+      await recordRssFetchHostnameFailure(err, fetchHostnameId, dependencies.resolveDnsCanary)
+      if (
+        await fetchFailures.maybeSoftDeletePermanentFetchErrorForFetch({
+          error: err,
+          feedUrl,
+          rssFeedId,
+          policy: rssFeed,
+          fetchHostnameId,
+        })
+      ) {
+        skipFinalFailureStamp = true
+      }
+      throw err
     }
-    return []
-  }
-  const latestCrawl =
-    data.responseCode === 304
-      ? await getLatestRssFeedCrawlForFeedWithOptions(rssFeedId, { includeFeedData: true })
-      : latestCrawlSummary
-  const parsedFeed =
-    data.feed ?? (data.responseCode === 304 ? (latestCrawl?.feed_data ?? null) : null)
-  const contentSha256 =
-    data.contentSha256 ??
-    (data.responseCode === 304 ? (latestCrawl?.feed_data_sha256 ?? null) : null)
-  if (parsedFeed == null || contentSha256 == null) {
-    await persistFetchResult({ responseCode: data.responseCode, headers: data.headers })
-    return []
-  }
-  const feedUnchanged =
-    latestCrawl?.feed_data_sha256 != null
-      ? latestCrawl.feed_data_sha256.equals(contentSha256)
-      : false
-  const shouldPersistFeedData = data.responseCode !== 304
-  const languageChanged = await persistFeedMetadataAndReconcileLanguage(
-    rssFeedId,
-    parsedFeed,
-    rssFeed.title,
-    rssFeed.declared_language,
-    rssFeed.feed_type,
-  )
-  if (feedUnchanged) {
+    const persistFetchResult = (
+      params: Omit<
+        Parameters<typeof persistRssFeedCrawlAndMetadata>[0],
+        'rssFeedId' | 'currentMetadata'
+      >,
+    ) =>
+      persistRssFeedCrawlAndMetadata({
+        rssFeedId,
+        currentMetadata: { etag: rssFeed.etag, lastModifiedAt: rssFeed.last_modified_at },
+        ...params,
+      })
+    if ('redirect' in data && data.redirect) {
+      const action = await handleRssFeedRedirect({
+        rssFeedId,
+        rssFeed: rssFeed as RssFeedToFetch,
+        data,
+        hopCount,
+        maxHops: MAX_REDIRECT_HOPS,
+        persistFetchResult,
+      })
+      if (action.type === 'follow') {
+        skipFinalFailureStamp = true
+        return await fetchRssFeed(
+          rssFeedId,
+          0,
+          action.url,
+          hopCount + 1,
+          dependencies,
+          fetchOptions,
+        )
+      }
+      return []
+    }
+    const latestCrawl =
+      data.responseCode === 304
+        ? await getLatestRssFeedCrawlForFeedWithOptions(rssFeedId, { includeFeedData: true })
+        : latestCrawlSummary
+    const parsedFeed =
+      data.feed ?? (data.responseCode === 304 ? (latestCrawl?.feed_data ?? null) : null)
+    const contentSha256 =
+      data.contentSha256 ??
+      (data.responseCode === 304 ? (latestCrawl?.feed_data_sha256 ?? null) : null)
+    if (parsedFeed == null || contentSha256 == null) {
+      await persistFetchResult({ responseCode: data.responseCode, headers: data.headers })
+      return []
+    }
+    const feedUnchanged = Boolean(
+      latestCrawl?.feed_data_sha256 && latestCrawl.feed_data_sha256.equals(contentSha256),
+    )
+    const shouldPersistFeedData = data.responseCode !== 304
+    const languageChanged = await persistFeedMetadataAndReconcileLanguage(
+      rssFeedId,
+      parsedFeed,
+      rssFeed.title,
+      rssFeed.declared_language,
+      rssFeed.feed_type,
+    )
+    const validItems = feedUnchanged
+      ? []
+      : buildTrackedRssFeedItemsFromFeed(rssFeedId, parsedFeed, feedUrl)
+    if (feedUnchanged || validItems.length === 0) {
+      await persistFetchResult({
+        responseCode: data.responseCode,
+        headers: data.headers,
+        feedData: shouldPersistFeedData ? parsedFeed : undefined,
+        feedDataSha256: shouldPersistFeedData ? contentSha256 : undefined,
+      })
+      return []
+    }
+    const [items] = await Promise.all([
+      upsertItems(rssFeedId, validItems, { redetectLanguage: languageChanged }),
+      reclassifyRssFeedTypeIfNeeded(
+        rssFeedId,
+        { url: feedUrl, feed_type: rssFeed.feed_type },
+        validItems,
+      ),
+    ])
     await persistFetchResult({
       responseCode: data.responseCode,
       headers: data.headers,
       feedData: shouldPersistFeedData ? parsedFeed : undefined,
       feedDataSha256: shouldPersistFeedData ? contentSha256 : undefined,
     })
-    return []
+    return items
+  } catch (err) {
+    if (!skipFinalFailureStamp) {
+      await stampFetchOutcome(rssFeedId, { kind: 'error', isFinalAttempt }).catch(onError)
+    }
+    throw err
   }
-  const validItems = buildTrackedRssFeedItemsFromFeed(rssFeedId, parsedFeed, feedUrl)
-  if (validItems.length === 0) {
-    await persistFetchResult({
-      responseCode: data.responseCode,
-      headers: data.headers,
-      feedData: parsedFeed,
-      feedDataSha256: contentSha256,
-    })
-    return []
-  }
-  const [items] = await Promise.all([
-    upsertRssFeedItems(rssFeedId, validItems, { redetectLanguage: languageChanged }),
-    reclassifyRssFeedTypeIfNeeded(
-      rssFeedId,
-      { url: feedUrl, feed_type: rssFeed.feed_type },
-      validItems,
-    ),
-  ])
-  await persistFetchResult({
-    responseCode: data.responseCode,
-    headers: data.headers,
-    feedData: shouldPersistFeedData ? parsedFeed : undefined,
-    feedDataSha256: shouldPersistFeedData ? contentSha256 : undefined,
-  })
-  return items
 }

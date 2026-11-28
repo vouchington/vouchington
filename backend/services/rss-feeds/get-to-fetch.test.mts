@@ -88,7 +88,16 @@ describe('get-to-fetch', () => {
         cursor: {
           lane: 5,
           afterId: '00000000-0000-0000-0000-000000000000',
-          afterLastFetchedAt: 'not-a-timestamp',
+          afterLastSucceededAt: 'not-a-timestamp',
+        },
+      }),
+    ).rejects.toThrow('Invalid RSS dispatch cursor timestamp')
+    await expect(
+      getRssFeedsToFetch({
+        cursor: {
+          lane: 6,
+          afterId: '00000000-0000-0000-0000-000000000000',
+          afterLastFailedAt: 'not-a-timestamp',
         },
       }),
     ).rejects.toThrow('Invalid RSS dispatch cursor timestamp')

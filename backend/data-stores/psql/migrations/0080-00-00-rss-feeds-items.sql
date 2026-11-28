@@ -159,28 +159,34 @@ COMMENT ON COLUMN rss_feeds.declared_language IS 'Feed-declared language from <l
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_fetch_states (
   rss_feed_id UUID PRIMARY KEY REFERENCES rss_feeds (id) ON DELETE CASCADE,
+  crawl_tier SMALLINT NOT NULL DEFAULT 5 CHECK (crawl_tier BETWEEN 1 AND 5),
   last_fetch_succeeded_at TIMESTAMPTZ,
   last_fetch_failed_at TIMESTAMPTZ
 ) WITH (fillfactor = 90);
-COMMENT ON TABLE rss_feed_fetch_states IS 'Current fetch timing for live enabled RSS feeds. Row presence means the feed is eligible for dispatch; disabling or soft-deleting removes the row.';
+COMMENT ON TABLE rss_feed_fetch_states IS 'Current fetch timing and crawl tier for live enabled RSS feeds. Row presence means the feed is eligible for dispatch; disabling or soft-deleting removes the row.';
 COMMENT ON COLUMN rss_feed_fetch_states.rss_feed_id IS 'Live enabled RSS feed owning this state; also the stable tie breaker for dispatch cursors.';
+COMMENT ON COLUMN rss_feed_fetch_states.crawl_tier IS 'Projected crawl tier (1-5) from mv_rss_feed_crawl_tiers; defaults to 5 for new feeds and syncs on materialized view refresh.';
 COMMENT ON COLUMN rss_feed_fetch_states.last_fetch_succeeded_at IS 'When the feed last returned content (including HTTP 304); exposed as last_fetched_at in view_rss_feeds.';
 COMMENT ON COLUMN rss_feed_fetch_states.last_fetch_failed_at IS 'When the feed last failed on its final fetch attempt or was skipped by crawl policy (not crawlable, Web Risk 400, robots disallow).';
 
--- Seek live enabled healthy feeds oldest-fetched first for due and backfill walks.
+-- Seek live enabled healthy feeds oldest-fetched first within each crawl tier for due and backfill walks.
 -- INCLUDE enables Index Only Scans on the narrow state table in both custom and generic plans.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_fetch_states__healthy_fetch_due
-ON rss_feed_fetch_states (COALESCE(last_fetch_succeeded_at, '-infinity'::timestamptz) ASC, rss_feed_id ASC)
+ON rss_feed_fetch_states (
+  crawl_tier ASC,
+  COALESCE(last_fetch_succeeded_at, '-infinity'::timestamptz) ASC,
+  rss_feed_id ASC
+)
 INCLUDE (last_fetch_succeeded_at, last_fetch_failed_at)
 WHERE last_fetch_failed_at IS NULL OR last_fetch_failed_at < last_fetch_succeeded_at;
 
--- Seek live enabled failing feeds oldest-failed first for retry walks.
+-- Seek live enabled failing feeds oldest-failed first across all tiers for retry walks.
 -- INCLUDE enables Index Only Scans on the narrow state table so custom plans never fall back to Bitmap + Sort.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_fetch_states__failing_fetch_due
 ON rss_feed_fetch_states (last_fetch_failed_at ASC, rss_feed_id ASC)
-INCLUDE (last_fetch_succeeded_at)
+INCLUDE (last_fetch_succeeded_at, crawl_tier)
 WHERE last_fetch_failed_at IS NOT NULL
   AND (last_fetch_succeeded_at IS NULL OR last_fetch_failed_at >= last_fetch_succeeded_at);
 

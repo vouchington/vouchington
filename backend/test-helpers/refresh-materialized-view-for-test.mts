@@ -1,4 +1,5 @@
 import { assertWhitelistedSqlIdentifier, type PoolClient, writePool } from '@data-stores/psql'
+import { syncRssFeedFetchStateCrawlTiers } from '@data-stores/psql/migration-runner/sync-rss-feed-fetch-state-tiers'
 
 const REFRESH_ADVISORY_LOCK_NAME = 'refresh-materialized-view'
 
@@ -31,6 +32,9 @@ export async function refreshMaterializedViewForTest(viewName: string): Promise<
     await client.query(
       `/* refreshMaterializedViewForTest.refresh */ REFRESH MATERIALIZED VIEW CONCURRENTLY ${quotedView}`,
     )
+    if (viewName === 'mv_rss_feed_crawl_tiers') {
+      await syncRssFeedFetchStateCrawlTiers(client)
+    }
   } catch (err) {
     refreshError = toError(err)
   } finally {

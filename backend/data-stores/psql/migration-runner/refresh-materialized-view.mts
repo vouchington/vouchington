@@ -1,6 +1,7 @@
 import onError from '@modules/on-error'
 import { refreshMaterializedView as refreshPlatformMaterializedView } from '@vouchington/postgres/views'
 import { writePool } from '../setup.mts'
+import { syncRssFeedFetchStateCrawlTiers } from './sync-rss-feed-fetch-state-tiers.mts'
 
 // Refresh is DDL, so the product's allowlist is injected before its name is interpolated.
 const REFRESHABLE_MATERIALIZED_VIEWS = new Set([
@@ -22,4 +23,7 @@ export async function refreshMaterializedView(viewName: string): Promise<void> {
     allowedViews: REFRESHABLE_MATERIALIZED_VIEWS,
     reportError: onError,
   })
+  if (viewName === 'mv_rss_feed_crawl_tiers') {
+    await syncRssFeedFetchStateCrawlTiers(writePool)
+  }
 }

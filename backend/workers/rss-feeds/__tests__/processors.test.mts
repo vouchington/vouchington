@@ -58,7 +58,7 @@ describe('processRssFeedsDispatcher', () => {
 
     const { result, jobs } = await dispatchOwnedPage([feed.id], {
       lane: 5,
-      afterLastFetchedAt: null,
+      afterLastSucceededAt: null,
       afterId: uuidBefore(firstId),
       throughId: secondId,
     })
@@ -81,7 +81,7 @@ describe('processRssFeedsDispatcher', () => {
 
     const { result, jobs } = await dispatchOwnedPage(feedIds, {
       lane: 5,
-      afterLastFetchedAt: null,
+      afterLastSucceededAt: null,
       afterId: uuidBefore(firstId),
       throughId: thirdId,
     })
@@ -108,7 +108,7 @@ describe('processRssFeedsDispatcher', () => {
 
     const { result, jobs } = await dispatchOwnedPage([feed.id], {
       lane: 10,
-      afterLastFetchedAt: fetchedAt.toISOString(),
+      afterLastSucceededAt: fetchedAt.toISOString(),
       afterId: uuidBefore(firstId),
       throughId: secondId,
     })

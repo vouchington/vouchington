@@ -7,7 +7,11 @@ import {
   RSS_FEEDS_FETCH_JOB,
 } from '@queues/background/enqueues/rss-feeds-jobs'
 import { RSS_FEEDS_ORDERING } from '@queues/rss-feeds/config'
-import { FAILING_DISPATCH_LANE, getCrawlCapacityBudget } from '@services/rss-feeds'
+import {
+  FAILING_DISPATCH_LANE,
+  getCrawlCapacityBudget,
+  getCrawlRawReadBudget,
+} from '@services/rss-feeds'
 import { processFetchRssFeed, processRssFeedsDispatcher } from './processors.mts'
 
 const enqueueRssContinuation = createBackgroundEnqueue(RSS_FEEDS_DISPATCH_JOB)
@@ -18,22 +22,28 @@ export const rssFeedsHandlers = [
     if (!Number.isSafeInteger(remainingBudget) || remainingBudget < 0) {
       throw new TypeError('RSS dispatcher remaining budget must be a nonnegative safe integer')
     }
+    const remainingRawBudget = job.data.remainingRawBudget ?? getCrawlRawReadBudget()
+    if (!Number.isSafeInteger(remainingRawBudget) || remainingRawBudget < 0) {
+      throw new TypeError('RSS dispatcher remaining raw budget must be a nonnegative safe integer')
+    }
     const asOf = job.data.asOf ?? new Date().toISOString()
     const asOfDate = new Date(asOf)
     if (Number.isNaN(asOfDate.valueOf())) {
       throw new TypeError('RSS dispatcher asOf must be a valid timestamp')
     }
-    if (job.data.remainingBudget === undefined || job.data.asOf === undefined) {
-      await job.updateData({ ...job.data, remainingBudget, asOf })
+    if (
+      job.data.remainingBudget === undefined ||
+      job.data.remainingRawBudget === undefined ||
+      job.data.asOf === undefined
+    ) {
+      await job.updateData({ ...job.data, remainingBudget, remainingRawBudget, asOf })
     }
-    if (remainingBudget === 0) return { count: 0, rawRowsRead: 0 }
+    if (remainingBudget === 0 || remainingRawBudget === 0) return { count: 0, rawRowsRead: 0 }
     const lane = job.data.cursor?.lane ?? 1
     return processPagedDispatcher(job, {
       dispatcher: 'rss',
       cursorKey:
-        lane === 5 || lane === FAILING_DISPATCH_LANE || lane === 10
-          ? 'lastFetchedAt,id'
-          : 'lane,id',
+        lane === FAILING_DISPATCH_LANE ? 'lastFetchFailedAt,id' : 'lastFetchSucceededAt,id',
       target: background,
       targetName: 'background',
       readAndDispatch: async pageSize => {
@@ -42,13 +52,21 @@ export const rssFeedsHandlers = [
           cursor: job.data.cursor,
           asOf: asOfDate,
           limit,
-          rawBudget: remainingBudget,
+          rawBudget: remainingRawBudget,
         })
         const nextBudget = remainingBudget - result.count
+        const nextRawBudget = Math.max(0, remainingRawBudget - result.rawRowsRead)
         return {
           result,
-          ...(result.nextCursor && nextBudget > 0
-            ? { next: { cursor: result.nextCursor, asOf, remainingBudget: nextBudget } }
+          ...(result.nextCursor && nextBudget > 0 && nextRawBudget > 0
+            ? {
+                next: {
+                  cursor: result.nextCursor,
+                  asOf,
+                  remainingBudget: nextBudget,
+                  remainingRawBudget: nextRawBudget,
+                },
+              }
             : {}),
         }
       },

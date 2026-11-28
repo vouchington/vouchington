@@ -64,11 +64,13 @@ moderator's old conversation participation does not retain access to modmail not
 
 Social-account and Bedrock ingestion services page from immutable source IDs before applying
 changing eligibility, keeping scheduled reads bounded when social accounts were recently synced or
-Bedrock batches are still fresh. The RSS feed dispatcher instead walks a forward-only timestamp
-keyset with a fixed sweep cutoff (`asOf`) for its Tier 5 healthy due/backfill lanes and its
-cross-tier failing retry lane, while Tiers 1–4 healthy lanes page `mv_rss_feed_crawl_tiers` by
-immutable feed ID. Workers retain the cursor position through queue continuations so ineligible
-rows cannot hide later work.
+Bedrock batches are still fresh. The RSS feed dispatcher instead walks forward-only timestamp
+keysets with a fixed sweep cutoff (`asOf`) across all 10 lanes over covering partial indexes on
+`rss_feed_fetch_states` (`(crawl_tier, COALESCE(last_fetch_succeeded_at, '-infinity'), rss_feed_id)`
+for healthy due and backfill lanes, and `(last_fetch_failed_at, rss_feed_id)` for the cross-tier
+failing retry lane), applying hostname backoff and rate-limit filters inside the bounded walk and
+capping both admissions and raw rows read per sweep. Workers retain the cursor position through
+queue continuations so ineligible rows cannot hide later work.
 
 Crawler refresh selection uses narrow current-state tables (`url_crawl_states` for URLs and
 `rss_feed_fetch_states` for RSS feeds) rather than aggregating retained crawl history or churning

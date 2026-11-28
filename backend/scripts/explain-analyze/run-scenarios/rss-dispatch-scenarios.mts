@@ -26,7 +26,7 @@ export async function runRssDispatchScenarios(): Promise<void> {
       limit: 25,
       rawBudget: 26,
       asOf: new Date(ANCHOR_MS + 2 * 24 * 60 * 60_000),
-      cursor: { lane: tier, afterId: NIL_UUID },
+      cursor: { lane: tier, afterId: NIL_UUID, throughId: SEED_UPPER_FEED_ID },
     })
     assert.ok(page.rawRowsRead > 0 && page.feeds.length > 0)
   })
@@ -40,7 +40,7 @@ export async function runRssDispatchScenarios(): Promise<void> {
     assert.equal(page.rawRowsRead, 26)
     assert.equal(page.feeds.length, 25)
     assert.equal(page.nextCursor?.lane, 5)
-    assert.equal(page.nextCursor?.afterLastFetchedAt, null)
+    assert.equal(page.nextCursor?.afterLastSucceededAt, null)
   })
   await runAndCapture('rss-feeds-to-fetch-fallback-tail', async () => {
     const page = await getRssFeedsToFetch({
@@ -49,7 +49,7 @@ export async function runRssDispatchScenarios(): Promise<void> {
       asOf: anchorAsOf,
       cursor: {
         lane: 5,
-        afterLastFetchedAt: null,
+        afterLastSucceededAt: null,
         afterId: seedUuid(2000, '08'),
         throughId: SEED_UPPER_FEED_ID,
       },
@@ -68,7 +68,7 @@ export async function runRssDispatchScenarios(): Promise<void> {
     assert.equal(page.rawRowsRead, 26)
     assert.equal(page.feeds.length, 25)
     assert.equal(page.nextCursor?.lane, FAILING_DISPATCH_LANE)
-    assert.equal(typeof page.nextCursor?.afterLastFetchedAt, 'string')
+    assert.equal(typeof page.nextCursor?.afterLastFailedAt, 'string')
   })
   await runAndCapture('rss-feeds-to-fetch-fallback-backfill', async () => {
     const page = await getRssFeedsToFetch({
@@ -77,7 +77,7 @@ export async function runRssDispatchScenarios(): Promise<void> {
       asOf: new Date(ANCHOR_MS + 60 * 60_000),
       cursor: {
         lane: 10,
-        afterLastFetchedAt: anchorAsOf.toISOString(),
+        afterLastSucceededAt: anchorAsOf.toISOString(),
         afterId: seedUuid(1000, '08'),
         throughId: SEED_UPPER_FEED_ID,
       },
@@ -85,7 +85,7 @@ export async function runRssDispatchScenarios(): Promise<void> {
     assert.equal(page.rawRowsRead, 26)
     assert.ok(page.feeds.length > 0)
     assert.equal(page.nextCursor?.lane, 10)
-    assert.equal(typeof page.nextCursor?.afterLastFetchedAt, 'string')
+    assert.equal(typeof page.nextCursor?.afterLastSucceededAt, 'string')
   })
   await runAndCapture('rss-feeds-to-fetch-full-dispatch', async () => {
     let cursor: RssFeedDispatchCursor | undefined = {
@@ -112,7 +112,7 @@ export async function runRssDispatchScenarios(): Promise<void> {
     }
     assert.equal(remaining, 0)
     assert.ok(tier5RawRead <= 105, `Tier 5 raw rows read ${tier5RawRead} exceeded 105`)
-    assert.ok(totalRawRead <= 750, `Full dispatch raw rows read ${totalRawRead} exceeded 750`)
+    assert.ok(totalRawRead <= 120, `Full dispatch raw rows read ${totalRawRead} exceeded 120`)
   })
 }
 
@@ -132,7 +132,7 @@ function makeIndexedLaneExpectations(index: string, queryContains: string) {
 
 const HEALTHY_PAGE_EXPECTATIONS = makeIndexedLaneExpectations(
   'idx_rss_feed_fetch_states__healthy_fetch_due',
-  'getRssFeedsTier5',
+  'getRssFeedsHealthy',
 )
 const FAILING_PAGE_EXPECTATIONS = makeIndexedLaneExpectations(
   'idx_rss_feed_fetch_states__failing_fetch_due',
@@ -140,26 +140,7 @@ const FAILING_PAGE_EXPECTATIONS = makeIndexedLaneExpectations(
 )
 
 registerScenarioContract('rss-feeds-to-fetch-tiered', {
-  expectations: [
-    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 64 },
-    { kind: 'maxProcessedRows', relation: 'rss_feed_fetch_states', max: 32 },
-    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 32 },
-    { kind: 'maxProcessedRows', relation: 'urls', max: 32 },
-    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 32 },
-    {
-      kind: 'usesIndexes',
-      indexes: ['rss_feeds_pkey', 'idx_rss_feeds__is_enabled'],
-      anyOf: true,
-      queryContains: 'getRssFeedsTiered',
-    },
-    { kind: 'usesIndexes', indexes: ['urls_pkey'], queryContains: 'getRssFeedsTiered' },
-    { kind: 'usesIndexes', indexes: ['url_hostnames_pkey'], queryContains: 'getRssFeedsTiered' },
-    {
-      kind: 'usesIndexes',
-      indexes: ['idx_mv_rss_feed_crawl_tiers__tier_rss_feed_id'],
-      queryContains: 'getRssFeedsTiered',
-    },
-  ],
+  expectations: HEALTHY_PAGE_EXPECTATIONS,
 })
 registerScenarioContract('rss-feeds-to-fetch-fallback-page', {
   expectations: HEALTHY_PAGE_EXPECTATIONS,
@@ -178,19 +159,14 @@ registerScenarioContract('rss-feeds-to-fetch-full-dispatch', {
   expectations: [
     { kind: 'maxProcessedRows', relation: 'rss_feed_fetch_states', max: 128 },
     { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 128 },
-    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 220 },
+    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 128 },
     { kind: 'maxProcessedRows', relation: 'urls', max: 128 },
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 128 },
     {
       kind: 'usesIndexes',
-      indexes: ['idx_mv_rss_feed_crawl_tiers__tier_rss_feed_id'],
-      queryContains: 'getRssFeedsTiered',
-    },
-    {
-      kind: 'usesIndexes',
       indexes: ['idx_rss_feed_fetch_states__healthy_fetch_due'],
       noSort: true,
-      queryContains: 'getRssFeedsTier5',
+      queryContains: 'getRssFeedsHealthy',
     },
   ],
 })

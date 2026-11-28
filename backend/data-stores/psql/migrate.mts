@@ -20,6 +20,7 @@ import {
   type RunConfigDrivenOptions,
 } from './migration-runner/migrations.mts'
 import { refreshMaterializedView } from './migration-runner/refresh-materialized-view.mts'
+import { SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL } from './migration-runner/sync-rss-feed-fetch-state-tiers.mts'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { verifyLiveSchemaMatchesSnapshot } from './schema-snapshot/verify-live-schema.mts'
 import { psql, write } from './setup.mts'
@@ -50,10 +51,14 @@ export async function runMigrations(platform: Pick<Psql, 'runMigrations'> = psql
 
 export async function runViews(options: RunViewsOptions = {}) {
   if (options.forced) await initializeMigrationSql()
-  const folder = options.folder ?? path.resolve(__dirname, 'views')
+  const defaultFolder = path.resolve(__dirname, 'views')
+  const folder = options.folder ?? defaultFolder
   const writer = options.writer ?? write
   const logger = options.logger ?? console
   await runPlatformViews({ ...options, folder, writer, logger })
+  if (folder === defaultFolder) {
+    await writer(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL)
+  }
 }
 
 export async function runConfigDriven(options: RunConfigDrivenOptions = {}) {
@@ -74,6 +79,18 @@ export async function applyAllMigrations(
   await applyMigrationsInSession(rootDir, forced, logger, platform)
 }
 
+async function applyViewsAndSyncTiers(
+  rootDir: string,
+  forced: boolean | undefined,
+  logger: Pick<Console, 'error' | 'log'>,
+  writer: NonNullable<RunConfigDrivenOptions['writer']>,
+): Promise<void> {
+  await runPlatformViews({ folder: path.resolve(rootDir, 'views'), forced, logger, writer })
+  if (rootDir === __dirname) {
+    await writer(SYNC_RSS_FEED_FETCH_STATE_TIERS_SQL)
+  }
+}
+
 async function applyMigrationsInSession(
   rootDir: string,
   forced: boolean | undefined,
@@ -89,7 +106,7 @@ async function applyMigrationsInSession(
       logger,
     })
     await runConfigDrivenFromFolder(rootDir, { logger, writer })
-    return runPlatformViews({ folder: path.resolve(rootDir, 'views'), forced, logger, writer })
+    return applyViewsAndSyncTiers(rootDir, forced, logger, writer)
   })
 }
 

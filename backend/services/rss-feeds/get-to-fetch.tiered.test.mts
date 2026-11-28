@@ -77,7 +77,7 @@ describe('tiered RSS feed selection', () => {
         asOf: AS_OF,
         cursor: {
           lane: 5,
-          afterLastFetchedAt: null,
+          afterLastSucceededAt: null,
           afterId: uuidBefore(fresh.id),
           throughId: neverFetched.id,
         },
@@ -114,7 +114,7 @@ describe('tiered RSS feed selection', () => {
       const dispatched: string[] = []
       let cursor: RssFeedDispatchCursor | undefined = {
         lane: 5,
-        afterLastFetchedAt: new Date(base).toISOString(),
+        afterLastSucceededAt: new Date(base).toISOString(),
         afterId: uuidBefore(firstId),
         throughId: fourthId,
       }
@@ -181,7 +181,7 @@ describe('tiered RSS feed selection', () => {
             asOf: AS_OF,
             cursor: {
               lane: expectedLane,
-              afterLastFetchedAt: fetchedAt.toISOString(),
+              afterLastSucceededAt: fetchedAt.toISOString(),
               afterId: uuidBefore(feed.id),
               throughId: feed.id,
             },
@@ -201,7 +201,7 @@ describe('tiered RSS feed selection', () => {
             asOf: AS_OF,
             cursor: {
               lane: otherLane,
-              afterLastFetchedAt: fetchedAt.toISOString(),
+              afterLastSucceededAt: fetchedAt.toISOString(),
               afterId: uuidBefore(feed.id),
               throughId: feed.id,
             },

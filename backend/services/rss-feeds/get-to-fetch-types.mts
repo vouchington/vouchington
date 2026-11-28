@@ -22,7 +22,8 @@ export type RssFeedToFetch = {
 export type RssFeedDispatchCursor = {
   lane: number
   afterId: string
-  afterLastFetchedAt?: string | null
+  afterLastSucceededAt?: string | null
+  afterLastFailedAt?: string
   throughId?: string
 }
 

@@ -7,6 +7,7 @@ import {
 } from '@queues/background/enqueues/rss-feeds-jobs'
 import { background } from '@queues/background/queues'
 import { RSS_FEEDS_ORDERING } from '@queues/rss-feeds/config'
+import { getRssFeedByIdToFetch } from '@services/rss-feeds'
 import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -14,6 +15,7 @@ import {
   insertTestRssFeedDirect,
 } from '@voucha/test-helpers/entities/rss-feeds'
 import { updateRssFeedTiming } from '@voucha/test-helpers/entities/rss-feeds-state'
+import { setTestHostnameRateLimitedUntil } from '@voucha/test-helpers/entities/url-hostname-network-backoff'
 import { captureRssJobs } from '@voucha/test-helpers/rss-dispatch-jobs'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
@@ -65,7 +67,7 @@ describe('rss feed sparse lane', () => {
           {
             cursor: {
               lane: 5,
-              afterLastFetchedAt: null,
+              afterLastSucceededAt: null,
               afterId: uuidBefore(ids[0]!),
               throughId: ids[2],
             },
@@ -98,7 +100,7 @@ describe('rss feed sparse lane', () => {
           {
             cursor: {
               lane: 5,
-              afterLastFetchedAt: dueAt.toISOString(),
+              afterLastSucceededAt: dueAt.toISOString(),
               afterId: ids[2]!,
               throughId: ids[2],
             },
@@ -130,6 +132,76 @@ describe('rss feed sparse lane', () => {
         restorePage()
         restoreBudget()
         await Promise.all(jobs.map(job => job.remove()))
+        await deleteRssFeedsByIds(ownedFeedIds)
+      }
+    },
+  )
+
+  // no-mistakes-timeout-reason: exercises a real glide dispatcher job with three rate-limited feeds exhausting remainingRawBudget
+  it(
+    'stops chaining continuations when remainingRawBudget is exhausted by skipped rows',
+    { timeout: 15_000 },
+    async () => {
+      const { firstId, secondId, thirdId } = createTestUuidWindow()
+      const ownedFeedIds: string[] = []
+      let job: Awaited<ReturnType<typeof background.add>> | undefined
+      let restorePage = (): void => {}
+      let restoreBudget = (): void => {}
+      try {
+        const feeds = await Promise.all(
+          [firstId, secondId, thirdId].map(id => insertTestRssFeedDirect({ id })),
+        )
+        ownedFeedIds.push(...feeds.map(feed => feed.id))
+        const ids = ownedFeedIds.toSorted()
+        const rows = await Promise.all(ids.map(id => getRssFeedByIdToFetch(id, { ttl: 0 })))
+        await Promise.all(
+          rows.map(row =>
+            setTestHostnameRateLimitedUntil(row!.url_hostname_id, new Date(Date.now() + 60_000)),
+          ),
+        )
+        restorePage = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
+          rss_page_size: 2,
+          background_max_depth: 1_000_000,
+        })
+        restoreBudget = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+          capacity_budget: 5,
+        })
+        const dispatcher = rssFeedsHandlers.find(
+          candidate => candidate.job.name === RSS_FEEDS_DISPATCH_JOB.name,
+        )
+        if (!dispatcher) throw new Error('RSS dispatcher handler must be registered')
+
+        job = await background.add(
+          RSS_FEEDS_DISPATCH_JOB.name,
+          {
+            cursor: {
+              lane: 5,
+              afterLastSucceededAt: null,
+              afterId: uuidBefore(ids[0]!),
+              throughId: ids[2],
+            },
+            asOf: new Date('2012-05-01T00:00:00.000Z').toISOString(),
+            remainingBudget: 5,
+            remainingRawBudget: 2,
+          },
+          { ...RSS_FEEDS_DISPATCH_JOB.options, ordering: RSS_FEEDS_ORDERING.dispatcher },
+        )
+        if (!job) throw new Error('RSS dispatcher job admission')
+
+        const result = (await dispatcher.handle(job as Job<never>)) as {
+          count: number
+          rawRowsRead: number
+        }
+        expect(result).toEqual({ count: 0, rawRowsRead: 2 })
+        const finished = await background.getJob(job.id)
+        const receipt = (
+          finished?.data as RssFeedsDispatchData & { dispatchReceipt?: { next?: unknown } }
+        )?.dispatchReceipt
+        expect(receipt?.next).toBeUndefined()
+      } finally {
+        restorePage()
+        restoreBudget()
+        await job?.remove()
         await deleteRssFeedsByIds(ownedFeedIds)
       }
     },

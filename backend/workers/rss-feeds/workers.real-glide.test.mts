@@ -81,7 +81,7 @@ describe('rss feed paged dispatch', () => {
       const data = continuation.data as RssFeedsDispatchData
       expect(data.cursor?.lane).toBe(5)
       expect(data.cursor?.afterId).toBe(feedIds[0])
-      expect(data.cursor?.afterLastFetchedAt).toBeNull()
+      expect(data.cursor?.afterLastSucceededAt).toBeNull()
       expect(typeof data.asOf).toBe('string')
       expect(data.remainingBudget).toBe(1)
       expect(continuation.opts.ordering).toEqual({

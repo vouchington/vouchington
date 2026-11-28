@@ -58,7 +58,7 @@ describe('RSS dispatcher healthy and failing lanes', () => {
       let remaining = budget
       let cursor: RssFeedDispatchCursor | undefined = {
         lane: 5,
-        afterLastFetchedAt: new Date(healthyBase - 10_000).toISOString(),
+        afterLastSucceededAt: new Date(healthyBase - 10_000).toISOString(),
         afterId: uuidBefore(ids[0]!),
         throughId: ids.at(-1)!,
       }
@@ -77,7 +77,7 @@ describe('RSS dispatcher healthy and failing lanes', () => {
           page.nextCursor?.lane === FAILING_DISPATCH_LANE && cursor.lane === 5
             ? {
                 lane: FAILING_DISPATCH_LANE,
-                afterLastFetchedAt: new Date(oldFailBase - 10_000).toISOString(),
+                afterLastFailedAt: new Date(oldFailBase - 10_000).toISOString(),
                 afterId: uuidBefore(ids[0]!),
                 throughId: ids.at(-1)!,
               }
@@ -106,13 +106,13 @@ describe('RSS dispatcher healthy and failing lanes', () => {
 
     const healthyCursor: RssFeedDispatchCursor = {
       lane: 5,
-      afterLastFetchedAt: new Date(base - 120 * 60_000).toISOString(),
+      afterLastSucceededAt: new Date(base - 120 * 60_000).toISOString(),
       afterId: uuidBefore(healthyMidId!),
       throughId: failingOldId!,
     }
     const failingCursor: RssFeedDispatchCursor = {
       lane: FAILING_DISPATCH_LANE,
-      afterLastFetchedAt: new Date(base - 120 * 60_000).toISOString(),
+      afterLastFailedAt: new Date(base - 120 * 60_000).toISOString(),
       afterId: uuidBefore(healthyMidId!),
       throughId: failingOldId!,
     }
@@ -173,13 +173,13 @@ describe('RSS dispatcher healthy and failing lanes', () => {
     try {
       const healthyCursor: RssFeedDispatchCursor = {
         lane: 5,
-        afterLastFetchedAt: new Date(dueTime.getTime() - 1000).toISOString(),
+        afterLastSucceededAt: new Date(dueTime.getTime() - 1000).toISOString(),
         afterId: uuidBefore(healthyId!),
         throughId: failingId!,
       }
       const failingCursor: RssFeedDispatchCursor = {
         lane: FAILING_DISPATCH_LANE,
-        afterLastFetchedAt: new Date(dueTime.getTime() - 1000).toISOString(),
+        afterLastFailedAt: new Date(dueTime.getTime() - 1000).toISOString(),
         afterId: uuidBefore(healthyId!),
         throughId: failingId!,
       }
@@ -232,7 +232,7 @@ describe('RSS dispatcher healthy and failing lanes', () => {
           asOf: AS_OF,
           cursor: {
             lane: FAILING_DISPATCH_LANE,
-            afterLastFetchedAt: new Date(failedAt.getTime() - 1000).toISOString(),
+            afterLastFailedAt: new Date(failedAt.getTime() - 1000).toISOString(),
             afterId: uuidBefore(hotId!),
             throughId: hotId!,
           },
@@ -249,4 +249,44 @@ describe('RSS dispatcher healthy and failing lanes', () => {
       }
     },
   )
+
+  it('skips a block of older rate-limited feeds in the walk so healthy feeds behind them dispatch in the same page', async () => {
+    const ids = await makeOwnedFeedChain(7)
+    const blockedIds = ids.slice(0, 5)
+    const healthyIds = ids.slice(5, 7)
+    const oldBase = AS_OF.getTime() - 3 * TIER_FIVE_SLA_MS
+    const healthyBase = AS_OF.getTime() - 2 * TIER_FIVE_SLA_MS
+    await Promise.all([
+      ...blockedIds.map((id, i) => updateRssFeedTiming(id, new Date(oldBase + i * 1000))),
+      ...healthyIds.map((id, i) => updateRssFeedTiming(id, new Date(healthyBase + i * 1000))),
+    ])
+    const blockedRows = await Promise.all(
+      blockedIds.map(id => getRssFeedByIdToFetch(id, { ttl: 0 })),
+    )
+    await Promise.all(
+      blockedRows.map(row =>
+        setTestHostnameRateLimitedUntil(row!.url_hostname_id, new Date(Date.now() + 60_000)),
+      ),
+    )
+    const restore = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+      capacity_budget: 2,
+      tier5_sla_ms: TIER_FIVE_SLA_MS,
+    })
+    try {
+      const page = await getRssFeedsToFetch({
+        limit: 2,
+        rawBudget: 20,
+        asOf: AS_OF,
+        cursor: {
+          lane: 5,
+          afterLastSucceededAt: new Date(oldBase - 1000).toISOString(),
+          afterId: uuidBefore(ids[0]!),
+          throughId: ids.at(-1)!,
+        },
+      })
+      expect(page.feeds.map(f => f.id)).toEqual(healthyIds)
+    } finally {
+      restore()
+    }
+  })
 })
