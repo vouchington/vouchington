@@ -1,13 +1,15 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { collectKeysetPages } from './bounded-reads.mts'
 import { groupByNotice } from './read-models-staff-group.mts'
 import type { CopyrightStaffCase } from './read-models-staff-types.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 
 export async function selectStaffRestrictions(
   noticeIds: readonly string[],
   query: TransactionQuery,
 ): Promise<Map<string, CopyrightStaffCase['restrictions']>> {
-  const { rows } = await query<{
+  type RestrictionRow = {
     copyright_notice_id: string
     id: string
     target_id: string
@@ -16,13 +18,24 @@ export async function selectStaffRestrictions(
     human_reviewed_at: Date | null
     copyright_notice_submission_id: string | null
     human_review_action: 'confirm' | 'reverse' | null
-  }>(sql`/* getPendingCopyrightStaffCase:restrictions */
-    SELECT target.copyright_notice_id, restriction.id, restriction.copyright_notice_target_id AS target_id, restriction.imposed_at,
-      restriction.lifted_at, restriction.human_reviewed_at, restriction.human_review_action, restriction.copyright_notice_submission_id
-    FROM copyright_restrictions restriction JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE target.copyright_notice_id = ANY(${noticeIds}::uuid[])
-      ORDER BY restriction.id
-  `)
+  }
+  const rows = await collectKeysetPages<RestrictionRow, string>(
+    getCopyrightSweepLimits().batchSize,
+    async (afterId, limit) => {
+      const { rows: page } =
+        await query<RestrictionRow>(sql`/* getPendingCopyrightStaffCase:restrictions */
+        SELECT target.copyright_notice_id, restriction.id, restriction.copyright_notice_target_id AS target_id, restriction.imposed_at,
+          restriction.lifted_at, restriction.human_reviewed_at, restriction.human_review_action, restriction.copyright_notice_submission_id
+        FROM copyright_restrictions restriction JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+        WHERE target.copyright_notice_id = ANY(${noticeIds}::uuid[])
+          AND (${afterId}::uuid IS NULL OR restriction.id > ${afterId}::uuid)
+        ORDER BY restriction.id ASC
+        LIMIT ${limit}
+      `)
+      return page
+    },
+    row => row.id,
+  )
   return groupByNotice(
     rows.map(row => ({
       copyright_notice_id: row.copyright_notice_id,

@@ -3,6 +3,7 @@ import { decryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
 import { copyrightPlacementPartiesSql } from '@data-stores/psql/copyright-placement-parties'
+import { selectParticipantNoticeSubmissions } from './bounded-reads.mts'
 import { selectCopyrightParticipantStatements } from './participant-statements.mts'
 import type {
   CopyrightParticipantNoticeDetail,
@@ -11,8 +12,6 @@ import type {
 import { getTerritorialInformedWindow } from './territorial-informed-at.mts'
 import { selectEuParticipantSettlements } from './read-models-eu-settlements.mts'
 import { territorialLabels } from './territorial-labels.mts'
-
-type SubmissionRow = CopyrightParticipantNoticeDetail['submissions'][number]
 
 /** EU participants can read a received case before staff accepts or declines it. */
 export async function getEuParticipantNoticeDetail(
@@ -130,13 +129,13 @@ export async function getEuParticipantNoticeDetail(
     viewerRole === 'staff',
     transaction,
   )
-  const [{ rows: submissions }, statements] = await Promise.all([
-    transaction<SubmissionRow>(sql`/* getEuParticipantNoticeDetail:submissions */
-      SELECT id, kind, received_at, source_kind FROM copyright_notice_submissions
-      WHERE copyright_notice_id = ${noticeId}
-        AND (${viewerRole === 'staff'} OR submitted_by_id = ${currentUser.id})
-      ORDER BY received_at, id
-    `),
+  const [submissions, statements] = await Promise.all([
+    selectParticipantNoticeSubmissions(
+      noticeId,
+      currentUser.id,
+      viewerRole === 'staff',
+      transaction,
+    ),
     selectCopyrightParticipantStatements(noticeId, currentUser.id, viewerRole, transaction),
   ])
   await transaction.commit()

@@ -89,6 +89,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     WHERE assessment.id = ${input.assessmentId}
       AND submission.copyright_notice_id = ${input.noticeId}
       AND submission.kind = 'notice'
+    LIMIT 1
   `),
   )
   const assessment = assessmentRows[0]

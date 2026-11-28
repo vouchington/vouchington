@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { copyrightPlacementPublicVisibleSql } from '@services/media-delivery-safety/copyright-placement-public-visible-sql'
+import { collectKeysetPages } from './bounded-reads.mts'
 import type {
   CopyrightPublicNotice,
   CopyrightPublicNoticeDetail,
@@ -9,6 +10,7 @@ import {
   copyrightTimelineEventTypesFor,
   type CopyrightTimelineAudience,
 } from './timeline-visibility.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 export type { CopyrightPublicNoticeDetail } from './read-models-notice-types.mts'
 
 export type CopyrightAcceptedNoticeCursorRow = CopyrightPublicNotice & {
@@ -128,19 +130,27 @@ export async function getCopyrightPublicNoticeDetail(
     `)
   const [targets, timeline] = await Promise.all([
     transaction<CopyrightPublicNoticeDetail['targets'][number]>(targetsSql),
-    transaction<
-      CopyrightPublicNoticeDetail['timeline'][number]
-    >(sql`/* getCopyrightPublicNotice:timeline */
-      SELECT id, change_type AS event_type, created_at
-      -- no-mistakes-disable-next-line postgres-required-predicates: the full single-case timeline uses the notice/id index across every retained history partition; a UUID-age cutoff would omit retained case events
-      FROM copyright_notice_lifecycle_changes
-      WHERE copyright_notice_id = ${noticeId}
-        AND (${timelineEventTypes}::text[] IS NULL OR change_type = ANY(${timelineEventTypes}::copyright_notice_lifecycle_change_types[]))
-      ORDER BY id
-    `),
+    collectKeysetPages<CopyrightPublicNoticeDetail['timeline'][number], string>(
+      getCopyrightSweepLimits().batchSize,
+      async (afterId, limit) => {
+        const { rows } = await transaction<CopyrightPublicNoticeDetail['timeline'][number]>(
+          sql`/* getCopyrightPublicNotice:timeline */
+            SELECT id, change_type AS event_type, created_at
+            FROM copyright_notice_lifecycle_changes
+            WHERE copyright_notice_id = ${noticeId}
+              AND (${timelineEventTypes}::text[] IS NULL OR change_type = ANY(${timelineEventTypes}::copyright_notice_lifecycle_change_types[]))
+              AND (${afterId}::uuid IS NULL OR id > ${afterId}::uuid)
+            ORDER BY id ASC
+            LIMIT ${limit}
+          `,
+        )
+        return rows
+      },
+      row => row.id,
+    ),
   ])
   await transaction.commit()
-  return { ...notice, targets: targets.rows, timeline: timeline.rows }
+  return { ...notice, targets: targets.rows, timeline }
 }
 
 function toCopyrightAcceptedNoticeCursorRow(

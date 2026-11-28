@@ -4,11 +4,13 @@ import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { collectKeysetPages, selectSubmissionTargetIds } from './bounded-reads.mts'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { recordCopyrightAppealReviewEffects } from './submission-review-appeal-effects.mts'
 import { assertBoundedRationale } from './submission-review-email-outcome.mts'
 import { enqueueCopyrightStaydownHashes } from './staydown-registration.mts'
 import type { CopyrightHumanReviewAction } from './types.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 
 type AppealDecision = { restrictionId: string; action: CopyrightHumanReviewAction }
 
@@ -54,15 +56,8 @@ export async function reviewCopyrightAppeal(
   const { rows: appealRows } = await transaction<{
     copyright_notice_id: string
     submitted_by_id: string | null
-    target_ids: string[]
   }>(sql`/* reviewCopyrightAppeal:appeal */
-    SELECT submission.copyright_notice_id, submission.submitted_by_id,
-      ARRAY(
-        SELECT submission_target.copyright_notice_target_id
-        FROM copyright_notice_submission_targets submission_target
-        WHERE submission_target.copyright_notice_submission_id = submission.id
-        ORDER BY submission_target.copyright_notice_target_id
-      ) AS target_ids
+    SELECT submission.copyright_notice_id, submission.submitted_by_id
     FROM copyright_notice_submissions submission
     WHERE submission.id = ${input.submissionId} AND submission.kind = 'appeal'
     FOR UPDATE OF submission
@@ -77,16 +72,27 @@ export async function reviewCopyrightAppeal(
     `)
     assert(rows[0], 422, 'Appeal recommendation does not belong to this appeal')
   }
-  const { rows: existingRows } = await transaction<{
+  type ExistingReviewRow = {
     id: string
     copyright_restriction_id: string
     action: CopyrightHumanReviewAction
     copyright_notice_appeal_recommendation_id: string | null
-  }>(sql`/* reviewCopyrightAppeal:existing */
-    SELECT id, copyright_restriction_id, action, copyright_notice_appeal_recommendation_id
-    FROM copyright_notice_appeal_reviews
-    WHERE copyright_notice_submission_id = ${input.submissionId}
-  `)
+  }
+  const existingRows = await collectKeysetPages<ExistingReviewRow, string>(
+    getCopyrightSweepLimits().batchSize,
+    async (afterId, limit) => {
+      const { rows } = await transaction<ExistingReviewRow>(sql`/* reviewCopyrightAppeal:existing */
+        SELECT id, copyright_restriction_id, action, copyright_notice_appeal_recommendation_id
+        FROM copyright_notice_appeal_reviews
+        WHERE copyright_notice_submission_id = ${input.submissionId}
+          AND (${afterId}::uuid IS NULL OR id > ${afterId}::uuid)
+        ORDER BY id ASC
+        LIMIT ${limit}
+      `)
+      return rows
+    },
+    row => row.id,
+  )
   if (existingRows.length > 0) {
     const expected = new Map(
       input.decisions.map(decision => [decision.restrictionId, decision.action]),
@@ -104,6 +110,7 @@ export async function reviewCopyrightAppeal(
     await transaction.commit()
     return { noticeId: appeal.copyright_notice_id, reviewIds: existingRows.map(row => row.id) }
   }
+  const targetIds = await selectSubmissionTargetIds(transaction, input.submissionId)
   const { rows: restrictionRows } = await transaction<{
     id: string
     human_reviewed_at: Date | null
@@ -113,7 +120,7 @@ export async function reviewCopyrightAppeal(
     FROM copyright_restrictions restriction
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE target.copyright_notice_id = ${appeal.copyright_notice_id}
-      AND target.id = ANY(${appeal.target_ids})
+      AND target.id = ANY(${targetIds})
       AND restriction.lifted_at IS NULL
     ORDER BY restriction.id
     FOR UPDATE OF restriction

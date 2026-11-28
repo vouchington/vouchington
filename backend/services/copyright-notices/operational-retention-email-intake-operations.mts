@@ -28,20 +28,23 @@ export async function deleteChildPage(
             ORDER BY id DESC LIMIT 1)
         ORDER BY id LIMIT ${remaining + 1}
       ), deletable AS MATERIALIZED (
-        SELECT ARRAY(
-          SELECT candidate.id FROM candidates candidate
-          WHERE NOT EXISTS (
-            -- no-mistakes-disable-next-line postgres-required-predicates: recommendation-indexed existence proof only for the capped candidate page; review UUID time is independent
-            SELECT 1 FROM copyright_notice_email_intake_reviews review
-            WHERE review.copyright_notice_email_intake_recommendation_id = candidate.id)
-          ORDER BY candidate.id LIMIT ${remaining}
-        ) AS ids
+        SELECT candidate.id FROM candidates candidate
+        WHERE NOT EXISTS (
+          -- no-mistakes-disable-next-line postgres-required-predicates: recommendation-indexed existence proof only for the capped candidate page; review UUID time is independent
+          SELECT 1 FROM copyright_notice_email_intake_reviews review
+          WHERE review.copyright_notice_email_intake_recommendation_id = candidate.id)
+        ORDER BY candidate.id LIMIT ${remaining}
+      ), bounds AS (
+        SELECT
+          (SELECT id FROM deletable ORDER BY id ASC LIMIT 1) AS min_id,
+          (SELECT id FROM deletable ORDER BY id DESC LIMIT 1) AS max_id
       )
       DELETE FROM copyright_notice_email_intake_recommendations recommendation
+      USING deletable, bounds
       WHERE recommendation.copyright_notice_email_intake_receipt_id = (SELECT intake_id FROM owner)
-        AND recommendation.id >= (SELECT ids[1] FROM deletable)
-        AND recommendation.id <= (SELECT ids[cardinality(ids)] FROM deletable)
-        AND recommendation.id = ANY ((SELECT ids FROM deletable)::uuid[])`)
+        AND recommendation.id >= bounds.min_id
+        AND recommendation.id <= bounds.max_id
+        AND recommendation.id = deletable.id`)
     return rowCount ?? 0
   }
   const { rowCount } = await transaction(

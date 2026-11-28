@@ -1,7 +1,9 @@
 import { write } from '@data-stores/psql'
 import { enqueueStaydownHash } from '@queues/content-analysis/enqueues/image-jobs'
 import sql from 'sql-template-strings'
+import { drainBatchedWrite } from './bounded-reads.mts'
 import { isCopyrightStaydownMatchingEnabled } from './config.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 
 /**
  * Largest Hamming distance, out of 64 dHash bits, at which two images count as near-duplicates.
@@ -48,12 +50,20 @@ export async function fillCopyrightStaydownEntryHash(input: {
   perceptualHash: string
 }): Promise<boolean> {
   if (!(await isCopyrightStaydownMatchingEnabled())) return false
-  const { rowCount } = await write(sql`/* fillCopyrightStaydownEntryHash */
-    UPDATE copyright_staydown_entries
-    SET perceptual_hash = ${input.perceptualHash}::bit(64)
-    WHERE image_id = ${input.imageId} AND perceptual_hash IS NULL
-  `)
-  return (rowCount ?? 0) > 0
+  const updated = await drainBatchedWrite(getCopyrightSweepLimits().batchSize, async limit => {
+    const { rowCount } = await write(sql`/* fillCopyrightStaydownEntryHash */
+      UPDATE copyright_staydown_entries
+      SET perceptual_hash = ${input.perceptualHash}::bit(64)
+      WHERE id IN (
+        SELECT id FROM copyright_staydown_entries
+        WHERE image_id = ${input.imageId} AND perceptual_hash IS NULL
+        ORDER BY id ASC
+        LIMIT ${limit}
+      )
+    `)
+    return rowCount ?? 0
+  })
+  return updated > 0
 }
 
 /**

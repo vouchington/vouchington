@@ -26,34 +26,43 @@ export async function recoverMissingDecisionAssessments(
       SELECT DISTINCT ON (submission_id)
         submission_id, copyright_notice_id, assessed_by_id, screening_id
       FROM (
-        SELECT submission.id AS submission_id, submission.copyright_notice_id,
-          review.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 1 AS priority
-        FROM copyright_notice_form_intake_reviews review
-        JOIN copyright_notice_form_intakes intake
-          ON intake.id = review.copyright_notice_form_intake_id
-        JOIN copyright_notice_submissions submission
-          ON submission.id = intake.copyright_notice_submission_id
-        WHERE review.is_accepted
-        UNION ALL
-        SELECT submission.id AS submission_id, submission.copyright_notice_id,
-          receipt.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 2 AS priority
-        FROM copyright_notice_email_intake_receipts receipt
-        JOIN copyright_notice_email_intake_notice_links link
-          ON link.copyright_notice_email_intake_id = receipt.id AND link.link_kind = 'initial'
-        JOIN copyright_notice_submissions submission
-          ON submission.copyright_notice_id = link.copyright_notice_id
-          AND submission.kind = 'notice'
-        WHERE receipt.review_decision = 'approved'
-      ) durable_decisions
-      WHERE (${afterId}::uuid IS NULL OR submission_id > ${afterId}::uuid)`
+        (
+          SELECT submission.id AS submission_id, submission.copyright_notice_id,
+            review.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 1 AS priority
+          FROM copyright_notice_form_intake_reviews review
+          JOIN copyright_notice_form_intakes intake
+            ON intake.id = review.copyright_notice_form_intake_id
+          JOIN copyright_notice_submissions submission
+            ON submission.id = intake.copyright_notice_submission_id
+          WHERE review.is_accepted
+            AND submission.current_assessment_identity_id IS NULL
+            AND (${afterId}::uuid IS NULL OR submission.id > ${afterId}::uuid)`
   if (options.ids !== undefined)
-    candidateQuery.append(sql` AND submission_id = ANY(${options.ids}::uuid[])`)
+    candidateQuery.append(sql` AND submission.id = ANY(${options.ids}::uuid[])`)
   candidateQuery.append(sql`
-        AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submissions submission
-        WHERE submission.id = durable_decisions.submission_id
-          AND submission.current_assessment_identity_id IS NOT NULL
-      )
+          ORDER BY submission.id ASC
+          LIMIT ${limit + 1}
+        )
+        UNION ALL
+        (
+          SELECT submission.id AS submission_id, submission.copyright_notice_id,
+            receipt.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 2 AS priority
+          FROM copyright_notice_email_intake_receipts receipt
+          JOIN copyright_notice_email_intake_notice_links link
+            ON link.copyright_notice_email_intake_id = receipt.id AND link.link_kind = 'initial'
+          JOIN copyright_notice_submissions submission
+            ON submission.copyright_notice_id = link.copyright_notice_id
+            AND submission.kind = 'notice'
+          WHERE receipt.review_decision = 'approved'
+            AND submission.current_assessment_identity_id IS NULL
+            AND (${afterId}::uuid IS NULL OR submission.id > ${afterId}::uuid)`)
+  if (options.ids !== undefined)
+    candidateQuery.append(sql` AND submission.id = ANY(${options.ids}::uuid[])`)
+  candidateQuery.append(sql`
+          ORDER BY submission.id ASC
+          LIMIT ${limit + 1}
+        )
+      ) durable_decisions
       ORDER BY submission_id, priority DESC
       LIMIT ${limit + 1}
     )

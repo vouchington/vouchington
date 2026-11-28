@@ -9,6 +9,8 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { collectKeysetPages } from './bounded-reads.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 import {
   assertBoundedText,
   assertStaffDisposition,
@@ -106,15 +108,24 @@ export async function recordTerritorialCopyrightRedressDecision(
   const deliveries: CopyrightStatementDeliveryInput[] = []
   let staydownImageIds: string[] = []
   if (disposition === 'revoke') {
-    const { rows: restrictions } = await transaction<{ id: string }>(sql`
-      /* recordTerritorialCopyrightRedressDecision:restrictions */
-      SELECT restriction.id
-      FROM copyright_territorial_redress_requests request
-      JOIN copyright_restrictions restriction
-        ON restriction.authorizing_assessment_id = request.authorizing_assessment_identity_id
-      WHERE request.id = ${redressId} AND restriction.lifted_at IS NULL
-      ORDER BY restriction.id
-    `)
+    const restrictions = await collectKeysetPages<{ id: string }, string>(
+      getCopyrightSweepLimits().batchSize,
+      async (afterId, limit) => {
+        const { rows: page } = await transaction<{ id: string }>(sql`
+          /* recordTerritorialCopyrightRedressDecision:restrictions */
+          SELECT restriction.id
+          FROM copyright_territorial_redress_requests request
+          JOIN copyright_restrictions restriction
+            ON restriction.authorizing_assessment_id = request.authorizing_assessment_identity_id
+          WHERE request.id = ${redressId} AND restriction.lifted_at IS NULL
+            AND (${afterId}::uuid IS NULL OR restriction.id > ${afterId}::uuid)
+          ORDER BY restriction.id ASC
+          LIMIT ${limit}
+        `)
+        return page
+      },
+      row => row.id,
+    )
     for (const restriction of restrictions) {
       // oxlint-disable-next-line no-await-in-loop -- one transaction owns each durable restore intent.
       const intent = await createCopyrightRestoreIntentForReversalInTransaction(

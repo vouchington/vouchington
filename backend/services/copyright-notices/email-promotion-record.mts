@@ -54,6 +54,7 @@ export async function recordEmailPromotion(
   }>(sql`/* promoteCopyrightEmailIntake:submission */
     SELECT id FROM copyright_notice_submissions WHERE copyright_notice_id = ${noticeId}
       AND kind = 'notice' AND source_kind <> 'staff'
+      LIMIT 1
   `)
   const submission = rows[0]
   assert(submission, 500, 'Email copyright submission was not created')
