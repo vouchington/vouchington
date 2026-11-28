@@ -51,7 +51,9 @@ describe('DeleteAccountDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Delete my account' }))
 
     await waitFor(() => {
-      expect(screen.getByText('You must transfer organization ownership first')).toBeInTheDocument()
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'You must transfer organization ownership first',
+      )
     })
     expect(mockOnError).toHaveBeenCalledWith(expect.any(ApiError), {
       fallback: 'An unexpected error occurred',
