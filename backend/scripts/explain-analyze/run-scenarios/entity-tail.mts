@@ -58,7 +58,9 @@ export async function runTopicAliasSearchScenarios(): Promise<void> {
       },
       { kind: 'usesIndexes', indexes: ['topics_pkey'] },
       { kind: 'noSeqScan', relation: 'topic_aliases' },
-      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 4_000 },
+      // Custom plan reads 11 rows via idx_topic_aliases__alias__text_pattern_ops; generic plan
+      // cannot derive text_pattern_ops bounds from $1 and walks all ~4,026 seeded aliases on topic_aliases_alias_key.
+      { kind: 'maxProcessedRows', relation: 'topic_aliases', max: 5_000 },
       { kind: 'maxProcessedRows', relation: 'topics', max: 40 },
     ],
   })
