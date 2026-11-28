@@ -3,7 +3,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
-import { queryTestAnalyticsWebPageViews } from '@voucha/test-helpers/data-stores/analytics/queries'
+import { queryTestAnalyticsWebPageViewsByKindAndPage } from '@voucha/test-helpers/data-stores/analytics/queries'
 import {
   recordLandingPageVisit,
   recordRecentlyViewedRssFeed,
@@ -31,7 +31,7 @@ describe('web-page-view', () => {
       recordLandingPageVisit({ pageId, sessionId })
       await flush()
 
-      const rows = await queryTestAnalyticsWebPageViews({ pageKind: 'landing_page', pageId })
+      const rows = await queryTestAnalyticsWebPageViewsByKindAndPage('landing_page', pageId)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.page_kind).toBe('landing_page')
     })
@@ -44,7 +44,7 @@ describe('web-page-view', () => {
       recordRecentlyViewedTopic({ pageId, sessionId })
       await flush()
 
-      const rows = await queryTestAnalyticsWebPageViews({ pageKind: 'topic', pageId })
+      const rows = await queryTestAnalyticsWebPageViewsByKindAndPage('topic', pageId)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.page_kind).toBe('topic')
     })
@@ -57,7 +57,7 @@ describe('web-page-view', () => {
       recordRecentlyViewedPost({ pageId, sessionId })
       await flush()
 
-      const rows = await queryTestAnalyticsWebPageViews({ pageKind: 'post', pageId })
+      const rows = await queryTestAnalyticsWebPageViewsByKindAndPage('post', pageId)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.page_kind).toBe('post')
     })
@@ -70,7 +70,7 @@ describe('web-page-view', () => {
       recordRecentlyViewedRssFeed({ pageId, sessionId })
       await flush()
 
-      const rows = await queryTestAnalyticsWebPageViews({ pageKind: 'rss_feed', pageId })
+      const rows = await queryTestAnalyticsWebPageViewsByKindAndPage('rss_feed', pageId)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.page_kind).toBe('rss_feed')
     })

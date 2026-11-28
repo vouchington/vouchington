@@ -1,3 +1,4 @@
+import { assertSafeSqlIdentifier } from '@vouchington/postgres/partitions'
 import type { TransactionQuery } from '@data-stores/psql'
 
 export async function insertTestPostClearanceChangeForPartitionGuard(
@@ -56,4 +57,30 @@ export async function insertTestCommunityReviewChangeForPartitionGuard(
     [communityId, postId, actorId],
   )
   return rows[0]
+}
+
+export async function lockClearancePartitionRetirementTablesForTest(
+  transaction: TransactionQuery,
+  input: {
+    referenceTables: readonly string[]
+    parent: string
+    child: string
+  },
+): Promise<void> {
+  const parent = assertSafeSqlIdentifier(input.parent)
+  const child = assertSafeSqlIdentifier(input.child)
+  for (const table of input.referenceTables) {
+    await transaction(
+      `/* retireOwnedClearancePartition:lockReference */ LOCK TABLE ${assertSafeSqlIdentifier(table)} IN ACCESS EXCLUSIVE MODE`,
+    )
+  }
+  await transaction(
+    `/* retireOwnedClearancePartition:lockParent */ LOCK TABLE ${parent} IN ACCESS EXCLUSIVE MODE`,
+  )
+  await transaction(
+    `/* retireOwnedClearancePartition:lockCandidate */ LOCK TABLE ${child} IN ACCESS EXCLUSIVE MODE`,
+  )
+  await transaction(
+    '/* retireOwnedClearancePartition:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE',
+  )
 }

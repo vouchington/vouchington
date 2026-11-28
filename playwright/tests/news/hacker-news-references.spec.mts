@@ -15,11 +15,14 @@ import { expect, test } from '../../helpers/test.mts'
 
 test.describe('Hacker News references', () => {
   test.use({ storageState: AUTH_STATE })
-  let rssItemId: string
-  let feedId: string
-  let topicId: string
+  let rssItemId = ''
+  let feedId = ''
+  let topicId = ''
 
   test.beforeEach(async () => {
+    rssItemId = ''
+    feedId = ''
+    topicId = ''
     const suffix = `hn-refs-${randomSuffix()}`
     const topic = await insertTestTopic(`HN Refs Topic ${suffix}`, `hn-refs-${suffix}`)
     topicId = topic.id

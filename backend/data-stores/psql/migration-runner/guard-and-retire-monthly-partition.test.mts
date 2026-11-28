@@ -1,9 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import {
-  assertSafeSqlIdentifier,
-  buildMonthlyPartitionName,
-} from '@vouchington/postgres/partitions'
+import { buildMonthlyPartitionName } from '@vouchington/postgres/partitions'
 import {
   acquireTestModerationTransparencyDateReservation,
   beginTransaction,
@@ -12,6 +9,7 @@ import {
   insertTestPostClearanceChange,
   insertTestReleasedModerationTransparencyRollupRow,
 } from '@voucha/test-helpers'
+import { lockClearancePartitionRetirementTablesForTest } from '@voucha/test-helpers/data-stores/psql/partition-drop-guard'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import {
   createTestClearancePartitionFeedbackRace,
@@ -173,8 +171,6 @@ function retireOwnedClearancePartition(
     ...referenceTables.filter(table => table === 'posts'),
     ...referenceTables.filter(table => table !== 'posts'),
   ]
-  const parent = assertSafeSqlIdentifier(TABLE)
-  const child = assertSafeSqlIdentifier(partition)
   return retireMonthlyPartitionCandidate(
     { table: TABLE, partition, upperBound },
     referenceDate,
@@ -182,20 +178,11 @@ function retireOwnedClearancePartition(
     async () => {
       const transaction = await beginTransaction()
       try {
-        for (const table of orderedReferences) {
-          await transaction(
-            `/* retireOwnedClearancePartition:lockReference */ LOCK TABLE ${assertSafeSqlIdentifier(table)} IN ACCESS EXCLUSIVE MODE`,
-          )
-        }
-        await transaction(
-          `/* retireOwnedClearancePartition:lockParent */ LOCK TABLE ${parent} IN ACCESS EXCLUSIVE MODE`,
-        )
-        await transaction(
-          `/* retireOwnedClearancePartition:lockCandidate */ LOCK TABLE ${child} IN ACCESS EXCLUSIVE MODE`,
-        )
-        await transaction(
-          '/* retireOwnedClearancePartition:lockHolds */ LOCK TABLE user_legal_preservation_holds IN SHARE MODE',
-        )
+        await lockClearancePartitionRetirementTablesForTest(transaction, {
+          referenceTables: orderedReferences,
+          parent: TABLE,
+          child: partition,
+        })
       } catch (err) {
         await transaction.rollback()
         throw err

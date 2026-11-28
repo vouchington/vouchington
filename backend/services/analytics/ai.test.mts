@@ -3,7 +3,10 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { flush } from '@data-stores/analytics/backend-local'
-import { queryTestAnalyticsAiCalls } from '@voucha/test-helpers/data-stores/analytics/queries'
+import {
+  queryTestAnalyticsAiCallsByKindAndModel,
+  queryTestAnalyticsAiCallsByKindAndReason,
+} from '@voucha/test-helpers/data-stores/analytics/queries'
 import { trackAIEmbeddingCall, trackAIEmbeddingShortCircuit, trackAIModerationCall } from './ai.mts'
 
 describe('ai', () => {
@@ -31,10 +34,10 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await queryTestAnalyticsAiCalls({
-        kind: 'embedding',
-        model: 'nova-2-multimodal-embeddings-v1',
-      })
+      const rows = await queryTestAnalyticsAiCallsByKindAndModel(
+        'embedding',
+        'nova-2-multimodal-embeddings-v1',
+      )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
       expect(row.kind).toBe('embedding')
@@ -55,7 +58,7 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await queryTestAnalyticsAiCalls({ kind: 'embedding', model })
+      const rows = await queryTestAnalyticsAiCallsByKindAndModel('embedding', model)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.invocation).toBe('single')
     })
@@ -66,10 +69,10 @@ describe('ai', () => {
       trackAIEmbeddingShortCircuit({ reason: 'batch_lock', entityType: 'post' })
       await flush()
 
-      const rows = await queryTestAnalyticsAiCalls({
-        kind: 'embedding_short_circuit',
-        reason: 'batch_lock',
-      })
+      const rows = await queryTestAnalyticsAiCallsByKindAndReason(
+        'embedding_short_circuit',
+        'batch_lock',
+      )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
       expect(row.kind).toBe('embedding_short_circuit')
@@ -81,10 +84,10 @@ describe('ai', () => {
       trackAIEmbeddingShortCircuit({ reason: 'centralized_cache', entityType: 'topic' })
       await flush()
 
-      const rows = await queryTestAnalyticsAiCalls({
-        kind: 'embedding_short_circuit',
-        reason: 'centralized_cache',
-      })
+      const rows = await queryTestAnalyticsAiCallsByKindAndReason(
+        'embedding_short_circuit',
+        'centralized_cache',
+      )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.entity_type).toBe('topic')
     })
@@ -96,10 +99,10 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await queryTestAnalyticsAiCalls({
-        kind: 'embedding_short_circuit',
-        reason: 'single_skipped_for_backlog',
-      })
+      const rows = await queryTestAnalyticsAiCallsByKindAndReason(
+        'embedding_short_circuit',
+        'single_skipped_for_backlog',
+      )
       expect(rows.length).toBeGreaterThanOrEqual(1)
       expect(rows[0]!.entity_type).toBe('rss_feed_item')
     })
@@ -117,10 +120,7 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await queryTestAnalyticsAiCalls({
-        kind: 'moderation',
-        model: 'omni-moderation',
-      })
+      const rows = await queryTestAnalyticsAiCallsByKindAndModel('moderation', 'omni-moderation')
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
       expect(row.kind).toBe('moderation')

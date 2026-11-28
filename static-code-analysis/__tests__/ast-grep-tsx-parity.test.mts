@@ -1,6 +1,7 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { parse } from 'yaml'
 import { describe, expect, it } from 'vitest'
 import { withPackRuleDir } from '../ast-grep-pack-config.mts'
@@ -75,5 +76,24 @@ describe('ast-grep rule examples', () => {
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
+  })
+})
+
+describe('no-sql-in-backend-tests shrinking ignores list', () => {
+  const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)))
+  const rulePath = join(repoRoot, 'ast-grep-rules', 'no-sql-in-backend-tests.yml')
+  const MAX_SCHEMA_TEST_IGNORES = 23
+
+  it('caps the psql schema test ignores list at 23 and rejects duplicates or stale paths', () => {
+    const parsed = parse(readFileSync(rulePath, 'utf8')) as { ignores?: string[] }
+    const ignores = parsed.ignores ?? []
+    const schemaIgnores = ignores.filter(entry =>
+      entry.startsWith('backend/data-stores/psql/__tests__/'),
+    )
+
+    expect(schemaIgnores.length).toBeLessThanOrEqual(MAX_SCHEMA_TEST_IGNORES)
+    expect(new Set(schemaIgnores).size).toBe(schemaIgnores.length)
+    const missing = schemaIgnores.filter(relativePath => !existsSync(join(repoRoot, relativePath)))
+    expect(missing).toEqual([])
   })
 })

@@ -72,8 +72,11 @@ describe('copyright staff queue pagination', () => {
       start_cursor: expect.any(String),
       end_cursor: expect.any(String),
     })
+    const MAX_PAGES = 500
     const pagedIds: string[] = []
-    for (let pageCount = 0; pageCount < 25; pageCount += 1) {
+    let pageCount = 0
+    while (pageCount < MAX_PAGES) {
+      pageCount += 1
       pagedIds.push(...page.body.copyright_notices.map((notice: { id: string }) => notice.id))
       if (created.every(id => pagedIds.includes(id))) break
       const after = page.body.page_info.end_cursor as string | null
@@ -82,6 +85,7 @@ describe('copyright staff queue pagination', () => {
         .get(`/api/v1/copyright-notices/review-queue?limit=2&after=${encodeURIComponent(after)}`)
         .expect(200)
     }
+    expect(pageCount).toBeLessThan(MAX_PAGES)
     expect(new Set(pagedIds).size).toBe(pagedIds.length)
     for (const id of created) expect(pagedIds).toContain(id)
 
