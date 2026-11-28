@@ -736,6 +736,11 @@ CREATE TABLE IF NOT EXISTS rss_feed_crawls (
 CREATE INDEX IF NOT EXISTS idx_rss_feed_crawls__rss_feed_id
 ON rss_feed_crawls (rss_feed_id, id DESC);
 
+-- Latest complete crawl lookup per feed skips failed and 304 rows that have no payload/hash.
+CREATE INDEX IF NOT EXISTS idx_rss_feed_crawls__rss_feed_id_with_payload
+ON rss_feed_crawls (rss_feed_id, id DESC)
+WHERE feed_data IS NOT NULL AND feed_data_sha256 IS NOT NULL;
+
 -- RI-usable index for the redirect_url_id FK
 CREATE INDEX IF NOT EXISTS idx_rss_feed_crawls__redirect_url_id
 ON rss_feed_crawls (redirect_url_id)

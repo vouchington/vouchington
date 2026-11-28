@@ -35,6 +35,7 @@ _none_
 
 - `idx_rss_feed_crawls__redirect_url_id`: `CREATE INDEX idx_rss_feed_crawls__redirect_url_id ON ONLY public.rss_feed_crawls USING btree (redirect_url_id) WHERE (redirect_url_id IS NOT NULL)`
 - `idx_rss_feed_crawls__rss_feed_id`: `CREATE INDEX idx_rss_feed_crawls__rss_feed_id ON ONLY public.rss_feed_crawls USING btree (rss_feed_id, id DESC)`
+- `idx_rss_feed_crawls__rss_feed_id_with_payload`: `CREATE INDEX idx_rss_feed_crawls__rss_feed_id_with_payload ON ONLY public.rss_feed_crawls USING btree (rss_feed_id, id DESC) WHERE ((feed_data IS NOT NULL) AND (feed_data_sha256 IS NOT NULL))`
 - `rss_feed_crawls_pkey`: `CREATE UNIQUE INDEX rss_feed_crawls_pkey ON ONLY public.rss_feed_crawls USING btree (id)`
 
 **Triggers:**

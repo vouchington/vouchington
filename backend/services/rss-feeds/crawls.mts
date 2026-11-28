@@ -43,6 +43,8 @@ export async function getLatestRssFeedCrawlForFeedWithOptions(
   feed_data_sha256: Buffer | null
 } | null> {
   const feedDataColumn = options.includeFeedData ? sql`feed_data` : sql`NULL::jsonb AS feed_data`
+  // Keep the feed key in the ordering so PostgreSQL walks the feed-scoped payload partial index
+  // instead of scanning rss_feed_crawls_pkey backward across unrelated feeds.
   const { rows } = await read<{
     feed_data: Record<string, unknown> | null
     feed_data_sha256: Buffer | null
@@ -50,11 +52,11 @@ export async function getLatestRssFeedCrawlForFeedWithOptions(
     sql`/* getLatestRssFeedCrawlForFeed */ SELECT `.append(feedDataColumn)
       .append(sql`, feed_data_sha256
         FROM rss_feed_crawls
-        WHERE rss_feed_id = ${rss_feed_id}
+        WHERE rss_feed_id BETWEEN ${rss_feed_id} AND ${rss_feed_id}
           AND id > ${rss_feed_id} -- UUIDv7 partition pruning
           AND feed_data_sha256 IS NOT NULL
           AND feed_data IS NOT NULL
-        ORDER BY id DESC
+        ORDER BY rss_feed_id ASC, id DESC
         LIMIT 1`),
   )
   const row = rows[0]
