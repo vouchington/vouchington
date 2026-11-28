@@ -97,7 +97,21 @@ describe('topic.rewards-program-status', () => {
           .send({ order_index: 5 })
           .expect(200)
 
+        expect(Object.keys(response.body.rewards_program_status_attributes).toSorted()).toEqual([
+          'created_at',
+          'lifetime_version_id',
+          'order_index',
+          'topic_id',
+          'updated_at',
+        ])
+        expect(response.body.rewards_program_status_attributes.topic_id).toBe(topicId)
         expect(response.body.rewards_program_status_attributes.order_index).toBe(5)
+        expect(response.body.rewards_program_status_attributes.created_at).toEqual(
+          expect.any(String),
+        )
+        expect(response.body.rewards_program_status_attributes.updated_at).toEqual(
+          expect.any(String),
+        )
       })
 
       it('should return 422 when lifetime version is for a different rewards program', async () => {
